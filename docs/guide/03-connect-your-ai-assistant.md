@@ -11,7 +11,7 @@ An assistant that can run terminal commands can also use the skill with the CLI 
 
 ## Two ways to connect
 
-**If you ran the one-line installer** from [chapter 2](02-install.md), it already ran `git-into-gsoc setup` for every assistant it found. Restart your assistant and skip to [verify the connection](#verify-the-connection). Run setup again any time you install another assistant:
+**If you ran the one-line installer** from [chapter 2](02-install.md), it already ran `git-into-gsoc setup` for every assistant it found. Restart your assistant and skip to [your first question](#your-first-question). Run setup again any time you install another assistant:
 
 ```bash
 git-into-gsoc setup
@@ -58,9 +58,23 @@ You only need this section if setup could not write a file for your assistant, o
 
 The skill goes into one shared folder, `~/.agents/skills`, which Codex, Cursor, Gemini CLI, Devin Desktop, VS Code, Copilot CLI, and many other tools read, plus `~/.claude/skills` for Claude Code and `~/.gemini/config/skills` for Antigravity (with `--scope project`, `.agents/skills` and `.claude/skills` inside the project). One copy per folder means each assistant lists the skill once. If older versions of setup left copies in an assistant's own folder, setup removes them. Restart the assistant after any change.
 
-## Verify the connection
+## Your first question
 
-Ask your assistant:
+Restart the assistant, then ask in your own words, for example:
+
+```text
+I want to do Google Summer of Code. I know Python and like science. Where do I start?
+```
+
+You should see tool calls such as `gsoc_program_info` and `gsoc_search_orgs`, then a short answer with real organizations, links, and one next step. In a test run with Claude Code, this question gave five sourced organizations in about 20 seconds.
+
+The server also offers ready-made prompts. `get_started` asks you a few questions and suggests organizations, the same as `git-into-gsoc start` in a terminal. In Claude Code, prompts appear in the `/` menu with names like `/mcp__git-into-gsoc__get_started`. Other assistants list them in their own prompt or command menus. The [MCP reference](../mcp.md) lists all of them.
+
+Claude Code asks permission the first time it uses each tool. Choose the answer that stops it asking for that tool, so each question comes up once.
+
+## Check the connection
+
+If the answer has no tool calls or links, ask directly:
 
 ```text
 Use the git-into-gsoc skill and call gsoc_program_info.
@@ -68,7 +82,7 @@ Tell me the current GSoC phase and whether the dates are official or estimates.
 Tell me if the tool is unavailable.
 ```
 
-You should see a tool call and a short, sourced answer. Then try `gsoc_search_orgs` with `technologies="python"` and `limit=3` to check network access. A confident answer alone is not evidence of a connection; the skill tells the assistant to say when data is missing.
+You should see a tool call and a short, sourced answer. Then try `gsoc_search_orgs` with `technologies="python"` and `limit=3` to check network access. A confident answer alone is not evidence of a connection; the skill tells the assistant to say when data is missing. `git-into-gsoc doctor` in a terminal shows which assistants have the server registered.
 
 The assistant normally starts and stops the server itself. If you run `git-into-gsoc mcp` in a terminal, it waits for protocol input rather than showing a chat interface. Press Ctrl+C to stop it.
 
