@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Testing / typing / coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*~
+
+# Project local state
+.gsoc-progress/
+*.local.json
+.cache/
+
+# Installer backups
+*.bak
+
+# Installer-generated skill mirrors (canonical skill lives in skills/)
+.cursor/skills/
+.claude/skills/
