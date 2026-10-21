@@ -32,6 +32,20 @@ _CLAIM_PATTERNS = [
     r"\bclaiming (?:this|it)\b",
     r"\bi(?:'ve| have) (?:started|begun) working\b",
     r"\bis (?:this|it) (?:still )?(?:available|open) (?:to|for) (?:work|take)\b",
+    # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
+    r"^\s*/(?:assign(?:-me)?|take|claim)\s*$",
+    r"^\s*\.take(?:-issue)?\s*$",
+    r"^\s*@\w+bot\s+claim\b",
+]
+_RELEASE_PATTERNS = [
+    r"^\s*/(?:unassign(?:-me)?|release|unclaim)\s*$",
+    r"^\s*\.(?:release|unassign)\s*$",
+    r"^\s*@\w+bot\s+(?:abandon|unclaim|release)\b",
+    r"\b(?:i(?:'m| am) )?no longer (?:working on|able to work on|interested in) (?:this|it)\b",
+    r"\b(?:please )?unassign me\b",
+    r"\bfeel free to (?:take|pick) (?:this|it) (?:over|up)\b",
+    r"\bhas been (?:automatically )?unassigned\b",
+    r"\bunassigned (?:due to|because of|for) inactivity\b",
 ]
 _GRANT_PATTERNS = [
     r"\bassigned\b",
@@ -41,8 +55,9 @@ _GRANT_PATTERNS = [
     r"\ball yours\b",
     r"\bsure,? (?:go|you can|please)\b",
 ]
-_CLAIM_RE = re.compile("|".join(_CLAIM_PATTERNS), re.IGNORECASE)
+_CLAIM_RE = re.compile("|".join(_CLAIM_PATTERNS), re.IGNORECASE | re.MULTILINE)
 _GRANT_RE = re.compile("|".join(_GRANT_PATTERNS), re.IGNORECASE)
+_RELEASE_RE = re.compile("|".join(_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
 
 
 def _dt(value: str | None) -> datetime | None:
@@ -71,6 +86,11 @@ def is_grant(text: str) -> bool:
     return bool(_GRANT_RE.search(text or ""))
 
 
+def is_release(text: str) -> bool:
+    """A comment that gives an issue back: a bot command, a withdrawal, or an auto-unassign."""
+    return bool(_RELEASE_RE.search(text or ""))
+
+
 def assess_issue(
     issue: dict[str, Any],
     timeline: list[dict[str, Any]],
@@ -89,16 +109,26 @@ def assess_issue(
         at = _dt(event.get("created_at") or event.get("updated_at"))
         if kind == "commented":
             user = event.get("user") or event.get("actor")
-            if _is_bot(user):
-                continue
             body = str(event.get("body") or "")
+            if _is_bot(user):
+                if is_release(body):
+                    _release(claims, body, caveats, who=None)
+                continue
             role = str(event.get("author_association") or "")
+            login = _login(user)
+            if is_release(body) and login:
+                _release(claims, body, caveats, who=login)
             if role in MAINTAINER_ROLES:
                 maintainer_engaged = True
                 if is_grant(body):
                     _grant(claims, body)
-            elif is_claim(body) and at is not None and (login := _login(user)):
+            elif is_claim(body) and not is_release(body) and at is not None and login:
                 claims[login] = IssueClaim(login=login, at=at, days_ago=(now - at).days)
+        elif kind == "unassigned":
+            login = _login(event.get("assignee"))
+            if login and login in claims:
+                del claims[login]
+                caveats.append(f"@{login} was unassigned later; the issue is open again")
         elif kind == "cross-referenced":
             source = (event.get("source") or {}).get("issue") or {}
             if "pull_request" in source:
@@ -190,6 +220,19 @@ def unverified_assessment() -> IssueAssessment:
         ),
         caveats=["The timeline request failed, so claims and linked PRs were not checked"],
     )
+
+
+def _release(
+    claims: dict[str, IssueClaim], body: str, caveats: list[str], *, who: str | None
+) -> None:
+    """Drop claims a comment gives back: the author's own, or those it mentions."""
+    mentioned = set(re.findall(r"@([A-Za-z0-9-]+)", body))
+    targets = [login for login in claims if login in mentioned or (who and login == who)]
+    if not targets and who is None and len(claims) == 1:
+        targets = list(claims)
+    for login in targets:
+        del claims[login]
+        caveats.append(f"@{login} released this issue later; it is open again")
 
 
 def _grant(claims: dict[str, IssueClaim], body: str) -> None:

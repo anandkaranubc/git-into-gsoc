@@ -195,3 +195,50 @@ def test_assess_reports_unknown_when_the_timeline_cannot_be_read() -> None:
     _, assessment = GitHubClient().assess("acme/lib", 7)
     assert assessment.availability == Availability.UNKNOWN
     assert "timeline" in assessment.reason
+
+
+def test_bot_command_claims_count_as_claims() -> None:
+    for body in ("/assign", "/assign-me", ".take", "@zulipbot claim", "@rustbot claim", "/take"):
+        timeline = [_comment("gina", body, 2)]
+        result = assess_issue(_issue(), timeline, now=NOW)
+        assert result.availability == Availability.CLAIMED, body
+        assert result.claims[0].login == "gina"
+
+
+def test_release_comments_clear_an_earlier_claim() -> None:
+    timeline = [
+        _comment("hank", "/assign", 10),
+        _comment("hank", "/unassign", 5),
+    ]
+    result = assess_issue(_issue(), timeline, now=NOW)
+    assert result.availability == Availability.AVAILABLE
+    assert result.claims == []
+    assert any("released" in c.lower() for c in result.caveats)
+
+
+def test_bot_auto_unassign_clears_claim_by_mention() -> None:
+    timeline = [
+        _comment("ivy", "I'd like to work on this", 20),
+        {
+            **_comment(
+                "helper[bot]",
+                "@ivy has been unassigned due to inactivity. The issue is open again.",
+                3,
+            ),
+            "user": {"login": "helper[bot]", "type": "Bot"},
+        },
+    ]
+    result = assess_issue(_issue(), timeline, now=NOW)
+    assert result.availability == Availability.AVAILABLE
+    assert result.claims == []
+
+
+def test_unassigned_event_clears_claim() -> None:
+    timeline = [
+        _comment("jo", "please assign this to me", 8),
+        {"event": "assigned", "assignee": {"login": "jo"}, "created_at": _iso(7)},
+        {"event": "unassigned", "assignee": {"login": "jo"}, "created_at": _iso(2)},
+    ]
+    result = assess_issue(_issue(), timeline, now=NOW)
+    assert result.availability == Availability.AVAILABLE
+    assert result.claims == []
