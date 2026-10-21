@@ -117,7 +117,7 @@ You are welcome to use AI assistants while contributing. You are responsible for
 | `src/git_into_gsoc/progress/` | Local progress file |
 | `src/git_into_gsoc/data/` | Embedded snapshots used offline |
 | `skills/git-into-gsoc/` | The Agent Skill (the only tracked copy; the installer makes the others) |
-| `docs/` | Beginner guide and references, see [docs/README.md](docs/README.md) |
+| `docs/` | Beginner guide and references for users, see [docs/](docs/) |
 | `examples/` | Example terminal session, assistant prompts, MCP config |
 | `tests/` | Unit and integration tests with fixtures; no live network |
 | `install.sh` | Installer for users |
