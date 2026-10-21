@@ -65,6 +65,8 @@ Both the mark and the typeface sit on a square grid with a thick stroke, so they
 
 `tokens.css` exposes these as `--gig-*` custom properties and maps them to roles (`--bg`, `--fg`, `--accent`, `--cursor`) that flip for dark mode.
 
+Neither ink (4.1:1) nor paper (4.0:1) is dark or light enough for body text on merge itself. Large display text is fine there. Where a violet surface carries sentences, like the website's hero, use `#8466F9`, a slightly lighter violet that gives ink text 4.6:1 and passes WCAG AA. Labels that must sit on true merge, like its colour swatch, go on an ink chip.
+
 ## Type
 
 - **Gig Pixel** (`font/`) is the brand face: lowercase only (uppercase maps to the same drawings), 2-cell stroke, 8-cell x-height. A cell is 1/16 em, so use it at 32, 48, 64, 80, or 96 px for whole-pixel rendering. Headlines, stickers, the tagline. Never body copy, never below 32 px.

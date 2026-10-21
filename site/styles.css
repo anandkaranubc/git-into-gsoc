@@ -83,7 +83,8 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 @media (max-width: 420px) { .nav-links .optional { display: none; } }
 
 /* --- hero --------------------------------------------------------------------- */
-.hero { background: var(--gig-merge); color: var(--gig-ink); padding: clamp(40px, 7vw, 96px) 0 clamp(48px, 7vw, 104px); }
+/* A touch lighter than merge (#7A5AF8): ink body text on it reaches 4.6:1 (WCAG AA). */
+.hero { background: #8466F9; color: var(--gig-ink); padding: clamp(40px, 7vw, 96px) 0 clamp(48px, 7vw, 104px); }
 .hero .grid { display: grid; min-width: 0; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: clamp(24px, 5vw, 72px); align-items: center; }
 .hero h1 { font-size: clamp(var(--px-2), 6.2vw, var(--px-5)); line-height: 1; margin: 0 0 24px; max-width: 12ch; }
 .hero .lede { font-size: clamp(1.05rem, 1.4vw, 1.25rem); line-height: 1.5; max-width: 52ch; margin-bottom: 28px; color: var(--gig-ink); }
@@ -92,7 +93,7 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .hero .mark .cursor { fill: var(--gig-open); animation: var(--gig-blink); }
 .hero .after { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; margin-top: 18px; }
 .hero .after a { color: var(--gig-ink); font-weight: 600; }
-.hero .fine { font-size: 0.9rem; color: var(--gig-ink); opacity: 0.8; margin: 0; }
+.hero .fine { font-size: 0.9rem; color: var(--gig-ink); margin: 0; }
 @media (max-width: 860px) {
   .hero .grid { grid-template-columns: minmax(0, 1fr); }
   .hero .mark { width: min(60%, 260px); margin: 0; order: -1; }
@@ -132,6 +133,24 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .section-head p { margin-top: 16px; color: var(--fg-2); font-size: 1.05rem; }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
 @media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
+
+/* install tabs, inside the terminal bar */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs [role="tab"] {
+  appearance: none; border: 1.5px solid transparent; background: transparent; color: var(--gig-mute-on-ink);
+  font: inherit; font-size: 0.85rem; font-weight: 500; padding: 3px 10px; border-radius: 999px; cursor: pointer;
+}
+.tabs [role="tab"]:hover { color: var(--gig-paper); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--gig-paper); border-color: var(--gig-ink-3); background: var(--gig-ink); }
+.hero p code { background: rgba(21, 18, 30, 0.14); color: var(--gig-ink); }
+
+/* first run: four questions */
+.first-run .two { align-items: center; }
+.steps { margin: 0 0 1em; padding-left: 1.3em; max-width: var(--measure); }
+.steps li { margin-bottom: 0.6em; }
+.demo { margin: 0; }
+.demo img { width: 100%; height: auto; display: block; border-radius: var(--gig-radius-lg); }
+.demo figcaption { font-size: 0.85rem; color: var(--fg-2); margin-top: 10px; }
 
 /* failure mode */
 .fail .term { max-width: none; }
@@ -184,7 +203,9 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin: 0; padding: 0; list-style: none; }
 .swatch { border-radius: var(--gig-radius-lg); padding: 14px; min-height: 120px; display: flex; flex-direction: column; justify-content: flex-end; border: 1.5px solid var(--line); }
 .swatch b { font-weight: 600; }
-.swatch code { font-size: 0.85rem; opacity: 0.85; }
+.swatch code { font-size: 0.85rem; }
+/* Neither ink nor paper reaches 4.5:1 on merge itself, so its labels sit on ink chips. */
+.swatch.chips > * { align-self: flex-start; background: var(--gig-ink); color: var(--gig-paper); padding: 1px 6px; border-radius: 4px; margin-top: 3px; opacity: 1; }
 .specimen { font-size: var(--px-3); margin: 0 0 12px; overflow-wrap: anywhere; }
 .specimen.small { font-size: var(--px-2); color: var(--fg-2); }
 .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin: 0; padding: 0; list-style: none; }
@@ -192,13 +213,14 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .gallery li.light { background: var(--gig-paper); color: var(--gig-ink); border-color: var(--gig-paper-3); }
 .gallery li.light a { color: var(--gig-merge-deep); }
 .gallery li.dark { background: var(--gig-ink); }
-.gallery li.dark a, .gallery li.violet a { color: var(--gig-paper); }
+.gallery li.dark a { color: var(--gig-paper); }
 .gallery li.wide { grid-column: span 2; }
 @media (max-width: 420px) { .gallery { grid-template-columns: minmax(0, 1fr); } .gallery li.wide { grid-column: auto; } }
-.gallery li.violet { background: var(--gig-merge); }
+.gallery li.violet { background: #8466F9; color: var(--gig-ink); } /* as .hero: AA contrast for ink text */
+.gallery li.violet a, .gallery li.violet figcaption { color: var(--gig-ink); }
 .gallery img { width: 100%; height: 96px; object-fit: contain; display: block; }
 .gallery figcaption { font-size: 0.85rem; color: var(--fg-2); margin-top: 8px; }
-.gallery li.dark figcaption, .gallery li.violet figcaption { color: var(--gig-paper); }
+.gallery li.dark figcaption { color: var(--gig-paper); }
 .gallery li.light figcaption { color: var(--gig-mute); }
 .icons { display: flex; flex-wrap: wrap; gap: 18px; margin: 0; padding: 0; list-style: none; }
 .icons li { display: grid; justify-items: center; gap: 6px; font-size: 0.8rem; color: var(--fg-2); width: 72px; }

@@ -56,18 +56,27 @@
     <div class="wrap grid">
       <div>
         <h1 id="hero-title" class="pixel">open source has a door.</h1>
-        <p class="lede">git into gsoc finds the organizations that fit you, the repositories where a newcomer's pull request actually gets merged, and the beginner issues nobody has claimed yet. One real contribution before Google Summer of Code applications open. No spam, no guessing.</p>
+        <p class="lede">git into gsoc finds the organizations that fit you, the repositories where a newcomer's pull request actually gets merged, and the beginner issues nobody has claimed yet. It works in your terminal and inside your AI assistant. Land one real contribution before Google Summer of Code applications open.</p>
 
         <div class="term" id="install">
-          <div class="term-bar"><span>terminal</span><button class="copy" type="button" data-copy="install" aria-label="Copy install commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button></div>
-<pre><code id="install-code">curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
+          <div class="term-bar">
+            <div class="tabs" role="tablist" aria-label="Your computer">
+              <button type="button" role="tab" id="tab-unix" aria-selected="true" aria-controls="install-unix" data-tab="unix">macOS, Linux, WSL</button>
+              <button type="button" role="tab" id="tab-windows" aria-selected="false" aria-controls="install-windows" data-tab="windows" tabindex="-1">Windows</button>
+            </div>
+            <button class="copy" type="button" data-copy aria-label="Copy the install commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button>
+          </div>
+<pre id="install-unix" role="tabpanel" aria-labelledby="tab-unix" tabindex="0"><code class="copyable">curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
 # then, in a new terminal:
-git-into-gsoc program</code></pre>
+git-into-gsoc start</code></pre>
+<pre id="install-windows" role="tabpanel" aria-labelledby="tab-windows" tabindex="0" hidden><code class="copyable">irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
+# then, in a new PowerShell window:
+git-into-gsoc start</code></pre>
         </div>
 
         <div class="after">
           <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md">Read the beginner guide</a>
-          <p class="fine">Needs only an internet connection. macOS, Linux, and WSL; Windows users run <code>install.ps1</code> in PowerShell. The installer downloads the newest release, uses uv, pipx, or Python 3.11+ (and offers to install uv when you have none), then sets up your assistants. No GitHub token needed to start. <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/02-install.md">Explicit steps and a from-clone install</a>.</p>
+          <p class="fine">You only need an internet connection. If Python is missing, the installer offers uv, a free tool that brings its own. It connects the AI assistants it finds and tells you exactly what it changed. No account or token needed to start. <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/02-install.md">Other ways to install</a>.</p>
         </div>
       </div>
 
@@ -75,6 +84,27 @@ git-into-gsoc program</code></pre>
         <path class="g" d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z"/>
         <path class="cursor" d="M18 7H21V11H18Z"/>
       </svg>
+    </div>
+  </section>
+
+  <section class="section first-run" aria-labelledby="start-title">
+    <div class="wrap two">
+      <div>
+        <div class="section-head">
+          <h2 id="start-title" class="pixel">four questions. two minutes.</h2>
+          <p><code>git-into-gsoc start</code> asks what you know, what you would enjoy working on, and how much time you have. Press Enter to skip any of them.</p>
+        </div>
+        <ol class="steps">
+          <li><b>Organizations that fit you</b>, from the official list, each with the reasons it matched.</li>
+          <li><b>A shortlist</b> you build by typing numbers, saved on your computer.</li>
+          <li><b>Your next steps</b> with the exact commands, so you are never stuck on a blank prompt.</li>
+        </ol>
+        <p>Later, run <code>git-into-gsoc</code> on its own to see your progress, or <code>git-into-gsoc next</code> for what to do today: deadlines, changes on issues you follow, and new beginner issues.</p>
+      </div>
+      <figure class="demo">
+        <img src="brand/readme/demo-start.svg" width="1043" height="1587" loading="lazy" alt="A terminal running git-into-gsoc start. It shows that GSoC 2027 is not announced yet, asks four questions (username skipped, Python, science and data, 8 hours a week), lists three organizations that fit with the reasons, shortlists NumFOCUS, and prints three next steps with the exact commands.">
+        <figcaption>A real run, recorded from the tool. Results change as organizations and issues change.</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -86,18 +116,18 @@ git-into-gsoc program</code></pre>
       </div>
       <div class="two">
         <div>
-          <p class="lede">git into gsoc reads the official program site, the organization archive, and GitHub, then tells you what a mentor would tell you if they had the time:</p>
+          <p class="lede">git into gsoc reads the official program site, the organization archive, and GitHub, then shows you:</p>
           <ul>
             <li>which organizations match your languages and interests, with their slot history and past project titles</li>
             <li>which of their repositories mentors actually work in, and whether outside contributors' pull requests get merged there</li>
-            <li>which beginner issues are genuinely free, read from the issue timeline: claims, assignees, linked pull requests, maintainer replies</li>
+            <li>which beginner issues are still free, read from the issue timeline: claims, assignees, linked pull requests, maintainer replies</li>
             <li>what phase the program is in right now, with official dates when they exist and labelled estimates when they don't</li>
           </ul>
           <p>Missing data is reported as missing. Nothing is invented to fill a table.</p>
         </div>
         <div class="term" aria-label="Example output">
           <div class="term-bar"><span>example output</span></div>
-<pre class="out"><code><span class="c">$</span> git-into-gsoc issue owner/repo#123
+<pre class="out" tabindex="0"><code><span class="c">$</span> git-into-gsoc issue owner/repo#123
 
 <span class="c">╭──────────────── owner/repo#123 ────────────────╮</span>
 <span class="c">│</span> <b>Date parser drops the leap day</b>                 <span class="c">│</span>
@@ -127,7 +157,7 @@ git-into-gsoc program</code></pre>
     <div class="wrap">
       <div class="section-head">
         <h2 id="journey-title" class="pixel">ten steps. one contribution.</h2>
-        <p>The beginner guide walks this path with real commands and expected output. Skip what you know. Loop when you need to.</p>
+        <p>Ten phases, covered in eight guide pages with real commands and expected output. Skip what you know. Loop when you need to.</p>
       </div>
       <ol class="journey">
         <li>
@@ -158,7 +188,7 @@ git-into-gsoc program</code></pre>
           <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V8H5V9H4V10H2V9H3V8H0ZM2 2V7H10V2ZM3 4H5V5H3ZM7 4H9V5H7Z"/></svg>
           <h3>Community</h3>
           <p>Mentors recognize your name from useful questions, before you claim anything.</p>
-          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/06-first-contribution.md#work-with-the-community">Work with the community</a>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md#introduce-yourself-to-the-community">Introduce yourself</a>
         </li>
         <li>
           <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 4H1V2H2V1H4V0H8V1H10V2H11V4H12V8H11V10H10V11H8V12H4V11H2V10H1V8H0ZM2 4V8H3V9H4V10H8V9H9V8H10V4H9V3H8V2H4V3H3V4ZM4 5H5V4H7V5H8V7H7V8H5V7H4Z"/></svg>
@@ -211,11 +241,11 @@ git-into-gsoc program</code></pre>
         </li>
         <li class="rule">
           <img src="brand/stickers/sticker-door-open.svg" alt="Sticker: the door is open." width="440" height="64">
-          <p>The tool never posts, comments, or submits anything on your behalf. It opens the door and shows you the room. Walking in is yours to do.</p>
+          <p>The tool never posts, comments, or submits anything for you. Your profile and progress stay in a file on your computer. No account, no tracking. Every message a maintainer reads is one you wrote.</p>
         </li>
         <li class="rule">
           <img src="brand/stickers/sticker-merged.svg" alt="Sticker: merged." width="120" height="120">
-          <p>The goal is a reviewed, merged contribution and a mentor who knows your name. Not a number, not a streak, not a screenshot.</p>
+          <p>The goal is a reviewed, merged contribution and a mentor who knows your name from useful work.</p>
         </li>
       </ul>
     </div>
@@ -235,13 +265,17 @@ git-into-gsoc program</code></pre>
           <p>One command finds the assistants on your machine, copies the skill into each one, and registers the MCP server in its configuration, keeping a backup of anything it touches. The installer already ran it for you; run it again whenever you add an assistant. Prefer a plugin? Claude Code, Codex, Copilot, Gemini CLI, and Antigravity install the skill and server with their own commands, listed on the <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/assistants.md">assistant page</a> with one-click buttons for VS Code and Cursor. The <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md">assistant setup guide</a> covers manual configuration, and the <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/mcp.md">MCP reference</a> lists every tool.</p>
         </div>
         <div class="term">
-          <div class="term-bar"><span>terminal</span><button class="copy" type="button" data-copy="mcp" aria-label="Copy setup commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button></div>
-<pre><code id="mcp-code">git-into-gsoc setup
+          <div class="term-bar"><span>terminal</span><button class="copy" type="button" data-copy aria-label="Copy the setup commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button></div>
+<pre><code class="copyable">git-into-gsoc setup
 git-into-gsoc doctor</code></pre>
 <pre aria-label="What setup does"><span class="c">setup    finds your assistants (claude code, codex, cursor,
-         vs code, gemini, antigravity, windsurf), copies the
-         skill, and registers the mcp server. keeps .bak copies.
+         vs code, copilot, gemini, antigravity, windsurf),
+         copies the skill, and registers the mcp server.
+         keeps .bak copies.
 doctor   shows what is configured and where</span></pre>
+<pre aria-label="Then ask your assistant"><span class="k">then ask, in your own words:</span>
+<span class="v">"I want to do Google Summer of Code. I know Python
+and like science. Where do I start?"</span></pre>
         </div>
       </div>
     </div>
@@ -286,17 +320,42 @@ doctor   shows what is configured and where</span></pre>
     });
     paint();
 
+    // Install tabs: arrow keys move between them, as in any tab list. Windows visitors
+    // start on the PowerShell command.
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+    function choose(tab, focus) {
+      tabs.forEach(function (t) {
+        var on = t === tab;
+        t.setAttribute("aria-selected", String(on));
+        t.tabIndex = on ? 0 : -1;
+        document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+      });
+      if (focus) tab.focus();
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener("click", function () { choose(t, false); });
+      t.addEventListener("keydown", function (e) {
+        if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+        e.preventDefault();
+        choose(tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length], true);
+      });
+    });
+    if (/Windows/i.test(navigator.userAgent)) choose(document.getElementById("tab-windows"), false);
+
     document.querySelectorAll("[data-copy]").forEach(function (b) {
-      var id = b.getAttribute("data-copy") + "-code";
       b.addEventListener("click", function () {
-        var text = document.getElementById(id).textContent;
+        var visible = Array.prototype.filter.call(
+          b.closest(".term").querySelectorAll("code.copyable"),
+          function (c) { return !c.closest("pre").hidden; }
+        )[0];
+        var text = visible.textContent;
         var done = function () {
           b.setAttribute("data-done", "1");
           b.lastElementChild.textContent = "copied.";
           setTimeout(function () { b.removeAttribute("data-done"); b.lastElementChild.textContent = "copy"; }, 1600);
         };
         if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
-        else { var r = document.createRange(); r.selectNodeContents(document.getElementById(id)); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done(); }
+        else { var r = document.createRange(); r.selectNodeContents(visible); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done(); }
       });
     });
   })();
