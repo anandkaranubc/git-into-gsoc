@@ -51,6 +51,17 @@ Each stream's report was long; these are the facts that shaped decisions, with t
 
 **Onboarding science.** Prior engagement is what organizations score; about one proposal in twenty succeeds. First patches land when they are small bug fixes with tests and the author answers review promptly. "Unclear how to start" and "no response" are the top newcomer barriers. Community contact belongs before claiming an issue, which is now the order of the journey. Weekly notes with no streak mechanics match what organizations ask for.
 
+## Full research notes
+
+The complete notes behind this page, one file per stream, with every URL, number, and probe result, live in [docs/research/](research/). They are working notes rather than a guide:
+
+- [GSoC tools](research/gsoc-tools.md): GSoC tools, the official site's API, ideas pages, proposal archives, and what organizations score.
+- [Beginner-issue finders](research/issue-finders.md): Beginner-issue finders, claim conventions, label taxonomies, and newcomer-issue research.
+- [Repository health metrics](research/repo-health.md): Repository health metrics, GraphQL costs, ecosyste.ms, and what predicts a merged newcomer pull request.
+- [Codebase understanding and onboarding tools](research/codebase-onboarding.md): Codebase understanding and onboarding tools, and the GitHub API toolbox behind orient and pointers.
+- [MCP servers](research/mcp-and-skills.md): MCP servers, the Agent Skills specification, distribution channels, and untrusted-content handling.
+- [The research on newcomer onboarding](research/onboarding-science.md): The research on newcomer onboarding, what maintainers say they want, and adjacent programs.
+
 ## Evidence worth reading
 
 - Turzo, Sultana, Bosu, "From First Patch to Long-Term Contributor" (2025): https://arxiv.org/pdf/2407.04159
