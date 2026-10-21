@@ -1,0 +1,79 @@
+"""What organizations post in their own repositories about a coming GSoC year.
+
+Organizations announce plans in issues: Oppia opens a "GSoC 2027 Preparation"
+tracker, Nominatim says it has "not yet decided", and Wagtail said "No GSoC on
+Wagtail core in 2027" months before the official list. One search finds these
+posts; a sentence that names GSoC and says the org will not take part, or has
+not decided, sets the status, and only when a maintainer wrote it.
+"""
+
+from __future__ import annotations
+
+import re
+from typing import Any
+
+from git_into_gsoc.github.availability import MAINTAINER_ROLES
+from git_into_gsoc.text import clean_untrusted
+
+_GSOC = re.compile(r"\bgsoc\b|summer of code", re.I)
+_NOT_TAKING_PART = re.compile(
+    r"\bno gsoc\b|won[\u2019']?t (?:be )?(?:take|taking) part|won[\u2019']?t (?:participate|apply)|"
+    r"will not (?:take part|participate|apply)|not (?:be )?(?:taking|take) part|"
+    r"not participating|not applying|(?:skip|skipping) gsoc|decided (?:not|against)",
+    re.I,
+)
+_UNDECIDED = re.compile(
+    r"not (?:yet )?decided|haven[\u2019']?t (?:yet )?decided|undecided|not (?:yet )?confirmed|"
+    r"no decision",
+    re.I,
+)
+_SENTENCES = re.compile(r"(?<=[.!?\n])\s+")
+
+
+def search_terms(year: int) -> list[str]:
+    """Qualifiers for one issue search: both words anywhere in the title."""
+    return ["is:issue", "gsoc", str(int(year)), "in:title"]
+
+
+def _status(text: str) -> str:
+    for sentence in _SENTENCES.split(text):
+        if not _GSOC.search(sentence):
+            continue
+        if _NOT_TAKING_PART.search(sentence):
+            return "not_taking_part"
+        if _UNDECIDED.search(sentence):
+            return "undecided"
+    return "mentions"
+
+
+def gsoc_posts(items: list[dict[str, Any]], *, year: int) -> list[dict[str, Any]]:
+    """Issues whose title names GSoC and `year`, newest maintainer news first."""
+    year_re = re.compile(rf"(?<![#\d]){int(year)}(?!\d)")
+    posts: list[dict[str, Any]] = []
+    for item in items:
+        if "pull_request" in item:
+            continue
+        title = clean_untrusted(item.get("title"), limit=200)
+        if not (_GSOC.search(title) and year_re.search(title)):
+            continue
+        parts = str(item.get("repository_url") or "").rstrip("/").split("/")
+        by_maintainer = str(item.get("author_association") or "") in MAINTAINER_ROLES
+        body = str(item.get("body") or "")[:4000]
+        status = _status(f"{title}.\n{body}") if by_maintainer else "mentions"
+        posts.append(
+            {
+                "repo": "/".join(parts[-2:]),
+                "number": int(item.get("number") or 0),
+                "title": title,
+                "url": str(item.get("html_url") or ""),
+                "state": str(item.get("state") or ""),
+                "created_at": str(item.get("created_at") or "")[:10],
+                "author": clean_untrusted((item.get("user") or {}).get("login"), limit=40),
+                "by_maintainer": by_maintainer,
+                "status": status,
+            }
+        )
+    order = {"not_taking_part": 0, "undecided": 1, "mentions": 2}
+    posts.sort(key=lambda p: p["created_at"], reverse=True)
+    posts.sort(key=lambda p: (order[p["status"]], not p["by_maintainer"]))
+    return posts

@@ -1,0 +1,117 @@
+"""Organization posts about a coming GSoC year, read from real titles and bodies."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from git_into_gsoc.github.announcements import gsoc_posts
+
+
+def _item(repo: str, number: int, title: str, body: str, role: str = "MEMBER") -> dict[str, Any]:
+    return {
+        "number": number,
+        "title": title,
+        "body": body,
+        "html_url": f"https://github.com/{repo}/issues/{number}",
+        "repository_url": f"https://api.github.com/repos/{repo}",
+        "state": "open",
+        "created_at": "2026-10-07T16:25:51Z",
+        "user": {"login": "maintainer"},
+        "author_association": role,
+    }
+
+
+# Shortened from the real posts (2026-10-21).
+WAGTAIL = _item(
+    "wagtail/wagtail",
+    14705,
+    "No GSoC on Wagtail core in 2027",
+    "we've decided we won\u2019t take part in GSoC 2027 with Wagtail core. If you're contributing "
+    "with the view to take part in Google Summer of Code with us, please consider other projects.",
+)
+NOMINATIM = _item(
+    "osm-search/Nominatim",
+    4225,
+    "Interested in GSOC 2027? Read this first.",
+    "We have **not yet decided** if Nominatim will take part at Google Summer of Code 2027.",
+)
+OPPIA = _item(
+    "oppia/oppia",
+    27409,
+    "GSoC 2027 Preparation 🚀",
+    "GSoC 2027 is approaching! This tracker lists meaningful, well-scoped issues. "
+    "Contributing to these issues does not guarantee GSoC selection.",
+)
+APPLICANT = _item(
+    "oppia/oppia",
+    27500,
+    "Can I do GSoC 2027 here? I will not take part in anything else",
+    "Please assign me.",
+    role="NONE",
+)
+NUMBER_ONLY = _item("sympy/sympy", 2027, "Implement log method", "No GSoC here", role="CONTRIBUTOR")
+
+
+def test_posts_are_classified_from_the_maintainers_own_words() -> None:
+    posts = {p["repo"]: p for p in gsoc_posts([OPPIA, NOMINATIM, WAGTAIL], year=2027)}
+    assert posts["wagtail/wagtail"]["status"] == "not_taking_part"
+    assert posts["osm-search/Nominatim"]["status"] == "undecided"
+    assert posts["oppia/oppia"]["status"] == "mentions"
+    assert all(p["by_maintainer"] for p in posts.values())
+
+
+def test_not_taking_part_comes_first() -> None:
+    posts = gsoc_posts([OPPIA, NOMINATIM, WAGTAIL], year=2027)
+    assert posts[0]["number"] == 14705
+
+
+def test_applicants_cannot_announce_for_an_org_and_numbers_are_not_years() -> None:
+    posts = gsoc_posts([APPLICANT, NUMBER_ONLY], year=2027)
+    assert [p["number"] for p in posts] == [27500]
+    assert posts[0]["status"] == "mentions"  # "will not take part" from a non-maintainer
+    assert posts[0]["by_maintainer"] is False
+
+
+def test_pull_requests_and_other_years_are_ignored() -> None:
+    pr = {**OPPIA, "pull_request": {"url": "x"}}
+    old = _item("oppia/oppia", 1, "GSoC 2026 Preparation", "")
+    assert gsoc_posts([pr, old], year=2027) == []
+
+
+def test_next_puts_an_org_that_is_sitting_out_first(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.progress.store import ProgressStore
+    from git_into_gsoc.service import GSoCToolkit
+
+    ProgressStore().set_profile(technologies=["python"])
+    ProgressStore().shortlist_org("Wagtail")
+    ProgressStore().shortlist_org("SymPy")
+    toolkit = GSoCToolkit()
+    orgs = {
+        "Wagtail": OrgSummary(name="Wagtail", github_orgs=["wagtail"]),
+        "SymPy": OrgSummary(name="SymPy", github_orgs=["sympy"]),
+    }
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, **k: orgs[name])
+    monkeypatch.setattr(toolkit.github, "search_issues", lambda *a, **k: [WAGTAIL])
+    monkeypatch.setattr(toolkit.official, "program", lambda *a, **k: None)
+    monkeypatch.setattr(toolkit, "_new_beginner_issues", lambda *a, **k: [])
+    data = toolkit.next_steps(year=2027)
+    assert data["org_posts"][0]["org"] == "Wagtail"
+    assert data["actions"][0]["title"].startswith("Wagtail says it will not take part in GSoC 2027")
+    assert data["actions"][0]["why"].endswith("/14705")
+    repo_step = next(a for a in data["actions"] if a["title"].startswith("Pick the repository"))
+    assert repo_step["title"].endswith("SymPy")  # planning moves on to an org taking part
+
+
+def test_org_details_survive_a_failed_post_search(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.errors import HttpError
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+
+    def down(*a: object, **k: object) -> list[dict[str, Any]]:
+        raise HttpError("HTTP 503 from api.github.com", status_code=503)
+
+    monkeypatch.setattr(toolkit.github, "search_issues", down)
+    found = toolkit.gsoc_posts_for(["wagtail"], year=2027)
+    assert found["posts"] == [] and "503" in found["error"]["error"]

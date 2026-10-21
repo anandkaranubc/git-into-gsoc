@@ -89,6 +89,7 @@ def test_snapshot_refresh_command_writes_files(
 def test_orgs_table_renders_from_the_embedded_snapshot() -> None:
     respx.get(url__startswith=OFFICIAL).mock(return_value=httpx.Response(503))
     respx.get(url__startswith=ARCHIVE).mock(return_value=httpx.Response(503))
+    respx.get(url__startswith="https://api.github.com/").mock(return_value=httpx.Response(503))
     result = runner.invoke(app, ["orgs", "--tech", "python", "--topics", "science", "-n", "3"])
     assert result.exit_code == 0, result.output
     assert "snapshot" in result.output

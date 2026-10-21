@@ -18,7 +18,7 @@ Repositories can be written as `owner/name`, as any GitHub URL, or as the `git@g
 | Command | Options | Result |
 |---|---|---|
 | `program` | `--year` (default 2027), `--size small\|medium\|large` | Current phase and advice, timeline with official or estimated dates, anti-spam rules |
-| `next` | `--year`, `--no-check` | What to do right now: phase and deadlines, a time budget when your profile has hours per week (hours until the next milestone, split by what the phase needs), your tracked issues re-checked live with any status changes, your open pull requests in other people's repositories sorted into "needs you" (a merge conflict, a failing check, requested changes with no commit since, a comment with no reply, a draft) and "waiting" (with a nudge to follow up once after five quiet days) when your profile has a GitHub username, new beginner issues in places you follow, and up to six actions with the exact command for each |
+| `next` | `--year`, `--no-check` | What to do right now: phase and deadlines, a time budget when your profile has hours per week (hours until the next milestone, split by what the phase needs), your tracked issues re-checked live with any status changes, your open pull requests in other people's repositories sorted into "needs you" (a merge conflict, a failing check, requested changes with no commit since, a comment with no reply, a draft) and "waiting" (with a nudge to follow up once after five quiet days) when your profile has a GitHub username, new beginner issues in places you follow, posts about the coming GSoC in your shortlisted organizations' repositories (an organization whose maintainers say it will not take part becomes the first action), and up to six actions with the exact command for each |
 | `journey` | none | All ten phases with goals and actions |
 | `proposal [FILE]` | `--github`, `--verify/--no-verify`, `--ideas-file` | Without a file: the checklist and suggested structure. With a draft: pass/warn/fail findings on sections, contribution links, timeline detail, specificity, generic phrasing, placeholders, and length |
 
@@ -44,7 +44,7 @@ git-into-gsoc projects "graph neural networks" --since 2024
 | Command | Arguments and options |
 |---|---|
 | `orgs` | `--query` / `-q`, `--tech` / `-t`, `--topics`, `--category` / `-c`, `--year`, `--limit` / `-n` (default 10) |
-| `org NAME` | Organization name or a whole word of it, such as `mailman` (quote names with spaces). A word that fits several organizations lists them so you can pick one; a misspelled name suggests close matches. `--year`; `--shortlist` saves it to your progress |
+| `org NAME` | Organization name or a whole word of it, such as `mailman` (quote names with spaces). A word that fits several organizations lists them so you can pick one; a misspelled name suggests close matches. `--year`; `--shortlist` saves it to your progress. Also lists issues in the organization's repositories whose title names GSoC and the coming year, such as a preparation tracker or a notice that it will not take part, and says when a maintainer wrote that it will not take part or has not decided |
 | `ideas ORG` | `--skills` / `-s` (default: your profile), `--size small\|medium\|large`, `--difficulty easy\|medium\|hard`, `--limit` / `-n` (default 20), `--no-follow` |
 | `mentors ORG` | `--years` (default 3), `--limit` / `-n` (default 25) |
 | `projects [KEYWORDS]` | `--org`, `--since` (earliest year), `--limit` / `-n` (default 15) |

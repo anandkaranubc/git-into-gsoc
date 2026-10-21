@@ -10,6 +10,7 @@ from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
+from git_into_gsoc.github.announcements import gsoc_posts, search_terms
 from git_into_gsoc.github.availability import MAINTAINER_ROLES, assess_issue, unverified_assessment
 from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
@@ -225,6 +226,14 @@ class GitHubClient:
             },
         )
         return data.get("items", []) if isinstance(data, dict) else []
+
+    def gsoc_year_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
+        """Issues in these owners' repositories whose title names GSoC and `year` (one search)."""
+        logins = [validate_login(o, kind="organization") for o in dict.fromkeys(owners)]
+        if not logins:
+            return []
+        query = build_issue_query(base=search_terms(year), labels=[], orgs=logins)
+        return gsoc_posts(self.search_issues(query, per_page=30, sort="created"), year=year)
 
     def get_issue(self, owner: str, repo: str, number: int) -> dict[str, Any]:
         owner, repo = parse_repo(f"{owner}/{repo}")

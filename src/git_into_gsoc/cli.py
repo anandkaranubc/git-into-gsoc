@@ -352,6 +352,7 @@ def org_cmd(
             "Check its website to see whether it plans to apply again.[/yellow]"
         )
     console.print(Panel(Text.from_markup("\n".join(lines)), title=title))
+    _print_gsoc_posts(data.get("gsoc_posts") or {})
     if org.get("recent_projects"):
         table = Table(title="Recent accepted projects (for scope reference, never copy)")
         table.add_column("Year")
@@ -359,6 +360,24 @@ def org_cmd(
         for project in org["recent_projects"]:
             table.add_row(str(project["year"]), project["title"])
         console.print(table)
+
+
+_POST_STATUS = {
+    "not_taking_part": "[bold red]says it will not take part[/bold red]",
+    "undecided": "[yellow]says it has not decided yet[/yellow]",
+}
+
+
+def _print_gsoc_posts(found: dict[str, Any]) -> None:
+    posts = found.get("posts") or []
+    if not posts:
+        return
+    console.print(f"\n[bold]Posts about GSoC {found.get('year')} in its repositories[/bold]")
+    for post in posts:
+        status = _POST_STATUS.get(post["status"], "")
+        who = "a maintainer" if post.get("by_maintainer") else f"@{post.get('author')}"
+        console.print(f"  {post['created_at']}  {escape(post['title'])}  {status}")
+        console.print(f"  [dim]{post['url']}  (by {escape(who)}, {post['state']})[/dim]")
 
 
 @app.command("projects", rich_help_panel="Find an organization")
@@ -1404,6 +1423,15 @@ def next_cmd(
             console.print(f"  {mark} {pr['ref']}  {escape(pr['summary'])}")
             for extra in pr.get("reasons", [])[1:]:
                 console.print(f"           [dim]also: {escape(extra)}[/dim]")
+    news = [p for p in data.get("org_posts") or [] if p["status"] != "mentions"] + [
+        p for p in data.get("org_posts") or [] if p["status"] == "mentions"
+    ]
+    if news:
+        console.print("\n[bold]News from organizations on your shortlist[/bold]")
+        for post in news[:4]:
+            status = _POST_STATUS.get(post["status"], "")
+            console.print(f"  {escape(post['org'])}: {escape(post['title'])}  {status}")
+            console.print(f"  [dim]{post['url']}[/dim]")
     if data["new_issues"]:
         console.print("\n[bold]New beginner issues in places you follow[/bold]")
         for issue in data["new_issues"][:5]:

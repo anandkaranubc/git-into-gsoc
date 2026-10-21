@@ -156,7 +156,19 @@ class GSoCToolkit:
         if not org:
             return self._org_not_found(name, year=year)
         catalog, _ = self.gsoc.catalog(year)
-        return {"found": True, "catalog": catalog.model_dump(), "organization": org.model_dump()}
+        result = {"found": True, "catalog": catalog.model_dump(), "organization": org.model_dump()}
+        if org.github_orgs:
+            result["gsoc_posts"] = self.gsoc_posts_for(org.github_orgs[:3], year=year)
+        return result
+
+    def gsoc_posts_for(self, owners: list[str], *, year: int | None = None) -> dict[str, Any]:
+        """What these GitHub owners posted about a GSoC year (the coming one by default)."""
+        year = year or self.settings.target_year
+        try:
+            posts = self.github.gsoc_year_posts(owners, year)
+        except GigError as exc:
+            return {"year": year, "posts": [], "error": exc.to_dict()}
+        return {"year": year, "posts": posts[:6]}
 
     def _org_not_found(self, name: str, *, year: int | None = None) -> dict[str, Any]:
         similar, mentioned_by = self.gsoc.suggest_organizations(name, year=year)
@@ -664,6 +676,7 @@ class GSoCToolkit:
                         changes.append(f"{key} went from {previous} to {status}: {reason}")
 
         new_issues = self._new_beginner_issues(state, now=now) if recheck else []
+        org_posts = self._shortlist_posts(state, year) if recheck else []
         github_login = str((state.profile or {}).get("github") or "").strip()
         open_prs = (
             self.open_pull_requests(github_login, now=now) if recheck and github_login else []
@@ -671,6 +684,11 @@ class GSoCToolkit:
         if recheck:
             self.progress.mark_checked(statuses, now)
 
+        # Plan around orgs that are taking part; one that says it is sitting out goes last.
+        sitting_out = {p["org"] for p in org_posts if p["status"] == "not_taking_part"}
+        if sitting_out:
+            ordered = sorted(state.shortlisted_orgs, key=lambda name: name in sitting_out)
+            state = state.model_copy(update={"shortlisted_orgs": ordered})
         actions = plan_actions(
             state,
             program,
@@ -679,6 +697,16 @@ class GSoCToolkit:
             open_pull_requests=open_prs,
             now=now,
         )
+        for post in reversed([p for p in org_posts if p["status"] == "not_taking_part"]):
+            actions.insert(
+                0,
+                {
+                    "title": f"{post['org']} says it will not take part in GSoC {year}. "
+                    "Read the post, then consider replacing it on your shortlist",
+                    "command": "git-into-gsoc recommend",
+                    "why": post["url"],
+                },
+            )
         return {
             "checked_at": now.isoformat(),
             "last_checked_at": state.last_checked_at.isoformat() if state.last_checked_at else None,
@@ -695,6 +723,7 @@ class GSoCToolkit:
             "open_pull_requests": open_prs,
             "changes": changes,
             "new_issues": new_issues,
+            "org_posts": org_posts,
             "actions": actions,
             "note": (
                 "Actions are suggestions from your saved progress and public data. "
@@ -1380,6 +1409,24 @@ class GSoCToolkit:
             found = [r for r in pool.map(one, items[:limit]) if r]
         found.sort(key=lambda r: (r["status"] != "needs_you", -(r.get("quiet_days") or 0)))
         return found
+
+    def _shortlist_posts(self, state: ProgressState, year: int) -> list[dict[str, Any]]:
+        """Maintainer posts about `year` in the shortlisted orgs' repositories."""
+        owners: dict[str, str] = {}
+        for name in state.shortlisted_orgs[:5]:
+            try:
+                org = self.gsoc.get_organization(name)
+            except GigError:
+                continue
+            for owner in (org.github_orgs if org else [])[:2]:
+                owners.setdefault(owner.lower(), org.name if org else name)
+        if not owners:
+            return []
+        found = self.gsoc_posts_for(list(owners), year=year)["posts"]
+        posts = [p for p in found if p["by_maintainer"]]
+        for post in posts:
+            post["org"] = owners.get(post["repo"].split("/")[0].lower(), post["repo"])
+        return posts[:5]
 
     def _new_beginner_issues(self, state: ProgressState, *, now: datetime) -> list[dict[str, Any]]:
         """Beginner issues created in tracked repos / shortlisted orgs since the last check."""
