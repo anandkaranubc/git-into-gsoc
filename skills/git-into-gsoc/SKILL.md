@@ -73,6 +73,11 @@ git-into-gsoc doctor
 If the command is missing, follow [install.md](references/install.md) or ask
 the person to run the installer. Never invent a result in its place.
 
+Prefer the MCP tools when they are connected. When you run the CLI yourself, add
+`--output json`: the tables are made for people and leave out the links and
+descriptions you need to cite. If a result lacks something, say so instead of
+filling it in from memory.
+
 | Phase | Command | MCP tool |
 |---|---|---|
 | learn | `git-into-gsoc start` (asks four questions in a terminal; with options such as `--tech python --interests science` it asks nothing) | `gsoc_recommend_path`, or the `get_started` prompt |

@@ -67,7 +67,7 @@ The installer already connects the assistants it finds. To add git-into-gsoc as 
 | Claude Code | `claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc` |
 | Codex | `codex plugin marketplace add anandkaranubc/git-into-gsoc`, then `codex plugin add git-into-gsoc@git-into-gsoc` |
 | GitHub Copilot CLI | `copilot plugin marketplace add anandkaranubc/git-into-gsoc`, then `copilot plugin install git-into-gsoc@git-into-gsoc` |
-| Gemini CLI | `gemini extensions install https://github.com/anandkaranubc/git-into-gsoc --auto-update` |
+| Gemini CLI (paid plans; on a free Google account use Antigravity) | `gemini extensions install https://github.com/anandkaranubc/git-into-gsoc --auto-update` |
 | Antigravity | `agy plugin install https://github.com/anandkaranubc/git-into-gsoc` |
 | VS Code, Cursor, Windsurf, and others | [Setup for each assistant](docs/assistants.md) |
 
