@@ -104,9 +104,9 @@ def test_pr_draft_lists_branch_rule_gates() -> None:
     text = render_draft(
         "pr", context={"gates": ["Needs 2 approving reviews including a code owner"]}
     )["template"]
-    assert "This repository's branch rules also require:" in text
+    assert "This repository also requires:" in text
     assert "  - Needs 2 approving reviews including a code owner" in text
-    assert "branch rules" not in render_draft("pr", context={})["template"]
+    assert "also requires" not in render_draft("pr", context={})["template"]
 
 
 def _ids(report: dict, status: str) -> set[str]:
@@ -188,6 +188,7 @@ def test_claim_draft_reads_the_whole_contributing_guide(monkeypatch) -> None:  #
     monkeypatch.setattr(
         toolkit, "issue_status", lambda ref: {"title": "x", "availability": "available"}
     )
+    monkeypatch.setattr(toolkit, "_add_pr_rules", lambda repo, context: None)
     draft = toolkit.draft("claim", issue="zulip/zulip#36000")
     assert draft["context"]["claim_convention"] == {"kind": "command", "text": "@zulipbot claim"}
     assert "@zulipbot claim" in draft["template"]
@@ -320,3 +321,91 @@ def test_a_guessed_npm_ci_says_what_to_do_about_a_stale_lock_file() -> None:
     assert "git checkout -- package-lock.json before you commit" in template
     from_ci = render_draft("pr", context={**context, "commands_source": "CI"})["template"]
     assert "out of sync" not in from_ci
+
+
+def test_intro_drops_a_discussions_link_that_is_turned_off(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import ContactChannel, OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    # Learning Unlimited's GSoC 2026 record links GitHub Discussions on a repository
+    # that has them disabled (has_discussions: false), so the link is a 404.
+    url = "https://github.com/learning-unlimited/ESP-Website/discussions"
+    org = OrgSummary(
+        name="Learning Unlimited",
+        channels=[
+            ContactChannel(kind="forum", value=url),
+            ContactChannel(kind="email", value="gsoc-mentors@example.org"),
+        ],
+    )
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name: org)
+    monkeypatch.setattr(toolkit.github, "get_repo", lambda o, r: {"has_discussions": False})
+    draft = toolkit.draft("intro", org="Learning Unlimited")
+    assert url not in draft["template"] and draft["context"]["channels"] == []
+    assert "GitHub Discussions are turned off" in draft["warning"]
+    monkeypatch.setattr(toolkit.github, "get_repo", lambda o, r: {"has_discussions": True})
+    assert toolkit.draft("intro", org="Learning Unlimited")["context"]["channels"] == [url]
+
+
+def test_a_claim_draft_for_an_issue_not_open_has_nothing_to_copy(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import ContributionGuide
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    reason = "Labelled 'Idea for Discussion': the project is not taking claims on it yet"
+    monkeypatch.setattr(
+        toolkit,
+        "issue_status",
+        lambda ref: {"title": "Banners", "availability": "not_open", "reason": reason},
+    )
+    monkeypatch.setattr(
+        toolkit.github, "contribution_guide", lambda repo: ContributionGuide(repo=repo)
+    )
+    monkeypatch.setattr(toolkit, "_add_pr_rules", lambda repo, context: None)
+    draft = toolkit.draft("claim", issue="learning-unlimited/ESP-Website#2157")
+    assert "I'd like to work on this" not in draft["template"]
+    assert "git-into-gsoc issues --repo learning-unlimited/ESP-Website" in draft["template"]
+    assert draft["warning"].startswith("Do not post a claim")
+
+
+def test_pr_and_claim_drafts_follow_the_repositorys_own_rules(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import ContributionGuide
+    from git_into_gsoc.service import GSoCToolkit
+
+    # learning-unlimited/ESP-Website (2026-10-21): the PR template asks for an AI
+    # disclosure and a workflow closes PRs from anyone not assigned to the issue.
+    toolkit = GSoCToolkit()
+    tree = {
+        "tree": [
+            {"path": ".github/PULL_REQUEST_TEMPLATE.md", "type": "blob"},
+            {"path": ".github/workflows/pr-issue-check.yml", "type": "blob"},
+        ]
+    }
+    files = {
+        ".github/PULL_REQUEST_TEMPLATE.md": "## AI Disclosure\nSay which AI tools you used.",
+        ".github/workflows/pr-issue-check.yml": (
+            "on: pull_request_target\n# Require a linked issue assigned to the PR author\n"
+            "if: !contains(issue_assignee, author)\nrun: gh pr close $PR\n"
+        ),
+    }
+    monkeypatch.setattr(toolkit.github, "get_repo", lambda o, r: {"default_branch": "main"})
+    monkeypatch.setattr(toolkit.github, "git_tree", lambda o, r, b: tree)
+    monkeypatch.setattr(toolkit.github, "get_raw_file", lambda o, r, p: files.get(p))
+    monkeypatch.setattr(toolkit.github, "branch_rules", lambda o, r, b: [])
+    monkeypatch.setattr(toolkit.github, "root_listing", lambda o, r: [])
+    monkeypatch.setattr(
+        toolkit.github, "contribution_guide", lambda repo: ContributionGuide(repo=repo)
+    )
+    monkeypatch.setattr(
+        toolkit, "issue_status", lambda ref: {"title": "x", "availability": "available"}
+    )
+    context: dict[str, object] = {}
+    toolkit._add_pr_rules("learning-unlimited/ESP-Website", context)
+    assert context["pr_template_path"] == ".github/PULL_REQUEST_TEMPLATE.md"
+    assert context["ai_disclosure"] is True
+    pr = toolkit.draft("pr", repo="learning-unlimited/ESP-Website")["template"]
+    assert pr.startswith("Start from the project's own template, .github/PULL_REQUEST_TEMPLATE.md")
+    assert "AI disclosure:" in pr
+    assert any("assigned to the author" in gate for gate in context["gates"])  # type: ignore[attr-defined]
+    claim = toolkit.draft("claim", issue="learning-unlimited/ESP-Website#2455")["template"]
+    assert "wait until a maintainer assigns you" in claim

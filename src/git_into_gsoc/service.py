@@ -1484,6 +1484,8 @@ class GSoCToolkit:
                             )
                 except GigError:
                     pass
+            if kind in {"pr", "claim"}:
+                self._add_pr_rules(repo, context)
             guide = self.github.contribution_guide(repo)
             context["channels"] = context.get("channels") or guide.communication_channels
             text = guide.contributing_text or guide.contributing_excerpt
@@ -1491,7 +1493,9 @@ class GSoCToolkit:
             context["dco"] = bool(
                 re.search(r"Signed-off-by|git commit -s|Developer Certificate", text)
             )
-            context["ai_disclosure"] = bool(re.search(r"\bai\b.*disclos", text, re.I | re.S))
+            context["ai_disclosure"] = context.get("ai_disclosure") or bool(
+                re.search(r"\bai\b.*disclos", text, re.I | re.S)
+            )
             context["contributing_url"] = guide.contributing_url
         if kind == "status":
             latest = self.progress.recent_logs(limit=1)
@@ -1527,6 +1531,37 @@ class GSoCToolkit:
         if warnings:
             draft["warning"] = " ".join(warnings)
         return draft
+
+    def _add_pr_rules(self, repo: str, context: dict[str, Any]) -> None:
+        """The repository's own pull request template and workflow gates, into `context`.
+
+        learning-unlimited/ESP-Website's template asks for an AI disclosure, and a
+        workflow closes pull requests from anyone not assigned to the issue; the
+        generic draft said neither.
+        """
+        try:
+            owner, name = parse_repo(repo)
+            branch = str(self.github.get_repo(owner, name).get("default_branch") or "HEAD")
+            found = find_paths(list(self.github.git_tree(owner, name, branch).get("tree") or []))
+        except GigError:
+            return
+        template_path = found.get("pr_template")
+        gate_paths = rank_gate_workflows(found.get("workflows") or [], skip=[])
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            template_f = (
+                pool.submit(self.github.get_raw_file, owner, name, template_path)
+                if template_path
+                else None
+            )
+            gate_f = {p: pool.submit(self.github.get_raw_file, owner, name, p) for p in gate_paths}
+            template = (template_f.result() if template_f else None) or ""
+            gate_texts = {p: f.result() or "" for p, f in gate_f.items()}
+        if template_path:
+            context["pr_template_path"] = template_path
+        if re.search(r"\bai\b.*disclos|disclos.*\bai\b", template, re.I | re.S):
+            context["ai_disclosure"] = True
+        gates = [g["gate"] for g in workflow_gates(gate_texts)]
+        context["gates"] = list(dict.fromkeys([*(context.get("gates") or []), *gates]))
 
     def _open_channels(self, channels: list[str]) -> tuple[list[str], list[str]]:
         """Split channels into usable ones and GitHub Discussions links that are turned off.

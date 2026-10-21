@@ -241,6 +241,12 @@ def _claim(ctx: dict[str, Any]) -> str:
         lines.insert(
             1, "(This project does not assign issues: open the PR when ready instead of waiting.)"
         )
+    if any("assigned to the author" in gate for gate in ctx.get("gates") or []):
+        lines.append("")
+        lines.append(
+            "(This project closes pull requests from people not assigned to the issue: "
+            "wait until a maintainer assigns you before you open one.)"
+        )
     return "\n".join(lines)
 
 
@@ -248,7 +254,14 @@ def _pr(ctx: dict[str, Any]) -> str:
     issue = ctx.get("issue") or {}
     ref = f"#{issue.get('number')}" if issue.get("number") else "#<issue>"
     test_cmd = (ctx.get("test_commands") or ["<the project's test command>"])[0]
-    lines = [
+    lines = []
+    if ctx.get("pr_template_path"):
+        lines += [
+            f"Start from the project's own template, {ctx['pr_template_path']}, and fill in "
+            "every section. Make sure it covers:",
+            "",
+        ]
+    lines += [
         "Title: <imperative, under 70 characters, in the project's style>",
         "",
         f"Problem: <what was broken or confusing>. Fixes {ref}.",
@@ -264,7 +277,7 @@ def _pr(ctx: dict[str, Any]) -> str:
     gates = ctx.get("gates") or []
     if gates:
         lines.append("")
-        lines.append("This repository's branch rules also require:")
+        lines.append("This repository also requires:")
         lines.extend(f"  - {gate}" for gate in gates)
     lines.extend(_setup_commands(ctx))
     return "\n".join(lines)
