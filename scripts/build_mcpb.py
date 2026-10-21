@@ -98,7 +98,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=ROOT / "dist" / "git-into-gsoc.mcpb")
     parser.add_argument("--manifest-only", action="store_true", help="Print manifest.json and exit")
-    parser.add_argument("--root", type=Path, default=ROOT, help="Source checkout to bundle (default: this repository)")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=ROOT,
+        help="Source checkout to bundle (default: this repository)",
+    )
     args = parser.parse_args(argv)
     root = args.root.resolve()
     if args.manifest_only:
