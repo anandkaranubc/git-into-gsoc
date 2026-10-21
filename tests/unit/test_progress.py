@@ -47,8 +47,14 @@ def test_unknown_phase_is_an_input_error(tmp_path: Path) -> None:
     assert store.complete_phase(" Discover ").phases["discover"] is True
 
 
-def test_mcp_progress_reports_errors_as_json(tmp_path: Path) -> None:
+def test_mcp_progress_raises_tool_errors_with_hints(tmp_path: Path) -> None:
+    from mcp.server.mcpserver.exceptions import ToolError
+
     from git_into_gsoc.mcp_server import gsoc_progress
 
-    assert "Unknown phase" in gsoc_progress(action="complete_phase", phase="nope")
-    assert "empty" in gsoc_progress(action="note", value="")
+    with pytest.raises(ToolError, match="Unknown phase"):
+        gsoc_progress(action="complete_phase", phase="nope")
+    with pytest.raises(ToolError, match="empty"):
+        gsoc_progress(action="note", value="")
+    with pytest.raises(ToolError, match="Unknown action"):
+        gsoc_progress(action="dance")

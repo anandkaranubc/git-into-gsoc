@@ -21,3 +21,24 @@ def test_mcp_server_imports_and_registers_tools() -> None:
         "gsoc_progress",
     }
     assert expected.issubset(names)
+
+
+def test_every_tool_has_a_title_and_annotations() -> None:
+    from git_into_gsoc.mcp_server import mcp
+
+    for tool in mcp._tool_manager.list_tools():
+        assert tool.title, tool.name
+        assert tool.annotations is not None, tool.name
+        assert tool.parameters, tool.name  # schema survives the guard decorator
+
+
+def test_guarded_tools_turn_input_errors_into_tool_errors() -> None:
+    import pytest
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from git_into_gsoc.mcp_server import gsoc_issue_status, gsoc_journey_guide
+
+    with pytest.raises(ToolError, match="Hint"):
+        gsoc_issue_status("not-a-repo")
+    with pytest.raises(ToolError, match="Valid phases"):
+        gsoc_journey_guide("nope")

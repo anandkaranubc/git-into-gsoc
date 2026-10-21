@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import functools
 import json
-from typing import Any
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ToolAnnotations
 
 from git_into_gsoc import __version__
@@ -73,7 +76,29 @@ def _dump(data: Any) -> str:
     return json.dumps(data, separators=(",", ":"), default=str)
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+_F = TypeVar("_F", bound=Callable[..., str])
+
+
+def guarded(func: _F) -> _F:
+    """Turn expected failures (bad input, rate limits, unreachable sources) into ToolError.
+
+    The SDK marks ToolError results with is_error, so clients and models see a
+    one-line message plus the hint instead of a stack trace or a fake result.
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> str:
+        try:
+            return func(*args, **kwargs)
+        except GigError as exc:
+            detail = f"{exc} Hint: {exc.hint}" if exc.hint else str(exc)
+            raise ToolError(detail) from exc
+
+    return wrapper  # type: ignore[return-value]
+
+
+@mcp.tool(title="GSoC program status and timeline", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_program_info(year: int = 2027) -> str:
     """Get GSoC program status, timeline, official links, and anti-spam rules.
 
@@ -83,7 +108,8 @@ def gsoc_program_info(year: int = 2027) -> str:
     return _dump(toolkit().program_info(year))
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Journey phase guide", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_journey_guide(phase: str | None = None) -> str:
     """Return journey phase guidance for GSoC contributors.
 
@@ -97,13 +123,14 @@ def gsoc_journey_guide(phase: str | None = None) -> str:
     phases = overview["phases"]
     assert isinstance(phases, dict)
     if key not in phases:
-        return _dump({"error": f"Unknown phase '{phase}'", "valid": list(phases)})
+        raise ToolError(f"Unknown phase '{phase}'. Valid phases: {', '.join(phases)}")
     phase_guide = phases[key]
     assert isinstance(phase_guide, dict)
     return _dump({"phase": key, **phase_guide, "anti_spam_rules": overview["anti_spam_rules"]})
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Rank mentoring organizations", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_search_orgs(
     query: str = "",
     technologies: str = "",
@@ -131,14 +158,16 @@ def gsoc_search_orgs(
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Organization profile", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_org_details(name: str, year: int = 0) -> str:
     """Full profile for one org: ideas page, contributor guide, channels, GitHub orgs,
     projects per year, and recent accepted project titles. Accepts partial names."""
     return _dump(toolkit().org_details(name, year=year or None))
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Past accepted projects", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_past_projects(query: str = "", org: str = "", since: int = 0, limit: int = 15) -> str:
     """Search accepted GSoC projects from past years by keyword and/or org.
 
@@ -150,7 +179,8 @@ def gsoc_past_projects(query: str = "", org: str = "", since: int = 0, limit: in
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Repository health for newcomers", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_evaluate_repo(full_name: str) -> str:
     """Will a newcomer's PR land here? Health grade (A-F) with signals and warnings:
     activity, CONTRIBUTING/CoC/templates, CI, open beginner issues, bot-free merge rate,
@@ -161,7 +191,10 @@ def gsoc_evaluate_repo(full_name: str) -> str:
     return _dump(toolkit().evaluate_repo(full_name))
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(
+    title="Rank an organization's repositories", annotations=READ_ONLY, structured_output=False
+)
+@guarded
 def gsoc_discover_repos(org: str, language: str = "", limit: int = 10) -> str:
     """Rank a mentoring org's GitHub repositories for a first contribution.
 
@@ -171,7 +204,8 @@ def gsoc_discover_repos(org: str, language: str = "", limit: int = 10) -> str:
     return _dump(toolkit().discover_repos(org, language=language or None, limit=limit))
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Beginner issues that are free", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_find_issues(
     language: str = "",
     org: str = "",
@@ -199,14 +233,16 @@ def gsoc_find_issues(
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Is this issue free?", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_issue_status(ref: str, number: int = 0) -> str:
     """Check if one issue is free: linked PRs, assignees, claims (with dates), maintainer
     approval, and caveats. ref: "owner/repo#123", an issue URL, or "owner/repo" + number."""
     return _dump(toolkit().issue_status(ref, number or None))
 
 
-@mcp.tool(annotations=LOCAL_WRITE, structured_output=False)
+@mcp.tool(title="Personalized starting path", annotations=LOCAL_WRITE, structured_output=False)
+@guarded
 def gsoc_recommend_path(
     github_username: str = "",
     technologies: str = "",
@@ -224,13 +260,15 @@ def gsoc_recommend_path(
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Proposal checklist", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_proposal_checklist() -> str:
     """Proposal quality checklist grounded in official GSoC guidance."""
     return _dump(toolkit().proposal_help())
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="Check a draft proposal", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_proposal_check(
     text: str, github_username: str = "", verify_links: bool = True, ideas_text: str = ""
 ) -> str:
@@ -245,20 +283,18 @@ def gsoc_proposal_check(
     page as ideas_text to flag passages copied from it. Use the findings to coach the author
     to revise in their own voice; do not draft replacement text for them.
     """
-    try:
-        return _dump(
-            toolkit().check_proposal(
-                text,
-                github=github_username or None,
-                verify=verify_links,
-                ideas_text=ideas_text or None,
-            )
+    return _dump(
+        toolkit().check_proposal(
+            text,
+            github=github_username or None,
+            verify=verify_links,
+            ideas_text=ideas_text or None,
         )
-    except GigError as exc:
-        return _dump(exc.to_dict())
+    )
 
 
-@mcp.tool(annotations=LOCAL_WRITE, structured_output=False)
+@mcp.tool(title="Local journey progress", annotations=LOCAL_WRITE, structured_output=False)
+@guarded
 def gsoc_progress(action: str = "summary", phase: str = "", value: str = "") -> str:
     """Track local GSoC journey progress.
 
@@ -268,41 +304,29 @@ def gsoc_progress(action: str = "summary", phase: str = "", value: str = "") -> 
     """
     store = toolkit().progress
     act = action.strip().lower()
-    try:
-        if act == "summary":
-            return _dump(store.summary())
-        if act == "complete_phase":
-            if not phase:
-                return _dump(
-                    {"error": "phase is required", "valid": [p.value for p in JourneyPhase]}
-                )
-            return _dump(store.complete_phase(phase).model_dump(mode="json"))
-        if act == "shortlist_org":
-            return _dump(store.shortlist_org(value).model_dump(mode="json"))
-        if act == "track_repo":
-            return _dump(store.track_repo(value).model_dump(mode="json"))
-        if act == "track_issue":
-            return _dump(store.track_issue(value).model_dump(mode="json"))
-        if act == "note":
-            return _dump(store.add_note(value).model_dump(mode="json"))
-    except GigError as exc:
-        return _dump(exc.to_dict())
-    return _dump(
-        {
-            "error": f"Unknown action '{action}'",
-            "valid": [
-                "summary",
-                "complete_phase",
-                "shortlist_org",
-                "track_repo",
-                "track_issue",
-                "note",
-            ],
-        }
+    if act == "summary":
+        return _dump(store.summary())
+    if act == "complete_phase":
+        if not phase:
+            valid = ", ".join(p.value for p in JourneyPhase)
+            raise ToolError(f"phase is required for complete_phase. Valid phases: {valid}")
+        return _dump(store.complete_phase(phase).model_dump(mode="json"))
+    if act == "shortlist_org":
+        return _dump(store.shortlist_org(value).model_dump(mode="json"))
+    if act == "track_repo":
+        return _dump(store.track_repo(value).model_dump(mode="json"))
+    if act == "track_issue":
+        return _dump(store.track_issue(value).model_dump(mode="json"))
+    if act == "note":
+        return _dump(store.add_note(value).model_dump(mode="json"))
+    raise ToolError(
+        f"Unknown action '{action}'. Valid actions: summary, complete_phase, shortlist_org, "
+        "track_repo, track_issue, note"
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
+@mcp.tool(title="GitHub API budget", annotations=READ_ONLY, structured_output=False)
+@guarded
 def gsoc_rate_limit() -> str:
     """Show GitHub API rate limit status. Set GITHUB_TOKEN for higher limits."""
     return _dump(toolkit().rate_limit())
