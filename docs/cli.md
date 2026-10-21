@@ -134,7 +134,7 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 |---|---|
 | `setup` | Copy the Agent Skill and register the MCP server with your assistants (see below) |
 | `doctor` | Version, Python, cache and data paths, GitHub token source, remaining API requests, whether each data source (official site, organization archive, commit statistics) answers, skill source, which assistants have the skill, and where the MCP server is registered |
-| `cache` | Size of the HTTP cache; `cache --clear` deletes it |
+| `cache` | Size of the HTTP cache and its limits; `cache --prune` deletes old entries now, `cache --clear` deletes it all |
 | `mcp` | Start the MCP server on stdio; it waits for a client until stopped |
 
 ```bash

@@ -36,6 +36,10 @@ __all__ = ["CachedHttpClient", "HttpError", "NotFoundError", "RateLimitError"]
 log = logging.getLogger(__name__)
 
 STALE_IF_ERROR_SECONDS = 7 * 86400
+PRUNE_INTERVAL_SECONDS = 86400
+# Left by a write that was interrupted; a live write finishes in well under this.
+STALE_TMP_SECONDS = 3600
+_PRUNE_MARKER = ".last-pruned"
 _RETRY_STATUSES = {500, 502, 503, 504}
 
 
@@ -54,6 +58,7 @@ class CachedHttpClient:
         self._cache_root = cache_root or (cache_dir(self.settings) / "http")
         self._cache_root.mkdir(parents=True, exist_ok=True)
         self._sleep = sleep
+        self._prune_if_due()
         # Service addresses the user configured may be local (a mirror, a test server).
         self._trusted_origins = {
             _origin(httpx.URL(url))
@@ -121,6 +126,55 @@ class CachedHttpClient:
                 path.unlink()
                 removed += 1
         return removed
+
+    def prune_cache(self, *, now: float | None = None) -> int:
+        """Delete entries not refreshed within the age limit, then the oldest entries
+        until the cache fits the size cap. Returns how many files were removed."""
+        now = time.time() if now is None else now
+        max_age = self.settings.cache_max_age_days * 86400
+        budget = self.settings.cache_max_mb * 1_048_576
+        removed = 0
+        kept: list[tuple[float, int, Path]] = []
+        for path in self._cache_root.iterdir():
+            if path.suffix not in {".json", ".tmp"}:
+                continue
+            try:
+                stat = path.stat()
+            except OSError:
+                continue
+            age = now - stat.st_mtime
+            stale_tmp = path.suffix == ".tmp" and age > STALE_TMP_SECONDS
+            if stale_tmp or (path.suffix == ".json" and 0 < max_age < age):
+                removed += _unlink(path)
+            elif path.suffix == ".json":
+                kept.append((stat.st_mtime, stat.st_size, path))
+        total = sum(size for _, size, _ in kept)
+        for _, size, path in sorted(kept):  # oldest first
+            if budget <= 0 or total <= budget:
+                break
+            if _unlink(path):
+                removed += 1
+                total -= size
+        return removed
+
+    def _prune_if_due(self) -> None:
+        """Prune at most once a day; a marker file's age says when it last ran."""
+        marker = self._cache_root / _PRUNE_MARKER
+        try:
+            if time.time() - marker.stat().st_mtime < PRUNE_INTERVAL_SECONDS:
+                return
+        except FileNotFoundError:
+            pass
+        except OSError:
+            return
+        try:
+            marker.touch()
+            removed = self.prune_cache()
+        except OSError as exc:  # a read-only or vanished cache never blocks a command
+            log.debug("Cache prune skipped: %s", exc)
+            return
+        if removed:
+            log.info("Pruned %d old cache entries", removed)
 
     def cache_size_bytes(self) -> int:
         return sum(p.stat().st_size for p in self._cache_root.glob("*.json") if p.is_file())
@@ -288,6 +342,15 @@ class CachedHttpClient:
             if tmp:
                 with contextlib.suppress(OSError):
                     os.unlink(tmp)
+
+
+def _unlink(path: Path) -> int:
+    """1 when the file was removed; another process may have removed it first."""
+    try:
+        path.unlink()
+    except OSError:
+        return 0
+    return 1
 
 
 def _host(url: str) -> str:

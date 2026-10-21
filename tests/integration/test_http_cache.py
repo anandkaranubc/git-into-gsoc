@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 
@@ -190,3 +191,55 @@ def test_search_rate_limit_gets_a_search_specific_hint() -> None:
         client.get_json("https://api.github.com/repos/a/b")
     assert core.value.resource == "core"
     assert "gh auth login" in (core.value.hint or "")
+
+
+def _aged(path: Path, days: float, size: int = 10) -> Path:
+    path.write_bytes(b"x" * size)
+    stamp = time.time() - days * 86400
+    os.utime(path, (stamp, stamp))
+    return path
+
+
+def _client_for(tmp_path: Path, **overrides: object) -> CachedHttpClient:
+    settings = Settings(**overrides)  # type: ignore[arg-type]
+    return CachedHttpClient(settings, cache_root=tmp_path / "http")
+
+
+def test_prune_deletes_entries_not_refreshed_within_the_age_limit(tmp_path: Path) -> None:
+    client = _client_for(tmp_path, cache_max_age_days=30)
+    root = tmp_path / "http"
+    old = _aged(root / "old.json", 31)
+    fresh = _aged(root / "fresh.json", 29)
+    leftover = _aged(root / "write.tmp", 0.1)
+    live = _aged(root / "live.tmp", 0.001)
+    assert client.prune_cache() == 2
+    assert not old.exists() and not leftover.exists()
+    assert fresh.exists() and live.exists()
+
+
+def test_prune_removes_the_oldest_entries_above_the_size_cap(tmp_path: Path) -> None:
+    client = _client_for(tmp_path, cache_max_mb=1, cache_max_age_days=0)
+    root = tmp_path / "http"
+    files = [_aged(root / f"{i}.json", 10 - i, size=600_000) for i in range(3)]
+    assert client.prune_cache() == 2
+    assert [f.exists() for f in files] == [False, False, True]
+
+
+def test_zero_turns_both_limits_off(tmp_path: Path) -> None:
+    client = _client_for(tmp_path, cache_max_mb=0, cache_max_age_days=0)
+    old = _aged(tmp_path / "http" / "old.json", 400, size=2_000_000)
+    assert client.prune_cache() == 0 and old.exists()
+
+
+def test_pruning_runs_on_start_at_most_once_a_day(tmp_path: Path) -> None:
+    root = tmp_path / "http"
+    root.mkdir()
+    first = _aged(root / "first.json", 60)
+    _client_for(tmp_path)
+    assert not first.exists()
+    second = _aged(root / "second.json", 60)
+    _client_for(tmp_path)
+    assert second.exists(), "pruned twice within a day"
+    _aged(root / ".last-pruned", 2)
+    _client_for(tmp_path)
+    assert not second.exists()

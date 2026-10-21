@@ -1509,13 +1509,26 @@ def doctor_cmd() -> None:
 @app.command("cache", rich_help_panel="Maintenance")
 def cache_cmd(
     clear: bool = typer.Option(False, "--clear", help="Delete all cached HTTP responses"),
+    prune: bool = typer.Option(
+        False, "--prune", help="Delete old entries now instead of at the daily check"
+    ),
 ) -> None:
-    """Show or clear the local HTTP cache."""
+    """Show, prune, or clear the local HTTP cache."""
     http = _toolkit().github.http
     if clear:
         console.print(f"Removed {http.clear_cache()} cached responses")
         return
+    if prune:
+        console.print(f"Removed {http.prune_cache()} old cached responses")
     console.print(f"Cache size: {http.cache_size_bytes() / 1_048_576:.1f} MiB")
+    settings = http.settings
+    limits = []
+    if settings.cache_max_age_days > 0:
+        limits.append(f"entries not refreshed in {settings.cache_max_age_days} days are deleted")
+    if settings.cache_max_mb > 0:
+        limits.append(f"above {settings.cache_max_mb} MiB the oldest go first")
+    if limits:
+        console.print(f"[dim]Once a day, {'; '.join(limits)}.[/dim]")
 
 
 if __name__ == "__main__":

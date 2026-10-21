@@ -54,6 +54,10 @@ class Settings(BaseSettings):
     ecosystems_commits_api_url: str = ECOSYSTEMS_COMMITS_API
     target_year: int = DEFAULT_TARGET_YEAR
     cache_ttl_seconds: int = 3600
+    # Entries untouched this long are deleted, then the oldest until under the size cap.
+    # Zero or less turns a limit off.
+    cache_max_age_days: int = 30
+    cache_max_mb: int = 500
     archive_ttl_seconds: int = 86400
     http_timeout_seconds: float = 30.0
     http_max_retries: int = 2

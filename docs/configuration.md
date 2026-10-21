@@ -34,6 +34,8 @@ Put these in `.env` or export them in the process environment. Environment varia
 | `GIG_TARGET_YEAR` | `2027` | Program year used when a command has no `--year` |
 | `GIG_CACHE_TTL_SECONDS` | `3600` | How long GitHub responses stay fresh before revalidation |
 | `GIG_ARCHIVE_TTL_SECONDS` | `86400` | Same for organization lists, archives, and ideas pages |
+| `GIG_CACHE_MAX_AGE_DAYS` | `30` | Cached responses not refreshed for this many days are deleted; `0` keeps them |
+| `GIG_CACHE_MAX_MB` | `500` | Above this size the oldest cached responses are deleted first; `0` turns the cap off |
 | `GIG_HTTP_TIMEOUT_SECONDS` | `30` | Maximum wait for one HTTP request |
 | `GIG_HTTP_MAX_RETRIES` | `2` | Retries for network errors and 5xx responses |
 | `GIG_HTTP_MAX_RETRY_WAIT_SECONDS` | `20` | Longest pause accepted when GitHub asks the tool to retry later |
@@ -47,7 +49,7 @@ Put these in `.env` or export them in the process environment. Environment varia
 
 `doctor` prints the exact paths for your operating system:
 
-- **Cache:** API responses in an `http` subfolder. Fresh entries are served without a request. Stale entries are revalidated with the server; a "not modified" reply refreshes them without counting against your GitHub quota. If the network fails or you are rate limited, a stale entry up to a week old is served instead of an error. `git-into-gsoc cache` shows the size and `cache --clear` deletes it.
+- **Cache:** API responses in an `http` subfolder. Fresh entries are served without a request. Stale entries are revalidated with the server; a "not modified" reply refreshes them without counting against your GitHub quota. If the network fails or you are rate limited, a stale entry up to a week old is served instead of an error. Once a day, entries not refreshed in 30 days are deleted, and the oldest go first when the cache passes 500 MiB. `git-into-gsoc cache` shows the size and the limits, `cache --prune` applies them now, and `cache --clear` deletes everything.
 - **Data:** `progress.json`, created when you save a phase, shortlist, tracked link, note, or inferred GitHub profile.
 
 The tool does not sync progress to GitHub or another computer. Queries go to GitHub, the official GSoC site, the organization archive, and organizations' ideas pages as needed. MCP returns tool results to the assistant that called it, so its data-handling rules also apply. Avoid storing secrets in progress notes.
