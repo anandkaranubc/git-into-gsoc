@@ -822,6 +822,8 @@ def profile_cmd(
         if value:
             lines.append(f"{label}: {', '.join(value) if isinstance(value, list) else value}")
     console.print(Panel(Text.from_markup("\n".join(lines)), title="Your profile"))
+    if data.get("warning"):
+        console.print(f"[yellow]![/yellow] {data['warning']}")
 
 
 @app.command("pointers", rich_help_panel="Pick a repository and an issue")

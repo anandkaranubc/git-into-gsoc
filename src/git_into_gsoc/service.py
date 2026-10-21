@@ -384,16 +384,35 @@ class GSoCToolkit:
         hours_per_week: int | None = None,
         timezone: str | None = None,
     ) -> dict[str, Any]:
-        """Save the self-profile that personalises recommendations and `next`."""
+        """Save the self-profile that personalises recommendations and `next`.
+
+        The username is saved even when GitHub cannot be reached; only the language
+        summary read from public repositories waits for the next online run. A user
+        that does not exist is still an error.
+        """
+        warning = None
         if github:
-            self.profile_from_github(github)
+            login = validate_login(github)
+            try:
+                self.profile_from_github(login)
+            except NotFoundError:
+                raise
+            except HttpError as exc:
+                self.progress.set_profile(github=login)
+                warning = (
+                    f"Saved @{login}, but GitHub could not be reached ({exc}). Run "
+                    f"`profile --github {login}` again when online to add your languages."
+                )
         self.progress.set_profile(
             technologies=technologies or None,
             interests=interests or None,
             hours_per_week=hours_per_week,
             timezone=timezone,
         )
-        return self.progress.profile()
+        profile = self.progress.profile()
+        if warning:
+            profile["warning"] = warning
+        return profile
 
     def recommend_path(
         self,

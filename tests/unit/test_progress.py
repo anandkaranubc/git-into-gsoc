@@ -86,3 +86,35 @@ def test_progress_file_and_dirs_are_private(tmp_path: Path) -> None:
         assert stat.S_IMODE(store.path.stat().st_mode) == 0o600
         assert stat.S_IMODE(cache.stat().st_mode) == 0o700
     assert store.load().target_year == config.DEFAULT_TARGET_YEAR
+
+
+def test_profile_saves_the_username_when_github_is_unreachable() -> None:
+    import httpx
+    import respx
+
+    from git_into_gsoc.service import GSoCToolkit
+
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url__startswith="https://api.github.com/users/").mock(
+            side_effect=httpx.ConnectError("offline")
+        )
+        profile = GSoCToolkit().save_profile(github="octocat", technologies=["python"])
+    assert profile["github"] == "octocat"
+    assert profile["technologies"] == ["python"]
+    assert "could not be reached" in profile["warning"]
+    assert "warning" not in GSoCToolkit().progress.profile()  # the hint is not persisted
+
+
+def test_profile_rejects_a_user_that_does_not_exist() -> None:
+    import httpx
+    import respx
+
+    from git_into_gsoc.errors import NotFoundError
+    from git_into_gsoc.service import GSoCToolkit
+
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url__startswith="https://api.github.com/users/").mock(
+            return_value=httpx.Response(404, json={"message": "Not Found"})
+        )
+        with pytest.raises(NotFoundError):
+            GSoCToolkit().save_profile(github="no-such-user-xyz")
