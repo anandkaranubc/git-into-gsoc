@@ -490,6 +490,23 @@ def repo_cmd(
         console.print(f"  • Channels mentioned: {', '.join(guide['communication_channels'])}")
 
 
+def _ci_environment_lines(env: dict[str, Any]) -> list[str]:
+    """One line per runtime, plus services and runners, as CI sets them up."""
+    lines = [
+        f"CI uses {r['name']} {', '.join(r['versions'])}  [dim]({r['source']})[/dim]"
+        for r in env.get("runtimes") or []
+    ]
+    services = env.get("services") or []
+    if services:
+        names = ", ".join(
+            f"{s['name']} ({s['image']})" if s.get("image") else s["name"] for s in services
+        )
+        lines.append(f"CI starts these services for the tests: {escape(names)}")
+    if env.get("runners"):
+        lines.append("CI runs on these systems: " + escape(", ".join(env["runners"])))
+    return lines
+
+
 @app.command("orient", rich_help_panel="Pick a repository and an issue")
 def orient_cmd(
     full_name: str,
@@ -540,6 +557,7 @@ def orient_cmd(
     section(
         "How CI runs the tests",
         [f"{escape(t['command'])}  [dim]({t['source']})[/dim]" for t in data["test_commands"]]
+        + _ci_environment_lines(data.get("ci_environment") or {})
         + [escape(h) for h in data["setup_hints"]],
     )
     docs = data["docs"]

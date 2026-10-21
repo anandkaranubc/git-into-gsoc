@@ -41,7 +41,7 @@ phase. Community participation and note-taking fit anywhere.
 | `learn` | Understand how GSoC works, check eligibility, write down interests and time | They can explain the program in their own words and know where the rules are |
 | `discover` | Search organizations, read ideas pages, make a short list | Two or three organizations with a reason for each |
 | `evaluate` | Pick a repository, check its health, read its contribution guide | One repository they want to set up |
-| `orient` | Get their bearings in the repository: run `orient`, run the tests once, read the contributing guide and a few merged pull requests. Ask them to predict what a file does from its name before they open it, and to trace one request or command through the code | They can say where a change would go and how they would test it |
+| `orient` | Get their bearings in the repository: run `orient`, set up the runtime versions CI uses, run the tests once, read the contributing guide and a few merged pull requests. Ask them to predict what a file does from its name before they open it, and to trace one request or command through the code | They can say where a change would go and how they would test it |
 | `community` | Introduce themselves and ask informed questions in the project's public channel, before claiming any work | Maintainers recognize their name from useful conversations |
 | `find_issues` | Find an open beginner issue and check whether it is free | One issue they can reproduce and explain |
 | `contribute` | Set up the project, make a small correct change, open a pull request | A pull request they can defend in review |

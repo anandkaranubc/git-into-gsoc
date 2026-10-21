@@ -6,6 +6,7 @@ from typing import Any
 from git_into_gsoc.github.orientation import (
     active_committers,
     branch_gates,
+    ci_environment,
     ci_test_commands,
     code_map,
     conventions,
@@ -309,3 +310,49 @@ def test_workflow_gates_and_gate_workflow_ranking() -> None:
         "source": ".github/workflows/check-linked-issues.yml",
     } in gates
     assert len(gates) == 2
+
+
+def test_ci_environment_reads_matrix_versions_services_and_runners() -> None:
+    workflow = """
+name: tests
+on: [push]
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python-version: ["3.11", "3.13", '3.12']
+    services:
+      postgres:
+        image: postgres:16
+        ports:
+          - 5432:5432
+      redis:
+        image: "redis:7"
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version:
+            - 20
+            - 22
+      - run: pytest -q
+"""
+    env = ci_environment({".github/workflows/tests.yml": workflow})
+    assert env["runtimes"] == [
+        {"name": "Node.js", "versions": ["20", "22"], "source": ".github/workflows/tests.yml"},
+        {
+            "name": "Python",
+            "versions": ["3.11", "3.12", "3.13"],
+            "source": ".github/workflows/tests.yml",
+        },
+    ]
+    assert [(s["name"], s["image"]) for s in env["services"]] == [
+        ("postgres", "postgres:16"),
+        ("redis", "redis:7"),
+    ]
+    assert env["runners"] == ["ubuntu-latest", "windows-latest"]
+    assert ci_environment({}) == {"runtimes": [], "services": [], "runners": []}

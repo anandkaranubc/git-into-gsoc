@@ -262,6 +262,106 @@ def ci_test_commands(workflows: dict[str, str], *, limit: int = 4) -> list[dict[
     return found[:limit]
 
 
+_RUNTIME_KEYS = {
+    "python-version": "Python",
+    "node-version": "Node.js",
+    "go-version": "Go",
+    "java-version": "Java",
+    "ruby-version": "Ruby",
+    "dotnet-version": "the .NET SDK",
+    "php-version": "PHP",
+    "toolchain": "Rust",
+}
+_KEY_LINE_RE = re.compile(r"^(\s*)(?:-\s+)?([A-Za-z][\w-]*):\s*(.*?)\s*(?:#.*)?$")
+
+
+def _scalar_list(value: str) -> list[str]:
+    value = value.strip()
+    if value.startswith("[") and value.endswith("]"):
+        value = value[1:-1]
+    items = [v.strip().strip("'\"") for v in value.split(",")] if value else []
+    return [v for v in items if v and "${{" not in v]
+
+
+def _block_list(lines: list[str], start: int, indent: int) -> list[str]:
+    """`key:` followed by `- item` lines indented deeper."""
+    items: list[str] = []
+    for line in lines[start + 1 :]:
+        if not line.strip():
+            continue
+        depth = len(line) - len(line.lstrip())
+        stripped = line.strip()
+        if depth <= indent or not stripped.startswith("- "):
+            break
+        items.append(stripped[2:].strip().strip("'\""))
+    return items
+
+
+def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
+    """What CI actually sets up: runtime versions (matrix values included),
+    service containers, and runner operating systems. Setup instructions in a
+    README drift; the workflow is what runs."""
+    runtimes: dict[str, set[str]] = {}
+    sources: dict[str, str] = {}
+    services: list[dict[str, str]] = []
+    runners: set[str] = set()
+    for path, text in workflows.items():
+        lines = text.splitlines()
+        matrix: dict[str, list[str]] = {}
+        for index, line in enumerate(lines):
+            match = _KEY_LINE_RE.match(line)
+            if not match:
+                continue
+            indent, key, value = len(match.group(1)), match.group(2), match.group(3)
+            values = _scalar_list(value) if value else _block_list(lines, index, indent)
+            if key in _RUNTIME_KEYS or key.endswith("-version"):
+                matrix.setdefault(key, [])
+                matrix[key].extend(v for v in values if v not in matrix[key])
+            elif key == "runs-on" and value and "${{" not in value:
+                runners.update(_scalar_list(value))
+            elif key == "os" and values:
+                runners.update(values)
+            elif key == "services" and not value:
+                for child in lines[index + 1 :]:
+                    if not child.strip():
+                        continue
+                    depth = len(child) - len(child.lstrip())
+                    if depth <= indent:
+                        break
+                    sub = _KEY_LINE_RE.match(child)
+                    if sub and len(sub.group(1)) == indent + 2 and not sub.group(3):
+                        services.append({"name": sub.group(2), "image": "", "source": path})
+                    elif sub and sub.group(2) == "image" and services and not services[-1]["image"]:
+                        services[-1]["image"] = sub.group(3).strip("'\"")
+        for key, values in matrix.items():
+            name = _RUNTIME_KEYS.get(key)
+            if not name or not values:
+                continue
+            runtimes.setdefault(name, set()).update(values)
+            sources.setdefault(name, path)
+
+    def version_key(v: str) -> tuple[int, ...] | tuple[str]:
+        parts = re.findall(r"\d+", v)
+        return tuple(int(p) for p in parts) if parts else (v,)
+
+    return {
+        "runtimes": [
+            {
+                "name": name,
+                "versions": sorted(
+                    values, key=lambda v: (str(type(version_key(v))), version_key(v))
+                )[:8],
+                "source": sources[name],
+            }
+            for name, values in sorted(runtimes.items())
+        ],
+        "services": [s for s in services if s["name"] not in {"image", "env", "ports", "options"}][
+            :6
+        ],
+        "runners": sorted(runners)[:4],
+    }
+
+
 def _run_blocks(text: str) -> list[str]:
     blocks: list[str] = []
     lines = text.splitlines()

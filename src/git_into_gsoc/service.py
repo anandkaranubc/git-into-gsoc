@@ -15,6 +15,7 @@ from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
     active_committers,
     branch_gates,
+    ci_environment,
     ci_test_commands,
     code_map,
     codeowners_for,
@@ -668,6 +669,7 @@ class GSoCToolkit:
             for name, size in sorted(langs.items(), key=lambda kv: -kv[1])[:4]
         ]
         tests = ci_test_commands({p: workflow_texts.get(p, "") for p in workflow_paths})
+        environment = ci_environment({p: workflow_texts.get(p, "") for p in workflow_paths})
         result: dict[str, Any]
         fallback_hints = [
             f"{found['makefile']} lists local targets" if found.get("makefile") else "",
@@ -689,6 +691,7 @@ class GSoCToolkit:
             "code_map": code_map(entries, repo_name=repo),
             "entry_points": points,
             "test_commands": tests,
+            "ci_environment": environment,
             "setup_hints": [h for h in fallback_hints if h],
             "docs": {
                 "readme": found.get("readme"),
