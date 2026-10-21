@@ -191,6 +191,8 @@ def gsoc_search_orgs(
     """Rank GSoC mentoring organizations by fit with a contributor's skills and interests.
 
     technologies/topics: comma-separated (e.g. "python,rust"; aliases like js/golang/ml work).
+    With no filters at all, the saved profile's languages and interests are used and
+    `matched_on.from_profile` is true.
     year: target program year (default: configured target, 2027). If that year's orgs are not
     announced yet, the latest official list is used and `catalog.note` says so.
     Each org includes ideas_url, guide_url, github_orgs, channels, and slot history.

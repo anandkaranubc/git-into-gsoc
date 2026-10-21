@@ -43,7 +43,7 @@ git-into-gsoc projects "graph neural networks" --since 2024
 
 | Command | Arguments and options |
 |---|---|
-| `orgs` | `--query` / `-q`, `--tech` / `-t`, `--topics`, `--category` / `-c`, `--year`, `--limit` / `-n` (default 10) |
+| `orgs` | `--query` / `-q`, `--tech` / `-t`, `--topics`, `--category` / `-c`, `--year`, `--limit` / `-n` (default 10). With none of the first four, it ranks by your saved profile's languages and interests and says so |
 | `org NAME` | Organization name or a whole word of it, such as `mailman` (quote names with spaces). A word that fits several organizations lists them so you can pick one; a misspelled name suggests close matches. `--year`; `--shortlist` saves it to your progress. Also lists issues in the organization's repositories whose title names GSoC and the coming year, such as a preparation tracker or a notice that it will not take part, and says when a maintainer wrote that it will not take part or has not decided |
 | `ideas ORG` | `--skills` / `-s` (default: your profile), `--size small\|medium\|large`, `--difficulty easy\|medium\|hard`, `--limit` / `-n` (default 20), `--no-follow` |
 | `mentors ORG` | `--years` (default 3), `--limit` / `-n` (default 25) |

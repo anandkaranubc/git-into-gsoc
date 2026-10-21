@@ -139,6 +139,13 @@ class GSoCToolkit:
         year: int | None = None,
         limit: int = 10,
     ) -> dict[str, Any]:
+        from_profile = False
+        if not (query or technologies or topics or category):
+            # No filters: rank for the person, as recommend and next do.
+            saved = self.progress.profile()
+            technologies = list(saved.get("technologies") or []) or None
+            topics = list(saved.get("interests") or []) or None
+            from_profile = bool(technologies or topics)
         catalog, results = self.gsoc.search_organizations(
             query=query,
             technologies=technologies,
@@ -149,6 +156,11 @@ class GSoCToolkit:
         )
         return {
             "catalog": catalog.model_dump(),
+            "matched_on": {
+                "technologies": list(technologies or []),
+                "topics": list(topics or []),
+                "from_profile": from_profile,
+            },
             "count": len(results),
             "organizations": [r.model_dump(exclude={"recent_projects"}) for r in results],
         }

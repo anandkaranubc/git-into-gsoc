@@ -285,6 +285,13 @@ def orgs_cmd(
         return
     data = _markup_safe(data)
     catalog = data["catalog"]
+    matched = data.get("matched_on") or {}
+    if matched.get("from_profile"):
+        console.print(
+            "Matching your saved profile: "
+            + "; ".join(", ".join(matched[k]) for k in ("technologies", "topics") if matched[k])
+            + ". Pass --tech or --topics to search differently."
+        )
     table = Table(title="GSoC organizations", caption=catalog["note"], show_lines=False)
     table.add_column("Score", justify="right")
     table.add_column("Organization", overflow="fold", max_width=28)
