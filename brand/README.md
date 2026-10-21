@@ -27,7 +27,7 @@ Both the mark and the typeface sit on a square grid with a thick stroke, so they
 |---|---|
 | `logo/` | `mark-{light,dark,mono-ink,mono-paper}.svg`, `mark-tile*.svg`, `wordmark-*.svg`, `lockup-horizontal-*.svg`, `lockup-stacked-*.svg`, plus PNG renders |
 | `favicon/` | `favicon.svg`, `favicon-16.svg` (hand-tuned 1x), `favicon.ico`, `favicon-16/32/48.png`, `apple-touch-icon.png`, `icon-192/512.png`, `app-icon.svg` |
-| `avatar/` | `avatar.svg`, `avatar-512.png`, `avatar-1024.png`, `avatar-violet.svg` for the GitHub organization or repository picture |
+| `avatar/` | `avatar.svg`, `avatar-512.png`, `avatar-1024.png`, `avatar-violet.svg` for a GitHub organization, Discord, Matrix, or any profile picture |
 | `social/` | `social-preview.svg` and `.png` at 1280×640 for GitHub's social preview and Open Graph |
 | `readme/` | `banner-light.svg`, `banner-dark.svg` (animated cursor) and compact `header-*.svg` for docs |
 | `icons/` | 17 pixel icons (one per journey phase, plus interface icons) in ink, paper, and violet, plus `sheet-ink.svg` |
@@ -80,12 +80,10 @@ Lowercase, dry, warm. Short sentences, specific nouns, no hype.
 
 ## Putting it on GitHub
 
-These are repository settings, so they are done by hand once:
-
-1. **Repository picture / organization avatar:** upload `avatar/avatar-512.png` (or `avatar-1024.png`).
-2. **Social preview:** Settings → General → Social preview → upload `social/social-preview.png` (1280×640).
-3. **Website:** Settings → Pages → Source: GitHub Actions. The `Pages` workflow stages `site/` with `brand/` and deploys on every push to `main` that touches them.
-4. **README:** already uses `readme/banner-light.svg` and `banner-dark.svg` through a `<picture>` element, so it follows the reader's theme.
+1. **Social preview:** Settings → General → Social preview → upload `social/social-preview.png` (1280×640). This is the card people see when the repository link is shared. GitHub only accepts it through the web page, so it is done by hand once.
+2. **Website:** Pages builds from GitHub Actions. The `Pages` workflow stages `site/` with `brand/` and deploys on every push to `main` that touches them. You can also run it from the Actions tab.
+3. **README:** already uses `readme/banner-light.svg` and `banner-dark.svg` through a `<picture>` element, so it follows the reader's theme.
+4. **Avatar:** a repository has no picture of its own; GitHub shows the owner's profile picture. `avatar/avatar-512.png` is ready for a GitHub organization if the project moves to one, and for community spaces such as Discord or Matrix.
 
 ## Legal
 
