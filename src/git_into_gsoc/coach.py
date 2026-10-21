@@ -6,6 +6,7 @@ what a contributor should do now. Every action carries a command they can run.
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 from typing import Any
 
@@ -122,6 +123,12 @@ def plan_actions(
     techs = list(profile.get("technologies") or [])
     orgs = list(state.shortlisted_orgs)
     repos = list(state.tracked_repos)
+    # Tracking an issue means its repository is chosen, even if it was never tracked.
+    for issue in state.tracked_issues:
+        match = re.search(r"github\.com/([^/\s]+/[^/\s#]+)|^([\w.-]+/[\w.-]+)#", issue)
+        repo = (match.group(1) or match.group(2)) if match else None
+        if repo and repo.lower() not in {r.lower() for r in repos}:
+            repos.append(repo)
     phase_id = str((program.get("phase") or {}).get("id") or "")
     deadlines = upcoming_deadlines(program, horizon_days=30)
     actions: list[dict[str, str]] = []

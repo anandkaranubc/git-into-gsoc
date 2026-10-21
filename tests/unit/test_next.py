@@ -228,3 +228,18 @@ def test_shortlist_step_uses_the_org_command() -> None:
     shortlist = next(a for a in actions if a["title"].startswith("Shortlist"))
     assert "--shortlist" in shortlist["command"]
     assert "shortlist_org" not in shortlist["command"]
+
+
+def test_a_tracked_issue_counts_as_a_chosen_repository() -> None:
+    from git_into_gsoc.coach import plan_actions
+    from git_into_gsoc.models import ProgressState
+
+    # A simulated beginner tracked ArduPilot/ardupilot#9828 and `next` still said
+    # "Pick the repository to start in at ArduPilot".
+    state = ProgressState(
+        profile={"technologies": ["c++"]},
+        shortlisted_orgs=["ArduPilot"],
+        tracked_issues=["https://github.com/ArduPilot/ardupilot/issues/9828"],
+    )
+    actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
+    assert not any(a["title"].startswith("Pick the repository") for a in actions)
