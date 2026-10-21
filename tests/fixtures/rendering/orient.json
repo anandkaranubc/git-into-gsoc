@@ -117,6 +117,28 @@
       "source": ".github/workflows/runtests.yml"
     }
   ],
+  "ci_environment": {
+    "runtimes": [
+      {
+        "name": "Python",
+        "versions": [
+          "pypy2.7",
+          "3.10",
+          "3.11",
+          "pypy-3.11",
+          "3.12",
+          "3.13",
+          "3.14",
+          "3.15"
+        ],
+        "source": ".github/workflows/runtests.yml"
+      }
+    ],
+    "services": [],
+    "runners": [
+      "ubuntu-latest"
+    ]
+  },
   "setup_hints": [
     "Dev container present: open in Codespaces or VS Code for a ready environment"
   ],
