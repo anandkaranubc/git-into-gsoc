@@ -30,6 +30,10 @@ To set it up once:
 
 After the first publish, users can install with `uv tool install git-into-gsoc` or `pipx install git-into-gsoc` instead of the Git URL; the installer scripts try the package name first once it exists.
 
+## 4. MCP registry (automatic)
+
+Publishing the release creates the GitHub release, which triggers `Publish to MCP Registry`. The workflow builds `dist/git-into-gsoc.mcpb` with `scripts/build_mcpb.py`, uploads it as a release asset, rewrites `server.json` to point at it, and publishes with `mcp-publisher login github-oidc`. Nothing to configure; to republish a tag by hand, run the workflow from the Actions tab with the tag name.
+
 ## Checks before merging a release
 
 ```bash

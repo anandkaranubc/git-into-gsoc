@@ -1,0 +1,65 @@
+name: Publish to MCP Registry
+
+# Publishes this server to the public MCP registry (registry.modelcontextprotocol.io)
+# as an MCPB bundle attached to the GitHub release. Authentication uses GitHub's
+# OIDC token, so no secret is stored; the namespace io.github.anandkaranubc/* is
+# granted to this repository's owner.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish, for example v0.2.0"
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    name: Build bundle and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: echo "tag=${{ github.event.release.tag_name || inputs.tag }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.tag }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build the MCPB bundle
+        run: python scripts/build_mcpb.py --out dist/git-into-gsoc.mcpb
+
+      - name: Attach the bundle to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/git-into-gsoc.mcpb --clobber
+
+      - name: Point server.json at the release asset
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          VERSION="${TAG#v}"
+          SHA=$(openssl dgst -sha256 dist/git-into-gsoc.mcpb | awk '{print $NF}')
+          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/git-into-gsoc.mcpb"
+          jq --arg v "$VERSION" --arg url "$URL" --arg sha "$SHA" \
+            '.version = $v | .packages = [{"registryType": "mcpb", "identifier": $url, "fileSha256": $sha, "transport": {"type": "stdio"}}]' \
+            server.json > server.tmp && mv server.tmp server.json
+          cat server.json
+
+      - name: Install mcp-publisher
+        run: |
+          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+
+      - name: Authenticate to the MCP registry with GitHub OIDC
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish
