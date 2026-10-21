@@ -79,7 +79,7 @@ Run `git-into-gsoc doctor`: it lists which assistants have the skill and which c
 
 ## Progress will not load
 
-Find the data directory with `doctor`. Back up `progress.json` before making changes. An incomplete manual edit can make the JSON invalid. Restore a working backup, or rename the file and let the next save create a fresh one. See [local data](configuration.md).
+If `progress.json` is damaged (for example by a manual edit), the tool keeps it as `progress.damaged-<date>.json` next to the original, prints a one-line warning, and starts a fresh file, so every command keeps working. Copy any entries you need back from the kept file. `doctor` shows the data directory. Saves are atomic and locked, so a crash or an assistant and the CLI saving at the same moment cannot damage the file; if a save reports that another process is saving and none is running, delete the `progress.json.lock` file it names. See [local data](configuration.md).
 
 ## Ask for help
 
