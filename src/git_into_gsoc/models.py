@@ -48,6 +48,7 @@ class LinkedPullRequest(BaseModel):
     state: str = "unknown"
     author: str | None = None
     draft: bool = False
+    idle_days: int | None = None
 
 
 class IssueAssessment(BaseModel):

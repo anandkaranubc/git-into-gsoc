@@ -83,7 +83,7 @@ git-into-gsoc issue sympy/sympy#12345
 git-into-gsoc issue https://github.com/sympy/sympy/issues/12345
 ```
 
-It lists linked PRs with their state and author, every claim with its age and whether a maintainer approved it, whether maintainers have engaged at all, and caveats such as "a merged PR references this issue; it may already be partly fixed". Below that is a short checklist to complete before you write anything in the thread. If an earlier pull request for the issue was closed without merging, it says so: read that pull request's review comments before you start, because they show what the maintainers expect.
+It lists linked PRs with their state and author, every claim with its age and whether a maintainer approved it, whether maintainers have engaged at all, and caveats such as "a merged PR references this issue; it may already be partly fixed". Below that is a short checklist to complete before you write anything in the thread. If an open pull request already references the issue but has been quiet for ninety days or more, it says so and suggests asking its author in the thread before you start. If an earlier pull request for the issue was closed without merging, it says so: read that pull request's review comments before you start, because they show what the maintainers expect.
 
 Availability is an estimate from public data. The tool reads up to 100 timeline events, so very long threads may hide a claim. Read the discussion yourself before starting. Results are cached briefly; add `--output json` to see the full assessment.
 

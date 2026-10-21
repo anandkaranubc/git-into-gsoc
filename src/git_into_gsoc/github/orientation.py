@@ -147,6 +147,40 @@ def code_map(
     return rows
 
 
+_FRAGMENT_DIRS = (
+    "changelog.d",
+    ".changeset",
+    "newsfragments",
+    "upcoming_changes",
+    "next_whats_new",
+)
+_GENERIC_FRAGMENT_DIRS = ("changelog", "changes", "news")
+_FRAGMENT_FILE_RE = re.compile(
+    r"^(?:\d+|\+[\w-]+)\.[a-z]+(?:\.(?:rst|md|txt))?$"
+    r"|\.(?:feature|bugfix|bug|doc|docs|removal|misc|trivial|improvement|breaking|deprecation)\.(?:rst|md|txt)$",
+    re.I,
+)
+
+
+def _news_fragment_dir(trees: list[str], blobs: list[str]) -> str | None:
+    """The directory where each change gets its own news entry, if the repository has one.
+
+    Specific names count on their own. A generic `changelog`, `changes` or `news`
+    directory counts only when it holds fragment-shaped files such as
+    `1234.bugfix.rst`; otherwise it is usually a folder of full release notes.
+    """
+    for name in _FRAGMENT_DIRS:
+        for tree in sorted(trees, key=lambda t: t.count("/")):
+            if tree.rsplit("/", 1)[-1].lower() == name:
+                return tree
+    for tree in sorted(trees, key=lambda t: t.count("/")):
+        if tree.rsplit("/", 1)[-1].lower() in _GENERIC_FRAGMENT_DIRS:
+            children = [b.rsplit("/", 1)[-1] for b in blobs if b.startswith(tree + "/")]
+            if sum(1 for c in children if _FRAGMENT_FILE_RE.search(c)) >= 2:
+                return tree
+    return None
+
+
 def find_paths(tree: list[dict[str, Any]]) -> dict[str, Any]:
     """Paths that matter to a newcomer, found in the tree (never guessed)."""
     blobs = _paths(tree)
@@ -192,6 +226,7 @@ def find_paths(tree: list[dict[str, Any]]) -> dict[str, Any]:
         "dco_file": first(".github/dco.yml", "DCO", "DCO.md", "DCO.txt"),
         "cla_file": first("CLA.md", "CLA", ".clabot", "CONTRIBUTOR_LICENSE_AGREEMENT.md"),
         "devcontainer": any(p.startswith(".devcontainer") for p in blobs),
+        "news_fragments": _news_fragment_dir(trees, blobs),
         "pyproject": first("pyproject.toml"),
         "package_json": first("package.json"),
         "makefile": first("Makefile", "justfile", "Justfile", "noxfile.py", "tox.ini"),
@@ -436,6 +471,19 @@ def conventions(
     if any(re.search(r"commitlint|semantic|conventional|pr title", c) for c in checks_lower):
         style_evidence.append("a commit or PR title check runs on pull requests")
 
+    changelog_evidence: list[str] = []
+    if found.get("news_fragments"):
+        changelog_evidence.append(f"{found['news_fragments']}/ holds one entry per change")
+    mention = re.search(
+        r"(changelog|CHANGES\.(?:rst|md)|news (?:fragment|entry)|towncrier|changeset|whats_?new|release notes?)",
+        text,
+        re.I,
+    )
+    if mention:
+        changelog_evidence.insert(
+            0, f"CONTRIBUTING or the PR template mentions '{mention.group(1)}'"
+        )
+
     checklist_items = len(re.findall(r"^\s*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
     return {
         "dco": {"required": bool(dco_evidence), "evidence": dco_evidence},
@@ -445,6 +493,7 @@ def conventions(
             "ratio": round(ratio, 2),
             "evidence": style_evidence,
         },
+        "changelog": {"expected": bool(changelog_evidence), "evidence": changelog_evidence},
         "pre_commit": bool(found.get("pre_commit")),
         "pr_checklist_items": checklist_items,
         "ai_disclosure_in_pr_template": bool(

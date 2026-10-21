@@ -639,6 +639,10 @@ def orient_cmd(
             "Commit style type(scope): subject expected: "
             + "; ".join(rules["conventional_commits"]["evidence"])
         )
+    if (rules.get("changelog") or {}).get("expected"):
+        rule_lines.append(
+            "Add a changelog or news entry: " + "; ".join(rules["changelog"]["evidence"])
+        )
     if rules["pre_commit"]:
         rule_lines.append("pre-commit hooks configured: run `pre-commit install` before committing")
     if rules["pr_checklist_items"]:

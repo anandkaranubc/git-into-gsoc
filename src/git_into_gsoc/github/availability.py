@@ -37,6 +37,7 @@ _RESERVED_WORD_RE = re.compile(
     r"\b(taken|claimed|in[ -]progress|wip|has[ -]pr|pr[ -]open(?:ed)?)\b", re.I
 )
 RECENT_CLAIM_DAYS = 30
+STALE_PR_DAYS = 90
 CONTESTED_WINDOW_DAYS = 60
 CONTESTED_MIN_CLAIMANTS = 3
 STALE_DAYS = 365
@@ -154,12 +155,14 @@ def assess_issue(
                 merged = bool((source.get("pull_request") or {}).get("merged_at"))
                 number = source.get("number")
                 key = str(number or source.get("html_url") or len(linked))
+                touched = _dt(source.get("updated_at"))
                 linked[key] = LinkedPullRequest(
                     number=int(number) if number else None,
                     url=source.get("html_url"),
                     state="merged" if merged else str(source.get("state") or "unknown"),
                     author=_login(source.get("user")),
                     draft=bool(source.get("draft")),
+                    idle_days=(now - touched).days if touched else None,
                 )
         elif kind == "connected":
             caveats.append(
@@ -208,9 +211,16 @@ def assess_issue(
         ref = f"#{pr.number}" if pr.number else ""
         who = f" by @{pr.author}" if pr.author else ""
         draft = " (draft)" if pr.draft else ""
-        return result(
-            Availability.LIKELY_TAKEN, f"Open PR {ref}{who}{draft} references it".replace("  ", " ")
-        )
+        reason = f"Open PR {ref}{who}{draft} references it".replace("  ", " ")
+        if pr.idle_days is not None and pr.idle_days >= STALE_PR_DAYS:
+            # Still someone else's work, but a quiet one: say how to ask, as
+            # is-it-claimed does, instead of implying the issue is out of reach.
+            reason += f"; it has been idle for {pr.idle_days} days"
+            caveats.append(
+                f"The open PR has had no activity for {pr.idle_days} days; ask in the issue "
+                "whether its author is still working on it before you start"
+            )
+        return result(Availability.LIKELY_TAKEN, reason)
 
     names = [
         str(lab.get("name") if isinstance(lab, dict) else lab) for lab in issue.get("labels") or []

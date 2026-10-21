@@ -312,3 +312,31 @@ def test_closed_unmerged_pr_is_reported_as_an_earlier_attempt() -> None:
     still_open = assess_issue(issue, [abandoned, reopened], now=NOW)
     assert still_open.availability == Availability.LIKELY_TAKEN
     assert not any("closed without merging" in c for c in still_open.caveats)
+
+
+def test_a_long_idle_open_pr_says_how_to_ask() -> None:
+    issue: dict[str, Any] = {"state": "open", "updated_at": NOW.isoformat()}
+
+    def linked(days_idle: int) -> dict[str, Any]:
+        return {
+            "event": "cross-referenced",
+            "created_at": (NOW - timedelta(days=200)).isoformat(),
+            "source": {
+                "issue": {
+                    "number": 30,
+                    "html_url": "https://github.com/o/r/pull/30",
+                    "state": "open",
+                    "user": {"login": "someone"},
+                    "updated_at": (NOW - timedelta(days=days_idle)).isoformat(),
+                    "pull_request": {"merged_at": None},
+                }
+            },
+        }
+
+    stale = assess_issue(issue, [linked(120)], now=NOW)
+    assert stale.availability == Availability.LIKELY_TAKEN
+    assert stale.reason == "Open PR #30 by @someone references it; it has been idle for 120 days"
+    assert any("ask in the issue" in c for c in stale.caveats)
+    fresh = assess_issue(issue, [linked(5)], now=NOW)
+    assert fresh.reason == "Open PR #30 by @someone references it"
+    assert not any("ask in the issue" in c for c in fresh.caveats)

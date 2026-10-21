@@ -356,3 +356,71 @@ jobs:
     ]
     assert env["runners"] == ["ubuntu-latest", "windows-latest"]
     assert ci_environment({}) == {"runtimes": [], "services": [], "runners": []}
+
+
+def test_changelog_requirement_from_fragments_or_contributing() -> None:
+    from git_into_gsoc.github.orientation import conventions, find_paths
+
+    tree = [
+        {"path": "changelog", "type": "tree"},
+        {"path": "changelog/1234.bugfix.rst", "type": "blob"},
+        {"path": "changelog/1240.feature.rst", "type": "blob"},
+        {"path": "src", "type": "tree"},
+    ]
+    found = find_paths(tree)
+    assert found["news_fragments"] == "changelog"
+    rules = conventions([], contributing="", pr_template="", check_names=[], found=found)
+    assert rules["changelog"] == {
+        "expected": True,
+        "evidence": ["changelog/ holds one entry per change"],
+    }
+    text_only = conventions(
+        [],
+        contributing="Please add an entry to CHANGES.rst for every user-facing change.",
+        pr_template="",
+        check_names=[],
+        found=find_paths([]),
+    )
+    assert text_only["changelog"]["expected"]
+    assert text_only["changelog"]["evidence"] == [
+        "CONTRIBUTING or the PR template mentions 'CHANGES.rst'"
+    ]
+    none = conventions([], contributing="", pr_template="", check_names=[], found=find_paths([]))
+    assert none["changelog"] == {"expected": False, "evidence": []}
+
+
+def test_release_note_folders_are_not_mistaken_for_news_fragments() -> None:
+    from git_into_gsoc.github.orientation import find_paths
+
+    numpy_like = [
+        {"path": "doc", "type": "tree"},
+        {"path": "doc/changelog", "type": "tree"},
+        {"path": "doc/changelog/1.26.0-changelog.rst", "type": "blob"},
+        {"path": "doc/changelog/2.0.0-changelog.rst", "type": "blob"},
+        {"path": "doc/release", "type": "tree"},
+        {"path": "doc/release/upcoming_changes", "type": "tree"},
+        {"path": "doc/release/upcoming_changes/26000.improvement.rst", "type": "blob"},
+    ]
+    assert find_paths(numpy_like)["news_fragments"] == "doc/release/upcoming_changes"
+    notes_only = [
+        {"path": "changelog", "type": "tree"},
+        {"path": "changelog/v1.0.md", "type": "blob"},
+        {"path": "changelog/v2.0.md", "type": "blob"},
+    ]
+    assert find_paths(notes_only)["news_fragments"] is None
+
+
+def test_release_notes_in_the_pr_template_count() -> None:
+    from git_into_gsoc.github.orientation import conventions, find_paths
+
+    rules = conventions(
+        [],
+        contributing="",
+        pr_template="#### Release Notes\n<!-- BEGIN RELEASE NOTES -->\n* solvers\n",
+        check_names=[],
+        found=find_paths([]),
+    )
+    assert rules["changelog"]["expected"]
+    assert rules["changelog"]["evidence"] == [
+        "CONTRIBUTING or the PR template mentions 'Release Notes'"
+    ]
