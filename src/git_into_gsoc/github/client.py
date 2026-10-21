@@ -18,8 +18,10 @@ from git_into_gsoc.github.repos import (
     MIN_REPLY_SAMPLE,
     attach_first_replies,
     channels_in,
+    closed_outside_unmerged,
     contributing_path,
     detect_toolchain,
+    landed_elsewhere,
     pick_beginner_label,
     pull_stats,
 )
@@ -392,6 +394,17 @@ class GitHubClient:
                 pulls, _ = attach_first_replies(pulls, comments)
                 stats = pull_stats(pulls, insiders=insiders)
             pr_source = "rest"
+        # Closed outside pull requests whose change a maintainer applied another
+        # way: one commit listing covers every candidate.
+        source_pulls = analysis.pulls if analysis is not None else pulls
+        source_insiders = analysis.insiders if analysis is not None else insiders
+        candidates = closed_outside_unmerged(source_pulls, insiders=source_insiders)[:15]
+        if candidates:
+            oldest = min(str(p.get("created_at") or "") for p in candidates)
+            recent = self.list_commits(owner, repo, since=oldest) if oldest else []
+            landed = landed_elsewhere(candidates, recent)
+            if landed:
+                stats = pull_stats(source_pulls, insiders=source_insiders, landed=frozenset(landed))
         files = profile.get("files") or {}
         label = pick_beginner_label(labels)
         open_beginner = self.count_open_issues_with_label(owner, repo, label) if label else None
@@ -425,6 +438,7 @@ class GitHubClient:
             first_response_sampled=stats.first_response_sampled,
             median_outsider_pr_size=stats.median_outsider_size,
             insiders_known=stats.insiders_known,
+            outside_landed_elsewhere=stats.outside_landed_elsewhere,
             pr_source=pr_source,
             committers_last_year=commits.committers_last_year if commits else None,
             newcomer_committers_last_year=(

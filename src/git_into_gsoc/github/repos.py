@@ -6,7 +6,7 @@ import math
 import re
 import statistics
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import unquote, urlparse
 
@@ -102,6 +102,66 @@ class PullStats:
     first_response_sampled: int = 0  # outside PRs the reply figure is based on
     median_outsider_size: int | None = None  # lines changed in merged outside PRs
     insiders_known: bool = False
+    outside_landed_elsewhere: int = 0  # closed outside PRs a maintainer applied another way
+
+
+_TITLE_REF_RE = re.compile(r"\s*\(#\d+\)\s*$")
+_COAUTHOR_RE = re.compile(r"^co-authored-by:\s*(.+)$", re.I | re.M)
+_SQUASH_SUFFIX_RE = re.compile(r"\(#(\d+)\)\s*$")
+
+
+def _norm_title(title: str) -> str:
+    return re.sub(r"[^a-z0-9]+", " ", _TITLE_REF_RE.sub("", title or "").lower()).strip()
+
+
+def _specific(title: str) -> bool:
+    # "Update README.md" or "Fix typo" would match unrelated commits.
+    return len(title) >= 20 and len(title.split()) >= 4
+
+
+def landed_elsewhere(closed: list[dict[str, Any]], commits: list[dict[str, Any]]) -> dict[int, str]:
+    """Closed, unmerged pull requests whose change reached the default branch anyway.
+
+    Some maintainers apply an outside contribution themselves (a cherry-pick, a
+    squash with their own commit, or a rewrite) and close the pull request, so
+    GitHub shows it as closed rather than merged. A commit made after the pull
+    request opened counts as its landing when it mentions the pull request's
+    number (in the subject, a `GitHub-Pull-Request:` trailer as Go writes, or a
+    `/pull/N` link), repeats a specific title without being another pull
+    request's squash merge, or credits its author in a `Co-authored-by` trailer.
+    Idea from ContribOS's `landed.py`; the trailer, link and resubmission
+    checks are added here. Returns pull request number to short commit sha.
+    """
+    found: dict[int, str] = {}
+    for pr in closed:
+        number = pr.get("number")
+        login = str((pr.get("user") or {}).get("login") or "").lower()
+        opened = _dt(pr.get("created_at"))
+        if not number or pr.get("merged_at") or opened is None:
+            continue
+        title = _norm_title(str(pr.get("title") or ""))
+        for commit in commits:
+            body = str((commit.get("commit") or {}).get("message") or "")
+            when = _dt(((commit.get("commit") or {}).get("committer") or {}).get("date"))
+            if when is None or when < opened - timedelta(days=1):
+                continue
+            subject = body.split("\n", 1)[0]
+            by_number = bool(re.search(rf"#{int(number)}\b", subject)) or bool(
+                re.search(rf"(?:Pull-Request:\s*\S*#|/pull/){int(number)}\b", body, re.I)
+            )
+            # A subject ending in "(#M)" is the squash merge of pull request M: when
+            # M is not this one, a matching title is a resubmission (often by the
+            # same author), already counted when M merged.
+            squash = _SQUASH_SUFFIX_RE.search(subject)
+            other_pr = bool(squash) and int(squash.group(1)) != int(number) if squash else False
+            by_title = _specific(title) and _norm_title(subject) == title and not other_pr
+            by_credit = bool(login) and any(
+                login in line.lower() for line in _COAUTHOR_RE.findall(body)
+            )
+            if by_number or by_title or by_credit:
+                found[int(number)] = str(commit.get("sha") or "")[:7]
+                break
+    return found
 
 
 def _hours_between(start: str | None, end: str | None) -> float | None:
@@ -109,7 +169,34 @@ def _hours_between(start: str | None, end: str | None) -> float | None:
     return (b - a).total_seconds() / 3600 if a and b else None
 
 
-def pull_stats(pulls: list[dict[str, Any]], *, insiders: frozenset[str] | None = None) -> PullStats:
+def closed_outside_unmerged(
+    pulls: list[dict[str, Any]], *, insiders: frozenset[str] | None = None
+) -> list[dict[str, Any]]:
+    """Closed, unmerged pull requests by people without write access, newest first."""
+
+    def outsider(pull: dict[str, Any]) -> bool:
+        login = str((pull.get("user") or {}).get("login") or "")
+        if insiders is not None and login in insiders:
+            return False
+        return pull.get("author_association") in OUTSIDER_ROLES
+
+    picked = [
+        p
+        for p in pulls
+        if not is_bot(p.get("user"))
+        and not p.get("merged_at")
+        and p.get("closed_at")
+        and outsider(p)
+    ]
+    return sorted(picked, key=lambda p: str(p.get("created_at") or ""), reverse=True)
+
+
+def pull_stats(
+    pulls: list[dict[str, Any]],
+    *,
+    insiders: frozenset[str] | None = None,
+    landed: frozenset[int] | None = None,
+) -> PullStats:
     """Merge behaviour of closed PRs, ignoring bots, split by author association.
 
     GitHub evaluates ``author_association`` when the list is fetched, so anyone
@@ -135,7 +222,10 @@ def pull_stats(pulls: list[dict[str, Any]], *, insiders: frozenset[str] | None =
         return pull.get("author_association") in OUTSIDER_ROLES
 
     outsiders = [p for p in human if outsider(p)]
-    outsider_merged = [p for p in outsiders if p.get("merged_at")]
+    landed = landed or frozenset()
+    # Outside work a maintainer applied another way counts as landed for the
+    # newcomer-facing figures; the overall merge rate stays GitHub's own.
+    outsider_merged = [p for p in outsiders if p.get("merged_at") or p.get("number") in landed]
     authors = {str((p.get("user") or {}).get("login")) for p in outsider_merged}
     responses = [
         h
@@ -160,6 +250,9 @@ def pull_stats(pulls: list[dict[str, Any]], *, insiders: frozenset[str] | None =
         first_response_sampled=len(responses),
         median_outsider_size=int(statistics.median(sizes)) if sizes else None,
         insiders_known=insiders is not None,
+        outside_landed_elsewhere=sum(
+            1 for p in outsiders if not p.get("merged_at") and p.get("number") in landed
+        ),
     )
 
 

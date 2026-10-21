@@ -344,3 +344,81 @@ def test_rest_path_widens_the_comment_window_when_the_sample_is_short() -> None:
     assert issue_route.call_count == 2 and review_route.call_count == 2
     assert health.first_response_sampled == 6
     assert health.median_first_response_hours == pytest.approx(0.2 * 24, abs=0.5)
+
+
+def test_landed_elsewhere_matches_number_title_or_coauthor_credit() -> None:
+    from git_into_gsoc.github.repos import closed_outside_unmerged, landed_elsewhere
+
+    def pr(number: int, login: str, title: str, opened: str = "2026-10-01T00:00:00Z") -> dict:
+        return {
+            "number": number,
+            "title": title,
+            "user": {"login": login, "type": "User"},
+            "author_association": "CONTRIBUTOR",
+            "created_at": opened,
+            "closed_at": "2026-10-05T00:00:00Z",
+            "merged_at": None,
+        }
+
+    def commit(sha: str, message: str, when: str = "2026-10-06T00:00:00Z") -> dict:
+        return {"sha": sha, "commit": {"message": message, "committer": {"date": when}}}
+
+    closed = [
+        pr(10, "ana", "Handle empty input in the CSV reader"),
+        pr(11, "ben", "Fix typo"),
+        pr(12, "cy", "Speed up the tokenizer for long files"),
+        pr(13, "dee", "Document the retry option in the client"),
+        pr(14, "eve", "Correct the license header in setup files"),
+    ]
+    commits = [
+        commit("1111111aaaa", "Handle empty input in the CSV reader (#99)"),
+        commit("2222222bbbb", "Fix typo"),
+        commit("3333333cccc", "Tokenizer: faster scanning (#12)"),
+        commit(
+            "4444444dddd", "Retry docs\n\nCo-authored-by: Dee <77+dee@users.noreply.github.com>"
+        ),
+        commit(
+            "5555555eeee", "Correct the license header in setup files", when="2026-09-01T00:00:00Z"
+        ),
+    ]
+    assert landed_elsewhere(closed, commits) == {12: "3333333", 13: "4444444"}
+    # Go imports pull requests into Gerrit and records them in a trailer.
+    gerrit = [commit("6666666ffff", "csv: handle empty input\n\nGitHub-Pull-Request: acme/lib#10")]
+    assert landed_elsewhere(closed, gerrit) == {10: "6666666"}
+    # Same title, but the commit is the squash merge of another pull request (#99):
+    # a resubmission, not this pull request landing.
+    same_title_resubmitted = [commit("7777777gggg", "Handle empty input in the CSV reader")]
+    assert landed_elsewhere(closed, same_title_resubmitted) == {10: "7777777"}
+
+    pulls = [
+        *closed,
+        {**pr(20, "fay", "Merged one"), "merged_at": "2026-10-02T00:00:00Z"},
+        {**pr(21, "core", "Insider one"), "author_association": "MEMBER"},
+        {**pr(22, "renovate[bot]", "Bump deps"), "user": {"login": "renovate[bot]", "type": "Bot"}},
+    ]
+    assert [p["number"] for p in closed_outside_unmerged(pulls)] == [10, 11, 12, 13, 14]
+
+
+def test_pull_stats_counts_outside_work_that_landed_elsewhere() -> None:
+    pulls = [
+        {
+            "number": 1,
+            "user": {"login": "ana"},
+            "author_association": "NONE",
+            "created_at": "2026-10-01T00:00:00Z",
+            "merged_at": None,
+        },
+        {
+            "number": 2,
+            "user": {"login": "ben"},
+            "author_association": "NONE",
+            "created_at": "2026-10-01T00:00:00Z",
+            "merged_at": "2026-10-02T00:00:00Z",
+        },
+    ]
+    plain = pull_stats(pulls)
+    assert plain.outsider_merge_rate == 0.5 and plain.outside_landed_elsewhere == 0
+    landed = pull_stats(pulls, landed=frozenset({1}))
+    assert landed.outsider_merge_rate == 1.0
+    assert landed.outside_authors_merged == 2 and landed.outside_landed_elsewhere == 1
+    assert landed.merge_rate == 0.5

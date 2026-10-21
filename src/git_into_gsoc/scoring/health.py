@@ -105,6 +105,11 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         signals.append(
             f"Outside PRs merged: {rate:.0%} of {sampled} (too few to score; check recent PRs)"
         )
+    if health.outside_landed_elsewhere:
+        signals.append(
+            f"{health.outside_landed_elsewhere} closed outside PR(s) landed through a "
+            "maintainer's own commit (counted as merged here; GitHub shows them as closed)"
+        )
     if health.outside_authors_merged:
         score += min(6.0, 2.0 * health.outside_authors_merged)
         signals.append(

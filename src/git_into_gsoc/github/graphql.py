@@ -28,7 +28,7 @@ query($owner: String!, $name: String!) {
     assignableUsers(first: 100) { totalCount nodes { login } }
     pullRequests(last: 50, states: [MERGED, CLOSED]) {
       nodes {
-        number createdAt mergedAt closedAt authorAssociation
+        number title createdAt mergedAt closedAt authorAssociation
         author { login __typename }
         additions deletions changedFiles
         timelineItems(first: 6, itemTypes: [ISSUE_COMMENT, PULL_REQUEST_REVIEW, PULL_REQUEST_REVIEW_THREAD]) {
@@ -89,6 +89,7 @@ def normalize(data: dict[str, Any]) -> PullAnalysis | None:
         pulls.append(
             {
                 "number": pr.get("number"),
+                "title": pr.get("title") or "",
                 "user": who,
                 "author_association": pr.get("authorAssociation"),
                 "created_at": pr.get("createdAt"),

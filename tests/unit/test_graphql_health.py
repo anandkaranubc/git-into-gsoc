@@ -146,8 +146,28 @@ def test_repo_health_prefers_graphql_when_a_token_exists(monkeypatch: pytest.Mon
     graphql = respx.post("https://api.github.com/graphql").mock(
         return_value=httpx.Response(200, json=_payload())
     )
+    # bob's PR 2 was closed unmerged, then a maintainer committed it crediting him.
+    commits = respx.get(f"{api}/commits").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "sha": "abcdef1234567",
+                    "commit": {
+                        "message": "Apply the parser fix\n\nCo-authored-by: Bob <123+bob@users.noreply.github.com>",
+                        "committer": {"date": _iso(40)},
+                    },
+                }
+            ],
+        )
+    )
     health = GitHubClient().repo_health("acme/lib")
     assert graphql.called
+    assert commits.called
+    assert health.outside_landed_elsewhere == 1
+    assert health.outsider_merge_rate == pytest.approx(1.0)
+    assert health.outside_authors_merged == 3
+    assert any("landed through a maintainer's own commit" in s for s in health.signals)
     sent = json.loads(graphql.calls[0].request.content)
     assert (
         sent["variables"] == {"owner": "acme", "name": "lib"} and "assignableUsers" in sent["query"]
