@@ -89,7 +89,7 @@ Run `source .venv/bin/activate` again in every new terminal. If `./install.sh` w
 
 ## What happens next
 
-- CI runs lint, type checks, tests on Python 3.11 and 3.13, a dependency audit, and the installer. All checks must pass before merging.
+- CI runs lint, type checks, and a dependency audit, then the tests on Python 3.11, 3.13, and 3.14 on Linux and on Python 3.12 on macOS and Windows, then the installers on Linux and Windows. All checks must pass before merging.
 - A maintainer reviews the change. Reviews are conversations: ask questions, push follow-up commits to the same branch, and resolve each thread when it is addressed.
 - Pull requests are squash-merged: all of your commits become one commit on `main`. The PR title becomes the commit message on `main`, so keep it in Conventional Commits form. Your branch is deleted automatically after merging.
 - [Release Please](https://github.com/googleapis/release-please) opens a release pull request when `main` has new `feat` or `fix` commits. Merging it tags a release and updates `CHANGELOG.md`. You do not edit version numbers by hand.
