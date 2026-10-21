@@ -72,6 +72,29 @@ _CLAIM_PATTERNS = [
     r"\bclaiming (?:this|it)\b",
     r"\bi(?:'ve| have) (?:started|begun) working\b",
     r"\bis (?:this|it) (?:still )?(?:available|open) (?:to|for) (?:work|take)\b",
+    # Phrasings measured on 280 real comments in GSoC organizations' beginner issues
+    # (2026-10-21): the patterns above caught 62% of the claims in them.
+    r"\b(?:would|'d|i|id)\s+(?:really\s+|also\s+)?(?:like|love|be (?:happy|glad))\s+to\s+"
+    r"(?:work|claim|take|tackle|pick|fix|resolve|solve|contribute|help|try|give it|open a pr|"
+    r"implement|add|start)\b",
+    r"\bi(?:'d| would) (?:like|love) to be assigned\b",
+    r"(?:^|[.!?,]\s*)working on (?:this|it|a fix|the fix)\b",  # "Working on this." at a start
+    r"\b(?:i(?:'m| am)|i(?:'ve| have) (?:already )?been) (?:actively |currently |already |now )?"
+    r"working on\b",
+    r"\bassign (?:this|it|the issue|this issue|#\d+|[\w -]{1,40}? issue) to me\b",
+    r"\b(?:can|could|may|should) i (?:please |also )?(?:try|attempt|give it|work|handle|resolve|"
+    r"take|add|start)\b",
+    r"\bi can (?:also )?(?:work on|take|fix|handle|resolve) (?:this|it)\b",
+    r"\bi(?:'ll| will) (?:start working|work on|try to (?:resolve|fix|solve)|implement|"
+    r"submit a pr|open a pr|raise a pr|create a pr|take (?:this|it|up))\b",
+    r"\b(?:i(?:'m| am) )?(?:planning|going) to (?:work on|fix|tackle|implement|take)\b",
+    r"\bi(?:'m| am)?\s+(?:very |really |also )?interested in "
+    r"(?:working on|taking|fixing|solving|contributing to) (?:this|it)\b",
+    r"\b(?:is|if) (?:this|it|the issue|this issue) (?:is )?(?:still )?(?:open|available) "
+    r"(?:for|to)\b",
+    r"\bavailable for me to (?:take|work on)\b",
+    r"\b(?:take a stab at|give it a (?:go|try|shot))\b",
+    r"\bstarting (?:the )?work\b|\bwill (?:be )?creat(?:e|ing) (?:a )?pr\b",
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
     r"^\s*/(?:assign(?:-me)?|take|claim)\s*$",
     r"^\s*\.take(?:-issue)?\s*$",
@@ -130,10 +153,18 @@ def _is_bot(user: dict[str, Any] | None) -> bool:
     return (user or {}).get("type") == "Bot" or login.endswith("[bot]")
 
 
+_QUOTED_LINE = re.compile(r"^\s*>.*$", re.MULTILINE)
+
+
+def _own_words(text: str) -> str:
+    """The comment without lines quoted from someone else ("> I would like to...")."""
+    return _QUOTED_LINE.sub("", straight_quotes(text))
+
+
 def is_claim(text: str) -> bool:
     # "I'd like to take this one", typed with a curly apostrophe, went unseen on
     # OWASP/SecurityShepherd#411.
-    return bool(_CLAIM_RE.search(straight_quotes(text)))
+    return bool(_CLAIM_RE.search(_own_words(text)))
 
 
 def is_grant(text: str) -> bool:
