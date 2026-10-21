@@ -547,7 +547,8 @@ class GitHubClient:
         query = build_issue_query(base=base, labels=labels, orgs=list(dict.fromkeys(owners)))
         items: list[dict[str, Any]] = self.search_issues(query, per_page=min(100, wanted * 5))
         if labels[0] != "help wanted":
-            preferred = {labels[0].lower()}
+            # Beginner labels before "help wanted", which often marks larger work.
+            preferred = {lab.lower() for lab in labels if lab.lower() != "help wanted"}
             items.sort(
                 key=lambda i: (
                     not any(

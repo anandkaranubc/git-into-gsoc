@@ -53,6 +53,7 @@ from git_into_gsoc.github.prcheck import check_pull_request
 from git_into_gsoc.github.pulls import pull_request_status
 from git_into_gsoc.github.repos import (
     OUTSIDER_ROLES,
+    beginner_labels,
     channels_in,
     is_bot,
     mentioned_repos,
@@ -116,6 +117,16 @@ _MANIFESTS = ("package.json", "pyproject.toml", "setup.py", "Cargo.toml", "go.mo
 # Match reasons from an organization's own topic tags or category; a passing mention in
 # its description (LLVM mentions "embedded") is too weak to count as an interest match.
 _TOPIC_REASONS = ("Topic", "Related topic", "Category")
+# Beginner labels GSoC organizations use under other names ("Starter" at Learning
+# Unlimited), searched when --org names a few organizations.
+_COMMON_BEGINNER_LABELS = (
+    "good first issue",
+    "good-first-issue",
+    "starter",
+    "beginner",
+    "easy",
+    "first-timers-only",
+)
 
 
 # Where a newcomer should say hello, best first. A contact email reaches the
@@ -591,12 +602,21 @@ class GSoCToolkit:
         if from_profile:
             note += f" Using {language} from your saved profile; pass a language to change it."
         labels_used: list[str] = [label] if label else ["good first issue", "help wanted"]
+        if gsoc_owners and not label:
+            # A few named organizations: their own spellings fit in one query.
+            labels_used = [*_COMMON_BEGINNER_LABELS, "help wanted"]
         if repo and not label:
             owner_name, repo_name = parse_repo(repo)
-            own = pick_beginner_label(self.github.list_labels(owner_name, repo_name))
-            if own and own.lower() not in {x.lower() for x in labels_used}:
-                labels_used = [own, *labels_used]
-                note += f" Using this repository's own beginner label '{own}' first."
+            taken = {x.lower() for x in labels_used}
+            own = [
+                name
+                for name in beginner_labels(self.github.list_labels(owner_name, repo_name))
+                if name.lower() not in taken
+            ]
+            if own:
+                labels_used = [*own, *labels_used]
+                quoted = ", ".join(f"'{name}'" for name in own)
+                note += f" Using this repository's own beginner label(s) {quoted} first."
         issues = self.github.find_beginner_issues(
             language=language,
             org=org,

@@ -191,3 +191,34 @@ def test_an_empty_org_search_points_at_that_orgs_repositories(monkeypatch: Any) 
     assert any('git-into-gsoc repos "Zulip"' in step for step in steps)
     assert not any("Pick an organization first" in step for step in steps)
     assert not any("--scope all" in step for step in steps)
+
+
+def test_a_repository_search_uses_every_beginner_label_it_has(monkeypatch: Any) -> None:
+    # learning-unlimited/ESP-Website labels beginner work 'Easy' and 'Starter';
+    # only 'Easy' was searched, which found two issues, both held for discussion.
+    from git_into_gsoc.github.repos import beginner_labels
+
+    labels = [{"name": n} for n in ("bug", "Easy", "Starter", "Idea for Discussion")]
+    assert beginner_labels(labels) == ["Easy", "Starter"]
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
+    monkeypatch.setattr(toolkit.github, "list_labels", lambda o, r: labels)
+    seen: dict[str, Any] = {}
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: seen.update(k) or [])
+    data = toolkit.find_issues(repo="learning-unlimited/ESP-Website", max_results=5)
+    assert seen["labels"][:2] == ["Easy", "Starter"]
+    assert "'Easy', 'Starter'" in data["note"]
+
+
+def test_an_org_search_includes_common_beginner_label_names(monkeypatch: Any) -> None:
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
+    monkeypatch.setattr(
+        toolkit,
+        "_gsoc_owners",
+        lambda *a, **k: (["learning-unlimited"], [], "Searching Learning Unlimited."),
+    )
+    seen: dict[str, Any] = {}
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: seen.update(k) or [])
+    toolkit.find_issues(org="Learning Unlimited", max_results=5)
+    assert "starter" in seen["labels"] and seen["labels"][-1] == "help wanted"

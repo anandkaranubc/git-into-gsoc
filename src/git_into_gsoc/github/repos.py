@@ -328,6 +328,18 @@ def pick_beginner_label(labels: list[dict[str, Any]]) -> str | None:
     return None
 
 
+def beginner_labels(labels: list[dict[str, Any]], *, limit: int = 3) -> list[str]:
+    """Every beginner-like label a repository has, best known names first.
+
+    Learning Unlimited's ESP-Website has both "Easy" and "Starter"; picking one
+    label missed most of its beginner issues.
+    """
+    names = {str(label.get("name") or "").lower(): str(label.get("name")) for label in labels}
+    found = [names[w] for w in BEGINNER_LABELS if w in names]
+    found += [o for low, o in names.items() if _BEGINNER_WORDS.search(low) and o not in found]
+    return found[:limit]
+
+
 _BEGINNER_WORDS = re.compile(
     r"good first|beginner|first[ _-]?(?:timer|issue|contrib)|newbie|starter|\beasy\b"
 )
