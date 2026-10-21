@@ -310,8 +310,13 @@ _RUNTIME_KEYS = {
 _KEY_LINE_RE = re.compile(r"^(\s*)(?:-\s+)?([A-Za-z][\w-]*):\s*(.*?)\s*(?:#.*)?$")
 
 
+_RUST_TOOLCHAIN_RE = re.compile(r"^(?:stable|beta|nightly|\d+\.\d+(?:\.\d+)?)(?:-|$)")
+
+
 def _scalar_list(value: str) -> list[str]:
     value = value.strip()
+    if value.startswith("[") and not value.endswith("]"):
+        return []  # a flow list continued on later lines; not worth guessing at
     if value.startswith("[") and value.endswith("]"):
         value = value[1:-1]
     items = [v.strip().strip("'\"") for v in value.split(",")] if value else []
@@ -370,6 +375,10 @@ def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
                         services[-1]["image"] = sub.group(3).strip("'\"")
         for key, values in matrix.items():
             name = _RUNTIME_KEYS.get(key)
+            if key == "toolchain":
+                # A matrix "toolchain" is often a build target (ArduPilot: chibios);
+                # it means Rust only when the values are Rust channels or versions.
+                values = [v for v in values if _RUST_TOOLCHAIN_RE.match(v)]
             if not name or not values:
                 continue
             runtimes.setdefault(name, set()).update(values)

@@ -450,3 +450,17 @@ def test_ci_install_commands_skip_installer_upgrades() -> None:
     )
     commands = [c["command"] for c in ci_install_commands({"ci.yml": workflow})]
     assert commands == ["pip install -r requirements-dev.txt", "npm ci"]
+
+
+def test_a_matrix_toolchain_that_is_not_rust_is_not_reported_as_rust() -> None:
+    # ArduPilot's test_ccache.yml (2026-10-21): `toolchain: [` opens a flow list of
+    # firmware targets on the next lines; orient printed "CI uses Rust [".
+    ardupilot = (
+        "jobs:\n  build:\n    strategy:\n      matrix:\n"
+        "        toolchain: [\n            chibios,\n        ]\n        gcc: [10]\n"
+    )
+    rust = "jobs:\n  t:\n    steps:\n      - uses: dtolnay/rust-toolchain@v1\n        with:\n"
+    rust += "          toolchain: [stable, nightly]\n"
+    env = ci_environment({"a.yml": ardupilot, "r.yml": rust})
+    runtimes = {r["name"]: r["versions"] for r in env["runtimes"]}
+    assert runtimes == {"Rust": ["nightly", "stable"]}
