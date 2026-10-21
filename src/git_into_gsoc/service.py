@@ -1330,6 +1330,7 @@ class GSoCToolkit:
                 status = self.issue_status(issue)
                 context["issue"]["title"] = clean_untrusted(status.get("title"), limit=200)
                 context["issue"]["availability"] = status.get("availability")
+                context["issue"]["reason"] = status.get("reason")
             except GigError as exc:
                 context["issue"]["note"] = str(exc)
         if repo:
@@ -1395,8 +1396,11 @@ class GSoCToolkit:
             if k in {"org", "channels", "issue", "claim_convention", "contributing_url"}
         }
         if context.get("issue", {}).get("availability") not in (None, "available"):
+            issue_info = context["issue"]
             draft["warning"] = (
-                f"Issue availability is {context['issue']['availability']}; check the thread "
+                f"Do not post a claim: {issue_info.get('reason')}."
+                if issue_info["availability"] == "not_open" and kind == "claim"
+                else f"Issue availability is {issue_info['availability']}; check the thread "
                 "before claiming."
             )
         return draft

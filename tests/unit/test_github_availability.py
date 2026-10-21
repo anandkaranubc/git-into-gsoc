@@ -412,3 +412,24 @@ def test_a_single_repository_search_is_not_capped_at_two() -> None:
     )
     results = GitHubClient().find_beginner_issues(repo="acme/lib", max_results=5)
     assert len(results) == 5
+
+
+def test_an_issue_held_for_discussion_is_not_open_for_claims() -> None:
+    # learning-unlimited/ESP-Website#2157 (2026-10-21): labelled "Idea for Discussion",
+    # and the project's bot told claimants it "is not currently available for
+    # assignment". `issue` still said "available", and `draft claim` wrote a claim.
+    issue = _issue(labels=[{"name": "Starter"}, {"name": "Idea for Discussion"}])
+    labelled = assess_issue(issue, [], now=NOW)
+    assert labelled.availability == Availability.NOT_OPEN
+    assert "Idea for Discussion" in labelled.reason
+
+    bot = {
+        "event": "commented",
+        "created_at": _iso(40),
+        "user": {"login": "github-actions[bot]", "type": "Bot"},
+        "body": "Sorry @someone, this issue is labeled **idea for discussion** and is not "
+        "currently available for assignment.",
+    }
+    told = assess_issue(_issue(), [bot], now=NOW)
+    assert told.availability == Availability.NOT_OPEN
+    assert "not currently available for assignment" in told.reason

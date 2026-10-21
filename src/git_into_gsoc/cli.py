@@ -768,6 +768,7 @@ _STATUS_STYLE = {
     "claimed": "yellow",
     "contested": "yellow",
     "likely_taken": "red",
+    "not_open": "red",
     "assigned": "red",
     "stale": "dim",
     "closed": "dim",

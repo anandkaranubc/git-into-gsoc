@@ -29,6 +29,7 @@ class Availability(StrEnum):
     CLAIMED = "claimed"
     CONTESTED = "contested"
     LIKELY_TAKEN = "likely_taken"
+    NOT_OPEN = "not_open"  # held for discussion or design; the project takes no claims yet
     ASSIGNED = "assigned"
     STALE = "stale"
     CLOSED = "closed"

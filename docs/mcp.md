@@ -87,7 +87,7 @@ The repository ships the manifests assistants look for: `.claude-plugin/plugin.j
 
 ## Reading results
 
-- Availability values are `available`, `claimed`, `contested`, `likely_taken`, `assigned`, `stale`, `closed`, and `unknown`, each with a `reason`. `claimed` means someone asked for the issue recently or a maintainer approved them. `contested` means three or more people asked within 60 days. Open the issue yourself before starting work; see [choose an issue](guide/05-choose-an-issue.md).
+- Availability values are `available`, `claimed`, `contested`, `likely_taken`, `not_open`, `assigned`, `stale`, `closed`, and `unknown`, each with a `reason`. `not_open` means a label such as "Idea for Discussion" or "on hold", or the project's bot or a maintainer, says the issue is not taking claims yet. `claimed` means someone asked for the issue recently or a maintainer approved them. `contested` means three or more people asked within 60 days. Open the issue yourself before starting work; see [choose an issue](guide/05-choose-an-issue.md).
 - Organization results for a year that is not announced yet are the previous year's participants. Past participation does not guarantee a return.
 - Timeline dates for a year Google has not published are estimates with a `window_days` field. Verify on the [official timeline](https://developers.google.com/open-source/gsoc/timeline).
 - Most GitHub responses are cached for an hour (issue checks for 5 minutes) and organization lists for a day. A running server also keeps organization data in memory, so restart it after `git-into-gsoc cache --clear` if you need a fresh list.

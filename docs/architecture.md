@@ -47,7 +47,7 @@ Scoring lives in `scoring/` and is pure Python with no network, so it is easy to
 | `gsoc/timeline.py` | Official milestones or the embedded snapshot in `data/program_history.json` | Current phase and advice; for unpublished years, dates projected from the last official year with an uncertainty window |
 | `gsoc/ideas.py` | An organization's ideas page | Plain text of the page, used to find which repositories an organization mentors in |
 | `github/client.py` | GitHub REST API, and GraphQL through `github/graphql.py` when a token is set | Repository health, contribution guide detection, beginner-issue search, issue timelines, profile languages |
-| `github/availability.py` | Issue payload plus timeline | Decides whether an issue is `available`, `claimed`, `contested`, `likely_taken`, `assigned`, `stale`, `closed`, or `unknown`, with the evidence behind the decision |
+| `github/availability.py` | Issue payload plus timeline | Decides whether an issue is `available`, `claimed`, `contested`, `likely_taken`, `not_open`, `assigned`, `stale`, `closed`, or `unknown`, with the evidence behind the decision |
 | `github/repos.py` | Pull request samples and ideas-page text | Pure helpers that rank an organization's repositories and grade how newcomer pull requests fare |
 | `github/graphql.py` | GitHub GraphQL API (token only) | One query for repository health: recent closed pull requests, the insider set, and each pull request's first human reply |
 | `github/ecosystems.py` | commits.ecosyste.ms | Token-free committer statistics: single-commit authors and bus factor |

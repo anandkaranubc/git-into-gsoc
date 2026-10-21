@@ -84,6 +84,7 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
         Availability.ASSIGNED,
         Availability.LIKELY_TAKEN,
         Availability.CLAIMED,
+        Availability.NOT_OPEN,
     }:
         score -= 30.0
         signals.append(f"Availability: {issue.availability.value}")

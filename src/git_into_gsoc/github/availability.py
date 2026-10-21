@@ -36,6 +36,22 @@ RESERVED_LABELS = {
 _RESERVED_WORD_RE = re.compile(
     r"\b(taken|claimed|in[ -]progress|wip|has[ -]pr|pr[ -]open(?:ed)?)\b", re.I
 )
+# Labels saying the issue is not ready for anyone to work on yet.
+NOT_OPEN_LABELS = {
+    "idea for discussion",
+    "needs discussion",
+    "discussion",
+    "needs decision",
+    "needs design",
+    "design needed",
+    "not ready",
+    "on hold",
+    "blocked",
+}
+# A project bot or maintainer telling claimants the issue cannot be assigned.
+_NOT_OPEN_RE = re.compile(
+    r"not (?:currently |yet )?(?:available|open) for (?:assignment|claims?|contributions?)", re.I
+)
 RECENT_CLAIM_DAYS = 30
 STALE_PR_DAYS = 90
 CONTESTED_WINDOW_DAYS = 60
@@ -124,12 +140,18 @@ def assess_issue(
     maintainer_engaged = False
     last_activity = _dt(issue.get("updated_at"))
 
+    not_open: str | None = None
     for event in timeline:
         kind = event.get("event")
         at = _dt(event.get("created_at") or event.get("updated_at"))
         if kind == "commented":
             user = event.get("user") or event.get("actor")
             body = str(event.get("body") or "")
+            said = _NOT_OPEN_RE.search(body)
+            if said and (
+                _is_bot(user) or str(event.get("author_association") or "") in MAINTAINER_ROLES
+            ):
+                not_open = f"The project said it is {said.group(0)}"
             if _is_bot(user):
                 if is_release(body):
                     _release(claims, body, caveats, who=None)
@@ -225,6 +247,14 @@ def assess_issue(
     names = [
         str(lab.get("name") if isinstance(lab, dict) else lab) for lab in issue.get("labels") or []
     ]
+    held = [name for name in names if name.strip().lower() in NOT_OPEN_LABELS]
+    if held or not_open:
+        reason = (
+            f"Labelled '{held[0]}': the project is not taking claims on it yet"
+            if held
+            else str(not_open)
+        )
+        return result(Availability.NOT_OPEN, reason + "; pick another issue")
     reserved = [
         name
         for name in names
