@@ -15,6 +15,7 @@ from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
 from git_into_gsoc.github.repos import (
+    attach_first_replies,
     channels_in,
     contributing_path,
     detect_toolchain,
@@ -303,6 +304,21 @@ class GitHubClient:
             str(u.get("login")) for u in data if isinstance(u, dict) and u.get("login")
         )
 
+    def recent_comments(self, owner: str, repo: str) -> list[dict[str, Any]]:
+        """Newest 100 issue comments plus newest 100 review comments (two public calls)."""
+        out: list[dict[str, Any]] = []
+        for path in ("issues/comments", "pulls/comments"):
+            try:
+                data = self._api(
+                    f"repos/{owner}/{repo}/{path}",
+                    params={"sort": "created", "direction": "desc", "per_page": 100},
+                )
+            except HttpError:
+                continue
+            if isinstance(data, list):
+                out.extend(c for c in data if isinstance(c, dict))
+        return out
+
     def pull_analysis(self, owner: str, repo: str) -> PullAnalysis | None:
         """GraphQL PR analysis (insiders, first human reply); None without a token."""
         if not self.token:
@@ -348,12 +364,15 @@ class GitHubClient:
             # Most recently created, like the GraphQL path; sorting by update time
             # pulls in old PRs that were merely closed or relabelled recently. The
             # assignees endpoint gives the same insider set without a token.
-            with ThreadPoolExecutor(max_workers=2) as pool:
+            with ThreadPoolExecutor(max_workers=3) as pool:
                 pulls_f = pool.submit(
                     self.list_pulls, owner, repo, state="closed", per_page=60, sort="created"
                 )
                 insiders_f = pool.submit(self.list_assignees, owner, repo)
+                comments_f = pool.submit(self.recent_comments, owner, repo)
                 pulls, insiders = pulls_f.result(), insiders_f.result()
+                comments = comments_f.result()
+            pulls, _ = attach_first_replies(pulls, comments)
             stats = pull_stats(pulls, insiders=insiders)
             pr_source = "rest"
         files = profile.get("files") or {}
@@ -386,6 +405,7 @@ class GitHubClient:
             outsider_merge_rate=stats.outsider_merge_rate,
             outside_authors_merged=stats.outside_authors_merged,
             median_first_response_hours=stats.median_first_response_hours,
+            first_response_sampled=stats.first_response_sampled,
             median_outsider_pr_size=stats.median_outsider_size,
             insiders_known=stats.insiders_known,
             pr_source=pr_source,

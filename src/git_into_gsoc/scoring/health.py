@@ -7,6 +7,8 @@ from datetime import UTC, datetime
 from git_into_gsoc.github.repos import MIN_OUTSIDER_SAMPLE
 from git_into_gsoc.models import RepoHealth
 
+MIN_REPLY_SAMPLE = 5  # fewer outside PRs than this and the reply time is shown, not scored
+
 
 def _days_or_hours(hours: float) -> str:
     return f"{hours:.0f}h" if hours < 48 else f"{hours / 24:.0f}d"
@@ -112,6 +114,12 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         )
 
     first = health.median_first_response_hours
+    if first is not None and health.first_response_sampled < MIN_REPLY_SAMPLE:
+        signals.append(
+            f"First human reply on outside PRs: ~{_days_or_hours(first)} (median of only "
+            f"{health.first_response_sampled}; not scored)"
+        )
+        first = None
     if first is not None:
         # Time to the first human reply explains most of a PR's lifetime and
         # predicts whether newcomers keep contributing; prefer it over merge time.

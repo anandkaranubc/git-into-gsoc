@@ -98,6 +98,7 @@ class PullStats:
     outsider_merge_rate: float | None
     outside_authors_merged: int  # distinct people without write access who got a PR merged
     median_first_response_hours: float | None = None  # outside PRs, first human reply
+    first_response_sampled: int = 0  # outside PRs the reply figure is based on
     median_outsider_size: int | None = None  # lines changed in merged outside PRs
     insiders_known: bool = False
 
@@ -155,9 +156,61 @@ def pull_stats(pulls: list[dict[str, Any]], *, insiders: frozenset[str] | None =
         outsider_merge_rate=len(outsider_merged) / len(outsiders) if outsiders else None,
         outside_authors_merged=len(authors),
         median_first_response_hours=statistics.median(responses) if responses else None,
+        first_response_sampled=len(responses),
         median_outsider_size=int(statistics.median(sizes)) if sizes else None,
         insiders_known=insiders is not None,
     )
+
+
+def _number_from_url(url: str | None) -> int | None:
+    tail = str(url or "").rstrip("/").rsplit("/", 1)[-1]
+    return int(tail) if tail.isdigit() else None
+
+
+def attach_first_replies(
+    pulls: list[dict[str, Any]], comments: list[dict[str, Any]]
+) -> tuple[list[dict[str, Any]], int]:
+    """Fill ``first_response_at`` on PRs from repo-wide comment listings (REST, no token).
+
+    ``comments`` are the newest issue comments and review comments of the whole
+    repository, so only PRs created after the oldest comment in that window can be
+    judged; older PRs are left untouched. Returns the PRs and how many were
+    inside the window. Replies by the author or by bots do not count.
+    """
+    if not comments or not pulls:
+        return pulls, 0
+    stamps = [str(c.get("created_at")) for c in comments if c.get("created_at")]
+    if not stamps:
+        return pulls, 0
+    window_start = min(stamps)
+    earliest: dict[int, str] = {}
+    by_number_author: dict[int, str] = {
+        int(p["number"]): str((p.get("user") or {}).get("login") or "")
+        for p in pulls
+        if p.get("number") is not None
+    }
+    for comment in comments:
+        number = _number_from_url(comment.get("issue_url") or comment.get("pull_request_url"))
+        if number is None or number not in by_number_author:
+            continue
+        user = comment.get("user") or {}
+        login = str(user.get("login") or "")
+        if not login or login == by_number_author[number] or is_bot(user):
+            continue
+        at = str(comment.get("created_at") or "")
+        if at and (number not in earliest or at < earliest[number]):
+            earliest[number] = at
+    covered = 0
+    for pull in pulls:
+        number = pull.get("number")
+        created = str(pull.get("created_at") or "")
+        if number is None or not created or created < window_start:
+            continue
+        covered += 1
+        reply = earliest.get(int(number))
+        if reply and reply >= created:
+            pull["first_response_at"] = reply
+    return pulls, covered
 
 
 def pick_beginner_label(labels: list[dict[str, Any]]) -> str | None:

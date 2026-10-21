@@ -133,6 +133,7 @@ class RepoHealth(BaseModel):
     outsider_merge_rate: float | None = None
     outside_authors_merged: int = 0
     median_first_response_hours: float | None = None
+    first_response_sampled: int = 0
     median_outsider_pr_size: int | None = None
     insiders_known: bool = False
     pr_source: str = "rest"

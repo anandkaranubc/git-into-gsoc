@@ -183,6 +183,8 @@ def test_repo_health_end_to_end() -> None:
             + [_pull("lead", "CONTRIBUTOR", True)],  # assignable: an insider despite the label
         )
     )
+    respx.get(f"{api}/issues/comments").mock(return_value=httpx.Response(200, json=[]))
+    respx.get(f"{api}/pulls/comments").mock(return_value=httpx.Response(200, json=[]))
     respx.get(f"{api}/assignees").mock(
         return_value=httpx.Response(200, json=[{"login": "core"}, {"login": "lead"}])
     )
@@ -201,3 +203,92 @@ def test_repo_health_end_to_end() -> None:
     assert health.outsider_prs_sampled == 8  # lead is assignable, so not an outsider
     assert health.insiders_known and health.pr_source == "rest"
     assert health.grade in {"A", "B"}
+
+
+def test_attach_first_replies_uses_only_the_covered_window() -> None:
+    from git_into_gsoc.github.repos import attach_first_replies
+
+    pulls = [
+        {"number": 10, "user": {"login": "alice"}, "created_at": _iso(3)},  # inside window
+        {"number": 11, "user": {"login": "bob"}, "created_at": _iso(3)},  # only bot + self replies
+        {"number": 12, "user": {"login": "carol"}, "created_at": _iso(40)},  # before the window
+    ]
+    comments = [
+        {
+            "issue_url": "https://api.github.com/repos/a/b/issues/10",
+            "created_at": _iso(2.9),
+            "user": {"login": "sympy-bot", "type": "User"},
+        },
+        {
+            "issue_url": "https://api.github.com/repos/a/b/issues/10",
+            "created_at": _iso(2.5),
+            "user": {"login": "maintainer", "type": "User"},
+        },
+        {
+            "pull_request_url": "https://api.github.com/repos/a/b/pulls/10",
+            "created_at": _iso(2.8),
+            "user": {"login": "reviewer", "type": "User"},
+        },
+        {
+            "issue_url": "https://api.github.com/repos/a/b/issues/11",
+            "created_at": _iso(2.0),
+            "user": {"login": "bob", "type": "User"},
+        },
+        {
+            "issue_url": "https://api.github.com/repos/a/b/issues/12",
+            "created_at": _iso(1.0),
+            "user": {"login": "maintainer", "type": "User"},
+        },
+        # an older comment on an unrelated issue sets the start of the covered window
+        {
+            "issue_url": "https://api.github.com/repos/a/b/issues/7",
+            "created_at": _iso(5),
+            "user": {"login": "someone", "type": "User"},
+        },
+    ]
+    pulls, covered = attach_first_replies(pulls, comments)
+    assert covered == 2
+    assert pulls[0]["first_response_at"] == _iso(2.8)  # earliest human, bot skipped
+    assert "first_response_at" not in pulls[1]  # author's own comment does not count
+    assert "first_response_at" not in pulls[2]  # created before the comment window
+
+
+@respx.mock
+def test_rest_path_reports_first_reply_but_scores_it_only_with_a_sample() -> None:
+    api = "https://api.github.com/repos/acme/lib"
+    respx.get(api).mock(
+        return_value=httpx.Response(200, json={"full_name": "acme/lib", "pushed_at": _iso(1)})
+    )
+    for path in ("community/profile", "actions/workflows"):
+        respx.get(f"{api}/{path}").mock(return_value=httpx.Response(200, json={}))
+    respx.get(f"{api}/labels").mock(return_value=httpx.Response(200, json=[]))
+    respx.get(f"{api}/assignees").mock(return_value=httpx.Response(200, json=[]))
+    respx.get(url__startswith="https://commits.ecosyste.ms").mock(
+        return_value=httpx.Response(404, json={})
+    )
+    pulls = [{**_pull(f"u{i}", "CONTRIBUTOR", True, hours=24), "number": 100 + i} for i in range(6)]
+    for pr in pulls:
+        pr["created_at"] = _iso(2)
+    respx.get(f"{api}/pulls").mock(return_value=httpx.Response(200, json=pulls))
+    comments = [
+        {
+            "issue_url": f"https://api.github.com/repos/acme/lib/issues/{100 + i}",
+            "created_at": _iso(2 - 5 / 24),
+            "user": {"login": "maintainer", "type": "User"},
+        }
+        for i in range(6)
+    ] + [
+        {
+            "issue_url": "https://api.github.com/repos/acme/lib/issues/1",
+            "created_at": _iso(10),
+            "user": {"login": "someone", "type": "User"},
+        }
+    ]
+    respx.get(f"{api}/issues/comments").mock(return_value=httpx.Response(200, json=comments))
+    respx.get(f"{api}/pulls/comments").mock(return_value=httpx.Response(200, json=[]))
+    health = GitHubClient().repo_health("acme/lib")
+    assert health.pr_source == "rest"
+    assert health.first_response_sampled == 6
+    assert health.median_first_response_hours is not None
+    assert 4.5 <= health.median_first_response_hours <= 5.5
+    assert any("human reply within" in s for s in health.signals)
