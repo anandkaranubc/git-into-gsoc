@@ -15,11 +15,11 @@ from git_into_gsoc.install import distribution as d
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_remote_command_follows_the_stable_branch() -> None:
+def test_remote_command_runs_main_from_github() -> None:
     assert d.remote_command() == [
         "uvx",
         "--from",
-        "git+https://github.com/anandkaranubc/git-into-gsoc@stable",
+        "git+https://github.com/anandkaranubc/git-into-gsoc@main",
         "git-into-gsoc",
         "mcp",
     ]

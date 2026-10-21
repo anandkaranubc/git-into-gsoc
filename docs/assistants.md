@@ -84,7 +84,7 @@ Installed plugins are listed in the Extensions view under `@agentPlugins`, where
 
 Run `git-into-gsoc setup` after the [one-line installer](guide/02-install.md). This is the route we test, and it gives Cursor both the skill and the server. Or use the Cursor button below for the server alone. Cursor asks you to confirm, then adds it to `~/.cursor/mcp.json`. To add the skill too, run `npx skills add anandkaranubc/git-into-gsoc -g -a cursor`.
 
-- **Update:** buttons always start the newest release. For setup, re-run the installer.
+- **Update:** a server added with the button runs the newest code from GitHub each time it starts. For setup, re-run the installer.
 - **Remove:** delete the `git-into-gsoc` entry from `~/.cursor/mcp.json`, or run `git-into-gsoc setup --remove --assistant cursor`.
 
 ## Gemini CLI
@@ -124,17 +124,17 @@ Most assistants read skills from `~/.agents/skills` and accept MCP servers in a 
 
 ```bash
 npx skills add anandkaranubc/git-into-gsoc -g
-npx add-mcp "uvx --from git+https://github.com/anandkaranubc/git-into-gsoc@stable git-into-gsoc mcp" --name git-into-gsoc
+npx add-mcp "uvx --from git+https://github.com/anandkaranubc/git-into-gsoc@main git-into-gsoc mcp" --name git-into-gsoc
 ```
 
 The first copies the skill; the second asks which assistants to add the server to. Both need [Node.js](https://nodejs.org/). Kiro also has a button below.
 
 ## One-click buttons
 
-These add only the MCP server. They run the newest release from GitHub, so they need uv and [Git](https://git-scm.com/downloads). The server starts with the latest version each time the assistant starts it.
+These add only the MCP server. They run the code on GitHub's `main` branch, which changes only through reviewed pull requests that pass every test, so they need uv and [Git](https://git-scm.com/downloads). The server is fetched again each time the assistant starts it, so it stays current. For a released version that works offline, use a plugin or `git-into-gsoc setup` instead.
 
 <!-- generated:install-links -->
-[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=git-into-gsoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLWZyb20iLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL2FuYW5ka2FyYW51YmMvZ2l0LWludG8tZ3NvY0BzdGFibGUiLCJnaXQtaW50by1nc29jIiwibWNwIl19) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D&quality=insiders) [![Add to Kiro](https://img.shields.io/badge/Kiro-Add_server-7138CC?style=flat-square&logo=kiro&logoColor=white)](https://kiro.dev/launch/mcp/add?name=git-into-gsoc&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D)
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=git-into-gsoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLWZyb20iLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL2FuYW5ka2FyYW51YmMvZ2l0LWludG8tZ3NvY0BtYWluIiwiZ2l0LWludG8tZ3NvYyIsIm1jcCJdfQ%3D%3D) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40main%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40main%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D&quality=insiders) [![Add to Kiro](https://img.shields.io/badge/Kiro-Add_server-7138CC?style=flat-square&logo=kiro&logoColor=white)](https://kiro.dev/launch/mcp/add?name=git-into-gsoc&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40main%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D)
 <!-- /generated:install-links -->
 
 ## Plugin or setup?

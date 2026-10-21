@@ -42,7 +42,7 @@ To rebuild the assets for a tag, run the workflow from the Actions tab with the 
 
 ## 5. Plugins and one-click links (automatic)
 
-Release Please also bumps `version` in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `gemini-extension.json`, so Claude Code, Codex, Copilot, and Gemini CLI offer the update. After each release, `.github/workflows/stable-branch.yml` moves the `stable` branch to the new tag; the one-click install buttons and copied configs run `uvx --from git+https://github.com/anandkaranubc/git-into-gsoc@stable`, so they get the new release without any change to the links. See [distribution](distribution.md) for how the manifests are generated and checked, and for directory listings that need the owner.
+Release Please also bumps `version` in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `gemini-extension.json`, so Claude Code, Codex, Copilot, and Gemini CLI offer the update. The one-click install buttons run `main` from GitHub, so they need no change at release. See [distribution](distribution.md) for how the manifests are generated and checked, and for directory listings that need the owner.
 
 ## Checks before merging a release
 

@@ -11,10 +11,10 @@ Two kinds of launch command exist:
   (``uvx --from <plugin folder>``). The server is then always the same version
   as the skill next to it, updates arrive with the plugin, and nothing is
   downloaded from GitHub when the server starts.
-* A one-click link or a copied config has no installed copy, so it runs the
-  newest release from GitHub. The ``stable`` branch always points at the newest
-  release (``.github/workflows/stable-branch.yml`` moves it), so those links
-  never change and never pick up unreleased work from ``main``.
+* A one-click link or a copied config has no installed copy, so it runs the code
+  on GitHub's ``main`` branch, which changes only through reviewed pull requests
+  that pass CI. A branch that follows releases would need a token allowed to
+  push workflow changes, which the built-in Actions token is not.
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ REPO = "anandkaranubc/git-into-gsoc"
 REPO_URL = f"https://github.com/{REPO}"
 SERVER_NAME = "git-into-gsoc"
 REGISTRY_NAME = "io.github.anandkaranubc/git-into-gsoc"
-STABLE_BRANCH = "stable"
+REMOTE_REF = "main"
 AUTHOR = {"name": "git-into-gsoc contributors", "url": REPO_URL}
 LICENSE = "MIT"
 KEYWORDS = ["gsoc", "google-summer-of-code", "open-source", "onboarding", "github", "mcp"]
@@ -63,12 +63,12 @@ def plugin_command(root: str) -> list[str]:
     return ["uvx", "--from", root, SERVER_NAME, "mcp"]
 
 
-def remote_source(ref: str = STABLE_BRANCH) -> str:
+def remote_source(ref: str = REMOTE_REF) -> str:
     return f"git+{REPO_URL}@{ref}"
 
 
-def remote_command(ref: str = STABLE_BRANCH) -> list[str]:
-    """Run the newest release straight from GitHub. Needs uv and Git, nothing else."""
+def remote_command(ref: str = REMOTE_REF) -> list[str]:
+    """Run the server straight from GitHub. Needs uv and Git, nothing else."""
     return ["uvx", "--from", remote_source(ref), SERVER_NAME, "mcp"]
 
 
