@@ -518,5 +518,21 @@ def _http_error(response: httpx.Response, url: str) -> HttpError:
             hint="Your GitHub token is invalid or expired. Run `gh auth login` or reset GITHUB_TOKEN.",
         )
     if response.status_code == 422:
-        return HttpError(message, status_code=422, url=url, hint="The search query was rejected.")
+        reasons = []
+        with contextlib.suppress(ValueError, AttributeError, TypeError):
+            reasons = [str(e.get("message")) for e in response.json().get("errors") or []]
+        reason = next((r for r in reasons if r and r != "None"), "")
+        if "cannot be searched" in reason:
+            return HttpError(
+                f"GitHub could not run the search: {reason}",
+                status_code=422,
+                url=url,
+                hint="Check the spelling of the user, organization, or repository you gave.",
+            )
+        return HttpError(
+            message + (f" ({reason})" if reason else ""),
+            status_code=422,
+            url=url,
+            hint="The search query was rejected.",
+        )
     return HttpError(message, status_code=response.status_code, url=url)

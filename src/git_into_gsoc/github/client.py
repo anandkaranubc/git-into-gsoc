@@ -69,6 +69,32 @@ def _license_name(license_obj: Any) -> str | None:
     return name or None
 
 
+def explain_not_found(path: str) -> tuple[str, str] | None:
+    """A plain message and hint for a 404 on a repository, issue, or user, else None."""
+    parts = [p for p in path.split("/") if p]
+    if len(parts) == 2 and parts[0] == "users":
+        return (
+            f"No GitHub user or organization is named {parts[1]}",
+            "Check the spelling of the username.",
+        )
+    if len(parts) < 3 or parts[0] != "repos":
+        return None
+    repo = f"{parts[1]}/{parts[2]}"
+    if len(parts) == 3:
+        return (
+            f"GitHub has no public repository {repo}",
+            f"Check the spelling at https://github.com/{repo}; it may also be private, renamed, "
+            "or deleted.",
+        )
+    if len(parts) == 5 and parts[3] in {"issues", "pulls"} and parts[4].isdigit():
+        return (
+            f"{repo} has no issue or pull request #{parts[4]}",
+            f"Check the number at https://github.com/{repo}/issues; a misspelled repository "
+            "name gives the same answer.",
+        )
+    return None
+
+
 def _repo_from_item(item: dict[str, Any]) -> str:
     url = str(item.get("repository_url") or "")
     parts = url.rstrip("/").split("/")
@@ -129,7 +155,17 @@ class GitHubClient:
         headers = self._headers()
         if accept:
             headers["Accept"] = accept
-        return self.http.get_json(url, headers=headers, params=params, ttl=ttl, use_cache=use_cache)
+        try:
+            return self.http.get_json(
+                url, headers=headers, params=params, ttl=ttl, use_cache=use_cache
+            )
+        except NotFoundError as exc:
+            explained = explain_not_found(path)
+            if explained is None:
+                raise
+            raise NotFoundError(
+                explained[0], status_code=404, url=exc.url, hint=explained[1]
+            ) from exc
 
     def rate_limit(self) -> dict[str, Any]:
         data = self._api("rate_limit")

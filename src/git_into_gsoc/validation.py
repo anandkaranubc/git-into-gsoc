@@ -36,7 +36,11 @@ def _split_github_path(value: str) -> list[str]:
     if raw.startswith(("http://", "https://")) or raw.startswith(tuple(_GITHUB_HOSTS)):
         parsed = urlparse(raw if "://" in raw else f"https://{raw}")
         if parsed.netloc.lower() not in _GITHUB_HOSTS:
-            raise InputError(f"Not a github.com URL: {value!r}")
+            raise InputError(
+                f"Not a github.com URL: {value!r}",
+                hint="This tool reads GitHub only. For a project on GitLab or its own server, "
+                "read its contributing guide there.",
+            )
         return [p for p in parsed.path.split("/") if p]
     return [p for p in raw.split("/") if p]
 
