@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import math
 import re
+import statistics
 from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any
@@ -48,6 +49,12 @@ BEST_SKILL_WEIGHT = 0.5
 # central to an organization; one mentioned once may be a side interest.
 CENTRALITY_FLOOR = 0.85
 CENTRAL_SOURCES = 3
+# An organization that lists many skills or subjects (a polyglot runtime, an umbrella)
+# says less about each one than a focused organization does, as long documents do in
+# search ranking. Matches are scaled by (median breadth / breadth) ** power, never up.
+SKILL_BREADTH_POWER = 0.15
+DOMAIN_BREADTH_POWER = 0.15
+BREADTH_THRESHOLD = 0.5
 # How far the tie-breakers can move a score: from x0.8 to x1.0.
 PRIOR_FLOOR = 0.8
 HARD_FOR_NEW = 0.85
@@ -55,6 +62,8 @@ TIME_MISFIT = 0.85
 FIT_STRONG, FIT_GOOD, FIT_MIN = 0.7, 0.45, 0.12
 DIVERSITY = 0.08
 STANDARD_WEEKS = 12
+# From this many matching organizations, a word is broad enough to suggest narrower ones.
+SHARPEN_AT = 25
 
 
 @dataclass
@@ -289,6 +298,7 @@ class OrgIndex:
     reference_year: int
     signals_year: int | None = None
     signals_date: str | None = None
+    breadth: dict[str, tuple[float, float]] = field(default_factory=dict)
 
     @classmethod
     def build(
@@ -320,7 +330,65 @@ class OrgIndex:
             reference_year=reference_year,
             signals_year=signals_year,
             signals_date=(signals or {}).get("generated"),
+            breadth=_breadth_factors(profiles),
         )
+
+    def sharpen(
+        self, person: ContributorProfile, *, broad: int = SHARPEN_AT
+    ) -> list[dict[str, Any]]:
+        """Narrower words for a vague profile, with how many organizations each matches.
+
+        An interest that matches dozens of organizations ("ai") gets its narrower
+        concepts (computer vision, LLMs). A common skill with no interest at all
+        ("python") gets the subjects its organizations work on most.
+        """
+
+        def df(concept: str, cut: float = 0.5) -> int:
+            return sum(1 for p in self.profiles if p.strength.get(concept, 0.0) >= cut)
+
+        tips: list[dict[str, Any]] = []
+        for want in person.interests:
+            matches = sum(1 for p in self.profiles if match_term(p, want).strength >= 0.5)
+            if matches < broad:
+                continue
+            narrower = {n for c in want.concepts for n in narrower_index().get(c, ())}
+            options = sorted(
+                ((label(n), df(n)) for n in narrower if kind_of(n) != SKILL),
+                key=lambda kv: (-kv[1], kv[0]),
+            )
+            options = [(name, n) for name, n in options if 2 <= n < matches][:4]
+            if options:
+                tips.append(
+                    {"word": want.raw, "kind": "interest", "matches": matches, "suggest": options}
+                )
+        if not person.interests:
+            for want in person.skills:
+                users = [
+                    p
+                    for p in self.profiles
+                    if any(p.strength.get(c, 0.0) >= 0.7 for c in want.concepts)
+                ]
+                if len(users) < broad:
+                    continue
+                counts: dict[str, int] = {}
+                for profile in users:
+                    for concept, value in profile.strength.items():
+                        if value >= 0.7 and kind_of(concept) != SKILL:
+                            counts[concept] = counts.get(concept, 0) + 1
+                options = sorted(
+                    ((label(c), n) for c, n in counts.items() if n >= 3 and c != "science"),
+                    key=lambda kv: (-kv[1], kv[0]),
+                )[:5]
+                if options:
+                    tips.append(
+                        {
+                            "word": want.raw,
+                            "kind": "skill",
+                            "matches": len(users),
+                            "suggest": options,
+                        }
+                    )
+        return tips
 
     def rank(
         self,
@@ -374,6 +442,11 @@ class OrgIndex:
             extra.append(f"Category: {org.category}")
         interests = [match_term(profile, w) for w in person.interests]
         skills = [match_term(profile, w) for w in person.skills]
+        skill_scale, domain_scale = self.breadth.get(org.name, (1.0, 1.0))
+        for term in skills:
+            term.strength *= skill_scale
+        for term in interests:
+            term.strength *= domain_scale
         interest_fit = sum(t.strength for t in interests) / len(interests) if interests else None
         skill_fit = None
         if skills:
@@ -475,6 +548,40 @@ class OrgIndex:
             skills_to_learn=_skills_to_learn(profile, person) if not person.empty else [],
             extra_reasons=extra,
         )
+
+
+def _breadth_factors(profiles: list[OrgProfile]) -> dict[str, tuple[float, float]]:
+    """Per organization, how much to scale skill and subject matches for its breadth."""
+
+    def counts(profile: OrgProfile) -> tuple[int, int]:
+        skills = domains = 0
+        for concept, value in profile.strength.items():
+            if value < BREADTH_THRESHOLD:
+                continue
+            if kind_of(concept) == SKILL:
+                skills += 1
+            else:
+                domains += 1
+        return skills, domains
+
+    pairs = {p.org.name: counts(p) for p in profiles}
+    if not pairs:
+        return {}
+    skill_median = max(1.0, statistics.median(s for s, _ in pairs.values()))
+    domain_median = max(1.0, statistics.median(d for _, d in pairs.values()))
+
+    def scale(n: int, median: float, power: float) -> float:
+        if power <= 0 or n <= median:
+            return 1.0
+        return float((median / n) ** power)
+
+    return {
+        name: (
+            scale(s, skill_median, SKILL_BREADTH_POWER),
+            scale(d, domain_median, DOMAIN_BREADTH_POWER),
+        )
+        for name, (s, d) in pairs.items()
+    }
 
 
 def _unread_ideas(layout: str) -> str:

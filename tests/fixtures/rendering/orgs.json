@@ -235,5 +235,18 @@
         "Slots growing"
       ]
     }
+  ],
+  "sharpen": [
+    {
+      "word": "ai",
+      "kind": "interest",
+      "matches": 93,
+      "suggest": [
+        {
+          "words": "Computer vision",
+          "organizations": 11
+        }
+      ]
+    }
   ]
 }

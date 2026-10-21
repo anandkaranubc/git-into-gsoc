@@ -46,6 +46,7 @@ Relevance decides the order:
 1. **Interests.** How well the organization's work covers each thing you care about. A match through a neighbouring subject (physics for astronomy) counts for less, and the evidence says "through Physics".
 2. **Skills.** Skills are alternatives: someone who knows Python and R can work where either is used, so the best match counts most and covering more of them adds a little. A skill few organizations use (Julia, Kotlin) says more than one most use (Python), so rare skills weigh more, like inverse document frequency in search engines.
 3. Interests and skills count about equally, with a small bonus when both match.
+4. An organization that lists many skills or subjects (a runtime for nine languages, an umbrella for dozens of projects) says less about each one than a focused organization does, so its matches count a little less, the way search engines discount very long documents.
 
 Three things only break ties. Together they can move an organization by a fifth of its score, never past a clearly better match:
 
@@ -56,6 +57,10 @@ Three things only break ties. Together they can move an organization by a fifth 
 With several interests, the list is reordered a little so each interest appears near the top (maximal marginal relevance, Carbonell and Goldstein, 1998).
 
 The numeric `match_score` in JSON output only orders results. Please never present it, or the fit level, as a probability of anything.
+
+## When your words are broad
+
+A broad word matches dozens of organizations: "ai" matches more than 90, and "python" alone more than 120. Then `orgs` and `recommend` add a tip with narrower words and how many organizations each matches, for example "LLMs and AI agents (29), Computer vision (11), Natural language processing (8)", or for a skill with no interest, the subjects the organizations that use it work on most. The JSON output has the same tips under `sharpen`.
 
 ## Experience and hours
 
@@ -83,23 +88,23 @@ Two benchmarks in [`evals/`](../evals/README.md) run offline against the embedde
 - **34 personas** across ecosystems and experience levels, each with graded judgments (3 strong, 2 good, 1 partial) made by a reviewer who never saw the ranking code, and a list of organizations that should not reach the top five.
 - **238 profiles written from real GSoC 2026 accepted projects**, without seeing the organization. The organization that accepted the project is the answer.
 
-Each has a dev half, used while tuning, and a test half, checked once at the end. Results on the test half, against the keyword ranker this replaced:
+Each has a dev half, used while tuning, and a test half, checked only after tuning. Results on the test half, against the keyword ranker this replaced:
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
-| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.773** |
-| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.638** |
-| Personas: strong fits found in the top 10 | 0.763 | **0.854** |
-| Personas: picks in the top 5 that judges called wrong | 14 | **5** |
-| Accepted projects: accepting organization in the top 5 | 52.1% | **63.9%** |
-| Accepted projects: accepting organization in the top 10 | 62.2% | **75.6%** |
+| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.810** |
+| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.637** |
+| Personas: strong fits found in the top 10 | 0.763 | **0.885** |
+| Personas: picks in the top 5 that judges called wrong | 14 | **3** |
+| Accepted projects: accepting organization in the top 5 | 52.1% | **68.9%** |
+| Accepted projects: accepting organization in the top 10 | 62.2% | **76.5%** |
 
 Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/test_match_benchmark.py`) fails if a change makes them clearly worse, and CI runs it on the monthly data refresh too.
 
 ## Known limits
 
-- **Very vague input** ("ai" alone) still gives a long, loosely ordered list. Adding one more skill or interest helps most.
-- **Organizations with many tags** (polyglot runtimes, umbrellas) match many searches. The centrality check reduces this but does not remove it.
+- **Very vague input** ("ai" alone) still gives a long list; the tip suggests narrower words, and adding one helps most.
+- **Organizations with many tags** (polyglot runtimes, umbrellas) still match many searches, but count a little less per match than focused organizations.
 - **Reputation is invisible.** Some organizations are known for welcoming newcomers in ways their listing and ideas page do not show. Evidence comes only from public data, so ask in each community.
 - **Ideas pages vary.** About a third state a difficulty and about a third a size, and some pages cannot be read automatically; the evidence says when a page could not be read.
 - **Judgments are one reviewer's view.** The persona grades were made carefully but by a single reviewer, so treat small differences between versions as noise.

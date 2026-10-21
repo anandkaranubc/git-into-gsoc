@@ -14,7 +14,7 @@ Everything runs offline against the embedded snapshot, so results are
 repeatable. Each set has a dev half (used while tuning) and a test half (only
 checked at the end).
 
-Usage: python scripts/eval_matching.py [--split dev|test|all] [--ranker both|current|baseline] [--json]
+Usage: python scripts/eval_matching.py [--split dev|test|holdout2|all] [--ranker both|current|baseline] [--json]
 """
 
 from __future__ import annotations
@@ -102,7 +102,13 @@ def _dcg(gains: list[int]) -> float:
 
 
 def load_personas() -> list[dict[str, Any]]:
-    return list(json.loads((EVALS / "personas.json").read_text(encoding="utf-8"))["personas"])
+    """Personas from personas.json (dev and test) and holdout2.json (a later blind set)."""
+    out: list[dict[str, Any]] = []
+    for name in ("personas.json", "holdout2.json"):
+        path = EVALS / name
+        if path.is_file():
+            out.extend(json.loads(path.read_text(encoding="utf-8"))["personas"])
+    return out
 
 
 def load_accepted() -> list[dict[str, Any]]:
@@ -196,13 +202,15 @@ def _print(result: dict[str, Any], *, detail: bool) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    parser.add_argument("--split", choices=("dev", "test", "all"), default="all")
+    parser.add_argument("--split", choices=("dev", "test", "holdout2", "all"), default="all")
     parser.add_argument("--ranker", choices=("both", "current", "baseline"), default="both")
     parser.add_argument("--detail", action="store_true", help="Show every persona")
     parser.add_argument("--json", action="store_true", help="Print the results as JSON")
     args = parser.parse_args(argv)
     names = ["baseline", "current"] if args.ranker == "both" else [args.ranker]
-    splits = ["dev", "test", "all"] if args.split == "all" else [args.split]
+    present = {p["split"] for p in load_personas()}
+    order = [x for x in ("dev", "test", "holdout2") if x in present]
+    splits = [*order, "all"] if args.split == "all" else [args.split]
     results = [evaluate(name, split) for split in splits for name in names]
     if args.json:
         print(json.dumps(results, indent=1))

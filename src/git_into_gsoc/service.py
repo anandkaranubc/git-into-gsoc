@@ -319,11 +319,28 @@ class GSoCToolkit:
                 "hours_per_week": person.hours_per_week,
             },
             "read_as": person.notes,
+            "sharpen": self._sharpen(person, year),
             "count": len(results),
             "organizations": [r.model_dump(exclude={"recent_projects"}) for r in results],
             "how_ranked": HOW_RANKED,
             "hint": self._empty_search_hint(query, catalog.year) if not results else None,
         }
+
+    def _sharpen(self, person: ContributorProfile, year: int | None = None) -> list[dict[str, Any]]:
+        """Narrower words to try when a skill or interest matches dozens of organizations."""
+        try:
+            _, index = self.gsoc.org_index(year)
+        except GigError:
+            return []
+        return [
+            {
+                "word": tip["word"],
+                "kind": tip["kind"],
+                "matches": tip["matches"],
+                "suggest": [{"words": name, "organizations": n} for name, n in tip["suggest"]],
+            }
+            for tip in index.sharpen(person)
+        ]
 
     def _empty_search_hint(self, query: str | None, list_year: int) -> str:
         """Why nothing matched: often the name is an organization from an earlier year."""
@@ -1178,6 +1195,7 @@ class GSoCToolkit:
             "technologies_used": techs,
             "interests_used": wants,
             "read_as": person.notes,
+            "sharpen": self._sharpen(person),
             "experience": {"level": level, "from": level_source},
             "hours_per_week": hours,
             "hours_note": hours_note(hours) if hours else None,

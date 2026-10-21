@@ -206,3 +206,28 @@ def test_no_fit_is_claimed_when_nothing_personal_was_given() -> None:
     science = _org("Lab", tech=["python"], topics=[], category="Science and medicine")
     assert [m.fit for m in _rank([science], category="science")] == [None]
     assert _rank(query="star")[0].fit == "strong"
+
+
+def test_a_broad_organization_says_less_about_each_skill_than_a_focused_one() -> None:
+    focused = _org("Rust Tools", tech=["rust"], topics=["developer tools"])
+    many = ["rust", "python", "go", "java", "c++", "ruby", "javascript", "php", "lua"]
+    polyglot = _org("Poly Runtime", tech=many, topics=["developer tools"])
+    others = [_org(f"Small {i}", tech=["python"], topics=["web"]) for i in range(5)]
+    ranked = _rank(
+        [polyglot, focused, *others], technologies=["rust"], interests=["developer tools"]
+    )
+    assert [m.org.name for m in ranked[:2]] == ["Rust Tools", "Poly Runtime"]
+
+
+def test_vague_words_get_narrower_suggestions_with_counts() -> None:
+    ai = [_org(f"AI {i}", tech=["python"], topics=["machine learning"]) for i in range(4)]
+    vision = [_org(f"Vision {i}", tech=["python"], topics=["computer vision"]) for i in range(3)]
+    llm = [_org(f"LLM {i}", tech=["python"], topics=["llm"]) for i in range(2)]
+    index = OrgIndex.build([*ai, *vision, *llm], reference_year=2026)
+    tips = index.sharpen(build_profile(interests=["ai"]), broad=5)
+    assert tips[0]["word"] == "ai" and tips[0]["matches"] == 9
+    assert tips[0]["suggest"] == [("Computer vision", 3), ("LLMs and AI agents", 2)]
+    skill_tips = index.sharpen(build_profile(technologies=["python"]), broad=5)
+    assert skill_tips[0]["kind"] == "skill"
+    assert ("Machine learning and AI", 9) in skill_tips[0]["suggest"]
+    assert index.sharpen(build_profile(interests=["computer vision"]), broad=5) == []

@@ -31,7 +31,7 @@ def bench() -> ModuleType:
 
 
 # split: (nDCG@10, precision@5, wrong picks in the top 5, hit@10 on accepted projects)
-FLOORS = {"dev": (0.74, 0.66, 12, 0.82), "test": (0.74, 0.60, 9, 0.71)}
+FLOORS = {"dev": (0.77, 0.69, 12, 0.85), "test": (0.78, 0.60, 7, 0.73)}
 
 
 @pytest.mark.parametrize("split", ["dev", "test"])

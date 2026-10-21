@@ -767,5 +767,18 @@
     }
   ],
   "starter_issue_scope": "the recommended organizations above",
-  "starter_issues_hidden": 0
+  "starter_issues_hidden": 0,
+  "sharpen": [
+    {
+      "word": "ai",
+      "kind": "interest",
+      "matches": 93,
+      "suggest": [
+        {
+          "words": "Computer vision",
+          "organizations": 11
+        }
+      ]
+    }
+  ]
 }

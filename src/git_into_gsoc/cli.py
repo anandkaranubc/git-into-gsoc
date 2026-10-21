@@ -612,6 +612,7 @@ def orgs_cmd(
         console.print(f"[yellow]No organizations matched.[/yellow] {hint}")
         return
     _print_org_evidence(data["organizations"][:3])
+    _print_sharpen(data.get("sharpen") or [])
     if data.get("how_ranked"):
         console.print(f"[dim]{data['how_ranked']}[/dim]")
     console.print(
@@ -620,6 +621,22 @@ def orgs_cmd(
 
 
 _FIT_STYLE = {"strong": "green", "good": "cyan", "partial": "yellow"}
+
+
+def _print_sharpen(tips: list[dict[str, Any]]) -> None:
+    """One line per vague word: how broad it is, and narrower words to try."""
+    for tip in tips:
+        options = ", ".join(f"{s['words']} ({s['organizations']})" for s in tip["suggest"])
+        if tip["kind"] == "interest":
+            console.print(
+                f"[cyan]Tip:[/cyan] '{tip['word']}' matches {tip['matches']} organizations. "
+                f"A narrower interest finds closer fits: {options}."
+            )
+        else:
+            console.print(
+                f"[cyan]Tip:[/cyan] {tip['matches']} organizations use '{tip['word']}'. "
+                f"Adding an interest narrows the list; theirs include: {options}."
+            )
 
 
 def _fit_cell(fit: str | None) -> str:
@@ -1545,6 +1562,7 @@ def recommend_cmd(
         table.add_row(_fit_cell(org.get("fit")), name, "; ".join(why[:4]))
     console.print(table)
     _print_org_evidence(data["recommended_orgs"][:3])
+    _print_sharpen(data.get("sharpen") or [])
     if data.get("ideas_that_fit"):
         console.print("\n[bold]Ideas that fit you[/bold]")
         for group in data["ideas_that_fit"]:
