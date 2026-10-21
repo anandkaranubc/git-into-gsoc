@@ -11,7 +11,6 @@ from urllib.parse import quote
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.github.availability import assess_issue, unverified_assessment
-from git_into_gsoc.github.availability import assess_issue
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.repos import (
     channels_in,

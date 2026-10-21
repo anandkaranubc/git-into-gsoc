@@ -21,7 +21,7 @@ from git_into_gsoc.gsoc.project_ideas import (
 )
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
-from git_into_gsoc.http_client import CachedHttpClient, HttpError
+from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProgressState, ProjectIdea, RepoLead
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_login
@@ -481,15 +481,11 @@ class GSoCToolkit:
                 refs.append((raw, f"{owner}/{repo}", f"{owner}/{repo}#{num}", num))
             with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
                 futures = [
-                    (raw, full, key, pool.submit(self.github.check_issue_availability, full, num))
+                    (raw, full, key, pool.submit(self._availability_of, full, num))
                     for raw, full, key, num in refs
                 ]
                 for raw, full, key, future in futures:
-                    try:
-                        availability, reason = future.result()
-                        status = availability.value
-                    except GigError as exc:
-                        status, reason = "unknown", str(exc)
+                    status, reason = future.result()
                     previous = state.issue_status.get(key)
                     statuses[key] = status
                     entry = {
@@ -631,6 +627,16 @@ class GSoCToolkit:
                 )
             )
         return doc
+
+    def _availability_of(self, full_name: str, number: int) -> tuple[str, str]:
+        """(status, reason) for one tracked issue; never raises."""
+        try:
+            _, assessment = self.github.assess(full_name, number)
+        except NotFoundError:
+            return "unknown", "Issue not found"
+        except GigError as exc:
+            return "unknown", str(exc)
+        return assessment.availability.value, assessment.reason
 
     def _new_beginner_issues(self, state: ProgressState, *, now: datetime) -> list[dict[str, Any]]:
         """Beginner issues created in tracked repos / shortlisted orgs since the last check."""
