@@ -18,6 +18,7 @@ Repositories can be written as `owner/name` or as any GitHub URL. Issues can be 
 | Command | Options | Result |
 |---|---|---|
 | `program` | `--year` (default 2027), `--size small\|medium\|large` | Current phase and advice, timeline with official or estimated dates, anti-spam rules |
+| `next` | `--year`, `--no-check` | What to do right now: phase and deadlines, your tracked issues re-checked live with any status changes, new beginner issues in places you follow, and up to six actions with the exact command for each |
 | `journey` | none | All eight phases with goals and actions |
 | `proposal [FILE]` | `--github`, `--verify/--no-verify`, `--ideas-file` | Without a file: the checklist and suggested structure. With a draft: pass/warn/fail findings on sections, contribution links, timeline detail, specificity, generic phrasing, placeholders, and length |
 
@@ -46,6 +47,8 @@ git-into-gsoc projects "graph neural networks" --since 2024
 
 `--tech` and `--topics` take comma-separated lists and understand aliases (`js`, `golang`, `ml`, `k8s`). They decide whether an organization matches; continuity, slot counts, and trend decide the order. Without filters, all organizations are listed by continuity.
 
+`ideas` reads the organization's ideas page in its most structured form (raw markdown for GitHub wikis and files, an HTML export for Google Docs) and splits it into project ideas with size in hours, difficulty, mentors, skills, expected outcome, and links. Empty fields were not on the page. A `?` marks a block with no labelled fields, which is often a section heading rather than an idea. Umbrella organizations whose page only links to sub-projects are detected and up to eight linked pages are read; organizations that list ideas as GitHub issues are read through the issue search. The panel also quotes any sentence on the page about using AI tools, because policies differ by organization. Ideas are ranked by the skills you give or the technologies in your saved profile.
+
 `--year` defaults to the configured target year. When that year's organizations are not announced, the most recent official list is used and the table caption says so. `org` shows ideas page, contributor guide, source, website, GitHub organizations, contact channels, projects per year, and recent accepted project titles. `projects` searches every accepted project in the archive by keyword and organization.
 
 ## Explore repositories and issues
@@ -64,19 +67,42 @@ git-into-gsoc issue sympy/sympy#12345
 | `repo OWNER/REPO` | Repository or URL; `--track` saves it to your progress | Grade A to F with evidence, warnings, and setup hints |
 | `issues` | `--language` / `-l`, `--org`, `--repo`, `--label`, `--scope gsoc\|all`, `--limit` / `-n` | Beginner issues with a verified availability status |
 | `issue REF [NUMBER]` | `owner/repo#123`, a URL, or `owner/repo` plus a number; `--track` saves it to your progress | Linked PRs, claims with dates, approvals, caveats, and a before-you-comment checklist |
+| `orient OWNER/REPO` | Repository or URL | Code map with purpose guesses, entry points, the test command CI runs, docs to read first, who merges and CODEOWNERS, rules before a PR (sign-off, CLA, commit style, checklist, AI disclosure), policy sentences, channels, an example merged outsider PR, and a reading plan |
+| `pointers REF [NUMBER]` | Issue reference as for `issue`; `--similar N` (default 5), `--no-search` | Files the issue text names, resolved against the tree with a confidence label; code-search hits or search links for identifiers; closed issues with the same beginner label and the PRs that fixed them; the repository's fix norm |
 
 `repos` resolves a GSoC organization to its GitHub organizations and reads its ideas page when possible. `repo` samples recent closed pull requests to compute merge rates excluding bots, and separately for outside contributors; it needs about six API calls.
+
+`orient` makes about sixteen cached GitHub calls and prints facts and paths only: every line names a real file, commit, or check, and the purpose labels on the code map are marked as guesses. `pointers` never proposes a fix. It extracts links to files in the repository, stack-trace frames, paths, and identifiers from the issue, matches them against the repository tree, and learns from history: for closed issues with the same beginner label it finds the pull request merged within seconds of the close (or, with lower confidence, the most recent earlier merge) and lists the files it touched, then summarises how many files a typical fix changes and how often fixes touch tests and docs. GitHub code search needs a token and is limited to two calls per run; without a token you get ready-made search links instead.
 
 `issues` searches open issues labelled "good first issue", falling back to "help wanted" when results are thin, or the label given with `--label`. It excludes assigned issues, issues with linked PRs, archived repositories, and anything not updated in a year. With the default `--scope gsoc` and no `--org` or `--repo`, it searches only repositories owned by GSoC organizations that use the given language. The top candidates are verified against their timelines. Statuses: `available`, `claimed`, `contested`, `likely_taken`, `assigned`, `stale`, `closed`, `unknown`; see [choosing an issue](guide/05-choose-an-issue.md). The tool never posts comments or claims.
 
 ## Get recommendations
 
 ```bash
+git-into-gsoc profile --github YOUR_USERNAME --tech python,c++ --interests science --hours 10 --tz Asia/Kolkata
+git-into-gsoc recommend
 git-into-gsoc recommend --tech python --interests science
-git-into-gsoc recommend --github YOUR_USERNAME
 ```
 
-Short forms are `-g` for `--github`, `-t` for `--tech`, and `-i` for `--interests`. With `--github`, this reads your recent public repositories to infer your main language and saves the profile locally. It then ranks organizations and lists starter issues from GSoC organizations that use that language.
+`profile` saves the facts recommendations are built from: your GitHub username, the languages and tools you know, the topics you care about, the hours per week you can give, and your timezone. Run it with no options to see what is saved. Short forms are `-g`, `-t`, and `-i`.
+
+`recommend` uses the saved profile when you give no flags, and saves the flags you give so the next run matches. With a GitHub username it reads your recent public repositories to infer your main language. It prints the organizations that fit with their fit reasons and a table of starter issues with verified availability, and says which source the match came from.
+
+## Write and keep evidence
+
+```bash
+git-into-gsoc contributions --github YOUR_USERNAME --org "SymPy"
+git-into-gsoc draft claim --issue sympy/sympy#12345
+git-into-gsoc log --goal "Reproduce #12345" --done "Reproduced on main" --stuck "Flaky test" --next "Ask in Zulip"
+```
+
+| Command | Arguments and options | Result |
+|---|---|---|
+| `contributions` | `--github` / `-g` (required); `--org` (GSoC org name or GitHub org) or `--repo OWNER/REPO` | Your merged, open, and closed PRs, issues opened, threads joined, and reviews given in that scope; paste-ready markdown lines for a proposal; a standing from `none` to `strong`; honest gaps to close |
+| `draft KIND` | `intro`, `question`, `claim`, `pr`, `review-reply`, `status`, or `final`; `--org`, `--repo`, `--issue` | A skeleton with placeholders, the fields that must hold your own observations, and the rules maintainers and the official guide state, each with its source |
+| `log` | `--goal`, `--done`, `--links` (comma-separated), `--learned`, `--stuck`, `--next`; `--limit` / `-n` when listing | Saves a weekly note, or lists recent notes when you give no fields |
+
+`contributions` runs four scoped GitHub searches (pull requests you authored, issues you opened, threads you commented in, pull requests you reviewed). `draft` fills in real context when you give it: the organization's channels, the project's claim convention read from its CONTRIBUTING (a `/assign` command, a `.take` command, or "we do not assign issues"), whether commits need a sign-off or the PR template asks for an AI disclosure, the issue's availability, and your latest note for a status post. It never fills placeholders with observations you have not made. `log` follows the three questions GSoC organizations ask for in weekly updates; `next` reminds you when the last note is a week old.
 
 ## Save local progress
 

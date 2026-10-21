@@ -34,6 +34,13 @@ Every tool returns JSON as text. A parameter shown with a default is optional. R
 | `gsoc_proposal_checklist` | none | Checklist, suggested structure, and warnings |
 | `gsoc_progress` | `action="summary"`, `phase=""`, `value=""` | The local progress summary, or the saved state after a write |
 | `gsoc_rate_limit` | none | Remaining GitHub requests and whether a token is in use |
+| `gsoc_next` | `year=0`, `recheck=True` | What to do right now: phase, deadlines within 45 days, tracked issues re-checked live with status changes, new beginner issues in tracked repositories and shortlisted organizations, and up to six actions with commands; writes the check time and issue statuses to the local progress file |
+| `gsoc_org_ideas` | `name`, `skills=""`, `size=""`, `difficulty=""`, `limit=20`, `follow=True` | Project ideas parsed from the organization's ideas page with size, difficulty, mentors, skills, links, and a confidence flag; `layout` says how the page was read; any AI-use policy sentences found on the page |
+| `gsoc_orient_repo` | `full_name` | Orientation sheet for a repository: code map, entry points, the test command CI runs, docs, active committers and CODEOWNERS, rules before a PR with evidence, policy quotes, channels, an example outsider PR, and a reading plan |
+| `gsoc_issue_pointers` | `ref`, `number=0`, `similar=5`, `code_search=True` | Files an issue names resolved against the tree with confidence labels, code-search hits or search links, closed issues with the same beginner label and the PRs that fixed them, and the fix norm |
+| `gsoc_contribution_evidence` | `github_username`, `org=""`, `repo=""` | A contributor's PRs, issues, threads joined, and reviews in an organization, as counts, paste-ready evidence lines, a standing, and gaps |
+| `gsoc_draft` | `kind`, `org=""`, `repo=""`, `issue=""` | A message skeleton (intro, question, claim, pr, review-reply, status, final) with evidence fields and sourced rules, filled with real context when given |
+| `gsoc_log` | `goal=""`, `done=""`, `links=""`, `learned=""`, `stuck=""`, `next_step=""`, `limit=5` | Saves a weekly note, or lists recent notes when every field is empty; writes the local progress file |
 
 How the parameters work:
 
@@ -43,6 +50,8 @@ How the parameters work:
 - `ref` takes `owner/name#123`, an issue URL, or `owner/name` together with `number`. Passing a pull request number is an error.
 - `org` in `gsoc_find_issues` is a GitHub login. `org` in `gsoc_discover_repos` is a GSoC organization name or a GitHub login.
 - `scope="gsoc"` searches repositories of GSoC organizations that use the language. `scope="all"` searches every public repository. Giving `org` or `repo` narrows the search to that owner or repository.
+- `gsoc_org_ideas`, `gsoc_orient_repo`, `gsoc_issue_pointers`, `gsoc_contribution_evidence`, and `gsoc_draft` report expected failures (unknown organization, a pull request passed as an issue, an unknown draft kind) as tool errors with a next step rather than as result JSON. `gsoc_next` and `gsoc_log` are the only new tools that write, and only to the local progress file.
+- The server also offers four prompts an assistant can run as commands: `coach_phase(phase)`, `before_you_comment(issue)`, `first_pr_plan(repo, issue)`, and `weekly_checkin()`. Each tells the assistant which tools to call and what not to invent. The `gsoc://progress` resource returns the saved progress summary without a tool call.
 - `gsoc_progress` actions are `summary`, `complete_phase` (needs `phase`), `shortlist_org`, `track_repo`, `track_issue`, and `note` (each needs `value`). Phase names are `learn`, `discover`, `evaluate`, `find_issues`, `contribute`, `community`, `proposal`, and `track`.
 
 ## Example calls

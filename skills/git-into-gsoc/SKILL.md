@@ -68,17 +68,33 @@ the person to run the installer. Never invent a result in its place.
 | discover | `git-into-gsoc projects "symbolic integration" -n 5` | `gsoc_past_projects` |
 | evaluate | `git-into-gsoc repos "SymPy"` | `gsoc_discover_repos` |
 | evaluate | `git-into-gsoc repo sympy/sympy` | `gsoc_evaluate_repo` |
+| evaluate | `git-into-gsoc orient sympy/sympy` | `gsoc_orient_repo` |
+| community | `git-into-gsoc draft intro --org "SymPy"` | `gsoc_draft` |
 | find_issues | `git-into-gsoc issues --language python -n 5` | `gsoc_find_issues` |
 | find_issues | `git-into-gsoc issue sympy/sympy#23161` | `gsoc_issue_status` |
-| any | `git-into-gsoc recommend --tech python --interests science` | `gsoc_recommend_path` |
+| find_issues | `git-into-gsoc pointers sympy/sympy#23161` | `gsoc_issue_pointers` |
+| contribute | `git-into-gsoc draft claim --issue sympy/sympy#23161` | `gsoc_draft` |
+| contribute | `git-into-gsoc draft pr --repo sympy/sympy --issue sympy/sympy#23161` | `gsoc_draft` |
+| proposal | `git-into-gsoc ideas "SymPy" --skills python` | `gsoc_org_ideas` |
+| proposal | `git-into-gsoc contributions --github octocat --org "SymPy"` | `gsoc_contribution_evidence` |
 | proposal | `git-into-gsoc proposal` | `gsoc_proposal_checklist` |
 | proposal | `git-into-gsoc proposal draft.md --github USER` | `gsoc_proposal_check` |
+| any | `git-into-gsoc profile --tech python --interests science --hours 10` | `gsoc_progress` (profile field) |
+| any | `git-into-gsoc recommend --tech python --interests science` | `gsoc_recommend_path` |
+| any | `git-into-gsoc next` | `gsoc_next` |
+| track | `git-into-gsoc log --goal "Reproduce #23161" --done "..." --stuck "..." --next "..."` | `gsoc_log` |
 | track | `git-into-gsoc progress summary` | `gsoc_progress` |
 | any | `git-into-gsoc journey` | `gsoc_journey_guide` |
 
 Add `--output json` when you need every field. SymPy only shows the input
 format. Use organizations and issues from the person's own research, and real
 issue numbers from search results.
+
+Over MCP the server also offers prompts an assistant can run as commands
+(`coach_phase`, `before_you_comment`, `first_pr_plan`, `weekly_checkin`) and a
+`gsoc://progress` resource with the saved progress summary. Start a returning
+person with `next`: it re-checks their tracked issues and gives the next
+actions with commands.
 
 ## Read results carefully
 
@@ -89,7 +105,11 @@ issue numbers from search results.
 - **Before commenting.** Run `issue` on the exact issue, read the whole thread, and follow the project's rules for claiming work. The tool reads comments and linked pull requests, but it can miss coordination that happens in chat.
 - **Caching.** Results can be up to an hour old (a day for organization lists). Run `git-into-gsoc cache --clear` for a fresh look, and restart the MCP server to refresh organization data it holds in memory.
 - **Draft checks.** `proposal draft.md` reports pass, warn, and fail findings on a draft: required sections, linked pull requests (confirmed on GitHub when `--github` is given), week-by-week timeline detail, concrete references to code and issues, generic phrasing, leftover placeholders, and text copied from an ideas page passed with `--ideas-file`. It never rewrites the draft. A clean check means the skeleton is right, not that the plan is good; only mentors can judge that.
-- **Local writes.** `progress`, `recommend --github`, and the `--shortlist` and `--track` flags on `org`, `repo`, and `issue` save to a file on the person's computer. Nothing is ever posted to GitHub or submitted to GSoC.
+- **Local writes.** `progress`, `profile`, `recommend`, `next`, `log`, and the `--shortlist` and `--track` flags on `org`, `repo`, and `issue` save to a file on the person's computer. Nothing is ever posted to GitHub or submitted to GSoC.
+- **Ideas pages.** `ideas` reads the organization's own page and reports a confidence per idea. Empty fields were not on the page; a `?` marks a block that may be a section heading. The layout field says when a page is an index, a set of GitHub issues, unreadable, or missing. Quote the organization's AI policy sentences when they appear; never paste idea text into a proposal.
+- **Orientation and pointers.** `orient` and `pointers` print facts and paths only. Purpose labels on the code map are guesses; everything else names a real file, commit, or check. `pointers` shows where to read and how similar issues were fixed; it never proposes a fix, and neither should you before the person has read the code.
+- **Drafts.** `draft` gives a skeleton with placeholders and the rules behind it. The person fills every placeholder with their own observations and sends it in their own words. Never post a draft as it is, and never fill placeholders with facts you do not have.
+- **Evidence.** `contributions` counts public activity only and the search index can lag. Show the gaps it reports as honest next steps, not as failures.
 
 ## Contributions and proposals
 

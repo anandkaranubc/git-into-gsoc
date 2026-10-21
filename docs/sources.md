@@ -29,6 +29,20 @@ Issue searches ask GitHub for open, unassigned issues without linked PRs in non-
 
 Organization scoping uses the GitHub organizations linked from each GSoC organization's official listing. Organizations whose code lives outside GitHub, or under a personal account, are not covered by `issues --scope gsoc`. `repos` reads up to 100 repositories from each of the first three GitHub owners linked to an organization and skips forks, archived repositories, repositories with issues disabled, and anything not pushed in the last year.
 
+## Ideas pages, orientation, pointers, and evidence
+
+Where these features came from, and which ideas from other tools were adopted or rejected, is in the [research notes](research.md).
+
+`ideas` fetches the URL each organization published, in the most structured form available: raw markdown for GitHub wikis and repository files, the HTML export for Google Docs, and the page itself otherwise. The parser looks for the small vocabulary organizations use (difficulty, size or duration, mentors, skills, expected outcome, links) under the heading level that carries the ideas. It reports a confidence per idea, marks a page as an index when it only links onward, follows up to eight linked sub-project pages, reads ideas kept as GitHub issues through the issue search, and says when a page could not be fetched. Roughly a third of organizations publish pages with full labels, a third give partial fields, and the rest are prose, tables, or indexes; the tool says which it found rather than guessing fields.
+
+`orient` reads the repository tree, languages, community profile, commits from the last 90 days, the 30 most recent closed pull requests, the check names on one merged pull request, and the raw CONTRIBUTING, pull request template, CODEOWNERS, the package manifest (pyproject.toml, package.json, and similar), and up to two workflow files. Purpose labels on the code map are guesses from directory names and are marked as such; everything else names a real path, commit, or check. Committer counts come from commits, so maintainers who review without committing are not shown.
+
+`pointers` reads the issue, the tree, the repository labels, one search for closed issues with the same beginner label, their timelines, and the changed files of the pull request merged within seconds of each close (or, marked as a likely fix, the most recent earlier merge in the same repository). Code search runs only with a token and at most twice per run because GitHub allows ten code searches a minute. Identifier matching is text matching, not program analysis.
+
+`contributions` uses four GitHub searches scoped to the organization's GitHub owners or one repository: pull requests you authored, issues you opened, threads you commented in, and pull requests you reviewed. Counts cover public activity only and the search index can lag by minutes.
+
+Text written by other people (issue and pull request titles, idea descriptions, policy sentences, repository descriptions) is cleaned before it is shown: hidden Unicode characters, HTML comments and risky tags are removed and length is capped. It is still data written by strangers; read it as such.
+
 ## Caching
 
 Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source fails, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.
