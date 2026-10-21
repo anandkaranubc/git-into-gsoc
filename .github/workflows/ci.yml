@@ -160,8 +160,10 @@ jobs:
       - name: PowerShell installer (one-line install, new terminal)
         shell: pwsh
         run: |
-          $commit = git -C $env:GITHUB_WORKSPACE rev-parse HEAD
-          $env:GIG_REPO_URL = "file:///" + ($env:GITHUB_WORKSPACE -replace '\\', '/') + "@$commit"
+          # Install this commit as a wheel; pipx would otherwise clone the whole repository twice.
+          python -m pip wheel . --no-deps --quiet --wheel-dir (Join-Path $env:RUNNER_TEMP "wheel")
+          if ($LASTEXITCODE) { throw "wheel build failed" }
+          $env:GIG_INSTALL_SPEC = (Get-ChildItem (Join-Path $env:RUNNER_TEMP "wheel\*.whl")).FullName
           $env:GIG_HOME = Join-Path $env:RUNNER_TEMP "home-oneline"
           $env:GIG_DATA_DIR = Join-Path $env:RUNNER_TEMP "gig-data"
           $env:GIG_CACHE_DIR = Join-Path $env:RUNNER_TEMP "gig-cache"

@@ -99,6 +99,8 @@ function Get-ReleaseWheelSpec([string]$Version) {
 }
 
 function Get-InstallSpec {
+  # CI passes a wheel it just built: cloning the repository through pipx takes minutes.
+  if ($env:GIG_INSTALL_SPEC) { return $env:GIG_INSTALL_SPEC }
   $version = Get-LatestReleaseVersion
   if ($version) {
     $spec = Get-VerifiedPyPISpec $version
