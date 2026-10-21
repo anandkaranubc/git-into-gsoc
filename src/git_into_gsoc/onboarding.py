@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from git_into_gsoc.errors import GigError, HttpError
+from git_into_gsoc.errors import GigError
 from git_into_gsoc.validation import split_csv
 
 if TYPE_CHECKING:
@@ -65,7 +65,7 @@ def parse_topics(answer: str) -> list[str]:
 
 
 def milestones(summary: dict[str, Any]) -> list[dict[str, Any]]:
-    """Progress as five concrete steps, each done or not, from the saved progress file."""
+    """Progress as concrete steps, each done or not, from the saved progress file."""
     profile = summary.get("profile") or {}
     counts = {
         "profile": int(bool(profile.get("technologies") or profile.get("interests"))),
@@ -124,7 +124,7 @@ def signed_in_login(toolkit: GSoCToolkit) -> str | None:
         return None
     try:
         login = toolkit.github.authenticated_login()
-    except (GigError, HttpError):
+    except GigError:
         return None
     return login
 
