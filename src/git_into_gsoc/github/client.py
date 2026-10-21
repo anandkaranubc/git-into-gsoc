@@ -15,6 +15,7 @@ from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
 from git_into_gsoc.github.repos import (
+    MIN_REPLY_SAMPLE,
     attach_first_replies,
     channels_in,
     contributing_path,
@@ -36,6 +37,7 @@ from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.validation import parse_repo, search_term, validate_login
 
 MAX_QUERY_CHARS = 256
+MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample is short
 
 
 def _parse_dt(value: str | None) -> datetime | None:
@@ -304,14 +306,14 @@ class GitHubClient:
             str(u.get("login")) for u in data if isinstance(u, dict) and u.get("login")
         )
 
-    def recent_comments(self, owner: str, repo: str) -> list[dict[str, Any]]:
-        """Newest 100 issue comments plus newest 100 review comments (two public calls)."""
+    def recent_comments(self, owner: str, repo: str, *, page: int = 1) -> list[dict[str, Any]]:
+        """One page (100) of issue comments plus one of review comments, newest first."""
         out: list[dict[str, Any]] = []
         for path in ("issues/comments", "pulls/comments"):
             try:
                 data = self._api(
                     f"repos/{owner}/{repo}/{path}",
-                    params={"sort": "created", "direction": "desc", "per_page": 100},
+                    params={"sort": "created", "direction": "desc", "per_page": 100, "page": page},
                 )
             except HttpError:
                 continue
@@ -374,6 +376,21 @@ class GitHubClient:
                 comments = comments_f.result()
             pulls, _ = attach_first_replies(pulls, comments)
             stats = pull_stats(pulls, insiders=insiders)
+            # Busy repositories burn through 100 comments in a day or two; widen the
+            # window (two more pages at most) until the reply figure rests on enough PRs.
+            page = 1
+            while (
+                stats.first_response_sampled < MIN_REPLY_SAMPLE
+                and page < MAX_COMMENT_PAGES
+                and len(comments) >= 100 * page
+            ):
+                page += 1
+                more = self.recent_comments(owner, repo, page=page)
+                if not more:
+                    break
+                comments.extend(more)
+                pulls, _ = attach_first_replies(pulls, comments)
+                stats = pull_stats(pulls, insiders=insiders)
             pr_source = "rest"
         files = profile.get("files") or {}
         label = pick_beginner_label(labels)

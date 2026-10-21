@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from git_into_gsoc.github.repos import MIN_OUTSIDER_SAMPLE
+from git_into_gsoc.github.repos import MIN_OUTSIDER_SAMPLE, MIN_REPLY_SAMPLE
 from git_into_gsoc.models import RepoHealth
-
-MIN_REPLY_SAMPLE = 5  # fewer outside PRs than this and the reply time is shown, not scored
 
 
 def _days_or_hours(hours: float) -> str:

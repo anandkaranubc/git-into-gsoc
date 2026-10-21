@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
+import pytest
 import respx
 
 from git_into_gsoc.github.client import GitHubClient
@@ -292,3 +293,45 @@ def test_rest_path_reports_first_reply_but_scores_it_only_with_a_sample() -> Non
     assert health.median_first_response_hours is not None
     assert 4.5 <= health.median_first_response_hours <= 5.5
     assert any("human reply within" in s for s in health.signals)
+
+
+@respx.mock
+def test_rest_path_widens_the_comment_window_when_the_sample_is_short() -> None:
+    api = "https://api.github.com/repos/acme/lib"
+    respx.get(api).mock(
+        return_value=httpx.Response(200, json={"full_name": "acme/lib", "pushed_at": _iso(1)})
+    )
+    for path in ("community/profile", "actions/workflows"):
+        respx.get(f"{api}/{path}").mock(return_value=httpx.Response(200, json={}))
+    respx.get(f"{api}/labels").mock(return_value=httpx.Response(200, json=[]))
+    respx.get(f"{api}/assignees").mock(return_value=httpx.Response(200, json=[]))
+    respx.get(url__startswith="https://commits.ecosyste.ms").mock(
+        return_value=httpx.Response(404, json={})
+    )
+    pulls = [{**_pull(f"u{i}", "CONTRIBUTOR", True), "number": 200 + i} for i in range(6)]
+    for pr in pulls:
+        pr["created_at"] = _iso(9)
+    respx.get(f"{api}/pulls").mock(return_value=httpx.Response(200, json=pulls))
+
+    def comment(number: int, days_ago: float) -> dict[str, object]:
+        return {
+            "issue_url": f"https://api.github.com/repos/acme/lib/issues/{number}",
+            "created_at": _iso(days_ago),
+            "user": {"login": "maintainer", "type": "User"},
+        }
+
+    # page 1: 100 recent comments on unrelated issues, newest first, only 3 days deep
+    page1 = [comment(1, 0.01 * i) for i in range(100)]
+    # page 2: older comments that reply to the six sampled PRs opened nine days ago
+    page2 = [comment(200 + i, 8.8) for i in range(6)] + [comment(1, 12)]
+    issue_route = respx.get(f"{api}/issues/comments")
+    issue_route.side_effect = lambda request: httpx.Response(
+        200, json=page2 if request.url.params.get("page") == "2" else page1
+    )
+    review_route = respx.get(f"{api}/pulls/comments").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    health = GitHubClient().repo_health("acme/lib")
+    assert issue_route.call_count == 2 and review_route.call_count == 2
+    assert health.first_response_sampled == 6
+    assert health.median_first_response_hours == pytest.approx(0.2 * 24, abs=0.5)
