@@ -16,7 +16,7 @@ Pass a year to pin which official list is embedded, for example `python -m git_i
 
 ## 2. Merge the release pull request
 
-Release Please keeps a pull request titled `chore(main): release X.Y.Z` open whenever `main` has unreleased commits. It updates `CHANGELOG.md`, the version in `pyproject.toml`, `src/git_into_gsoc/__init__.py`, and the plugin manifests. While the project is below 1.0, `feat:` commits bump the minor version and `fix:` commits bump the patch version. Merging that pull request creates the Git tag and the GitHub release.
+Release Please keeps a pull request titled `chore(main): release X.Y.Z` open whenever `main` has unreleased commits. Because the bot pushes that branch with the built-in Actions token, GitHub does not start CI on it, and the branch rules require passing checks. Trigger the checks yourself before merging: close and reopen the pull request, or rebase its branch onto `main` and push it (which also picks up any test or manifest fixes that landed after the bot last refreshed it). To make this automatic, store a fine-grained personal access token with contents and pull-request write permission as a repository secret and pass it to the action as `token:` in `release.yml`. It updates `CHANGELOG.md`, the version in `pyproject.toml`, `src/git_into_gsoc/__init__.py`, and the plugin manifests. While the project is below 1.0, `feat:` commits bump the minor version and `fix:` commits bump the patch version. Merging that pull request creates the Git tag and the GitHub release.
 
 ## 3. Publish to PyPI (one-time setup)
 
