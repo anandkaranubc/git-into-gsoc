@@ -4,7 +4,7 @@
 
 # Research stream E: MCP servers and Agent Skills: interoperability, design patterns, distribution
 
-> Verification status. Re-checked first hand on 2026-10-21: GitHub's sanitizer in `pkg/sanitize/sanitize.go`, the reference fetch server's annotations, Context7's `index.ts`, the Agent Skills specification fields, the registry's API (edit is admin only; GitHub OIDC grants publish), the MCPB bundle format, and the SDK's elicitation API, all exercised by the code that shipped. Everything else here is the research stream's working record as written.
+> Verification status. Re-checked first hand on 2026-10-21: GitHub's sanitizer in `pkg/sanitize/sanitize.go`, the reference fetch server's annotations, Context7's `index.ts`, the Agent Skills specification fields, the registry's API (edit is admin only; GitHub OIDC grants publish), the MCPB bundle format, and the SDK's elicitation API, all exercised by the code that shipped. Links: 51 of 61 resolved with HTTP 200 on 2026-10-21; the rest are URL templates with placeholders, endpoints that need a token, or sites that block scripts. Everything else here is the research stream's working record as written.
 
 Date: 2026-10-21. Scope: how the best MCP servers and Agent Skills are designed and shipped in 2026, measured against git-into-gsoc's own server (`src/git_into_gsoc/mcp_server.py`), skill (`skills/git-into-gsoc/SKILL.md`) and installer (`install.sh`). All claims about external projects cite a URL or a clone path; everything about git-into-gsoc was measured on the working tree (`docs/beginner-guide` @ 190bcd0; the `feat/ecosystem-intelligence` worktree @ a07c329 adds one tool, same packaging) with the installed SDK (`mcp` 2.3.0) and a stdio probe. Anything not confirmed is marked "unverified".
 

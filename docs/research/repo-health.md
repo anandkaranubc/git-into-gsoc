@@ -4,7 +4,7 @@
 
 # Stream C: Repository health, community-health metrics, and project-discovery engines
 
-> Verification status. Re-checked first hand on 2026-10-21: `author_association` evaluated at query time (sympy), the Scorecard Maintained rule in `checks/evaluation/maintained.go`, the CHAOSS definition from the `chaoss/website` archive, the Turzo, Sultana and Bosu figures from the PDF, and ecosyste.ms as adopted in pull request #33. Not re-opened: the GraphQL cost tables. Everything else here is the research stream's working record as written.
+> Verification status. Re-checked first hand on 2026-10-21: `author_association` evaluated at query time (sympy), the Scorecard Maintained rule in `checks/evaluation/maintained.go`, the CHAOSS definition from the `chaoss/website` archive, the Turzo, Sultana and Bosu figures from the PDF, and ecosyste.ms as adopted in pull request #33. Not re-opened: the GraphQL cost tables. Links: 35 of 44 resolved with HTTP 200 on 2026-10-21; the rest are URL templates with placeholders, endpoints that need a token, or sites that block scripts. Everything else here is the research stream's working record as written.
 
 Research date: 2026-10-20/21 (all live probes ran 2026-10-21 ~03:28-03:40 UTC with `curl` and the authenticated `gh` CLI). Raw probe outputs are saved under `(session working files, not included)` (GraphQL queries `q1.graphql`..`q4.graphql`, JSON responses, ecosyste.ms OpenAPI specs).
 

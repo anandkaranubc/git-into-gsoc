@@ -4,7 +4,7 @@
 
 # Stream D: Codebase understanding and contributor onboarding ("I picked a repo, now what?")
 
-> Verification status. Re-checked first hand on 2026-10-21: aider's `repomap.py` weights, the Agentless file-level prompt, the CodeTour schema, the repomix README, the DeepWiki complaint threads, Cody's archived retrievers, and the closing-pull-request rule on matplotlib. Also opened: codeglance's detectors, learn-codebase's skill, aoci-code, repo-map and repomind. Everything else here is the research stream's working record as written.
+> Verification status. Re-checked first hand on 2026-10-21: aider's `repomap.py` weights, the Agentless file-level prompt, the CodeTour schema, the repomix README, the DeepWiki complaint threads, Cody's archived retrievers, and the closing-pull-request rule on matplotlib. Also opened: codeglance's detectors, learn-codebase's skill, aoci-code, repo-map and repomind. Links: 39 of 42 resolved with HTTP 200 on 2026-10-21; the rest are URL templates with placeholders, endpoints that need a token, or sites that block scripts. Everything else here is the research stream's working record as written.
 
 Research date: 2026-10-21. All GitHub numbers (stars, pushed_at, licence) were read live via `gh api` on that date; all claims about a project's internals come from its source or official docs fetched during this session (URLs inline). Anything I could not confirm is marked **unverified**.
 

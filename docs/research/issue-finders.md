@@ -4,7 +4,7 @@
 
 # Stream B: Beginner-issue discovery, newcomer-issue recommendation, contributor-project matching
 
-> Verification status. Re-checked first hand on 2026-10-21: the crawlers' sources (DeepSource, up-for-grabs YAML, forgoodfirstissue), CodeTriage's live re-check in `app/models/issue.rb`, the claim bots' commands, a label census over the most-starred repository of 149 organizations, and full reads of OSS-Skills and FindUnderstandFix. Not re-opened: the redirect chains of the dead sites beyond what this note recorded. Everything else here is the research stream's working record as written.
+> Verification status. Re-checked first hand on 2026-10-21: the crawlers' sources (DeepSource, up-for-grabs YAML, forgoodfirstissue), CodeTriage's live re-check in `app/models/issue.rb`, the claim bots' commands, a label census over the most-starred repository of 149 organizations, and full reads of OSS-Skills and FindUnderstandFix. Not re-opened: the redirect chains of the dead sites beyond what this note recorded. Links: 31 of 33 resolved with HTTP 200 on 2026-10-21; the rest are URL templates with placeholders, endpoints that need a token, or sites that block scripts. Everything else here is the research stream's working record as written.
 
 Research date: 2026-10-20. All repo metadata (stars, license, pushed_at) is from `gh api repos/...` on that date. Every claim about a project cites the source file or URL it came from. Where I could not verify something it is marked **unverified**.
 

@@ -4,7 +4,7 @@
 
 # F. The science and craft of newcomer onboarding, personalised guidance, and adjacent ideas
 
-> Verification status. Re-checked first hand on 2026-10-21: the five studies were re-opened and the quoted figures read from the PDFs (48,402 good first issues; 1,155 GitHub projects and five Gerrit projects), Google's 2026 ratio, Outreachy's models, the CNCF proposal template, OWASP Nest's contribution check, the GSoC discussion group's topic list, and Hacker News's story set. Everything else here is the research stream's working record as written.
+> Verification status. Re-checked first hand on 2026-10-21: the five studies were re-opened and the quoted figures read from the PDFs (48,402 good first issues; 1,155 GitHub projects and five Gerrit projects), Google's 2026 ratio, Outreachy's models, the CNCF proposal template, OWASP Nest's contribution check, the GSoC discussion group's topic list, and Hacker News's story set. Links: 82 of 87 resolved with HTTP 200 on 2026-10-21; the rest are URL templates with placeholders, endpoints that need a token, or sites that block scripts. Everything else here is the research stream's working record as written.
 
 Research stream for git-into-gsoc. Written 2026-10-20. Every claim about a paper, project or page cites the URL it was read from. Where a number could not be checked against a primary source it is marked **unverified**.
 
