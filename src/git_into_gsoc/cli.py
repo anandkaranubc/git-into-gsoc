@@ -806,6 +806,12 @@ def issues_cmd(
         _emit(data, output)
         return
     data = _markup_safe(data)
+    if not data["issues"]:
+        console.print(f"No free beginner issues found. {data['note']}")
+        console.print("[bold]Try next[/bold]")
+        for step in data["next_steps"]:
+            console.print(f"  • {step}")
+        return
     table = Table(title="Beginner-friendly issues", caption=data["note"])
     table.add_column("Score", justify="right")
     table.add_column("Status")
@@ -825,8 +831,7 @@ def issues_cmd(
             issue["title"],
         )
     console.print(table)
-    if data["issues"]:
-        console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
+    console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
 
 
 @app.command("issue", rich_help_panel="Pick a repository and an issue")

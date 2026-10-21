@@ -23,7 +23,14 @@ MAX_OWNER_FILTERS = 15
 
 # Someone who writes one of these can usually work in the other; a project's
 # repositories are often split between them (a JavaScript site, a TypeScript app).
-RELATED_LANGUAGES = {"javascript": ["typescript"], "typescript": ["javascript"]}
+# GitHub names a repository after its main language, and few web projects are
+# mostly HTML or CSS, so those searches also take in the languages around them.
+RELATED_LANGUAGES = {
+    "javascript": ["typescript"],
+    "typescript": ["javascript"],
+    "html": ["css", "vue", "javascript", "typescript"],
+    "css": ["html", "scss", "vue", "javascript", "typescript"],
+}
 
 
 _IDENTIFIER_QUALIFIERS = {"repo", "org", "user", "author", "commenter", "reviewed-by", "assignee"}

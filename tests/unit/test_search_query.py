@@ -4,6 +4,7 @@ from git_into_gsoc.github.search import (
     MAX_OWNER_FILTERS,
     MAX_QUERY_CHARS,
     build_issue_query,
+    language_group,
     or_group,
 )
 
@@ -66,3 +67,14 @@ def test_label_values_keep_colons_and_emoji() -> None:
     assert or_group("label", ["🌱 Good first issue"]) == 'label:"🌱 Good first issue"'
     assert or_group("label", ["E-easy"]) == "label:E-easy"
     assert or_group("label", ['bad"quote']) == "label:badquote"
+
+
+def test_html_and_css_also_search_the_languages_web_projects_are_tagged_with() -> None:
+    # GitHub names a repository after its main language; GSoC orgs that list HTML
+    # had no repositories tagged HTML with free beginner issues.
+    assert language_group("HTML") == (
+        "(language:html OR language:css OR language:vue OR language:javascript "
+        "OR language:typescript)"
+    )
+    assert "language:scss" in language_group("css")
+    assert language_group("python") == "language:python"

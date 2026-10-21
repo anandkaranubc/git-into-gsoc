@@ -58,7 +58,7 @@ from git_into_gsoc.github.repos import (
     pick_beginner_label,
     repo_lead_score,
 )
-from git_into_gsoc.github.search import build_issue_query, or_group
+from git_into_gsoc.github.search import RELATED_LANGUAGES, build_issue_query, or_group
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
@@ -80,6 +80,7 @@ from git_into_gsoc.models import (
     RepoLead,
 )
 from git_into_gsoc.progress.store import ProgressStore
+from git_into_gsoc.scoring.org_match import canonical
 from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import (
     parse_issue_ref,
@@ -128,6 +129,30 @@ def public_channels(channels: list[ContactChannel]) -> list[str]:
         key=lambda c: _PUBLIC_CHANNEL_ORDER.index(c.kind),
     )
     return [c.value for c in ranked]
+
+
+def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) -> list[str]:
+    """What to try when a search finds no free beginner issues."""
+    if repo:
+        return [
+            f"Read {repo}'s open issues yourself: a small bug, a docs gap, or a missing "
+            "test is a fine first contribution even without a beginner label.",
+            "Ask in the project's public channel which small task would help most.",
+            'Or pick another repository: git-into-gsoc repos "ORG NAME"',
+        ]
+    steps = [
+        "Pick an organization first: git-into-gsoc orgs"
+        + (f" --tech {language}" if language else ""),
+        'List its repositories: git-into-gsoc repos "ORG NAME", then '
+        "git-into-gsoc issues --repo owner/name (it uses that repository's own beginner label).",
+    ]
+    if not org:
+        steps.append("Search every repository, not only GSoC organizations: add --scope all")
+    steps.append(
+        "Beginner labels go fast before GSoC. A small fix you find yourself counts too; "
+        "ask in the project's channel before you start."
+    )
+    return steps
 
 
 class GSoCToolkit:
@@ -585,6 +610,13 @@ class GSoCToolkit:
             note += (
                 f" Only {first} issue(s) came from those; the rest are from other "
                 f"organizations that use {language}."
+                if len(issues) > first
+                else f" Other organizations that use {language} had none free either."
+            )
+        related = RELATED_LANGUAGES.get(canonical(language), []) if language else []
+        if related and not repo:
+            note += (
+                f" Also searching {', '.join(related)} repositories, which often hold this work."
             )
         return {
             "scope": "gsoc" if use_gsoc else "custom",
@@ -594,6 +626,7 @@ class GSoCToolkit:
             "count": len(issues),
             "issues": [_issue_dict(i) for i in issues],
             "before_you_comment": BEFORE_YOU_COMMENT,
+            "next_steps": [] if issues else _when_no_issues(language, org=org, repo=repo),
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:

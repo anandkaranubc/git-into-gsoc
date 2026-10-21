@@ -110,3 +110,23 @@ def test_org_still_takes_a_plain_github_login(monkeypatch: Any) -> None:
     monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: seen.update(k) or [])
     toolkit.find_issues(org="ros2", max_results=5)
     assert seen["org"] == "ros2" and seen["orgs"] is None
+
+
+def test_an_empty_search_says_what_to_try_next(monkeypatch: Any) -> None:
+    # A simulated HTML and CSS beginner saw an empty table and the line
+    # "Only 0 issue(s) came from those; the rest are from other organizations".
+    ProgressStore().set_profile(technologies=["html"], interests=["robotics"])
+    toolkit, _ = _toolkit(monkeypatch, [[], []])
+    data = toolkit.find_issues(max_results=3)
+    assert "Only 0" not in data["note"]
+    assert "had none free either" in data["note"]
+    assert "Also searching css, vue, javascript, typescript" in data["note"]
+    assert any("git-into-gsoc orgs --tech html" in step for step in data["next_steps"])
+    assert any("--scope all" in step for step in data["next_steps"])
+
+
+def test_a_search_with_results_has_no_next_steps(monkeypatch: Any) -> None:
+    ProgressStore().set_profile(technologies=["c++"], interests=["robotics"])
+    hits = [_issue("ArduPilot/ardupilot", n) for n in (1, 2, 3)]
+    toolkit, _ = _toolkit(monkeypatch, [hits])
+    assert toolkit.find_issues(max_results=3)["next_steps"] == []

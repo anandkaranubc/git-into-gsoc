@@ -233,3 +233,22 @@ def test_program_speaks_to_the_person_and_ends_with_a_next_step() -> None:
     assert "fabricate" not in result.stdout
     assert "Good habits" in result.stdout
     assert "git-into-gsoc profile" in result.stdout  # no profile saved yet
+
+
+def test_an_empty_issue_search_prints_next_steps_not_an_empty_table(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc import cli
+
+    class Fake:
+        def find_issues(self, **kw):  # type: ignore[no-untyped-def]
+            return {
+                "note": "Searching GitHub orgs of GSoC 2026 organizations that use html.",
+                "issues": [],
+                "next_steps": ["Pick an organization first: git-into-gsoc orgs --tech html"],
+            }
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    result = runner.invoke(app, ["issues", "--language", "html"])
+    assert result.exit_code == 0, result.output
+    assert "No free beginner issues found." in result.output
+    assert "git-into-gsoc orgs --tech html" in result.output
+    assert "┏" not in result.output
