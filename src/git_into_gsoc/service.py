@@ -90,7 +90,7 @@ from git_into_gsoc.models import (
     ProjectIdea,
     RepoLead,
 )
-from git_into_gsoc.progress.store import ProgressStore
+from git_into_gsoc.progress.store import ProgressStore, other_host_link
 from git_into_gsoc.scoring.org_match import canonical
 from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import (
@@ -177,6 +177,20 @@ def _mark_ideas_too_big(ideas: list[dict[str, Any]], hours_per_week: Any) -> str
         "here need more than that and are listed last. Ask a mentor whether a smaller version "
         f"would work. Source: {GSOC_FAQ_URL}"
     )
+
+
+def _off_github_issue(link: str) -> dict[str, Any]:
+    """A tracked issue on another code host: listed, but never re-checked."""
+    return {
+        "ref": link,
+        "url": link,
+        "availability": "unknown",
+        "reason": "Not on GitHub, so it is not re-checked: look for an assignee, a linked "
+        "merge request, and recent claims yourself",
+        "previous": None,
+        "changed": False,
+        "off_github": True,
+    }
 
 
 def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) -> list[str]:
@@ -1091,6 +1105,8 @@ class GSoCToolkit:
                 try:
                     owner, repo, num = parse_issue_ref(raw)
                 except GigError:
+                    if other_host_link(raw):
+                        tracked.append(_off_github_issue(raw))
                     continue
                 refs.append((raw, f"{owner}/{repo}", f"{owner}/{repo}#{num}", num))
             with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
@@ -1140,6 +1156,7 @@ class GSoCToolkit:
             new_issues=new_issues,
             open_pull_requests=open_prs,
             now=now,
+            code_elsewhere=self._code_elsewhere(state.shortlisted_orgs[:3]),
         )
         for post in reversed([p for p in org_posts if p["status"] == "not_taking_part"]):
             actions.insert(
@@ -2021,6 +2038,18 @@ class GSoCToolkit:
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
             found = [r for r in pool.map(one, items[:limit]) if r]
         found.sort(key=lambda r: (r["status"] != "needs_you", -(r.get("quiet_days") or 0)))
+        return found
+
+    def _code_elsewhere(self, names: list[str]) -> dict[str, str]:
+        """Shortlisted organizations with no GitHub owner, and where their code is."""
+        found: dict[str, str] = {}
+        for name in names:
+            try:
+                org = self.gsoc.get_organization(name)
+            except GigError:
+                continue
+            if org and not org.github_orgs:
+                found[name] = org.source_code or org.url or "its own site"
         return found
 
     def _shortlist_posts(self, state: ProgressState, year: int) -> list[dict[str, Any]]:

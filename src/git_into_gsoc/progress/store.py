@@ -131,6 +131,26 @@ def _issue_key(ref: str) -> tuple[str, str, int] | str:
     return owner.lower(), repo.lower(), number
 
 
+def other_host_link(value: str) -> str | None:
+    """A project or issue link on a code host other than GitHub, tidied, or None.
+
+    GNOME, KDE, Debian, and about one in six GSoC organizations keep their code on
+    GitLab or their own servers; their links are saved as they are.
+    """
+    raw = (value or "").strip()
+    if not raw.startswith(("https://", "http://")):
+        return None
+    parsed = urlparse(raw)
+    host = parsed.netloc.lower()
+    path = [p for p in parsed.path.split("/") if p]
+    if not host or "." not in host or host.removeprefix("www.") == "github.com" or len(path) < 2:
+        return None
+    return raw.split("#", 1)[0].rstrip("/").removesuffix(".git")
+
+
+_OTHER_HOST_ISSUE = re.compile(r"/(?:-/)?(?:issues|merge_requests|pulls?|bugs?|tickets?)/\d+")
+
+
 def _repo_key(full_name: str) -> str:
     try:
         owner, repo = parse_repo(full_name)
@@ -302,8 +322,12 @@ class ProgressStore:
 
     @_mutating
     def track_repo(self, full_name: str) -> ProgressState:
-        owner, repo = parse_repo(_require(full_name, "repository"))
-        full_name = f"{owner}/{repo}"
+        link = other_host_link(_require(full_name, "repository"))
+        if link:
+            full_name = link
+        else:
+            owner, repo = parse_repo(full_name)
+            full_name = f"{owner}/{repo}"
         state = self.load()
         if _repo_key(full_name) not in {_repo_key(r) for r in state.tracked_repos}:
             state.tracked_repos.append(full_name)
@@ -312,12 +336,19 @@ class ProgressStore:
     @_mutating
     def track_issue(self, issue_ref: str) -> ProgressState:
         issue_ref = _require(issue_ref, "issue reference")
+        link = other_host_link(issue_ref)
+        if link and _OTHER_HOST_ISSUE.search(link):
+            state = self.load()
+            if link.lower() not in {i.lower() for i in state.tracked_issues}:
+                state.tracked_issues.append(link)
+            return self.save(state)
         try:
             owner, repo, number = parse_issue_ref(issue_ref)
         except InputError as exc:
             raise InputError(
                 f"Not an issue or pull request: {issue_ref!r}",
-                hint="Use owner/repo#123 or the GitHub link to the issue.",
+                hint="Use owner/repo#123, the GitHub link, or the full link to an issue "
+                "on GitLab or another code host.",
             ) from exc
         kind = "pull" if re.search(r"/pull/\d", issue_ref) else "issues"
         canonical = f"https://github.com/{owner}/{repo}/{kind}/{number}"

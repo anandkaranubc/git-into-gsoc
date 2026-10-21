@@ -103,3 +103,50 @@ def test_ideas_page_links_to_mirrors_are_skipped(monkeypatch: Any) -> None:
     monkeypatch.setattr(toolkit.github, "get_repo", lambda o, r: GITG)
     page = "See https://github.com/GNOME/gitg for the code."
     assert toolkit._repos_named_on_page(page, [], language=None) == []
+
+
+def test_progress_keeps_links_on_other_code_hosts() -> None:
+    from git_into_gsoc.progress.store import ProgressStore, other_host_link
+
+    store = ProgressStore()
+    store.track_repo("https://gitlab.gnome.org/GNOME/gitg.git/")
+    store.track_issue("https://gitlab.gnome.org/GNOME/gitg/-/issues/494")
+    state = store.load()
+    assert state.tracked_repos == ["https://gitlab.gnome.org/GNOME/gitg"]
+    assert state.tracked_issues == ["https://gitlab.gnome.org/GNOME/gitg/-/issues/494"]
+    assert other_host_link("https://github.com/sympy/sympy") is None
+    assert other_host_link("https://gitlab.gnome.org/") is None  # a host, not a project
+    from git_into_gsoc.errors import InputError
+
+    with pytest.raises(InputError) as refused:
+        store.track_issue("https://gitlab.gnome.org/GNOME/gitg")  # a project, not an issue
+    assert refused.value.hint and "another code host" in refused.value.hint
+
+
+def test_next_moves_on_for_an_org_whose_code_is_elsewhere() -> None:
+    from git_into_gsoc.coach import plan_actions
+    from git_into_gsoc.models import ProgressState
+
+    program = {"phase": {"id": "org_exploration"}, "timeline": []}
+    state = ProgressState(shortlisted_orgs=["GNOME Foundation"], profile={"technologies": ["c"]})
+    first = plan_actions(
+        state,
+        program,
+        tracked_issues=[],
+        new_issues=[],
+        code_elsewhere={"GNOME Foundation": "https://gitlab.gnome.org/"},
+    )[0]
+    assert "progress track_repo --value LINK" in first["why"]
+    state = state.model_copy(
+        update={
+            "tracked_repos": ["https://gitlab.gnome.org/GNOME/gitg"],
+            "phases": {"community": True},
+        }
+    )
+    second = plan_actions(state, program, tracked_issues=[], new_issues=[])[0]
+    assert second["title"] == "Find a newcomer issue in https://gitlab.gnome.org/GNOME/gitg"
+    assert "issues --repo" not in second["command"]
+    link = "https://gitlab.gnome.org/GNOME/gitg/-/issues/494"
+    tracked = [{"ref": link, "url": link, "availability": "unknown", "off_github": True}]
+    third = plan_actions(state, program, tracked_issues=tracked, new_issues=[])[0]
+    assert third["command"] == link and "cannot check it" in third["why"]

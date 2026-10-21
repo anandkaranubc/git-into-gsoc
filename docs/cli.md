@@ -139,8 +139,8 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 | `summary` (default) | none | Phases, shortlist, tracked links, and profile |
 | `complete_phase` | `--phase NAME` | Mark a phase complete |
 | `shortlist_org` | `--value "NAME"` | Save an organization name |
-| `track_repo` | `--value OWNER/REPO` | Save a repository as `owner/repo`, once whatever the spelling |
-| `track_issue` | `--value URL` | Save an issue or pull request as one GitHub link; `owner/repo#123` works too |
+| `track_repo` | `--value OWNER/REPO` | Save a repository as `owner/repo`, once whatever the spelling. A project link on GitLab or another host is saved as it is |
+| `track_issue` | `--value URL` | Save an issue or pull request as one GitHub link; `owner/repo#123` works too. An issue link on GitLab or another host is saved as it is, and `next` lists it without re-checking it |
 | `note` | `--value "TEXT"` | Append a note |
 
 `-v` is short for `--value`. `summary` shows the phases as a checklist with the next one marked, then your shortlist, tracked repositories and issues, and how recent your weekly notes are. Saving actions print `Saved.` and the same view. With `--output json`, `summary` prints the summary and a saving action prints the whole saved state. A value that is not a repository or an issue is refused rather than saved. A note, and each field of a `log` entry, holds up to 2,000 characters, and `log` links must be web addresses. No action changes anything on GitHub. See [tracking progress](guide/08-track-progress.md).
