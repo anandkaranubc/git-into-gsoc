@@ -35,6 +35,7 @@ Every tool returns JSON as text. A parameter shown with a default is optional. R
 | `gsoc_progress` | `action="summary"`, `phase=""`, `value=""` | The local progress summary, or the saved state after a write |
 | `gsoc_rate_limit` | none | Remaining GitHub requests and whether a token is in use |
 | `gsoc_next` | `year=0`, `recheck=True` | What to do right now: phase, deadlines within 45 days, tracked issues re-checked live with status changes, new beginner issues in tracked repositories and shortlisted organizations, and up to six actions with commands; writes the check time and issue statuses to the local progress file |
+| `gsoc_org_mentors` | `name`, `years=3`, `limit=25` | Who mentored the organization's completed projects in recent archived years, with years, project counts, returning mentors, repositories past projects touched, and tags |
 | `gsoc_org_ideas` | `name`, `skills=""`, `size=""`, `difficulty=""`, `limit=20`, `follow=True` | Project ideas parsed from the organization's ideas page with size, difficulty, mentors, skills, links, and a confidence flag; `layout` says how the page was read; any AI-use policy sentences found on the page |
 | `gsoc_orient_repo` | `full_name` | Orientation sheet for a repository: code map, entry points, the test command CI runs, docs, active committers and CODEOWNERS, rules before a PR with evidence, policy quotes, channels, an example outsider PR, and a reading plan |
 | `gsoc_issue_pointers` | `ref`, `number=0`, `similar=5`, `code_search=True` | Files an issue names resolved against the tree with confidence labels, code-search hits or search links, closed issues with the same beginner label and the PRs that fixed them, and the fix norm |
@@ -75,6 +76,10 @@ Check one issue before commenting, with `gsoc_issue_status`:
 ```json
 {"ref": "sympy/sympy#23161"}
 ```
+
+## Install as a plugin or from a registry
+
+The repository ships the manifests assistants look for: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` for Claude Code plugins (`/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`), `gemini-extension.json` for Gemini CLI extensions, and `server.json` for the public MCP registry. The manifests start the server with `uvx`, which needs the package on PyPI; until the first PyPI release, use the installer or `git-into-gsoc setup`, which register the server from your local checkout. Registry publishing (`mcp-publisher`) is a one-time step for a maintainer after that release; the README carries the `mcp-name` marker the registry checks.
 
 ## Reading results
 

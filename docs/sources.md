@@ -39,6 +39,8 @@ Where these features came from, and which ideas from other tools were adopted or
 
 `pointers` reads the issue, the tree, the repository labels, one search for closed issues with the same beginner label, their timelines, and the changed files of the pull request merged within seconds of each close (or, marked as a likely fix, the most recent earlier merge in the same repository). Code search runs only with a token and at most twice per run because GitHub allows ten code searches a minute. Identifier matching is text matching, not program analysis.
 
+`mentors` reads the official archive of completed projects (`summerofcode.withgoogle.com/api/archive/`), the same endpoints the official site's archive pages use. Only projects that passed are published, so counts describe completed work. Mentor names are as the organization entered them.
+
 `contributions` uses four GitHub searches scoped to the organization's GitHub owners or one repository: pull requests you authored, issues you opened, threads you commented in, and pull requests you reviewed. Counts cover public activity only and the search index can lag by minutes.
 
 Text written by other people (issue and pull request titles, idea descriptions, policy sentences, repository descriptions) is cleaned before it is shown: hidden Unicode characters, HTML comments and risky tags are removed and length is capped. It is still data written by strangers; read it as such.

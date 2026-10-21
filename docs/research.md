@@ -23,6 +23,10 @@ In October 2026 we surveyed the tools, data sources, and research around open so
 - **Sanitise what strangers wrote.** The GitHub MCP server sanitises every issue body by default; Unicode tag characters can hide text that models read and people cannot. All titles, descriptions, and quotes we show pass through one cleaner.
 - **Protocol hints change how assistants treat tools.** Clients skip confirmation for read-only tools and prompt for everything else. Every tool now carries annotations and a title; four prompts expose the coaching flows as one-click commands.
 
+- **The official archive names mentors.** `/api/archive/programs/{year}/projects/` lists every completed project with its mentors, code URL, and tags; the community archive we also use drops those fields. `mentors ORG` turns three archived years into a list of who mentors, who returns, and which repositories past work lives in.
+- **Claims are commands, not prose.** Zulip, Rust, Kubernetes, pandas, Beam and others claim issues with `@zulipbot claim`, `@rustbot claim`, `/assign`, `.take` and similar, and bots release them after a week or two of silence. Availability now reads those commands and releases.
+- **GitHub's advanced issue search ANDs repeated qualifiers.** Checked live: `org:a org:b` returns 0 results under `advanced_search=true` and `(org:a OR org:b)` returns the union. All multi-org searches now use grouped qualifiers.
+
 ## Ideas we rejected
 
 - **Competition scores.** Sites that rank organizations by "competition level" could not show their evidence. We show slot history, mentor counts, and the ratio Google publishes (about one accepted project per twenty proposals in 2026) instead.
@@ -42,8 +46,36 @@ In October 2026 we surveyed the tools, data sources, and research around open so
 - Google, GSoC contributor guide, making first contact: https://google.github.io/gsocguides/student/making-first-contact
 - Google, AI tooling guidance: https://developers.google.com/open-source/gsoc/resources/ai_guidance
 
-## Projects studied
+## Projects and sources examined
 
-GitHub MCP server (MIT) for content sanitising and tool annotations; the Agentless project (MIT) for path discipline; CodeTour (MIT) for the idea of a reading plan pinned to a commit; CodeTriage (MIT) for the one-issue-at-a-time digest that became part of `next`; Outreachy's applicant process for the recorded-contribution ledger behind `contributions`; the GSoC Organizations archive (GPL-3.0, data consumed as JSON only) for its organization schema; OpenSSF Scorecard (Apache-2.0) for explainable "reason with counts" output; CHAOSS metric definitions for the vocabulary of responsiveness. Ideas only; no code was reused.
+Checked on 2026-10-20 and 2026-10-21 by reading source, documentation, issues, or live endpoints. "Status" records what could and could not be verified. Ideas only; no code was reused.
+
+| Project or source | License | What it is | What we took | Status |
+|---|---|---|---|---|
+| [summerofcode.withgoogle.com API](https://summerofcode.withgoogle.com/api/program/2026/) | Google terms | The official site's own JSON: programs, organizations, archive of completed projects with mentors | Timeline, organizations, `mentors` | Verified live; 1,191 completed projects in the 2025 archive |
+| [nishantwrp/gsoc-organizations](https://github.com/nishantwrp/gsoc-organizations) | GPL-3.0 | Community archive site and JSON API | Multi-year history and slot counts (JSON only) | Verified: hand-updated snapshot, days to weeks behind announcements, no mentor names |
+| [github/github-mcp-server](https://github.com/github/github-mcp-server) | MIT | GitHub's official MCP server | Content sanitising by default, tool annotations, compact results | Verified from source |
+| [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers) | MIT (transitioning to Apache-2.0) | Reference servers | Annotation constants, `structured_output=False` for text results, `ToolError` with hints | Verified from source |
+| [agentskills.io specification](https://agentskills.io/specification) | Apache-2.0 / CC-BY-4.0 | Agent Skills format | Frontmatter fields, `.agents/skills` convention | Verified |
+| [Aider-AI/aider](https://github.com/Aider-AI/aider) | Apache-2.0 | Repository map for an editing assistant | Identifier weighting, special files first, token budgets | Verified from `aider/repomap.py`; not adopted as a dependency |
+| [OpenAutoCoder/Agentless](https://github.com/OpenAutoCoder/Agentless) | MIT | Issue localisation without agents | Full paths, at most a few, never a nested tree | Verified from source and the follow-up survey |
+| [microsoft/codetour](https://github.com/microsoft/codetour) | MIT | Guided code tours in VS Code | Reading plan pinned to a commit | Verified; export not built yet |
+| [yamadashy/repomix](https://github.com/yamadashy/repomix), [coderamp-labs/gitingest](https://github.com/coderamp-labs/gitingest) | MIT | Repository packers | Rejected: whole-repository dumps | Verified |
+| DeepWiki ([deepwiki-open](https://github.com/AsyncFuncAI/deepwiki-open)) | MIT (open version) | Generated wikis | Citation discipline; rejected generated prose | Verified, including maintainer complaints on the OpenWrt and Scala forums |
+| [idosal/git-mcp](https://github.com/idosal/git-mcp), [upstash/context7](https://github.com/upstash/context7) | Apache-2.0, MIT | Documentation retrieval servers | Fallback chains, cache hints; rejected unbounded fallbacks | Verified from source |
+| [ossf/scorecard](https://github.com/ossf/scorecard) | Apache-2.0 | Security and maintenance checks | Reasons with counts; the Maintained rule | Verified; public API covers only scanned repositories |
+| [CHAOSS metrics](https://chaoss.community/) | CC-BY | Community health definitions | Time to first response, acceptance ratio, absence factor | Verified |
+| [ecosyste.ms](https://repos.ecosyste.ms/docs/api/v1/openapi.yaml) | AGPL-3.0 (services) | Open data about repositories, issues, commits | Candidate zero-token enrichment source | Verified; not adopted yet |
+| [codetriage/codetriage](https://github.com/codetriage/codetriage) | MIT | One issue a day by email | The digest in `next` | Verified |
+| [deepsourcelabs/good-first-issue](https://github.com/deepsourcelabs/good-first-issue), [up-for-grabs.net](https://github.com/up-for-grabs/up-for-grabs.net), [forgoodfirstissue](https://github.com/forgoodfirstissue/forgoodfirstissue.github.com) | MIT, NOASSERTION, GitHub | Label crawlers | Confirmed none checks availability | Verified from source |
+| [osslab-pku/gfi-bot](https://github.com/osslab-pku/gfi-bot) | GPL-3.0 | Research recommender (RecGFI) | Feature ideas from the paper only | Verified on 2026-10-21: 57 stars, last push 2026-04 |
+| [Outreachy](https://www.outreachy.org/docs/applicant/) | GPL-3.0 (site) | Internship applicant process | Recorded contributions, two-project cap | Verified from docs and models |
+| [cncf/mentoring](https://github.com/cncf/mentoring) | Apache-2.0 | GSoC and LFX ideas in one template | Idea template vocabulary | Verified |
+| [OWASP/Nest](https://github.com/OWASP/Nest) | MIT | Organization-side contributor platform | Assignment-before-PR enforcement exists; availability checks matter | Verified from source |
+| GSoC proposal archives ([SammanSarkar/GSoC_archive_2025](https://github.com/SammanSarkar/GSoC_archive_2025) and others) | MIT (repositories) | Accepted proposals as PDFs | Section census only; never bundled (personal data) | Verified; 43 PDFs read |
+| Sourcegraph Cody | n/a | Context engine | Nothing | Repository returns 404 as of 2026-10-21; product retired |
+| ossrank.com | n/a | Ranking site | Nothing | Unreachable on 2026-10-21 |
+| grep.app API | n/a | Code search | Nothing | Bot-gated (HTTP 429) on 2026-10-21 |
+| r/GSoC | n/a | Community forum | Nothing | Blocked for automated reads (HTTP 403); advice came from blogs, mailing lists, and org retrospectives instead |
 
 [Guide contents](README.md) · [Sources and limitations](sources.md)

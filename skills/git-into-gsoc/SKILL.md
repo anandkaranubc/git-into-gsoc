@@ -66,6 +66,7 @@ the person to run the installer. Never invent a result in its place.
 | discover | `git-into-gsoc orgs --tech python --topics science -n 5` | `gsoc_search_orgs` |
 | discover | `git-into-gsoc org "SymPy"` | `gsoc_org_details` |
 | discover | `git-into-gsoc projects "symbolic integration" -n 5` | `gsoc_past_projects` |
+| community | `git-into-gsoc mentors "SymPy"` | `gsoc_org_mentors` |
 | evaluate | `git-into-gsoc repos "SymPy"` | `gsoc_discover_repos` |
 | evaluate | `git-into-gsoc repo sympy/sympy` | `gsoc_evaluate_repo` |
 | evaluate | `git-into-gsoc orient sympy/sympy` | `gsoc_orient_repo` |
@@ -109,6 +110,7 @@ actions with commands.
 - **Ideas pages.** `ideas` reads the organization's own page and reports a confidence per idea. Empty fields were not on the page; a `?` marks a block that may be a section heading. The layout field says when a page is an index, a set of GitHub issues, unreadable, or missing. Quote the organization's AI policy sentences when they appear; never paste idea text into a proposal.
 - **Orientation and pointers.** `orient` and `pointers` print facts and paths only. Purpose labels on the code map are guesses; everything else names a real file, commit, or check. `pointers` shows where to read and how similar issues were fixed; it never proposes a fix, and neither should you before the person has read the code.
 - **Drafts.** `draft` gives a skeleton with placeholders and the rules behind it. The person fills every placeholder with their own observations and sends it in their own words. Never post a draft as it is, and never fill placeholders with facts you do not have.
+- **Mentors.** `mentors` names people who mentored completed projects in past years, from the official archive. It does not say who will mentor next year, and it is never a reason to message someone privately; use it to recognise names in the public channel.
 - **Evidence.** `contributions` counts public activity only and the search index can lag. Show the gaps it reports as honest next steps, not as failures.
 
 ## Contributions and proposals
