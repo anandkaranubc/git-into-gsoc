@@ -22,7 +22,7 @@ Release Please keeps a pull request titled `chore(main): release X.Y.Z` open whe
 
 ## 3. Publish to PyPI (one-time setup)
 
-The release workflow builds a wheel and publishes it with [PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/), which needs no stored token. Until a trusted publisher is configured, the `Publish to PyPI` job fails (shown in red) without failing the release, and its run summary repeats the values to enter below; the GitHub release and its assets are published either way. A green `Publish to PyPI` job now always means the upload happened.
+The release workflow builds a wheel and publishes it with [PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/), which needs no stored token. Until a trusted publisher is configured, the `Publish to PyPI` job fails (shown in red) without failing the release, and its run summary repeats the values to enter below; the GitHub release and its assets are published either way. A green `Publish to PyPI` job always means the upload happened.
 
 To set it up once:
 
@@ -47,6 +47,6 @@ pytest
 git-into-gsoc setup --dry-run --assistant all
 ```
 
-The CI matrix already runs these on Linux, macOS, and Windows for every pull request.
+For every pull request, CI runs the lint, format, and type checks on Linux, the tests on Linux, macOS, and Windows, and both installers.
 
 [Guide contents](README.md) · [Contributing](../CONTRIBUTING.md)

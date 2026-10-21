@@ -28,7 +28,10 @@ You need [Git](https://git-scm.com/downloads) and [Python 3.11 or newer](https:/
    ```bash
    git clone https://github.com/YOUR_USERNAME/git-into-gsoc.git
    cd git-into-gsoc
+   git remote add upstream https://github.com/anandkaranubc/git-into-gsoc.git
    ```
+
+   `origin` is your fork; `upstream` is the main project, which you start new work from.
 
 2. Create a virtual environment and install the package with its development tools:
 
@@ -39,7 +42,7 @@ You need [Git](https://git-scm.com/downloads) and [Python 3.11 or newer](https:/
    pre-commit install
    ```
 
-   `-e` installs the package in editable mode, so your edits take effect immediately. `pre-commit install` adds a Git hook that formats and lints each commit.
+   `-e` installs the package in editable mode, so your edits take effect immediately. `pre-commit install` adds a Git hook that formats each commit and lints it (runs automatic style and error checks).
 
 3. Check that everything works:
 
@@ -55,15 +58,15 @@ Run `source .venv/bin/activate` again in every new terminal. If `./install.sh` w
 1. Start from an up-to-date `main` and create a branch named after the change:
 
    ```bash
-   git fetch origin
-   git switch -c fix/short-description origin/main
+   git fetch upstream
+   git switch -c fix/short-description upstream/main
    ```
 
    Common prefixes are `feat/`, `fix/`, `docs/`, `test/`, `refactor/`, `ci/`, and `chore/`.
 
 2. Make your change. Keep it focused on one problem.
 
-3. Run the checks (the same ones CI runs):
+3. Run the checks. CI (continuous integration, the checks GitHub runs automatically on every pull request) runs the same ones:
 
    ```bash
    ruff check src tests
@@ -72,7 +75,7 @@ Run `source .venv/bin/activate` again in every new terminal. If `./install.sh` w
    pytest
    ```
 
-   `pre-commit run --all-files` runs the first three at once. Tests that need the network must mock it with `respx`; the test setup blocks real connections so results stay reproducible.
+   `pre-commit run --all-files` runs the first three at once. Tests that need the network must fake it with `respx`, a library that returns prepared HTTP responses; the test setup blocks real connections so results stay reproducible.
 
 4. Commit using [Conventional Commits](https://www.conventionalcommits.org/):
 
@@ -82,13 +85,13 @@ Run `source .venv/bin/activate` again in every new terminal. If `./install.sh` w
 
    Types we use: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `ci`, `chore`. Add a scope in parentheses when it helps, such as `cli`, `github`, `gsoc`, `skill`, or `docs`. Releases and the changelog are generated from these messages, so `feat` means a new capability for users and `fix` means a bug fix.
 
-5. Push your branch and open a pull request against `main`. The pull request template asks what changed, why, and how you tested it. Link the issue with `Fixes #123` when there is one.
+5. Push your branch with `git push -u origin fix/short-description` and open the pull request link GitHub prints, against `main`. The pull request template asks what changed, why, and how you tested it. Link the issue with `Fixes #123` when there is one.
 
 ## What happens next
 
 - CI runs lint, type checks, tests on Python 3.11 and 3.13, a dependency audit, and the installer. All checks must pass before merging.
 - A maintainer reviews the change. Reviews are conversations: ask questions, push follow-up commits to the same branch, and resolve each thread when it is addressed.
-- Pull requests are squash-merged. The PR title becomes the commit message on `main`, so keep it in Conventional Commits form. Your branch is deleted automatically after merging.
+- Pull requests are squash-merged: all of your commits become one commit on `main`. The PR title becomes the commit message on `main`, so keep it in Conventional Commits form. Your branch is deleted automatically after merging.
 - [Release Please](https://github.com/googleapis/release-please) opens a release pull request when `main` has new `feat` or `fix` commits. Merging it tags a release and updates `CHANGELOG.md`. You do not edit version numbers by hand.
 - Dependabot opens weekly grouped update PRs for Python packages and GitHub Actions.
 
@@ -108,9 +111,9 @@ You are welcome to use AI assistants while contributing. You are responsible for
 
 | Path | What lives there |
 |---|---|
-| `src/git_into_gsoc/cli.py` | Typer command-line interface |
+| `src/git_into_gsoc/cli.py` | Command-line interface, built with Typer |
 | `src/git_into_gsoc/mcp_server.py` | MCP server that exposes the same features to assistants |
-| `src/git_into_gsoc/service.py` | Shared facade used by both |
+| `src/git_into_gsoc/service.py` | Shared layer used by both |
 | `src/git_into_gsoc/github/` | GitHub client, repository ranking, issue availability |
 | `src/git_into_gsoc/gsoc/` | Official GSoC data, community archive, timelines, ideas pages |
 | `src/git_into_gsoc/scoring/` | Transparent scoring rules for organizations, repositories, and issues |
@@ -134,7 +137,7 @@ You are welcome to use AI assistants while contributing. You are responsible for
 
 ## Editing the Agent Skill
 
-The skill is written for AI assistants that read `skills/git-into-gsoc/SKILL.md`. Keep `SKILL.md` short and move depth into `references/`. The description in the front matter should say what the skill does and when to use it. Tests in `tests/unit/test_skill_package.py` check the structure. The copies under `.agents/`, `.cursor/`, and `.claude/` are generated by `install.sh` and are not tracked.
+The skill is written for AI assistants that read `skills/git-into-gsoc/SKILL.md`. Keep `SKILL.md` short and move depth into `references/`. The description in the front matter (the `---` block at the top of `SKILL.md`) should say what the skill does and when to use it. Tests in `tests/unit/test_skill_package.py` check the structure. The copies under `.agents/`, `.claude/`, `.cursor/`, `.codex/`, `.gemini/`, and `.github/skills/` are written by `git-into-gsoc setup` (which the installers run) and are not tracked.
 
 ## Community and security
 

@@ -147,7 +147,7 @@ git-into-gsoc setup --scope project --assistant claude-code --assistant cursor
 | `setup` option | Effect |
 |---|---|
 | `--assistant` / `-a NAME` | `claude-code`, `cursor`, `codex`, `gemini`, `windsurf`, `vscode`, or `all`; repeatable. Default: every assistant with a config folder or executable on this machine |
-| `--scope user` (default) | Skill into `~/.<assistant>/skills` and `~/.agents/skills`; MCP into each assistant's user config (Claude Code via `claude mcp add` when available) |
+| `--scope user` (default) | Skill into each assistant's skills folder (`~/.claude/skills`, `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.codeium/windsurf/skills`) and `~/.agents/skills`; MCP into each assistant's user config (Claude Code via `claude mcp add` when available) |
 | `--scope project` | The same inside the current repository (`.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, ...); `--project-dir` picks another folder |
 | `--no-skill`, `--no-mcp` | Do only one of the two jobs |
 | `--dry-run` | Print the plan without writing |

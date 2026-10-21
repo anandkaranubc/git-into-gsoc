@@ -30,9 +30,10 @@ source .venv/bin/activate
 python -m pip install -e .
 ```
 
-On Windows PowerShell, create the environment with `py -3 -m venv .venv` and
-run `.\.venv\Scripts\git-into-gsoc.exe` wherever these notes say
-`git-into-gsoc`.
+On Windows PowerShell, run `.\install.ps1` from the clone, or create the
+environment with `py -3 -m venv .venv` and install with
+`.\.venv\Scripts\python -m pip install -e .`. Then use
+`.\.venv\Scripts\git-into-gsoc.exe` wherever these notes say `git-into-gsoc`.
 
 ## GitHub token (optional)
 
@@ -51,7 +52,9 @@ GitHub.
 
 `git-into-gsoc setup` copies this skill and registers the MCP server for every
 assistant it detects: Claude Code, Cursor, Codex, Gemini CLI, Windsurf, and
-VS Code.
+VS Code. Some assistants can only be set up in one scope (VS Code inside a
+project, Windsurf in the home folder, Codex's MCP entry in the home folder);
+for those, setup prints a command to run by hand.
 
 ```bash
 git-into-gsoc setup                       # every detected assistant, user-wide

@@ -22,7 +22,7 @@ skills/git-into-gsoc/SKILL.md     mcp_server.py          cli.py
                  ┌───────────────┬─────────────┼────────────────┬──────────────┐
                  ▼               ▼             ▼                ▼              ▼
           gsoc/official.py  gsoc/client.py  github/client.py  progress/   guidance.py
-          official site     org archive     GitHub REST       store.py    timeline.py
+          official site     org archive     GitHub API        store.py    timeline.py
                  └───────────────┴──────┬──────┘
                                         ▼
                                  http_client.py  (one pooled, cached, retrying client)
@@ -46,9 +46,19 @@ Scoring lives in `scoring/` and is pure Python with no network, so it is easy to
 | `gsoc/client.py` | Community archive at api.gsocorganizations.dev plus the official list | Organization catalog for a year, multi-year history, past accepted projects, name lookup |
 | `gsoc/timeline.py` | Official milestones or the embedded snapshot in `data/program_history.json` | Current phase and advice; for unpublished years, dates projected from the last official year with an uncertainty window |
 | `gsoc/ideas.py` | An organization's ideas page | Plain text of the page, used to find which repositories an organization mentors in |
-| `github/client.py` | GitHub REST API | Repository health, contribution guide detection, beginner-issue search, issue timelines, profile languages |
-| `github/availability.py` | Issue payload plus timeline | Decides whether an issue is `available`, `claimed`, `contested`, `likely_taken`, `assigned`, `stale`, or `closed`, with the evidence behind the decision |
+| `github/client.py` | GitHub REST API, and GraphQL through `github/graphql.py` when a token is set | Repository health, contribution guide detection, beginner-issue search, issue timelines, profile languages |
+| `github/availability.py` | Issue payload plus timeline | Decides whether an issue is `available`, `claimed`, `contested`, `likely_taken`, `assigned`, `stale`, `closed`, or `unknown`, with the evidence behind the decision |
 | `github/repos.py` | Pull request samples and ideas-page text | Pure helpers that rank an organization's repositories and grade how newcomer pull requests fare |
+| `github/graphql.py` | GitHub GraphQL API (token only) | One query for repository health: recent closed pull requests, the insider set, and each pull request's first human reply |
+| `github/ecosystems.py` | commits.ecosyste.ms | Token-free committer statistics: single-commit authors and bus factor |
+| `github/search.py` | GitHub search syntax | Builds issue search queries that keep working with GitHub's advanced search |
+| `github/orientation.py` | Repository tree, workflows, CODEOWNERS, branch rules | `orient`: code map, test command, environment CI sets up, who merges, rules before a pull request |
+| `github/pointers.py` | Issue text, repository tree, past fixes | `pointers`: where to start reading for one issue and how similar issues were fixed |
+| `github/evidence.py` | Scoped GitHub searches | `contributions`: what a contributor has done in an organization's repositories |
+| `github/pulls.py` | A contributor's open pull requests | The part of `next` that says which pull requests need the person and which are waiting |
+| `gsoc/archive.py` | Official archive of completed projects | `mentors`: who mentored which project, per year |
+| `gsoc/project_ideas.py` | An organization's ideas page | `ideas`: the page split into structured project ideas with a confidence per idea |
+| `gsoc/snapshot.py` | Embedded organization data in `data/` | Organization history that works offline and without downloading the full archive |
 | `progress/store.py` | Local `progress.json` in the user's data directory | Phases, shortlist, tracked links, notes, inferred profile. Nothing leaves the machine. |
 | `guidance.py` | Static | Official links, anti-spam rules, journey phases, proposal checklist |
 
@@ -61,6 +71,11 @@ Scoring lives in `scoring/` and is pure Python with no network, so it is easy to
 | `errors.py` | `GigError` and subclasses (`InputError`, `HttpError`, `NotFoundError`, `RateLimitError`). Every error carries an optional hint that the CLI prints. |
 | `validation.py` | Parses and validates repository names, issue references, GitHub logins, and search terms so user or model input cannot reach other endpoints or inject search qualifiers. |
 | `models.py` | Pydantic models shared by everything: organizations, repositories, issues, assessments, milestones, progress state. |
+| `text.py` | Cleans text written by strangers (hidden characters, markup, length) before it is shown or returned |
+| `coach.py` | `next`: turns the program phase, saved progress, and live checks into the next few actions |
+| `drafts.py` | `draft`: message skeletons grounded in maintainers' own rules |
+| `proposal.py` | `proposal FILE`: the draft check for what organizations reject on |
+| `install/` | `setup`: where each assistant keeps skills and MCP settings, and the plan that writes or removes them |
 
 ## Design choices
 

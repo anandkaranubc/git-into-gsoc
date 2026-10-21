@@ -187,8 +187,10 @@ NEXT
   else
     cat <<NEXT
 
-  1. Make sure the tool is on your PATH (open a new terminal if needed):
-       ${GIG_BIN} --version
+  1. Open a new terminal and check that the command is found:
+       git-into-gsoc --version
+     If it says "command not found", add $(dirname "${GIG_BIN}") to your PATH,
+     then open a new terminal.
 
   2. Try your first command:
        git-into-gsoc program
