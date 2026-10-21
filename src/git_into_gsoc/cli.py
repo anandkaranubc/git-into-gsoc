@@ -468,6 +468,55 @@ def issue_cmd(
         console.print(f"  ☐ {step}")
 
 
+@app.command("profile")
+def profile_cmd(
+    github: str | None = typer.Option(None, "--github", "-g", help="Your GitHub username"),
+    tech: str | None = typer.Option(
+        None, "--tech", "-t", help="Languages and tools you know, comma-separated"
+    ),
+    interests: str | None = typer.Option(
+        None, "--interests", "-i", help="Topics you care about, comma-separated"
+    ),
+    hours: int | None = typer.Option(None, "--hours", help="Hours per week you can give"),
+    tz: str | None = typer.Option(None, "--tz", help="Your timezone, for example Asia/Kolkata"),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Show or save your profile. recommend and next use it when you give no flags."""
+    toolkit = _toolkit()
+    if any([github, tech, interests, hours is not None, tz]):
+        data = toolkit.save_profile(
+            github=github,
+            technologies=split_csv(tech) or None,
+            interests=split_csv(interests) or None,
+            hours_per_week=hours,
+            timezone=tz,
+        )
+    else:
+        data = toolkit.progress.profile()
+    if output == Output.json:
+        _emit(data, output)
+        return
+    if not data:
+        console.print(
+            "No profile saved yet. Example:\n"
+            "  git-into-gsoc profile --github you --tech python --interests science --hours 10"
+        )
+        return
+    lines = []
+    for key, label in (
+        ("github", "GitHub"),
+        ("top_language", "Top language on GitHub"),
+        ("technologies", "Technologies"),
+        ("interests", "Interests"),
+        ("hours_per_week", "Hours per week"),
+        ("timezone", "Timezone"),
+    ):
+        value = data.get(key)
+        if value:
+            lines.append(f"{label}: {', '.join(value) if isinstance(value, list) else value}")
+    console.print(Panel(Text("\n".join(lines)), title="Your profile"))
+
+
 @app.command("recommend")
 def recommend_cmd(
     github: str | None = typer.Option(
@@ -481,11 +530,11 @@ def recommend_cmd(
     ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Suggest organizations and starter issues based on your skills."""
-    techs = [x.strip() for x in (tech or "").split(",") if x.strip()]
-    ints = [x.strip() for x in (interests or "").split(",") if x.strip()]
+    """Suggest organizations and starter issues from your saved profile or flags."""
     data = _toolkit().recommend_path(
-        username=github, technologies=techs or None, interests=ints or None
+        username=github,
+        technologies=split_csv(tech) or None,
+        interests=split_csv(interests) or None,
     )
     if output == Output.json:
         _emit(data, output)
@@ -496,9 +545,33 @@ def recommend_cmd(
             f"Profile: [bold]{data['profile'].get('login')}[/bold] "
             f"top={data['profile'].get('top_language')}"
         )
-    console.print("\n[bold]Orgs[/bold]")
-    for org in data["recommended_orgs"][:5]:
-        console.print(f"  • {org['name']} (score {org['match_score']:.0f})")
+    used = ", ".join(data["technologies_used"] + data["interests_used"]) or "none"
+    console.print(f"Matching on: {escape(used)} ({data['profile_source']})")
+    table = Table(title="Organizations")
+    table.add_column("Score", justify="right")
+    table.add_column("Organization", overflow="fold", max_width=28)
+    table.add_column("Fit", overflow="fold")
+    for org in data["recommended_orgs"][:8]:
+        fit = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
+        table.add_row(f"{org['match_score']:.0f}", org["name"], "; ".join(fit) or "—")
+    console.print(table)
+    if data["starter_issues"]:
+        issues = Table(title="Starter issues (verified availability)")
+        issues.add_column("Status")
+        issues.add_column("Issue", overflow="fold")
+        issues.add_column("Title", overflow="fold")
+        for issue in data["starter_issues"]:
+            status = issue["availability"]
+            issues.add_row(
+                f"[{_STATUS_STYLE.get(status, '')}]{status}[/]",
+                f"{issue['repo']}#{issue['number']}",
+                escape(issue["title"]),
+            )
+        console.print(issues)
+    elif data.get("starter_issue_error"):
+        console.print(
+            f"[yellow]Starter issues unavailable:[/yellow] {data['starter_issue_error']['error']}"
+        )
     console.print("\n[bold]Next steps[/bold]")
     for step in data["next_steps"]:
         console.print(f"  → {step}")

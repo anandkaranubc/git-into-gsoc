@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, progress_path
 from git_into_gsoc.errors import InputError
@@ -57,6 +58,9 @@ class ProgressStore:
         state = self.load()
         state.profile.update({k: v for k, v in fields.items() if v is not None})
         return self.save(state)
+
+    def profile(self) -> dict[str, Any]:
+        return dict(self.load().profile)
 
     def shortlist_org(self, name: str) -> ProgressState:
         name = _require(name, "organization name")

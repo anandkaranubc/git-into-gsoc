@@ -304,6 +304,26 @@ class GSoCToolkit:
         )
         return profile
 
+    def save_profile(
+        self,
+        *,
+        github: str | None = None,
+        technologies: list[str] | None = None,
+        interests: list[str] | None = None,
+        hours_per_week: int | None = None,
+        timezone: str | None = None,
+    ) -> dict[str, Any]:
+        """Save the self-profile that personalises recommendations and `next`."""
+        if github:
+            self.profile_from_github(github)
+        self.progress.set_profile(
+            technologies=technologies or None,
+            interests=interests or None,
+            hours_per_week=hours_per_week,
+            timezone=timezone,
+        )
+        return self.progress.profile()
+
     def recommend_path(
         self,
         *,
@@ -311,31 +331,55 @@ class GSoCToolkit:
         technologies: list[str] | None = None,
         interests: list[str] | None = None,
     ) -> dict[str, Any]:
+        saved = self.progress.profile()
         techs = list(technologies or [])
+        wants = list(interests or [])
+        source = "flags" if techs or wants or username else "saved profile"
+        if technologies or interests:
+            self.progress.set_profile(technologies=technologies, interests=interests)
+        if not techs:
+            techs = list(saved.get("technologies") or [])
+        if not wants:
+            wants = list(saved.get("interests") or [])
         profile = None
+        username = username or (saved.get("github") if not techs else None)
         if username:
             profile = self.profile_from_github(username)
-            if profile.get("top_language") and profile["top_language"] not in techs:
-                techs.insert(0, profile["top_language"])
+            top = profile.get("top_language")
+            if top and top.lower() not in {t.lower() for t in techs}:
+                techs.insert(0, top)
+        if not (techs or wants):
+            source = "none"
 
-        orgs = self.match_orgs(
-            technologies=techs or None,
-            topics=interests,
-            limit=8,
-        )["organizations"]
+        orgs = self.match_orgs(technologies=techs or None, topics=wants or None, limit=8)[
+            "organizations"
+        ]
         issue_language = techs[0] if techs else None
         issues: list[dict[str, Any]] = []
+        issue_error: dict[str, str] | None = None
         if issue_language:
             try:
                 issues = self.find_issues(language=issue_language, max_results=5)["issues"]
             except GigError as exc:
-                issues = [exc.to_dict()]
+                issue_error = exc.to_dict()
 
+        note = (
+            f"Org rankings use archive data through {LATEST_ARCHIVED_YEAR}. "
+            "GSoC 2027 org lists are not final until officially announced."
+        )
+        if source == "none":
+            note = (
+                "No technologies or interests given and no saved profile. Run "
+                "`profile --tech ... --interests ...` once, or pass --tech/--interests. " + note
+            )
         return {
             "profile": profile,
+            "profile_source": source,
             "technologies_used": techs,
+            "interests_used": wants,
             "recommended_orgs": orgs,
             "starter_issues": issues,
+            "starter_issue_error": issue_error,
             "next_steps": [
                 "Shortlist three organizations and join their community channels",
                 "Check one or two of their main repositories for health and a contributing guide",
@@ -346,6 +390,7 @@ class GSoCToolkit:
                 "Organization rankings use the latest official list plus archive history. "
                 "Next year's organizations are not final until Google announces them."
             ),
+            "evidence_note": note,
         }
 
     def check_proposal(
