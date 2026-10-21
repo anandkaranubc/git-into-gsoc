@@ -182,3 +182,17 @@ def test_mcp_results_carry_no_hidden_characters() -> None:
     out = json.loads(_dump({"title": "Free" + HIDDEN, "items": [{"body": "ok" + HIDDEN}]}))
     assert not [s for s in _strings(out) if any(c in s for c in HIDDEN_CHARS)]
     assert out["title"].startswith("Free]52;c;aGk=")
+
+
+def test_progress_reads_as_a_checklist_and_json_is_unchanged(wide_console: None) -> None:
+    runner = CliRunner()
+    assert runner.invoke(cli.app, ["progress", "complete_phase", "--phase", "learn"]).exit_code == 0
+    saved = runner.invoke(cli.app, ["progress", "shortlist_org", "--value", "Org [/] Lab"])
+    assert saved.exit_code == 0 and "Saved." in saved.output
+    shown = runner.invoke(cli.app, ["progress"])
+    assert shown.exit_code == 0, shown.output
+    assert "1/10 phases done" in shown.output and "discover  (next)" in shown.output
+    assert "Org [/] Lab" in shown.output and "\\\\[" not in shown.output
+    assert not shown.output.lstrip().startswith("{"), "rich output is still raw JSON"
+    as_json = json.loads(runner.invoke(cli.app, ["progress", "--output", "json"]).output)
+    assert as_json["completion"] == "1/10" and as_json["shortlisted_orgs"] == ["Org [/] Lab"]

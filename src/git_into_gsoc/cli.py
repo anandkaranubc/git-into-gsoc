@@ -1231,7 +1231,44 @@ def progress_cmd(
         data = store.add_note(value or "").model_dump(mode="json")
     else:
         raise typer.BadParameter(f"Unknown action: {action}")
-    _emit(data if output == Output.json else json.dumps(data, indent=2, default=str), output)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    if action != "summary":
+        console.print("[green]Saved.[/green]")
+    _render_progress(_markup_safe(store.summary()))
+
+
+def _render_progress(data: dict[str, Any]) -> None:
+    """The saved journey as a person reads it: phases first, then what they follow."""
+    console.print(
+        f"[bold]GSoC {data['target_year']} progress[/bold]: {data['completion']} phases done"
+    )
+    for phase, done in data["phases"].items():
+        mark = "[green]✓[/green]" if done else "[dim]·[/dim]"
+        flag = "  [cyan](next)[/cyan]" if phase == data["next_phase"] else ""
+        console.print(f"  {mark} {phase}{flag}")
+    for title, key in (
+        ("Shortlisted organizations", "shortlisted_orgs"),
+        ("Tracked repositories", "tracked_repos"),
+        ("Tracked issues", "tracked_issues"),
+    ):
+        items = data[key]
+        console.print(f"\n[bold]{title}[/bold] ({len(items)})")
+        for item in items:
+            console.print(f"  {item}")
+        if not items:
+            console.print("  [dim]none yet[/dim]")
+    days = data["last_log_days_ago"]
+    when = {None: "", 0: ", the last one today", 1: ", the last one yesterday"}.get(
+        days, f", the last one {days} days ago"
+    )
+    console.print(f"\nWeekly notes: {data['log_entries']}{when}")
+    if data["next_phase"]:
+        console.print(
+            f"[dim]When {data['next_phase']} is done: git-into-gsoc progress complete_phase "
+            f"--phase {data['next_phase']}. For what to do now: git-into-gsoc next[/dim]"
+        )
 
 
 @app.command("journey", rich_help_panel="Start here")
