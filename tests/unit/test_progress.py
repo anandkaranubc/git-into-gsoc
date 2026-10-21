@@ -182,3 +182,73 @@ def test_stale_lock_from_a_crashed_process_is_broken(tmp_path: Path) -> None:
     os.utime(lock, (old, old))
     ProgressStore(path).add_note("after a crash")
     assert ProgressStore(path).load().notes == ["after a crash"]
+
+
+def test_tracking_saves_one_canonical_link_per_issue(tmp_path: Path) -> None:
+    store = ProgressStore(tmp_path / "progress.json")
+    for ref in (
+        "sympy/sympy#5",
+        "https://github.com/SymPy/SymPy/issues/5#issuecomment-1",
+        "github.com/sympy/sympy/issues/5",
+    ):
+        store.track_issue(ref)
+    store.track_issue("https://github.com/sympy/sympy/pull/7")
+    assert store.load().tracked_issues == [
+        "https://github.com/sympy/sympy/issues/5",
+        "https://github.com/sympy/sympy/pull/7",
+    ]
+
+
+@pytest.mark.parametrize("junk", ["javascript:alert(1)", "not an issue", "sympy/sympy"])
+def test_tracking_refuses_what_is_not_an_issue(tmp_path: Path, junk: str) -> None:
+    store = ProgressStore(tmp_path / "progress.json")
+    with pytest.raises(InputError, match="Not an issue"):
+        store.track_issue(junk)
+    assert not (tmp_path / "progress.json").exists()
+
+
+def test_repos_and_orgs_are_saved_once_whatever_the_spelling(tmp_path: Path) -> None:
+    store = ProgressStore(tmp_path / "progress.json")
+    store.track_repo("https://github.com/SymPy/sympy.git")
+    store.track_repo("sympy/sympy")
+    store.shortlist_org("SymPy")
+    store.shortlist_org("sympy")
+    state = store.load()
+    assert state.tracked_repos == ["SymPy/sympy"]
+    assert state.shortlisted_orgs == ["SymPy"]
+    with pytest.raises(InputError, match="owner/repo"):
+        store.track_repo("javascript:alert(1)")
+
+
+def test_notes_have_a_length_limit_but_older_long_notes_still_load(tmp_path: Path) -> None:
+    import json
+
+    from git_into_gsoc.models import LogEntry
+
+    path = tmp_path / "progress.json"
+    store = ProgressStore(path)
+    store.add_note("n" * 2000)
+    with pytest.raises(InputError, match="limit is 2,000"):
+        store.add_note("n" * 2001)
+    with pytest.raises(InputError, match="next step is"):
+        store.add_log(LogEntry(next_step="n" * 2001))
+    path.write_text(json.dumps({"version": 1, "notes": ["n" * 5000]}))
+    assert store.load().notes == ["n" * 5000]
+
+
+def test_log_links_must_be_web_links(tmp_path: Path) -> None:
+    from git_into_gsoc.models import LogEntry
+
+    store = ProgressStore(tmp_path / "progress.json")
+    for junk in ("javascript:alert(1)", "not a url", "mailto:x@example.org", "https://[::1"):
+        with pytest.raises(InputError, match="Not a web link"):
+            store.add_log(LogEntry(done="x", links=[junk]))
+    with pytest.raises(InputError, match="limit is 20"):
+        store.add_log(LogEntry(done="x", links=[f"https://example.org/{i}" for i in range(21)]))
+    store.add_log(
+        LogEntry(
+            done="x",
+            links=["github.com/sympy/sympy/pull/1", "https://github.com/sympy/sympy/pull/1"],
+        )
+    )
+    assert store.load().weekly_log[-1].links == ["https://github.com/sympy/sympy/pull/1"]

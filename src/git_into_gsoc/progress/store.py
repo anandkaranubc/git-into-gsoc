@@ -6,22 +6,38 @@ import contextlib
 import functools
 import logging
 import os
+import re
 import tempfile
 import time
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, TypeVar
+from urllib.parse import urlparse
 
 from pydantic import ValidationError
 
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, progress_path
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
+from git_into_gsoc.validation import parse_issue_ref, parse_repo
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
 LOCK_TIMEOUT_SECONDS = 10.0
 STALE_LOCK_SECONDS = 60.0
+# Notes are re-read by every `log` listing and by assistants, so each text stays
+# short enough to scan. Limits apply when saving; older, longer notes still load.
+MAX_TEXT_CHARS = 2000
+MAX_NAME_CHARS = 200
+MAX_LINKS = 20
+MAX_LINK_CHARS = 500
+_LOG_TEXT_FIELDS = {
+    "goal": "goal",
+    "done": "done",
+    "learned": "learned",
+    "stuck": "stuck",
+    "next_step": "next step",
+}
 
 log = logging.getLogger(__name__)
 _T = TypeVar("_T")
@@ -44,6 +60,56 @@ def _require(value: str, what: str) -> str:
     if not cleaned:
         raise InputError(f"Nothing to save: {what} is empty.", hint=f"Pass the {what} as --value.")
     return cleaned
+
+
+def _bounded(value: str, what: str, limit: int = MAX_TEXT_CHARS) -> str:
+    if len(value) > limit:
+        raise InputError(
+            f"The {what} is {len(value):,} characters long; the limit is {limit:,}.",
+            hint="Keep it to what happened and link to the details.",
+        )
+    return value
+
+
+def _web_links(links: list[str]) -> list[str]:
+    """Check that every link is a plain web address; a bare `github.com/...` gets https://."""
+    if len(links) > MAX_LINKS:
+        raise InputError(f"{len(links)} links given; the limit is {MAX_LINKS}.")
+    cleaned: list[str] = []
+    for raw in links:
+        link = raw.strip()
+        candidate = link if "://" in link else f"https://{link}"
+        try:
+            parsed = urlparse(candidate)
+            _ = parsed.port  # "javascript:alert(1)" reads as host "javascript", port "alert(1)"
+            web = parsed.scheme in {"http", "https"} and bool(parsed.hostname)
+            web = web and parsed.username is None
+        except ValueError:  # a port that is not a number, or an unclosed [IPv6] bracket
+            web = False
+        if not web or re.search(r"\s", candidate) or len(candidate) > MAX_LINK_CHARS:
+            raise InputError(
+                f"Not a web link: {raw!r}",
+                hint="Give links as https:// addresses, separated by commas.",
+            )
+        if candidate not in cleaned:
+            cleaned.append(candidate)
+    return cleaned
+
+
+def _issue_key(ref: str) -> tuple[str, str, int] | str:
+    try:
+        owner, repo, number = parse_issue_ref(ref)
+    except InputError:
+        return ref.lower()
+    return owner.lower(), repo.lower(), number
+
+
+def _repo_key(full_name: str) -> str:
+    try:
+        owner, repo = parse_repo(full_name)
+    except InputError:
+        return full_name.lower()
+    return f"{owner}/{repo}".lower()
 
 
 class ProgressStore:
@@ -173,6 +239,9 @@ class ProgressStore:
                 "Nothing to save: the note is empty.",
                 hint="Give at least one of --goal, --done, --links, --learned, --stuck, --next.",
             )
+        for field, label in _LOG_TEXT_FIELDS.items():
+            _bounded(getattr(entry, field), label)
+        entry.links = _web_links(entry.links)
         state = self.load()
         state.weekly_log.append(entry)
         return self.save(state)
@@ -186,26 +255,36 @@ class ProgressStore:
 
     @_mutating
     def shortlist_org(self, name: str) -> ProgressState:
-        name = _require(name, "organization name")
+        name = _bounded(_require(name, "organization name"), "organization name", MAX_NAME_CHARS)
         state = self.load()
-        if name not in state.shortlisted_orgs:
+        if name.lower() not in {org.lower() for org in state.shortlisted_orgs}:
             state.shortlisted_orgs.append(name)
         return self.save(state)
 
     @_mutating
     def track_repo(self, full_name: str) -> ProgressState:
-        full_name = _require(full_name, "repository")
+        owner, repo = parse_repo(_require(full_name, "repository"))
+        full_name = f"{owner}/{repo}"
         state = self.load()
-        if full_name not in state.tracked_repos:
+        if _repo_key(full_name) not in {_repo_key(r) for r in state.tracked_repos}:
             state.tracked_repos.append(full_name)
         return self.save(state)
 
     @_mutating
     def track_issue(self, issue_ref: str) -> ProgressState:
         issue_ref = _require(issue_ref, "issue reference")
+        try:
+            owner, repo, number = parse_issue_ref(issue_ref)
+        except InputError as exc:
+            raise InputError(
+                f"Not an issue or pull request: {issue_ref!r}",
+                hint="Use owner/repo#123 or the GitHub link to the issue.",
+            ) from exc
+        kind = "pull" if re.search(r"/pull/\d", issue_ref) else "issues"
+        canonical = f"https://github.com/{owner}/{repo}/{kind}/{number}"
         state = self.load()
-        if issue_ref not in state.tracked_issues:
-            state.tracked_issues.append(issue_ref)
+        if _issue_key(canonical) not in {_issue_key(i) for i in state.tracked_issues}:
+            state.tracked_issues.append(canonical)
         return self.save(state)
 
     @_mutating
@@ -216,7 +295,7 @@ class ProgressStore:
 
     @_mutating
     def add_note(self, note: str) -> ProgressState:
-        note = _require(note, "note")
+        note = _bounded(_require(note, "note"), "note")
         state = self.load()
         state.notes.append(note)
         return self.save(state)
