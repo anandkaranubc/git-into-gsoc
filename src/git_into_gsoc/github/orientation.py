@@ -356,6 +356,7 @@ def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
     service containers, and runner operating systems. Setup instructions in a
     README drift; the workflow is what runs."""
     runtimes: dict[str, set[str]] = {}
+    uses: dict[str, Counter[str]] = {}  # how many jobs name each version
     sources: dict[str, str] = {}
     services: list[dict[str, str]] = []
     runners: set[str] = set()
@@ -371,6 +372,9 @@ def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
             if key in _RUNTIME_KEYS or key.endswith("-version"):
                 matrix.setdefault(key, [])
                 matrix[key].extend(v for v in values if v not in matrix[key])
+                runtime = _RUNTIME_KEYS.get(key)
+                if runtime:
+                    uses.setdefault(runtime, Counter()).update(values)
             elif key == "runs-on" and value and "${{" not in value:
                 runners.update(_scalar_list(value))
             elif key == "os" and values:
@@ -398,17 +402,23 @@ def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
             runtimes.setdefault(name, set()).update(values)
             sources.setdefault(name, path)
 
-    def version_key(v: str) -> tuple[int, ...] | tuple[str]:
-        parts = re.findall(r"\d+", v)
-        return tuple(int(p) for p in parts) if parts else (v,)
+    def version_key(v: str) -> tuple[bool, tuple[int, ...], str]:
+        # Plain versions first, numerically; other implementations (pypy2.7) after.
+        return (not v[:1].isdigit(), tuple(int(p) for p in re.findall(r"\d+", v)), v)
+
+    def most_used(name: str) -> str | None:
+        counts = uses.get(name)
+        if not counts:
+            return None
+        (top, n), *rest = [*counts.most_common(2), ("", 0)]
+        return top if n > 1 and n > rest[0][1] else None
 
     return {
         "runtimes": [
             {
                 "name": name,
-                "versions": sorted(
-                    values, key=lambda v: (str(type(version_key(v))), version_key(v))
-                )[:8],
+                "versions": sorted(values, key=version_key)[:8],
+                "most_used": most_used(name),
                 "source": sources[name],
             }
             for name, values in sorted(runtimes.items())

@@ -353,10 +353,16 @@ jobs:
 """
     env = ci_environment({".github/workflows/tests.yml": workflow})
     assert env["runtimes"] == [
-        {"name": "Node.js", "versions": ["20", "22"], "source": ".github/workflows/tests.yml"},
+        {
+            "name": "Node.js",
+            "versions": ["20", "22"],
+            "most_used": None,
+            "source": ".github/workflows/tests.yml",
+        },
         {
             "name": "Python",
             "versions": ["3.11", "3.12", "3.13"],
+            "most_used": None,
             "source": ".github/workflows/tests.yml",
         },
     ]
@@ -575,3 +581,16 @@ def test_test_folders_that_ci_runs_come_first() -> None:
     ]
     assert ci_test_dirs_first(dirs, {}) == dirs
     assert "autotest" in PURPOSES["tests"]
+
+
+def test_ci_versions_put_the_usual_one_first_and_other_implementations_last() -> None:
+    # sympy/sympy: one job checks the Python 2 error message on pypy2.7, and orient
+    # printed "CI uses Python pypy2.7, 3.10, ..." as if Python 2 were supported.
+    job = "    steps:\n      - uses: actions/setup-python@v6\n        with:\n"
+    workflow = "jobs:\n"
+    for version in ("'3.14'", "'3.14'", "'3.14'", "'3.13'", "'pypy2.7'"):
+        workflow += f"  j{len(workflow)}:\n{job}          python-version: {version}\n"
+    workflow += "  m:\n    strategy:\n      matrix:\n        python-version: ['3.10', '3.11', 'pypy-3.11']\n"
+    python = ci_environment({"runtests.yml": workflow})["runtimes"][0]
+    assert python["versions"] == ["3.10", "3.11", "3.13", "3.14", "pypy2.7", "pypy-3.11"]
+    assert python["most_used"] == "3.14"

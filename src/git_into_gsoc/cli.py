@@ -622,7 +622,9 @@ def repo_cmd(
 def _ci_environment_lines(env: dict[str, Any]) -> list[str]:
     """One line per runtime, plus services and runners, as CI sets them up."""
     lines = [
-        f"CI uses {r['name']} {', '.join(r['versions'])}  [dim]({r['source']})[/dim]"
+        f"CI uses {r['name']} {', '.join(r['versions'])}"
+        + (f"; most jobs use {r['most_used']}" if r.get("most_used") else "")
+        + f"  [dim]({r['source']})[/dim]"
         for r in env.get("runtimes") or []
     ]
     services = env.get("services") or []
