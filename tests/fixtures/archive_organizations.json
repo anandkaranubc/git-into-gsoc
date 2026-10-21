@@ -1,0 +1,1055 @@
+[
+ {
+  "name": "GNU Radio",
+  "url": "https://www.gnuradio.org",
+  "image_background_color": "#ffffff",
+  "description": "The free & open software radio ecosystem",
+  "category": "Science and medicine",
+  "topics": [
+   "Software-Defined Radio",
+   "communications engineering",
+   "dsp",
+   "real-time",
+   "security"
+  ],
+  "technologies": [
+   "c++",
+   "python",
+   "qt",
+   "simd"
+  ],
+  "years": {
+   "2016": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2016/organizations/6221912157978624/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "PyBOMBS & CGRAN Enhancements",
+      "short_description": "This proposal focuses on improving the areas of CGRAN and Pybombs collectively, to enhance the user experience and provide simple UI interfaces to...",
+      "code_url": "http://ninjacomics.github.io/radioblogr/2016/08/gsoc_final_eval.html",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2016/projects/6399277127434240/"
+     },
+     {
+      "title": "Signal Analysis Toolbox (gr-inspector)",
+      "short_description": "Signal intelligence describes the gathering of information out of intercepted radio signals with unknown origin and unknown parameters. GNU Radio has...",
+      "code_url": "https://github.com/gnuradio/gr-inspector/commits/master?author=sbmueller",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2016/projects/5180547676504064/"
+     }
+    ]
+   },
+   "2017": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2017/organizations/5467278887878656/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "gr-bokehgui: A Web based GUI for GNU Radio applications",
+      "short_description": "Currently, GNU Radio works on a local system (many times connected to a hardware). The display of GNU Radio is based on QT GUI framework. In addition...",
+      "code_url": "https://github.com/kartikp1995/gr-bokehgui/blob/master/README.md",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/5129007263645696/"
+     },
+     {
+      "title": "A DAB/DAB+ transceiver app",
+      "short_description": "The project \u201dDAB/DAB+ transceiver app\u201d aims to produce a DAB/DAB+ tranceiver app that is capable of the transmission and reception of audio and data...",
+      "code_url": "https://github.com/kit-cel/gr-dab/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/5191955914948608/"
+     }
+    ]
+   },
+   "2018": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2018/organizations/5370023514210304/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "gr-modtool overhaul",
+      "short_description": "gr-modtool is a magical script that automates the boring work involved in writing the boilerplate code, editing makefiles, creating templates, etc....",
+      "code_url": "https://medium.com/@swapnilnegi/gr-modtool-overhaul-gsoc18-bb0277d1d3af",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/6630142222794752/"
+     },
+     {
+      "title": "MIMO basics for GNU Radio",
+      "short_description": "The project MIMO aims to introduce a basic MIMO capability to the GNU Radio core module gr-digital.  Basic encoding and decoding algorithms are...",
+      "code_url": "https://mimognuradio.wordpress.com/2018/08/08/final-week-summary-of-the-project/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/4845832889171968/"
+     }
+    ]
+   },
+   "2019": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2019/organizations/6350475543183360/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "Cycle-accurate Verilog Design Simulation Integration",
+      "short_description": "Hardware accelerators are necessary or at least desirable in many SDR systems. GNU Radio provides an open and free platform for designing real time...",
+      "code_url": "https://github.com/B0WEN-HU/gr-verilog",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/5346074540113920/"
+     },
+     {
+      "title": "Block header parsing tool",
+      "short_description": "A python based tool that can interact with GNU Radio block headers written in C++, to automatically parse them and extract information about them...",
+      "code_url": "https://medium.com/@aruroxx31/block-header-parsing-tool-gsoc19-51402e0bd1b8",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/4903280860200960/"
+     }
+    ]
+   },
+   "2020": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2020/organizations/6206096819093504/",
+    "num_projects": 1,
+    "projects": [
+     {
+      "title": "gr-dpd:  Digital Pre-Distortion",
+      "short_description": "Digital Pre-Distortion (DPD) is one of the most fundamental building blocks in\nwireless communication systems today. It is used to increase the...",
+      "code_url": "https://github.com/gnuradio/gr-dpd",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5862185634365440/"
+     }
+    ]
+   },
+   "2021": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2021/organizations/5786120553496576/",
+    "num_projects": 1,
+    "projects": [
+     {
+      "title": "View-Only Mode in GRC",
+      "short_description": "By opening an unknown flowgraph file in the GRC you expose your system to arbitrary python code being evaluated via the block parameters. A View-Only...",
+      "code_url": "https://gist.github.com/oscekh/acba0f7b55e11a13e0eb5c0cc332d421",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/4881493066776576/"
+     }
+    ]
+   },
+   "2022": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2022/organizations/gnu-radio/",
+    "num_projects": 1,
+    "projects": [
+     {
+      "title": "GNU Radio goes Browser: Web Assembly (WASM) port Proposal",
+      "short_description": "Currently, this project is written with python and related GUI, I need to port some SIMD kernels to wasm to extend its functionality. My solution...",
+      "code_url": "https://wiki.gnuradio.org/index.php?title=Understanding_Gnuradio_Web",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/Zd3Mr5G5/"
+     }
+    ]
+   },
+   "2023": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2023/organizations/gnu-radio",
+    "num_projects": 1,
+    "projects": [
+     {
+      "title": "QT Widgets Improvements",
+      "short_description": "The project's aim is to improve GNU Radio's gr-qtgui component, which offers QT widgets for signal viewing. This project is broken down into a number...",
+      "code_url": "https://www.gnuradio.org/blog/2023-08-28-GSoC-2023-Complete-Journey/",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/qsfXdcom"
+     }
+    ]
+   },
+   "2024": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2024/organizations/gnu-radio/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "GRC: Standalone application and pluggable workflows",
+      "short_description": "This project's goal is to make GRC as a stand alone application, separated from GNU Radio code base and make the workflow pluggable. The main goal of...",
+      "code_url": "https://zakyhermawan.github.io/week-12-final-report/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/k5ZLKdEd/"
+     },
+     {
+      "title": "Forward Error Correction in GNU Radio",
+      "short_description": "In GNU Radio, the gr-fec framework implements forward error correction (FEC) through pairs of encoder/decoder deployment blocks, but there are other...",
+      "code_url": "https://kaylacomer.github.io/blog/posts/final/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/8OVn8NhF/"
+     }
+    ]
+   },
+   "2025": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2025/organizations/gnu-radio",
+    "num_projects": 4,
+    "projects": [
+     {
+      "title": "5G CELL SCANNER",
+      "short_description": "This project develops an open-source 5G cell scanner utilizing GNU Radio and SDR hardware to passively detect and decode 5G signals, extracting key...",
+      "code_url": "https://github.com/CodeIsFire/GNU-RADIO",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/mh8bSn66"
+     },
+     {
+      "title": "GNU Radio FT8/WSPR OOT Module",
+      "short_description": "This project aims to develop a comprehensive Out-of-Tree (OOT) module for GNU Radio that enables amateur radio enthusiasts to incorporate FT8 and...",
+      "code_url": "https://github.com/paulda1/grft8",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/2yVGddvs"
+     }
+    ]
+   },
+   "2026": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2026/organizations/gnu-radio",
+    "num_projects": 3,
+    "projects": [
+     {
+      "title": "Graphical interoperability between CyberEther and GNU Radio (OOT module).",
+      "short_description": "This project aims to create OOT module, that uses CyberEther's GPU-accelerated framework which uses low-level graphics APIs to create...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/wLfV60LS"
+     },
+     {
+      "title": "Hardware in the loop CI",
+      "short_description": "GNU Radio\u2019s current CI system relies on software-based testing, which cannot capture real-world SDR behavior and hardware-specific issues that arise...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/XtWlavcb"
+     }
+    ]
+   }
+  },
+  "irc_channel": "https://chat.gnuradio.org/#/welcome",
+  "contact_email": "mailto:info@gnuradio.org",
+  "mailing_list": "https://lists.gnu.org/mailman/listinfo/discuss-gnuradio",
+  "ideas_url": "https://wiki.gnuradio.org/index.php/GSoCIdeas",
+  "guide_url": "https://www.gnuradio.org/gsoc/",
+  "twitter_url": "https://twitter.com/gnuradio",
+  "blog_url": "https://fosstodon.org/@gnuradio"
+ },
+ {
+  "name": "Metasploit",
+  "url": "https://metasploit.com",
+  "image_background_color": "#ffffff",
+  "description": "World\u2019s most used penetration testing framework",
+  "category": "Security",
+  "topics": [
+   "exploitation",
+   "offensive security",
+   "penetration testing",
+   "security"
+  ],
+  "technologies": [
+   "assembly",
+   "c",
+   "database",
+   "postgresql",
+   "python",
+   "ruby"
+  ],
+  "years": {
+   "2017": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2017/organizations/5632986779222016/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "Add vulnerabilities to Metasploitable3, reduce Bugs, work on enhancements and customisation feature",
+      "short_description": "Not everyone could setup Metasploitable 3 with ease (as mentioned in Github issues: https://github.com/rapid7/metasploitable3/issues). This is...",
+      "code_url": "https://gist.github.com/Chan9390/cc011f85bae3909c9410f39845421eb4",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/5563877265768448/"
+     },
+     {
+      "title": "Improving stager payloads especially on non-Windows platforms",
+      "short_description": "Hi, I\u2019m a computer science university student from Japan.  I\u2019m interested in binary exploitation and reverse engineering. I like software...",
+      "code_url": "https://github.com/rapid7/metasploit-framework/commits/master?author=tkmru",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/4749387720818688/"
+     }
+    ]
+   },
+   "2018": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2018/organizations/5923381731917824/",
+    "num_projects": 5,
+    "projects": [
+     {
+      "title": "Add meta-shell commands for reverse shell session",
+      "short_description": "Shell sessions typically expose a direct connection to a remote shell, but are lacking a number of nice features such as the ability to stop a remote...",
+      "code_url": "https://gist.github.com/WangYihang/6a2a64edd57a9f45ee544c3ff91ac51e",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/6381812649558016/"
+     },
+     {
+      "title": "Post-exploitation interface module to make it easy for  anyone anywhere",
+      "short_description": "In many cases once you have exploited a device you don\u2019t know exactly what to do or how to go on. Maybe you have many payloads available and after...",
+      "code_url": "https://gist.github.com/AlbertoCoding/743f0edecb36ccc93eef541bcbdea652",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/5613215165710336/"
+     }
+    ]
+   },
+   "2020": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2020/organizations/4999193090850816/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "Advancing Metasploit modules: Implementing Conditionally Exposed Options and Session-Style Module Interaction",
+      "short_description": "With this project I want to conditionally show the options for a module (only the necessary) when you are configuring these options, so you don\u2019t...",
+      "code_url": "https://gist.github.com/mariabelenTC/e5ad230316ece2eda7597d52a39cca13",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5725158997753856/"
+     },
+     {
+      "title": "Enhancing SQL Injection Support",
+      "short_description": "Injection attacks are still the most common type of vulnerabilities found in software, SQL injection is one of them, it exploits the lack of...",
+      "code_url": "https://red0xff.github.io/posts/google_summer_of_code_2020/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5280133511905280/"
+     }
+    ]
+   },
+   "2021": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2021/organizations/4728495023849472/",
+    "num_projects": 1,
+    "projects": [
+     {
+      "title": "Improving Post-Exploitation API",
+      "short_description": "With this project I want to add the following enhancements\nClosing Feature gaps between meterpreter, shell and powershell sessions\nMany Post APIs...",
+      "code_url": "https://gist.github.com/pingport80/27eb47c5124a0f29538c1afa681638c1",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/5905360388358144/"
+     }
+    ]
+   },
+   "2022": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2022/organizations/metasploit/",
+    "num_projects": 1,
+    "projects": [
+     {
+      "title": "Implementing HTTP-Trace enabled Login Scanners",
+      "short_description": "This project aims to implement the HTTP-Trace option for login scanner modules. When enabled, the HTTP-Trace option lets the user see every web...",
+      "code_url": "https://gist.github.com/3V3RYONE/7f078312ec460516d39b91e6cab2e362",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/I4PxrljP/"
+     }
+    ]
+   },
+   "2023": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2023/organizations/metasploit",
+    "num_projects": 1,
+    "projects": [
+     {
+      "title": "LDAP Capture Capabilities",
+      "short_description": "This project aims to deliver a module to add capture capabilities over the LDAP protocol. This module will allow the capture of LDAP traffic and...",
+      "code_url": "https://gist.github.com/JustAnda7/a0e06e73c8f1b53ad43228b3cce478c0",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/Vq4PLCzD"
+     }
+    ]
+   },
+   "2026": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2026/organizations/metasploit",
+    "num_projects": 3,
+    "projects": [
+     {
+      "title": "CertificateTrace and KerberosTicketTrace Support",
+      "short_description": "This proposal aims to improve observability for Kerberos- and certificate-based authentication workflows in Metasploit. At present, operators often...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/7MfS5bHy"
+     },
+     {
+      "title": "Automated Vulnerable Environment Provisioning for Metasploit",
+      "short_description": "Many Metasploit modules include documentation describing how to manually build vulnerable test environments. However, these setup steps are performed...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/2ejvuiQh"
+     }
+    ]
+   }
+  },
+  "irc_channel": "https://metasploit.com/slack",
+  "contact_email": "mailto:msfdev@metasploit.com",
+  "mailing_list": "https://groups.google.com/forum/#!forum/metasploit-hackers",
+  "ideas_url": "https://github.com/rapid7/metasploit-framework/blob/master/docs/metasploit-framework.wiki/GSoC-2026-Project-Ideas.md",
+  "guide_url": "https://github.com/rapid7/metasploit-framework/wiki/How-to-Apply-to-GSoC",
+  "twitter_url": "https://twitter.com/metasploit",
+  "blog_url": "https://blog.rapid7.com/tag/metasploit/"
+ },
+ {
+  "name": "OpenAstronomy",
+  "url": "https://openastronomy.org/",
+  "image_background_color": "#ffffff",
+  "description": "Look at the Universe with the power of Open Source",
+  "category": "Science and medicine",
+  "topics": [
+   "astronomy",
+   "computer vision",
+   "data",
+   "graphics",
+   "high energy astrophysics",
+   "physics",
+   "science"
+  ],
+  "technologies": [
+   "c",
+   "c++",
+   "julia",
+   "python"
+  ],
+  "years": {
+   "2016": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2016/organizations/5193799529660416/",
+    "num_projects": 7,
+    "projects": [
+     {
+      "title": "Real Time Data Access and Visualisation tools.",
+      "short_description": "Developing viz tools for SunPy.",
+      "code_url": "https://github.com/sudk1896/sunpy/pull/1",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2016/projects/6658051994025984/"
+     },
+     {
+      "title": "Astropy: Bridge sherpa and astropy fitting",
+      "short_description": "Both astropy and Sherpa (https://github.com/sherpa/sherpa/) provide modeling and fitting capabilities; however, Sherpa\u2019s features are way more...",
+      "code_url": "http://myopensauceadventure.blogspot.co.uk/2016/08/dessert.html",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2016/projects/6728735747211264/"
+     }
+    ]
+   },
+   "2017": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2017/organizations/6563063020912640/",
+    "num_projects": 8,
+    "projects": [
+     {
+      "title": "Casacore Testing",
+      "short_description": "This project aims to improve python-casacore infrastructure, making the codebase cleaner, modern, maintainable and adding more unit tests.",
+      "code_url": "http://www.techievirus.com/Gsoc-Final-report",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/6393703333625856/"
+     },
+     {
+      "title": "Drms module for JSOC Downloads",
+      "short_description": "The SunPy JSOC Client is a very rudimentary client to JSOC's export data CGI. The drms module provides a more complete implementation of the DRMS...",
+      "code_url": "https://medium.com/@nitinkgp23/gsoc-coming-to-an-end-d20afa843940",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/5644701705175040/"
+     }
+    ]
+   },
+   "2018": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2018/organizations/6600717804503040/",
+    "num_projects": 8,
+    "projects": [
+     {
+      "title": "Integrating Physical Units into HelioPy",
+      "short_description": "HelioPy is a Python package which lets the user import space physics data from various sources and converts them into an easy-to-read and manipulates...",
+      "code_url": "https://medium.com/@yatharthrai16/heliopy-final-blog-post-cd4e9cf3ebe1",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/6448924936110080/"
+     },
+     {
+      "title": "Incorporating FITS Region, CRTF I/O and improving Regions.",
+      "short_description": "Astropy's regions package is being developed to handle description and manipulation of astronomical regions on sky and pixel coordinates.The current...",
+      "code_url": "https://medium.com/@sushobhanapatra/gsoc-final-report-dd9a3dc0d1d7",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/5108140769017856/"
+     }
+    ]
+   },
+   "2019": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2019/organizations/5152196847468544/",
+    "num_projects": 9,
+    "projects": [
+     {
+      "title": "Sunkit-Image",
+      "short_description": "This project aims at developing various image processing algorithms and manipulation routines to sunkit-image, an affiliated python package of Sunpy....",
+      "code_url": "https://gist.github.com/vatch123/d81e04dbf1f613eaf425965f3bbf6364",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/6683198925307904/"
+     },
+     {
+      "title": "Implement an automated model optimization framework in CTLearn",
+      "short_description": "CTLearn is a Python package for using deep learning to perform analysis tasks on data from imaging atmospheric Cherenkov telescopes (IACTs). These...",
+      "code_url": "https://github.com/ctlearn-project/ctlearn_optimizer/pull/3",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/5672735995330560/"
+     }
+    ]
+   },
+   "2020": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2020/organizations/4577601315667968/",
+    "num_projects": 10,
+    "projects": [
+     {
+      "title": "Metadata searches using Fido",
+      "short_description": "Federated internet data obtainer (Fido) is a very powerful query and fetch interface when it comes to its flexibility and versatility with different...",
+      "code_url": "https://github.com/abhijeetmanhas/abhijeetmanhas/blob/master/GSoC2020-Fido-WorkProduct.md",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/6373058639560704/"
+     },
+     {
+      "title": "Accelerate Synthetic Spectra Calculations using CUDA",
+      "short_description": "The presence and concentration of molecules in a gas can be measured by comparing absorption and emission experimental spectra to synthetic spectra....",
+      "code_url": "https://github.com/radis/radis/pull/117",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5717508822138880/"
+     }
+    ]
+   },
+   "2021": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2021/organizations/6276607395758080/",
+    "num_projects": 8,
+    "projects": [
+     {
+      "title": "Add a CDS-ASCII writer to astropy",
+      "short_description": "Astropy is a massive Python library providing methods and general purpose tools for processing and analysis of data generated in astronomy and...",
+      "code_url": "https://suyog20.blogspot.com/2021/08/astropygsoc-blog-post-65-week-10-final.html",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/5365547692195840/"
+     },
+     {
+      "title": "Adding Support for Resampling Data with NDCube",
+      "short_description": "ndcube is a package that lets users combine multi-dimensional astronomical data with their corresponding real-world physical coordinates. WCS...",
+      "code_url": "https://adwaitbhope.medium.com/google-summer-of-code-work-product-submission-b35a6c6cba33",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/4594065231839232/"
+     }
+    ]
+   },
+   "2022": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2022/organizations/openastronomy/",
+    "num_projects": 8,
+    "projects": [
+     {
+      "title": "[SunPy] HelioViewer Python API Wrapper",
+      "short_description": "The Helioviewer Project is developing a suite of technologies that allow users around the world to visualize, browse and access these heterogeneous...",
+      "code_url": "https://medium.com/@akash5100/google-summer-of-code-2022-building-testing-and-wrapping-helioviewer-api-in-a-python-package-f51ba6566f71",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/HXCZO14B/"
+     },
+     {
+      "title": "Bayesian Excess Variance (Bexvar) in Stingray",
+      "short_description": "Stingray is a python package that provides a common platform for time series analysis of X-ray data to the astronomy community. One important aspect...",
+      "code_url": "https://mihirtripathi97.github.io/GSoC-22/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/rG1XqJqK/"
+     }
+    ]
+   },
+   "2023": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2023/organizations/openastronomy",
+    "num_projects": 6,
+    "projects": [
+     {
+      "title": "Scraper Redesign",
+      "short_description": "The Scraper class in SunPy retrieves solar data from web sources using efficient file organization. The current implementation uses regex for the...",
+      "code_url": "https://gist.github.com/exitflynn/3a8db95de7208456464db8c8b71b9b1d",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/2Gxxa7qS"
+     },
+     {
+      "title": "Quasi Periodic Oscillation detection using Gaussian Processes",
+      "short_description": "Some of the most extreme and mysterious events in the universe like neutron star mergers, black hole accretions, and gamma-ray bursts are studied by...",
+      "code_url": "https://gaurav17joshi.github.io/contrast/project-report/",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/SXhGaPQt"
+     }
+    ]
+   },
+   "2024": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2024/organizations/openastronomy/",
+    "num_projects": 8,
+    "projects": [
+     {
+      "title": "OpenCL Integration with GNUAstro",
+      "short_description": "GNU Astronomy Utilities (Gnuastro) is an astronomical data processing package containing a dynamically linked library as well as command-line...",
+      "code_url": "https://deadspheroid.github.io/my-blog/post/FinalReport/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/ehBYTrDa/"
+     },
+     {
+      "title": "A Quicklook Dashboard for X-ray Astronomy with Stingray",
+      "short_description": "This proposal outlines the development of an innovative dashboard utilizing the Stingray library for X-ray astronomy analysis. The Quicklook...",
+      "code_url": "https://www.kartikmandar.com/gsoc-2024/stingray-explorer",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/rba4Di99/"
+     }
+    ]
+   },
+   "2025": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2025/organizations/openastronomy",
+    "num_projects": 5,
+    "projects": [
+     {
+      "title": "Electronic spectra for RADIS",
+      "short_description": "This project will extend RADIS to calculate electronic spectra, enabling analysis of high-temperature phenomena in plasmas, flames, and exoplanet...",
+      "code_url": "https://medium.com/@darshvn/gsoc25-openastronomy-final-report-b76e4f0ea2e3",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/P7UQlBwc"
+     },
+     {
+      "title": "Time Series Analysis in Stingray.jl",
+      "short_description": "This project enhanced Stingray.jl, the Julia-based implementation of the Stingray library for X-ray timing analysis in high-energy astrophysics....",
+      "code_url": "https://kashish2210.blogspot.com/2025/08/time-series-analysis-in-stingrayjl.html",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/bDXTorET"
+     }
+    ]
+   },
+   "2026": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2026/organizations/openastronomy",
+    "num_projects": 5,
+    "projects": [
+     {
+      "title": "Spectra.jl Across the Electromagnetic Spectrum",
+      "short_description": "Spectra.jl already handles UV, optical, and IR spectra, but has no capability for loading spectra like X-ray and gamma-ray, as they are different...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/SaSD1HOR"
+     },
+     {
+      "title": "Modernizing radiospectra: A Coordinate-Aware and Interoperable Spectral Data Framework",
+      "short_description": "Current radiospectra stores spectral data as plain NumPy arrays with each instrument client handling metadata, axis ordering and coordinate...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/iZFr1E68"
+     }
+    ]
+   }
+  },
+  "irc_channel": "https://openastronomy.element.io/#/room/#openastronomy:openastronomy.org",
+  "contact_email": "mailto:openastronomy.organization@gmail.com",
+  "mailing_list": "https://community.openastronomy.org/",
+  "ideas_url": "https://openastronomy.org/gsoc/gsoc2026/#/projects",
+  "guide_url": "https://openastronomy.org/gsoc/contributor_guidelines.html",
+  "twitter_url": "https://astrodon.social/@OpenAstronomy",
+  "blog_url": "https://openastronomy.org/Universe_OA/"
+ },
+ {
+  "name": "PostgreSQL",
+  "url": "https://postgresql.org",
+  "image_background_color": "#ffffff",
+  "description": "The Most Advanced Open Source Relational Database",
+  "category": "Data",
+  "topics": [
+   "Benchmark",
+   "database",
+   "sql",
+   "user interface",
+   "web"
+  ],
+  "technologies": [
+   "c",
+   "database",
+   "go",
+   "javascript",
+   "postgresql",
+   "python"
+  ],
+  "years": {
+   "2017": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2017/organizations/5443503559540736/",
+    "num_projects": 4,
+    "projects": [
+     {
+      "title": "Foreign Keys for Array Elements",
+      "short_description": "My proposal is to target the performance issue regarding the foreign keys for the array index. Any UPDATE or DELETE statement on a Primary Key table...",
+      "code_url": "https://www.postgresql.org/message-id/CAJvoCuuEgQ%2Bpjv02rjvQN4o9s4_H3HJMdZdQwss2b0c0-xagEw%40mail.gmail.com",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/6341409154007040/"
+     },
+     {
+      "title": "Eliminate O(N^2) scaling from rw-conflict tracking in serializable transactions",
+      "short_description": "To provide strict serializable isolation among transactions, PostgreSQL needs to track read-write conflicts (rw-conflicts for short in the following...",
+      "code_url": "http://liumx10.github.io/2017/08/20/Speedup-RW-conflict-tracking-in-PostgreSQL/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/6731854698774528/"
+     }
+    ]
+   },
+   "2018": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2018/organizations/5341499428438016/",
+    "num_projects": 3,
+    "projects": [
+     {
+      "title": "\"Develop Performance Farm Database and Website\" proposal for Google Summer of Code 2018",
+      "short_description": "I plan to implement the PerfFarm project using a separate front-end and back-end development approach and use PostgreSQL as a database for storing...",
+      "code_url": "https://github.com/PGPerfFarm/pgperffarm/issues/22",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/5674757215223808/"
+     },
+     {
+      "title": "implement pg_thrift plugin for postgreSQL",
+      "short_description": "One of advantages of document-oriented databases like MongoDB or Couchbase over RDBMSs is an ability to change the data scheme easily, fast and...",
+      "code_url": "https://github.com/charles-cui/pg_thrift",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/5494965656354816/"
+     }
+    ]
+   },
+   "2019": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2019/organizations/5190353336926208/",
+    "num_projects": 4,
+    "projects": [
+     {
+      "title": "Develop Performance Farm Database and Website",
+      "short_description": "The Performance Farm is an useful way to test Postgres' functionalities while changes are being made, to analyze its efficacy on different operating...",
+      "code_url": "https://github.com/PGPerfFarm/pgperffarm/blob/master/report.md",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/5455812498030592/"
+     },
+     {
+      "title": "de-TOAST'ing using an iterator",
+      "short_description": "This project would aim to provide the ability to de-TOAST a fully TOAST'd and compressed field using an iterator, and then update the appropriate...",
+      "code_url": "https://gist.github.com/djydewang/965f6c692d06a4a5b857709c5ca43af5",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/6211020287115264/"
+     }
+    ]
+   },
+   "2020": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2020/organizations/6566134096068608/",
+    "num_projects": 3,
+    "projects": [
+     {
+      "title": "Develop Performance Farm Database and Website",
+      "short_description": "PostgreSQL is a famous database management system, widely used by DBAs and with an open source license. There is a large community dedicated to...",
+      "code_url": "https://github.com/PGPerfFarm/pgperffarm",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5719399513718784/"
+     },
+     {
+      "title": "WAL-G performance improvements",
+      "short_description": "The goal of the project is to make two enhancements of archival and restoration tool WAL-G.\nThe first one is to improve the performance of the backup...",
+      "code_url": "https://usernamedt.me/google-summer-of-code-2020-at-postgresql/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5476125284761600/"
+     }
+    ]
+   },
+   "2021": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2021/organizations/6316019928268800/",
+    "num_projects": 6,
+    "projects": [
+     {
+      "title": "Add monitoring of pg_stat_statements to pg_systat",
+      "short_description": "Pg_systat is 'systat' for PostgreSQL. It allows users to monitor various PostgreSQL statistics tables from a terminal window. This project aims to...",
+      "code_url": "https://gitlab.com/trafalgar_lu/pg_systat",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/6453137933598720/"
+     },
+     {
+      "title": "Improve pgeu-system for Conference Management",
+      "short_description": "Pg-eu system is an infrastructure developed and maintained by Postgres for managing non-profit organizations along with an extensive conference...",
+      "code_url": "https://blog.saurav-shrivastav.tech/work-product-submission-for-gsoc21-project-improve-pgeu-system-for-conference-management",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/6142133882322944/"
+     }
+    ]
+   },
+   "2022": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2022/organizations/postgresql/",
+    "num_projects": 7,
+    "projects": [
+     {
+      "title": "Improve pgarchives",
+      "short_description": "pgarchives is the official archive of Postgres mailing lists. Users can access the interface from the website and browse it, searching according to...",
+      "code_url": "https://github.com/SahilHarpal/GSoC2022",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/xP4nTRiX/"
+     },
+     {
+      "title": "Pgexporter: Custom file",
+      "short_description": "Pgexporter is a Prometheus exporter for PostgreSQL. In this project, we add the option to have a custom query file to specify the queries run against...",
+      "code_url": "https://github.com/pgexporter/pgexporter/discussions/36",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/yQk3Qapd/"
+     }
+    ]
+   },
+   "2023": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2023/organizations/postgresql",
+    "num_projects": 12,
+    "projects": [
+     {
+      "title": "pg_adviser / index_adviser: Recommend Potentially Useful Indexes",
+      "short_description": "The Index Adviser (pg_adviser) is an extension for PostgreSQL that suggests potentially useful indexes for given queries. This project aims to...",
+      "code_url": "https://gist.github.com/ahmedibrahim404/9f16d7b627ada377c6209368734c8dfb",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/Uuis4lHV"
+     },
+     {
+      "title": "PGweb Testing Harness for the official PostgreSQL Website",
+      "short_description": "As part of the Google Summer of Code 2023 , we developed an automated testing harness suite for the official PostgreSQL website. The suite addresses...",
+      "code_url": "https://destrex271.hashnode.dev/pgweb-testing-harness-suite-documentation",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/WQ90dY05"
+     }
+    ]
+   },
+   "2024": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2024/organizations/postgresql/",
+    "num_projects": 5,
+    "projects": [
+     {
+      "title": "PostgreSQL (Pgmoneta) - WAL infrastructure",
+      "short_description": "In this project, we want to implement an infrastructure in Pgmoneta that can read and parse the WAL files into WAL records. When our infrastructure...",
+      "code_url": "https://github.com/sh-soltanpour/gsoc24/blob/main/final.md",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/BjMVxNbX/"
+     },
+     {
+      "title": "pgmoneta: Extended functionality",
+      "short_description": "The project aims to provide a new code base, pgmoneta_ext, to enable pgmoneta to access files on the PostgreSQL server side, including the ability to...",
+      "code_url": "https://docs.google.com/document/d/1dkr_cc_ZFdhvavlFSt14SONtY51EYNuW164i5egSm8w/edit?usp=drive_link",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/KKQMY5Sc/"
+     }
+    ]
+   },
+   "2025": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2025/organizations/postgresql",
+    "num_projects": 7,
+    "projects": [
+     {
+      "title": "Enhancements to pgwatch v3 RPC integration",
+      "short_description": "The existing pgwatch3_rpc_server project creates specialized RPC endpoints that allow pgwatch3 clients to export monitoring data in various formats...",
+      "code_url": "https://0xgouda.github.io/posts/my-postgresql-gsoc25-journey/work-and-results/",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/4Be9mT3p"
+     },
+     {
+      "title": "pgmoneta: Incremental backup for PostgreSQL 13-16",
+      "short_description": "Implement functionality in pgmoneta and pgmoneta_ext such that an incremental backup can be taken from PostgreSQL 13 to 16. This work can build upon...",
+      "code_url": "https://github.com/pgmoneta/pgmoneta/discussions/631",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/HAmOi5Y7"
+     }
+    ]
+   },
+   "2026": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2026/organizations/postgresql",
+    "num_projects": 7,
+    "projects": [
+     {
+      "title": "pgmoneta: Model Context Server implementation",
+      "short_description": "The motivation behind this project is to extend and introduce a fully functional MCP server for pgmoneta. To achieve this ultimate goal, we have...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/C2VHxjcm"
+     },
+     {
+      "title": "Reducing pg stat statements LWLock Contention",
+      "short_description": "pg_stat_statements tracks query statistics across a PostgreSQL cluster, but its single-LWLock architecture creates a scalability bottleneck under...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/3bhCx5P6"
+     }
+    ]
+   }
+  },
+  "irc_channel": "http://pgtreats.info/slack-invite",
+  "contact_email": "mailto:pgsql-hackers@lists.postgresql.org",
+  "mailing_list": "pgsql-hackers@lists.postgresql.org",
+  "ideas_url": "https://wiki.postgresql.org/wiki/GSoC_2026",
+  "guide_url": "https://wiki.postgresql.org/wiki/GSoC",
+  "twitter_url": "https://twitter.com/postgresql",
+  "blog_url": "https://planet.postgresql.org/"
+ },
+ {
+  "name": "SymPy",
+  "url": "https://www.sympy.org/",
+  "image_background_color": "#ffffff",
+  "description": "SymPy is a Python library for symbolic mathematics",
+  "category": "Science and medicine",
+  "topics": [
+   "mathematics",
+   "physics",
+   "science",
+   "symbolic mathematics"
+  ],
+  "technologies": [
+   "data science",
+   "jupyter",
+   "numpy",
+   "python"
+  ],
+  "years": {
+   "2016": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2016/organizations/6281948016148480/",
+    "num_projects": 7,
+    "projects": [
+     {
+      "title": "GSoC 2016 Application Gaurav Dhingra: Group Theory",
+      "short_description": "It would be awesome to have a Group Theory module. Presently only Combinatorics module has been implemented in SymPy, which is fairly well developed....",
+      "code_url": "https://gxyd.github.io/gsoc2016/gsoc2016_project.html",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2016/projects/6593494743252992/"
+     },
+     {
+      "title": "Adding to SymEngine's Polynomial functionality and interfacing it with FLINT & Piranha",
+      "short_description": "This project deals with introducing much needed functionality to the SymEngine polynomial module. It improves upon the already existing univariate...",
+      "code_url": "https://gist.github.com/srajangarg/5a56d9e7400ca0ab9bdeb6ce0e49b432",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2016/projects/6695921391763456/"
+     }
+    ]
+   },
+   "2017": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2017/organizations/5228947662962688/",
+    "num_projects": 8,
+    "projects": [
+     {
+      "title": "Group Theory: Subgroups, Homomorphisms and Presentations",
+      "short_description": "SymPy currently has limited support for subgroups of finitely presented groups. For finite FpGroups, this can be greatly extended by defining an...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2017-Report-Valeriia-Gladkova:-Group-Theory",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/6337426108710912/"
+     },
+     {
+      "title": "Implementation of multiple types of coordinate systems for vectors",
+      "short_description": "In my proposal I present idea of introducing different curvilinear coordinate system to vector package.\n My concept is based on Lame coefficient,...",
+      "code_url": "https://szymag.github.io/post/report/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2017/projects/6575124094386176/"
+     }
+    ]
+   },
+   "2018": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2018/organizations/5672591746400256/",
+    "num_projects": 7,
+    "projects": [
+     {
+      "title": "Autolev Parser (using ANTLR v4)",
+      "short_description": "Autolev(now superseded by MotionGenesis) is a domain specific language used for symbolic multibody dynamics. The SymPy mechanics module now has...",
+      "code_url": "https://nkhlpappu.wordpress.com/2018/08/11/gsoc-2018-autolev-parser-using-antlrv4-final-report/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/6339390586486784/"
+     },
+     {
+      "title": "Group Theory",
+      "short_description": "The project mainly aims in improvising the Group Theory part of the combinatorics module. The project is mainly divided into 3 phases. The first...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2018-Report-Ravicharan-:-Group-Theory",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/5419636560494592/"
+     }
+    ]
+   },
+   "2019": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2019/organizations/5652307671252992/",
+    "num_projects": 10,
+    "projects": [
+     {
+      "title": "GSoC 2019 Proposal of Linear Algebra: Tensor core",
+      "short_description": "Add more functionalities like NumPy-like operators, lazy-evaluation, code generation, etc. to tensor module, especially to array module",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2019-Report-of-Tensor-Core:-Linear-Algebra",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/6619268605542400/"
+     },
+     {
+      "title": "Improving Assumptions",
+      "short_description": "This project aims to improve the capabilities of the assumptions handling sub-system in SymPy. Currently, SymPy has two such systems (the old and the...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2019-Report-Shubham-Kumar-Jha:-Improving-Assumptions",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2019/projects/5724140848283648/"
+     }
+    ]
+   },
+   "2020": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2020/organizations/5669371197784064/",
+    "num_projects": 6,
+    "projects": [
+     {
+      "title": "Control Theory - Implement a control systems package",
+      "short_description": "The main aim of this project is to implement in SymPy, a basic control system functionality that would be beneficial for engineers trying to solve...",
+      "code_url": "https://github.com/namannimmo10/Google-Summer-of-Code-with-SymPy",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5417784797822976/"
+     },
+     {
+      "title": "Amendments to Limit Evaluation and Series Expansion",
+      "short_description": "SymPy is a Python library for symbolic mathematics. SymPy has a powerful \"series\" module, which is the backbone of all the limit evaluations...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2020-Report-Sachin-Agarwal:-Series-and-Limits",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2020/projects/5438053587353600/"
+     }
+    ]
+   },
+   "2021": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2021/organizations/5401117973807104/",
+    "num_projects": 6,
+    "projects": [
+     {
+      "title": "Improving and Expanding Functionalities in Control Module",
+      "short_description": "My project aims to improve the existing API of the control system module in sympy.physics. Not to mention sympy.physics.control utilizes the...",
+      "code_url": "https://github.com/akshanshbhatt/GSoC-2021-Final-Report",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/5382109522296832/"
+     },
+     {
+      "title": "Rational Solutions of Riccati ODEs",
+      "short_description": "In this project, a solver for Riccati ODEs will be added to the ODE module of SymPy. The solver finds all rational solutions of the equation. A...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2021-Report:-Naveen-Sai---Rational-Solutions-of-Riccati-ODEs",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2021/projects/5537734642368512/"
+     }
+    ]
+   },
+   "2022": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2022/organizations/sympy/",
+    "num_projects": 3,
+    "projects": [
+     {
+      "title": "Extending the Continuum Mechanics module",
+      "short_description": "The current Continuum Mechanics module is very useful and has been developed to a good extent. However, there are many more concepts that are...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2022-Report-Advait-Pote-:-Extending-the-Continuum-Mechanics-Module",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/A1oPEjHH/"
+     },
+     {
+      "title": "Classical Mechanics: Extending the Construction of Systems From Bodies and Joints",
+      "short_description": "The aim of this project is to further develop the construction of systems from bodies and joints. This involves fixing existing bugs, which will also...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2022-Report-Timo-Stienstra-:-Enhancing-the-Joints-Framework",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2022/projects/7V7IoGNf/"
+     }
+    ]
+   },
+   "2023": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2023/organizations/sympy",
+    "num_projects": 5,
+    "projects": [
+     {
+      "title": "Improving Polynomial GCD",
+      "short_description": "The project aims to add new algorithms for computing the greatest common divisor (GCD) of polynomials in the sparse representation in order to...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2023-Report-Abhishek-Patidar-:-Improving-Polynomial-GCD",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/JBxiR5tN"
+     },
+     {
+      "title": "Improving And Expanding Functionalities Of SymPy's Control Module",
+      "short_description": "In this project, I aim to improve and expand the functionalities of the physics control module. This module was introduced to SymPy 2 years ago. The...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2023-:-Improving-and-Expanding-the-Functionalities-of-SymPy's-Control-Module-by-Anurag-Bhat",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2023/projects/1LZE1JYa"
+     }
+    ]
+   },
+   "2024": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2024/organizations/sympy/",
+    "num_projects": 5,
+    "projects": [
+     {
+      "title": "Improving Series Expansions and Limit Computations",
+      "short_description": "The proposal seeks to expand the already mature series module in sympy by making improvements in sections like fixes for some fundamental changes in...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2024-Report-Arnab-Nandi-:-Improving-Series-Expansions-and-Limit-Computations",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/bn7U0YD4/"
+     },
+     {
+      "title": "Improving and Expanding the functionalities of the SymPy's Control Module.",
+      "short_description": "This project focuses on enhancing the existing functionalities of the control module in SymPy. While the current control module has been...",
+      "code_url": "https://github.com/abhiphile/GSoC-2024-SymPy-Final-Report",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2024/projects/hKxju3OT/"
+     }
+    ]
+   },
+   "2025": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2025/organizations/sympy",
+    "num_projects": 6,
+    "projects": [
+     {
+      "title": "FLINT-Backed Multivariate Polynomials in SymPy",
+      "short_description": "SymPy currently lacks an efficient backend for dense and sparse multivariate polynomials over \u2124 and \u211a, leading to performance bottlenecks in many...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC'25-Final-Work-Report-by-Aasim-Ali:-FLINT%E2%80%90Backed-Multivariate-Polynomials-in-SymPy",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/LP8TlBsJ"
+     },
+     {
+      "title": "Implementing a Domain for Formal Power Series in SymPy",
+      "short_description": "This project implements a domain system for formal power series in SymPy, enhancing the ring_series module with PowerSeriesRing (Domain),...",
+      "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Jatin-Bhardwaj:-%22A-New-Power-Series-Ring-Module-for-SymPy%22",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/8VslkGZ9"
+     }
+    ]
+   },
+   "2026": {
+    "projects_url": "https://summerofcode.withgoogle.com/programs/2026/organizations/sympy",
+    "num_projects": 5,
+    "projects": [
+     {
+      "title": "Enhancing SymPy\u2019s Integral Module: Rationalizing Substitutions and Contour Integration",
+      "short_description": "The goal of this project is to improve the capabilities of the current integration module of SymPy. To do so, as a first step, rationalizing...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/P2DbjEp2"
+     },
+     {
+      "title": "Group Representation Theory and Character Tables",
+      "short_description": "This proposal aims to implement algorithms character tables computation algorithms for SymPy. Fourteen years ago in 2012, Aleksandar Makelov's GSoC...",
+      "code_url": null,
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/4hr0SZPK"
+     }
+    ]
+   }
+  },
+  "irc_channel": "https://gitter.im/sympy/sympy",
+  "contact_email": "",
+  "mailing_list": "https://groups.google.com/g/sympy",
+  "ideas_url": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+  "guide_url": "https://github.com/sympy/sympy/wiki/GSoC-Student-Instructions",
+  "twitter_url": "https://twitter.com/sympy",
+  "blog_url": "https://planet.sympy.org/"
+ },
+ {
+  "name": "3DTK",
+  "url": "http://threedtk.de",
+  "image_background_color": "#ffffff",
+  "description": "The 3D Toolkit provides algorithms and methods to process 3D point clouds",
+  "category": "Science and medicine",
+  "topics": [
+   "3d",
+   "gis",
+   "graphics",
+   "mapping",
+   "point clouds",
+   "robotics",
+   "slam"
+  ],
+  "technologies": [
+   "boost",
+   "build tools",
+   "c",
+   "c++",
+   "cmake",
+   "computer vision",
+   "machine learning",
+   "opencv",
+   "ros"
+  ],
+  "years": {
+   "2018": {
+    "projects_url": "https://summerofcode.withgoogle.com/archive/2018/organizations/5685665089978368/",
+    "num_projects": 2,
+    "projects": [
+     {
+      "title": "Surface Reconstruction Tool for 3DTK",
+      "short_description": "A Poisson surface reconstruction tool for 3DTK, to reconstruct mesh surface from point clouds with or without normals. Major functions include normal...",
+      "code_url": "https://xiasun.github.io/gsoc2018/",
+      "project_url": "https://summerofcode.withgoogle.com/archive/2018/projects/6459721275932672/"
+     }
+    ]
+   }
+  },
+  "irc_channel": "",
+  "contact_email": "mailto:johannes.schauer@uni-wuerzburg.de",
+  "mailing_list": "https://sourceforge.net/p/slam6d/discussion/",
+  "ideas_url": "",
+  "guide_url": ""
+ }
+]

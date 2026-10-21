@@ -1,42 +1,137 @@
 from __future__ import annotations
 
-import json
-from pathlib import Path
+from typing import Any
 
-from git_into_gsoc.gsoc.client import GSoCClient
-from git_into_gsoc.http_client import CachedHttpClient
+import httpx
+import pytest
+import respx
 
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
+from conftest import load_fixture
+from git_into_gsoc.gsoc.client import GSoCClient, github_refs, normalize_name
+from git_into_gsoc.scoring.org_match import expand_terms
 
-
-class FakeHttp(CachedHttpClient):
-    def __init__(self, payload: object) -> None:
-        self.payload = payload
-
-    def get_json(self, url: str, **kwargs: object) -> object:  # type: ignore[override]
-        return self.payload
+OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
+ARCHIVE = "https://api.gsocorganizations.dev"
 
 
-def test_search_organizations_ranks_python_science() -> None:
-    raw = json.loads((FIXTURES / "organizations_sample.json").read_text(encoding="utf-8"))
-    client = GSoCClient(http=FakeHttp(raw))  # type: ignore[arg-type]
-    results = client.search_organizations(technologies=["python"], topics=["science"], limit=5)
-    assert results
-    assert results[0].name == "SymPy"
-    assert results[0].match_score > 0
+def _archive_year(year: int) -> dict[str, Any]:
+    orgs = []
+    for raw in load_fixture("archive_organizations.json"):
+        data = raw["years"].get(str(year))
+        if data:
+            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
+    return {"year": year, "organizations": orgs}
 
 
-def test_get_organization_fuzzy() -> None:
-    raw = json.loads((FIXTURES / "organizations_sample.json").read_text(encoding="utf-8"))
-    client = GSoCClient(http=FakeHttp(raw))  # type: ignore[arg-type]
-    org = client.get_organization("wikimedia")
+@pytest.fixture
+def api() -> respx.MockRouter:
+    with respx.mock(assert_all_called=False) as router:
+        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
+        router.get(f"{OFFICIAL}/2026/organizations/").mock(
+            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
+        )
+        router.get(f"{ARCHIVE}/organizations.json").mock(
+            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
+        )
+        router.get(f"{ARCHIVE}/2026.json").mock(
+            return_value=httpx.Response(200, json=_archive_year(2026))
+        )
+        yield router
+
+
+def test_unannounced_year_falls_back_to_latest_official(api: respx.MockRouter) -> None:
+    catalog, orgs = GSoCClient().catalog(2027)
+    assert catalog.year == 2026
+    assert catalog.source == "official"
+    assert "not announced" in catalog.note
+    assert len(orgs) == 5
+    assert all(o.official for o in orgs)
+
+
+def test_official_orgs_carry_history_and_links(api: respx.MockRouter) -> None:
+    _, orgs = GSoCClient().catalog(2027)
+    radio = next(o for o in orgs if o.name == "GNU Radio")
+    assert len(radio.years_active) >= 10
+    assert radio.projects_by_year[2026] >= 1
+    assert radio.ideas_url
+    assert radio.github_orgs
+    assert {c.kind for c in radio.channels} & {"chat", "mailingList", "email"}
+
+
+def test_python_science_ranking(api: respx.MockRouter) -> None:
+    _, ranked = GSoCClient().search_organizations(
+        technologies=["python"], topics=["astronomy"], year=2027
+    )
+    assert ranked[0].name == "OpenAstronomy"
+    assert any("python" in r.lower() for r in ranked[0].match_reasons)
+
+
+def test_single_letter_language_needs_exact_tag(api: respx.MockRouter) -> None:
+    _, ranked = GSoCClient().search_organizations(technologies=["c"], year=2027, limit=20)
+    assert ranked
+    for org in ranked:
+        assert "c" in expand_terms(org.technologies) | expand_terms(org.topics)
+
+
+def test_aliases_match(api: respx.MockRouter) -> None:
+    client = GSoCClient()
+    _, via_alias = client.search_organizations(technologies=["py"], year=2027)
+    _, direct = client.search_organizations(technologies=["python"], year=2027)
+    assert [o.name for o in via_alias] == [o.name for o in direct]
+
+
+def test_unknown_query_returns_nothing(api: respx.MockRouter) -> None:
+    _, ranked = GSoCClient().search_organizations(query="zzzunlikelyterm", year=2027)
+    assert ranked == []
+
+
+def test_org_details_include_recent_projects(api: respx.MockRouter) -> None:
+    org = GSoCClient().get_organization("sympy", year=2027)
     assert org is not None
-    assert "Wikimedia" in org.name
+    assert org.name == "SymPy"
+    assert org.recent_projects
+    assert org.recent_projects[0].year >= org.recent_projects[-1].year
 
 
-def test_github_hints_from_blog_url() -> None:
-    raw = json.loads((FIXTURES / "organizations_sample.json").read_text(encoding="utf-8"))
-    client = GSoCClient(http=FakeHttp(raw))  # type: ignore[arg-type]
-    org = client.get_organization("SymPy")
+def test_org_details_fall_back_to_archive_history(api: respx.MockRouter) -> None:
+    org = GSoCClient().get_organization("3DTK", year=2027)
     assert org is not None
-    assert "sympy" in [h.lower() for h in org.github_hints]
+    assert not org.official
+    assert org.years_active
+
+
+def test_past_project_search(api: respx.MockRouter) -> None:
+    projects = GSoCClient().search_projects("astropy", limit=5)
+    assert projects
+    assert all("astropy" in (p.title + p.summary).lower() for p in projects)
+
+
+def test_archive_fallback_when_official_site_down() -> None:
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url__startswith=OFFICIAL).mock(return_value=httpx.Response(503))
+        router.get(f"{ARCHIVE}/organizations.json").mock(
+            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
+        )
+        router.get(f"{ARCHIVE}/2026.json").mock(
+            return_value=httpx.Response(200, json=_archive_year(2026))
+        )
+        catalog, orgs = GSoCClient().catalog(2027)
+    assert catalog.source == "archive"
+    assert catalog.year == 2026
+    assert any(o.name == "SymPy" for o in orgs)
+
+
+def test_github_refs() -> None:
+    orgs, repos = github_refs(
+        "https://github.com/mapeditor/tiled",
+        "https://github.com/rapid7/metasploit-framework/wiki/GSoC",
+        "https://docs.google.com/document/d/x",
+        "https://sympy.github.io/",
+        "https://github.com/orgs/foo",
+    )
+    assert orgs == ["mapeditor", "rapid7", "sympy"]
+    assert repos == ["mapeditor/tiled"]
+
+
+def test_normalize_name() -> None:
+    assert normalize_name("GNU Radio") == normalize_name("gnu-radio") == "gnuradio"

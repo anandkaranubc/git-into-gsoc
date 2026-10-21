@@ -16,6 +16,7 @@ URL = "https://example.test/data.json"
 
 def make_client(tmp_path: Path, **overrides: object) -> tuple[CachedHttpClient, list[float]]:
     sleeps: list[float] = []
+    overrides.setdefault("http_max_retries", 2)
     settings = Settings(cache_ttl_seconds=3600, **overrides)  # type: ignore[arg-type]
     client = CachedHttpClient(settings, cache_root=tmp_path / "http", sleep=sleeps.append)
     return client, sleeps

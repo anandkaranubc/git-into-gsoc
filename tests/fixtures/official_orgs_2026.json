@@ -1,0 +1,309 @@
+[
+ {
+  "name": "PostgreSQL",
+  "slug": "postgresql",
+  "website_url": "https://postgresql.org",
+  "tagline": "The Most Advanced Open Source Relational Database",
+  "license": "PostgreSQL",
+  "categories": [
+   "Data",
+   "Web"
+  ],
+  "contributor_guidance_url": "https://wiki.postgresql.org/wiki/GSoC",
+  "description": "PostgreSQL is a powerful, open source object-relational database system with over 30 years of active development that has earned it a strong reputation for reliability, feature robustness, and performance.",
+  "tech_tags": [
+   "c",
+   "python",
+   "postgresql",
+   "javascript",
+   "go"
+  ],
+  "topic_tags": [
+   "web",
+   "database",
+   "ui",
+   "sql",
+   "Benchmark"
+  ],
+  "contact_links": [
+   {
+    "name": "mailingList",
+    "value": "pgsql-hackers@lists.postgresql.org"
+   },
+   {
+    "name": "chat",
+    "value": "https://www.postgresql.org/community/irc/"
+   },
+   {
+    "name": "chat",
+    "value": "http://pgtreats.info/slack-invite"
+   },
+   {
+    "name": "blog",
+    "value": "https://planet.postgresql.org/"
+   }
+  ],
+  "source_code": "https://git.postgresql.org/gitweb/?p=postgresql.git;a=summary",
+  "ideas_link": "https://wiki.postgresql.org/wiki/GSoC_2026",
+  "direct_comm_methods": [
+   {
+    "name": "mailingList",
+    "value": "pgsql-hackers@lists.postgresql.org"
+   },
+   {
+    "name": "chat",
+    "value": "https://www.postgresql.org/community/irc/"
+   },
+   {
+    "name": "chat",
+    "value": "http://pgtreats.info/slack-invite"
+   }
+  ],
+  "social_comm_methods": [
+   {
+    "name": "blog",
+    "value": "https://planet.postgresql.org/"
+   }
+  ]
+ },
+ {
+  "name": "Metasploit",
+  "slug": "metasploit",
+  "website_url": "https://metasploit.com",
+  "tagline": "World\u2019s most used penetration testing framework",
+  "license": "BSD-3-Clause",
+  "categories": [
+   "Security"
+  ],
+  "contributor_guidance_url": "https://github.com/rapid7/metasploit-framework/wiki/How-to-Apply-to-GSoC",
+  "description": "The Metasploit Framework is both a penetration testing system and a development platform for creating security tools and exploits. The framework is used by network security professionals to perform penetration tests, system administrators to verify patch installations, product vendors to perform regression testing, and security researchers world-wide. The framework is written in the Ruby programmi",
+  "tech_tags": [
+   "c",
+   "python",
+   "postgresql",
+   "ruby",
+   "assembly"
+  ],
+  "topic_tags": [
+   "security",
+   "penetration testing",
+   "offensive security",
+   "exploitation"
+  ],
+  "contact_links": [
+   {
+    "name": "chat",
+    "value": "https://metasploit.com/slack"
+   },
+   {
+    "name": "email",
+    "value": "msfdev@metasploit.com"
+   },
+   {
+    "name": "twitter",
+    "value": "https://x.com/metasploit"
+   }
+  ],
+  "source_code": "https://github.com/rapid7/metasploit-framework",
+  "ideas_link": "https://github.com/rapid7/metasploit-framework/blob/master/docs/metasploit-framework.wiki/GSoC-2026-Project-Ideas.md",
+  "direct_comm_methods": [
+   {
+    "name": "chat",
+    "value": "https://metasploit.com/slack"
+   },
+   {
+    "name": "email",
+    "value": "msfdev@metasploit.com"
+   }
+  ],
+  "social_comm_methods": [
+   {
+    "name": "twitter",
+    "value": "https://x.com/metasploit"
+   }
+  ]
+ },
+ {
+  "name": "OpenAstronomy",
+  "slug": "openastronomy",
+  "website_url": "https://openastronomy.org/",
+  "tagline": "Look at the Universe with the power of Open Source",
+  "license": "BSD-3-Clause",
+  "categories": [
+   "Science and medicine"
+  ],
+  "contributor_guidance_url": "https://openastronomy.org/gsoc/contributor_guidelines.html",
+  "description": "OpenAstronomy is a collaboration between open source astronomy, astrophysics & heliophysics projects that are used by researchers and software engineers around the world to study our universe either by analysing the data obtained from amazing instruments like the [James Webb Space telescope](https://jwst.nasa.gov/), the [Square Kilometer Array](https://www.skatelescope.org/) or the [Solar Dynamic ",
+  "tech_tags": [
+   "c",
+   "python",
+   "c++",
+   "julia"
+  ],
+  "topic_tags": [
+   "image processing",
+   "astronomy",
+   "data analysis",
+   "solar physics",
+   "high energy astrophysics"
+  ],
+  "contact_links": [
+   {
+    "name": "email",
+    "value": "openastronomy.organization@gmail.com"
+   },
+   {
+    "name": "chat",
+    "value": "https://openastronomy.element.io/#/room/#openastronomy:openastronomy.org"
+   },
+   {
+    "name": "mailingList",
+    "value": "https://community.openastronomy.org/"
+   },
+   {
+    "name": "blog",
+    "value": "https://openastronomy.org/Universe_OA/"
+   },
+   {
+    "name": "twitter",
+    "value": "https://astrodon.social/@OpenAstronomy"
+   }
+  ],
+  "source_code": "http://openastronomy.org/members/",
+  "ideas_link": "https://openastronomy.org/gsoc/gsoc2026/#/projects",
+  "direct_comm_methods": [
+   {
+    "name": "email",
+    "value": "openastronomy.organization@gmail.com"
+   },
+   {
+    "name": "chat",
+    "value": "https://openastronomy.element.io/#/room/#openastronomy:openastronomy.org"
+   },
+   {
+    "name": "mailingList",
+    "value": "https://community.openastronomy.org/"
+   }
+  ],
+  "social_comm_methods": [
+   {
+    "name": "blog",
+    "value": "https://openastronomy.org/Universe_OA/"
+   },
+   {
+    "name": "twitter",
+    "value": "https://astrodon.social/@OpenAstronomy"
+   }
+  ]
+ },
+ {
+  "name": "GNU Radio",
+  "slug": "gnu-radio",
+  "website_url": "https://www.gnuradio.org",
+  "tagline": "The free & open software radio ecosystem",
+  "license": "GPL-3.0",
+  "categories": [
+   "Science and medicine"
+  ],
+  "contributor_guidance_url": "https://www.gnuradio.org/gsoc/",
+  "description": "GNU Radio is a free & open-source software development toolkit that provides signal processing blocks to implement software radios. It can be used with readily-available low-cost external RF hardware to create software-defined radios, or without hardware in a simulation-like environment. It is widely used in research, industry, academia, government, and hobbyist environments to support both wirele",
+  "tech_tags": [
+   "python",
+   "c++",
+   "qt",
+   "simd"
+  ],
+  "topic_tags": [
+   "real-time",
+   "dsp",
+   "communications engineering",
+   "cybersecurity",
+   "Software-Defined Radio"
+  ],
+  "contact_links": [
+   {
+    "name": "mailingList",
+    "value": "https://lists.gnu.org/mailman/listinfo/discuss-gnuradio"
+   },
+   {
+    "name": "chat",
+    "value": "https://chat.gnuradio.org/#/welcome"
+   },
+   {
+    "name": "twitter",
+    "value": "https://twitter.com/gnuradio"
+   },
+   {
+    "name": "blog",
+    "value": "https://www.gnuradio.org/blog/"
+   },
+   {
+    "name": "blog",
+    "value": "https://fosstodon.org/@gnuradio"
+   }
+  ],
+  "source_code": "https://github.com/gnuradio/gnuradio",
+  "ideas_link": "https://wiki.gnuradio.org/index.php/GSoCIdeas",
+  "direct_comm_methods": [
+   {
+    "name": "mailingList",
+    "value": "https://lists.gnu.org/mailman/listinfo/discuss-gnuradio"
+   },
+   {
+    "name": "chat",
+    "value": "https://chat.gnuradio.org/#/welcome"
+   }
+  ],
+  "social_comm_methods": [
+   {
+    "name": "twitter",
+    "value": "https://twitter.com/gnuradio"
+   },
+   {
+    "name": "blog",
+    "value": "https://www.gnuradio.org/blog/"
+   },
+   {
+    "name": "blog",
+    "value": "https://fosstodon.org/@gnuradio"
+   }
+  ]
+ },
+ {
+  "name": "SymPy",
+  "slug": "sympy",
+  "website_url": "https://www.sympy.org/",
+  "tagline": "SymPy is a Python library for symbolic mathematics",
+  "license": "BSD-3-Clause",
+  "categories": [
+   "Science and medicine"
+  ],
+  "contributor_guidance_url": "https://github.com/sympy/sympy/wiki/GSoC-Student-Instructions",
+  "description": "SymPy is a Python library for symbolic mathematics. It aims to become a full-featured computer algebra system (CAS) while keeping the code as simple as possible in order to be comprehensible and easily extensible. SymPy is written entirely in Python.",
+  "tech_tags": [
+   "python",
+   "numpy",
+   "jupyter"
+  ],
+  "topic_tags": [
+   "mathematics",
+   "physics",
+   "symbolic mathematics"
+  ],
+  "contact_links": [
+   {
+    "name": "mailingList",
+    "value": "https://groups.google.com/g/sympy"
+   }
+  ],
+  "source_code": "https://github.com/sympy/sympy",
+  "ideas_link": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+  "direct_comm_methods": [
+   {
+    "name": "mailingList",
+    "value": "https://groups.google.com/g/sympy"
+   }
+  ],
+  "social_comm_methods": []
+ }
+]

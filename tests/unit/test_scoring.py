@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 from git_into_gsoc.models import Availability, IssueCandidate, OrgSummary, RepoHealth
 from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
-from git_into_gsoc.scoring.org_match import score_org_match
+from git_into_gsoc.scoring.org_match import canonical, mentions, score_org_match, slot_trend
 
 
 def test_repo_health_rewards_active_welcoming_projects() -> None:
@@ -79,23 +79,66 @@ def test_issue_score_penalizes_assigned() -> None:
     assert open_issue.beginner_score > taken.beginner_score
 
 
+def _org(**overrides: object) -> OrgSummary:
+    base: dict[str, object] = {
+        "name": "SymPy",
+        "description": "symbolic mathematics in pure Python",
+        "technologies": ["python"],
+        "topics": ["mathematics", "science"],
+        "years_active": [2022, 2023, 2024, 2025, 2026],
+        "latest_year": 2026,
+        "num_projects_latest": 4,
+        "projects_by_year": {2024: 5, 2025: 6, 2026: 5},
+        "category": "Science and medicine",
+    }
+    base.update(overrides)
+    return OrgSummary.model_validate(base)
+
+
 def test_org_match_technology_and_continuity() -> None:
-    org = OrgSummary(
-        name="SymPy",
-        description="symbolic mathematics",
-        technologies=["python"],
-        topics=["mathematics", "science"],
-        years_active=[2024, 2025, 2026],
-        latest_year=2026,
-        num_projects_latest=4,
-        category="Science and Medicine",
+    result = score_org_match(
+        _org(), technologies=["python"], topics=["science"], reference_year=2026
     )
-    score, reasons = score_org_match(
-        org,
-        technologies=["python"],
-        topics=["science"],
-        prefer_year=2026,
-    )
-    assert score > 40
-    assert any("python" in r.lower() for r in reasons)
-    assert any("2026" in r for r in reasons)
+    assert result.relevant
+    assert result.score > 40
+    assert any("python" in r.lower() for r in result.reasons)
+    assert any("2026" in r for r in result.reasons)
+
+
+def test_org_match_requires_relevance_when_filtered() -> None:
+    assert not score_org_match(_org(), technologies=["rust"]).relevant
+    assert not score_org_match(_org(), query="kubernetes").relevant
+
+
+def test_short_terms_do_not_substring_match() -> None:
+    org = _org(description="A Google-scale cloud platform", technologies=["java"])
+    assert not score_org_match(org, technologies=["go"]).relevant
+    assert not score_org_match(org, technologies=["c"]).relevant
+
+
+def test_symbol_terms_match_exactly() -> None:
+    org = _org(technologies=["c/c++", "qt"])
+    assert score_org_match(org, technologies=["cpp"]).relevant
+    assert score_org_match(org, technologies=["c"]).relevant
+    assert not score_org_match(org, technologies=["c#"]).relevant
+
+
+def test_browse_mode_ranks_by_continuity() -> None:
+    veteran = score_org_match(_org(years_active=list(range(2016, 2027))), reference_year=2026)
+    newcomer = score_org_match(_org(years_active=[2026], projects_by_year={}), reference_year=2026)
+    assert veteran.relevant and newcomer.relevant
+    assert veteran.score > newcomer.score
+
+
+def test_slot_trend() -> None:
+    assert slot_trend({2024: 4, 2025: 4, 2026: 8}) == "growing"
+    assert slot_trend({2024: 8, 2025: 8, 2026: 4}) == "shrinking"
+    assert slot_trend({2024: 5, 2025: 5, 2026: 5}) == "steady"
+    assert slot_trend({2026: 5}) is None
+
+
+def test_mentions_word_boundaries() -> None:
+    assert mentions("We love C++ and Rust", "c++")
+    assert not mentions("maintainers", "ai")
+    assert mentions("Applied AI research", "ai")
+    assert canonical(" Golang ") == "go"

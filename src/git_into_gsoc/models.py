@@ -29,23 +29,51 @@ class Availability(StrEnum):
     UNKNOWN = "unknown"
 
 
+class ContactChannel(BaseModel):
+    kind: str
+    value: str
+
+
+class PastProject(BaseModel):
+    year: int
+    org: str
+    title: str
+    summary: str = ""
+    project_url: str | None = None
+    code_url: str | None = None
+    score: float = 0.0
+
+
 class OrgSummary(BaseModel):
     name: str
+    slug: str | None = None
     description: str = ""
     url: str | None = None
     category: str | None = None
     topics: list[str] = Field(default_factory=list)
     technologies: list[str] = Field(default_factory=list)
+    license: str | None = None
     years_active: list[int] = Field(default_factory=list)
     latest_year: int | None = None
     num_projects_latest: int = 0
-    contact_email: str | None = None
-    mailing_list: str | None = None
-    irc_channel: str | None = None
-    blog_url: str | None = None
+    projects_by_year: dict[int, int] = Field(default_factory=dict)
+    ideas_url: str | None = None
+    guide_url: str | None = None
+    source_code: str | None = None
+    github_orgs: list[str] = Field(default_factory=list)
+    github_repos: list[str] = Field(default_factory=list)
+    channels: list[ContactChannel] = Field(default_factory=list)
+    official: bool = False
     match_score: float = 0.0
     match_reasons: list[str] = Field(default_factory=list)
-    github_hints: list[str] = Field(default_factory=list)
+    recent_projects: list[PastProject] = Field(default_factory=list)
+
+
+class OrgCatalog(BaseModel):
+    year: int
+    source: str
+    note: str
+    count: int
 
 
 class RepoHealth(BaseModel):
