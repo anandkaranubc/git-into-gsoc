@@ -2,6 +2,16 @@
 
 Paste these into an assistant that has the git-into-gsoc skill or MCP server connected (see [connect your AI assistant](../docs/guide/03-connect-your-ai-assistant.md)). Replace the parts in angle brackets. Good prompts give the assistant real facts about you and ask for one step at a time.
 
+## Your first question
+
+Ask in your own words. The assistant asks what it needs to know.
+
+```text
+I want to do Google Summer of Code. I know Python and like science. Where do I start?
+```
+
+The server's `get_started` prompt does the same with a few questions. In Claude Code it is in the `/` menu as `/mcp__git-into-gsoc__get_started`.
+
 ## Check that the tools work
 
 ```text
