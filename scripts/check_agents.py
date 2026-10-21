@@ -122,10 +122,11 @@ class Sandbox:
 
     def trust_for_gemini(self) -> None:
         # Gemini CLI starts MCP servers only in folders the person trusted.
-        trusted = {str(self.cwd): "TRUST_FOLDER", str(self.cwd.resolve()): "TRUST_FOLDER"}
-        target = self.home / ".gemini" / "trustedFolders.json"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(json.dumps(trusted), encoding="utf-8")
+        level = "TRUST_FOLDER"
+        folders = {str(self.cwd): level, str(self.cwd.resolve()): level}
+        listing = self.home / ".gemini" / "trustedFolders.json"
+        listing.parent.mkdir(parents=True, exist_ok=True)
+        listing.write_text(json.dumps(folders), encoding="utf-8")
 
     def smoke(self, entry: dict[str, Any], cwd: str | None = None) -> str:
         argv = [entry["command"], *entry.get("args", [])]
