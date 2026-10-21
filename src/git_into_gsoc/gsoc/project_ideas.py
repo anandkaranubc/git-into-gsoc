@@ -19,6 +19,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
+from git_into_gsoc.text import clean_untrusted
 
 MAX_CHARS = 600_000
 MIN_IDEAS_FOR_LAYOUT = 2
@@ -357,7 +358,7 @@ def _clean(value: str) -> str:
     value = re.sub(r"<[^>]+>", " ", value)
     value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
     value = re.sub(r"\*\*|__|`", "", value)
-    return re.sub(r"\s+", " ", value).strip()
+    return clean_untrusted(re.sub(r"\s+", " ", value), limit=600)
 
 
 def _split_list(value: str) -> list[str]:
@@ -403,7 +404,7 @@ def ai_policy_sentences(text: str, limit: int = 3) -> list[str]:
     flat = re.sub(r"\s+", " ", re.sub(r"[#*_`]+", "", text))
     for sentence in re.split(r"(?<=[.!?])\s+", flat):
         if _AI_RE.search(sentence) and _POLICY_RE.search(sentence):
-            clean = sentence.strip()
+            clean = clean_untrusted(sentence.strip(), limit=400)
             if 20 <= len(clean) <= 400 and clean not in found:
                 found.append(clean)
             if len(found) >= limit:
@@ -474,7 +475,9 @@ def _is_non_idea(title: str) -> bool:
 def _parse_block(
     title: str, body: list[str], *, section: str | None, source_url: str
 ) -> ProjectIdea:
-    idea = ProjectIdea(title=title, section=section, source_url=source_url)
+    idea = ProjectIdea(
+        title=clean_untrusted(title, limit=200), section=section, source_url=source_url
+    )
     free_text: list[str] = []
     current: str | None = None
     for line in body:

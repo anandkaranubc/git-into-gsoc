@@ -14,6 +14,8 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from git_into_gsoc.text import clean_untrusted
+
 PURPOSES: dict[str, tuple[str, ...]] = {
     "source": ("src", "lib", "pkg", "internal", "core", "app", "cmd", "packages", "crates"),
     "tests": ("tests", "test", "spec", "specs", "__tests__", "e2e", "testing"),
@@ -365,7 +367,7 @@ def policy_quotes(texts: dict[str, str], *, limit: int = 8) -> list[dict[str, st
                 continue
             stripped = re.sub(r"^[-*>\d.)\s]+", "", stripped)
             for sentence in _SENTENCE_SPLIT.split(re.sub(r"\s+", " ", stripped)):
-                clean = sentence.strip(" -*#>")
+                clean = clean_untrusted(sentence.strip(" -*#>"), limit=300)
                 if not 20 <= len(clean) <= 300 or len(clean.split()) < 4 or clean in seen:
                     continue
                 for kind, pattern in POLICY_PATTERNS.items():

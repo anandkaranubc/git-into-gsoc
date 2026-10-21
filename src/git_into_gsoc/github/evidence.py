@@ -11,6 +11,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from git_into_gsoc.models import ContributionItem
+from git_into_gsoc.text import clean_untrusted
 
 STRENGTH_ORDER = ("none", "starting", "developing", "strong")
 
@@ -47,7 +48,7 @@ def to_item(item: dict[str, Any], kind: str) -> ContributionItem | None:
         kind=kind,
         repo=repo,
         number=int(number),
-        title=str(item.get("title") or ""),
+        title=clean_untrusted(item.get("title"), limit=160),
         url=str(item.get("html_url") or ""),
         state=_state(item),
         author=(item.get("user") or {}).get("login"),
