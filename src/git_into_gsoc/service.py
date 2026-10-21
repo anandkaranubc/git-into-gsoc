@@ -97,6 +97,11 @@ BEFORE_YOU_COMMENT = [
 ]
 
 
+# Match reasons from an organization's own topic tags or category; a passing mention in
+# its description (LLVM mentions "embedded") is too weak to count as an interest match.
+_TOPIC_REASONS = ("Topic", "Related topic", "Category")
+
+
 class GSoCToolkit:
     def __init__(self) -> None:
         self.settings = get_settings()
@@ -237,21 +242,45 @@ class GSoCToolkit:
         }
 
     def gsoc_github_orgs(
-        self, *, language: str | None = None, year: int | None = None, limit: int = 12
+        self,
+        *,
+        language: str | None = None,
+        topics: list[str] | None = None,
+        year: int | None = None,
+        limit: int = 12,
     ) -> tuple[dict[str, str], list[str], str]:
-        """Map GitHub owners to GSoC org names, plus a language-ranked owner shortlist."""
+        """Map GitHub owners to GSoC org names, plus an owner shortlist ranked by fit."""
         try:
             catalog, orgs = self.gsoc.catalog(year)
             _, ranked = self.gsoc.search_organizations(
-                technologies=[language] if language else None, year=year, limit=60
+                technologies=[language] if language else None,
+                topics=topics or None,
+                year=year,
+                limit=60,
             )
         except HttpError:
             return {}, [], "GSoC org data unavailable; searched all of GitHub."
         owner_names = {gh.lower(): org.name for org in orgs for gh in org.github_orgs}
+        if topics:
+            # Only organizations that match an interest, when there are enough of them.
+            wanted = [t.lower() for t in topics]
+            fitting = [
+                o
+                for o in ranked
+                if any(
+                    r.startswith(_TOPIC_REASONS) and any(t in r.lower() for t in wanted)
+                    for r in o.match_reasons
+                )
+            ]
+            if len([o for o in fitting if o.github_orgs]) >= 3:
+                ranked = fitting
+            else:
+                topics = None
         shortlist = [org.github_orgs[0] for org in ranked if org.github_orgs][:limit]
         note = (
             f"Searching GitHub orgs of GSoC {catalog.year} organizations"
             + (f" that use {language}" if language else "")
+            + (f" and match your interests ({', '.join(topics)})" if topics else "")
             + ". Use --scope all to search every repository."
         )
         return owner_names, shortlist, note
@@ -368,7 +397,15 @@ class GSoCToolkit:
         if not (language or org or repo):
             saved = list(self.progress.profile().get("technologies") or [])
             language, from_profile = (saved[0], True) if saved else (None, False)
-        owner_names, shortlist, note = self.gsoc_github_orgs(language=language, year=year)
+        # Interests pick which organizations to search: C++ plus robotics should mean
+        # robotics organizations that use C++, not every big C++ project.
+        topics = None
+        if scope == "gsoc" and not (org or repo):
+            topics = list(self.progress.profile().get("interests") or []) or None
+        owner_names, shortlist, note = self.gsoc_github_orgs(
+            language=language, topics=topics, year=year
+        )
+        narrowed = bool(topics) and "match your interests" in note
         use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
         if not use_gsoc:
             note = "Searching " + (f"{repo}" if repo else f"org {org}" if org else "all of GitHub")
@@ -390,6 +427,34 @@ class GSoCToolkit:
             max_results=max_results,
             org_names=owner_names,
         )
+        if use_gsoc and narrowed and len(issues) < 3:
+            # Too few in the organizations that fit the interests: keep those first and
+            # fill the list from every organization that uses the language.
+            first = len(issues)
+            owner_names, shortlist, _ = self.gsoc_github_orgs(language=language, year=year)
+            wider = self.github.find_beginner_issues(
+                language=language,
+                orgs=shortlist,
+                labels=labels_used,
+                max_results=max_results,
+                org_names=owner_names,
+            )
+            have = {(i.repo, i.number) for i in issues}
+            fits = {*have}
+            issues = [*issues, *(i for i in wider if (i.repo, i.number) not in have)]
+            # Free issues first; among them, the organizations that fit the interests.
+            issues.sort(
+                key=lambda i: (
+                    i.availability != Availability.AVAILABLE,
+                    (i.repo, i.number) not in fits,
+                    -i.beginner_score,
+                )
+            )
+            issues = issues[:max_results]
+            note += (
+                f" Only {first} issue(s) came from those; the rest are from other "
+                f"organizations that use {language}."
+            )
         return {
             "scope": "gsoc" if use_gsoc else "custom",
             "language_used": language,
