@@ -129,20 +129,6 @@ What the first twelve queries showed:
 - [COPS-IITBHU/GSoC-Accepted-Proposals](https://github.com/COPS-IITBHU/GSoC-Accepted-Proposals) (526 stars, no license file) sorts proposals by year and names each file after the organization; `ideas` now matches file names as well as folder names, so year-sorted archives link too.
 - [deepanshu1422/List-Of-Open-Source-Internships-Programs](https://github.com/deepanshu1422/List-Of-Open-Source-Internships-Programs) (5,204 stars) lists adjacent programs; a useful pointer for someone not selected, nothing to build.
 
-## Full research notes
-
-The complete notes behind this page, one file per stream, with every URL, number, and probe result, live in [docs/research/](research/). They are working notes rather than a guide:
-
-- [GSoC tools](research/gsoc-tools.md): GSoC tools, the official site's API, ideas pages, proposal archives, and what organizations score.
-- [Beginner-issue finders](research/issue-finders.md): Beginner-issue finders, claim conventions, label taxonomies, and newcomer-issue research.
-- [Repository health metrics](research/repo-health.md): Repository health metrics, GraphQL costs, ecosyste.ms, and what predicts a merged newcomer pull request.
-- [Codebase understanding and onboarding tools](research/codebase-onboarding.md): Codebase understanding and onboarding tools, and the GitHub API toolbox behind orient and pointers.
-- [MCP servers](research/mcp-and-skills.md): MCP servers, the Agent Skills specification, distribution channels, and untrusted-content handling.
-- [Search census appendix](research/census-2026-10-21.md): every result of the 42 repository searches, all 292 repositories opened, with a verdict for each.
-
-All 359 distinct links in this page and the notes were resolved on 2026-10-21: 328 answer HTTP 200; the rest are URL templates with placeholders, endpoints that need a token, intentionally absent pages (the free PyPI name), or sites that block scripts. One stale link was fixed.
-- [The research on newcomer onboarding](research/onboarding-science.md): The research on newcomer onboarding, what maintainers say they want, and adjacent programs.
-
 ## Evidence worth reading
 
 - Turzo, Sultana, Bosu, "From First Patch to Long-Term Contributor" (2025): https://arxiv.org/pdf/2407.04159
