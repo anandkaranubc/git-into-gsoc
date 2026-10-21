@@ -219,10 +219,17 @@ def pick_beginner_label(labels: list[dict[str, Any]]) -> str | None:
     for wanted in BEGINNER_LABELS:
         if wanted in names:
             return names[wanted]
+    # Spellings seen once each across GSoC organizations' repositories: "first
+    # contrib", "newbie-friendly", "difficulty: starter", "good_for_beginners".
     for lower, original in names.items():
-        if "good first" in lower or "beginner" in lower or "first-timer" in lower:
+        if _BEGINNER_WORDS.search(lower):
             return original
     return None
+
+
+_BEGINNER_WORDS = re.compile(
+    r"good first|beginner|first[ _-]?(?:timer|issue|contrib)|newbie|starter|\beasy\b"
+)
 
 
 def detect_toolchain(entries: list[dict[str, Any]]) -> tuple[list[str], bool]:

@@ -61,6 +61,15 @@ def test_is_bot() -> None:
     assert not is_bot({"login": "octocat", "type": "User"})
 
 
+def test_pick_beginner_label_falls_back_to_any_beginner_spelling() -> None:
+    assert pick_beginner_label([{"name": "bug"}, {"name": "first contrib"}]) == "first contrib"
+    assert pick_beginner_label([{"name": "newbie-friendly"}]) == "newbie-friendly"
+    assert pick_beginner_label([{"name": "Difficulty: Starter"}]) == "Difficulty: Starter"
+    assert pick_beginner_label([{"name": "good_for_beginners"}]) == "good_for_beginners"
+    assert pick_beginner_label([{"name": "easy"}]) == "easy"
+    assert pick_beginner_label([{"name": "uneasy"}, {"name": "bug"}]) is None
+
+
 def test_pick_beginner_label_prefers_canonical() -> None:
     labels = [{"name": "bug"}, {"name": "Good First Issue"}, {"name": "beginner"}]
     assert pick_beginner_label(labels) == "Good First Issue"

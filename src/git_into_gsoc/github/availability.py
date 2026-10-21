@@ -32,6 +32,10 @@ RESERVED_LABELS = {
     "pr open",
     "pr opened",
 }
+# The same words inside a longer label, such as "good first issue (taken)".
+_RESERVED_WORD_RE = re.compile(
+    r"\b(taken|claimed|in[ -]progress|wip|has[ -]pr|pr[ -]open(?:ed)?)\b", re.I
+)
 RECENT_CLAIM_DAYS = 30
 CONTESTED_WINDOW_DAYS = 60
 CONTESTED_MIN_CLAIMANTS = 3
@@ -201,10 +205,14 @@ def assess_issue(
             Availability.LIKELY_TAKEN, f"Open PR {ref}{who}{draft} references it".replace("  ", " ")
         )
 
-    reserved = [
+    names = [
         str(lab.get("name") if isinstance(lab, dict) else lab) for lab in issue.get("labels") or []
     ]
-    reserved = [name for name in reserved if name.strip().lower() in RESERVED_LABELS]
+    reserved = [
+        name
+        for name in names
+        if name.strip().lower() in RESERVED_LABELS or _RESERVED_WORD_RE.search(name)
+    ]
     if reserved:
         return result(Availability.CLAIMED, f"Label '{reserved[0]}' marks it as taken")
 

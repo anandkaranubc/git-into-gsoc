@@ -277,3 +277,9 @@ def test_reserved_label_marks_an_issue_as_taken() -> None:
     assert "In Progress" in assessment.reason
     free = assess_issue({**issue, "labels": [{"name": "good first issue"}]}, [], now=NOW)
     assert free.availability == Availability.AVAILABLE
+    suffixed = assess_issue(
+        {**issue, "labels": [{"name": "good first issue (taken)"}]}, [], now=NOW
+    )
+    assert suffixed.availability == Availability.CLAIMED
+    unassigned = assess_issue({**issue, "labels": [{"name": "needs-assignment"}]}, [], now=NOW)
+    assert unassigned.availability == Availability.AVAILABLE
