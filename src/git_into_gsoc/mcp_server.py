@@ -1,0 +1,219 @@
+"""MCP server exposing git-into-gsoc intelligence tools."""
+
+from __future__ import annotations
+
+import json
+from typing import Any
+
+from mcp.server.mcpserver import MCPServer
+
+from git_into_gsoc.guidance import journey_overview
+from git_into_gsoc.models import JourneyPhase
+from git_into_gsoc.service import GSoCToolkit
+
+mcp = MCPServer(
+    name="git-into-gsoc",
+    instructions=(
+        "Evidence-backed Google Summer of Code contributor toolkit. "
+        "Use these tools for real org/repo/issue data. Never fabricate opportunities. "
+        "Prefer high-quality contributions and respect each org's AI policy."
+    ),
+)
+
+_toolkit: GSoCToolkit | None = None
+
+
+def toolkit() -> GSoCToolkit:
+    global _toolkit
+    if _toolkit is None:
+        _toolkit = GSoCToolkit()
+    return _toolkit
+
+
+def _dump(data: Any) -> str:
+    return json.dumps(data, indent=2, default=str)
+
+
+@mcp.tool()
+def gsoc_program_info(year: int = 2027) -> str:
+    """Get GSoC program status, timeline, official links, and anti-spam rules.
+
+    For 2027, dates may be estimates until Google publishes the official timeline.
+    Always verify on summerofcode.withgoogle.com.
+    """
+    return _dump(toolkit().program_info(year))
+
+
+@mcp.tool()
+def gsoc_journey_guide(phase: str | None = None) -> str:
+    """Return journey phase guidance for GSoC contributors.
+
+    Phases: learn, discover, evaluate, find_issues, contribute, community, proposal, track.
+    Omit phase to get the full overview.
+    """
+    overview = journey_overview()
+    if not phase:
+        return _dump(overview)
+    key = phase.strip().lower()
+    phases = overview["phases"]
+    assert isinstance(phases, dict)
+    if key not in phases:
+        return _dump({"error": f"Unknown phase '{phase}'", "valid": list(phases)})
+    phase_guide = phases[key]
+    assert isinstance(phase_guide, dict)
+    return _dump({"phase": key, **phase_guide, "anti_spam_rules": overview["anti_spam_rules"]})
+
+
+@mcp.tool()
+def gsoc_search_orgs(
+    query: str = "",
+    technologies: str = "",
+    topics: str = "",
+    category: str = "",
+    year: int = 2026,
+    limit: int = 10,
+) -> str:
+    """Search and rank GSoC mentoring organizations from archive data.
+
+    technologies/topics: comma-separated lists (e.g. \"python,rust\").
+    Default year=2026 (latest archived). GSoC 2027 org lists are not final until announced.
+    """
+    tech = [t.strip() for t in technologies.split(",") if t.strip()]
+    tops = [t.strip() for t in topics.split(",") if t.strip()]
+    results = toolkit().match_orgs(
+        query=query or None,
+        technologies=tech or None,
+        topics=tops or None,
+        category=category or None,
+        year=year,
+        limit=limit,
+    )
+    return _dump(
+        {
+            "count": len(results),
+            "organizations": results,
+            "disclaimer": (
+                "Archive-derived data. Confirm org participation and ideas pages "
+                "on the official GSoC site for your target year."
+            ),
+        }
+    )
+
+
+@mcp.tool()
+def gsoc_org_details(name: str) -> str:
+    """Get details for a mentoring organization by name (exact or partial)."""
+    return _dump(toolkit().org_details(name))
+
+
+@mcp.tool()
+def gsoc_evaluate_repo(full_name: str) -> str:
+    """Evaluate a GitHub repository's health and contributor-friendliness.
+
+    full_name: owner/repo (e.g. sympy/sympy)
+    """
+    return _dump(toolkit().evaluate_repo(full_name))
+
+
+@mcp.tool()
+def gsoc_find_issues(
+    language: str = "",
+    org: str = "",
+    repo: str = "",
+    max_results: int = 10,
+) -> str:
+    """Find beginner-friendly GitHub issues with availability checks.
+
+    Prefers open, unassigned issues with good-first-issue / help-wanted labels.
+    Always re-check availability before claiming.
+    """
+    issues = toolkit().find_issues(
+        language=language or None,
+        org=org or None,
+        repo=repo or None,
+        max_results=max_results,
+    )
+    return _dump({"count": len(issues), "issues": issues})
+
+
+@mcp.tool()
+def gsoc_issue_status(full_name: str, number: int) -> str:
+    """Check whether a specific GitHub issue looks available to claim."""
+    return _dump(toolkit().issue_status(full_name, number))
+
+
+@mcp.tool()
+def gsoc_recommend_path(
+    github_username: str = "",
+    technologies: str = "",
+    interests: str = "",
+) -> str:
+    """Personalized starting path: profile languages, matching orgs, starter issues."""
+    tech = [t.strip() for t in technologies.split(",") if t.strip()]
+    interests_list = [t.strip() for t in interests.split(",") if t.strip()]
+    return _dump(
+        toolkit().recommend_path(
+            username=github_username or None,
+            technologies=tech or None,
+            interests=interests_list or None,
+        )
+    )
+
+
+@mcp.tool()
+def gsoc_proposal_checklist() -> str:
+    """Proposal quality checklist grounded in official GSoC guidance."""
+    return _dump(toolkit().proposal_help())
+
+
+@mcp.tool()
+def gsoc_progress(action: str = "summary", phase: str = "", value: str = "") -> str:
+    """Track local GSoC journey progress.
+
+    action: summary | complete_phase | shortlist_org | track_repo | track_issue | note
+    phase: required for complete_phase
+    value: org name / owner/repo / issue url / note text depending on action
+    """
+    store = toolkit().progress
+    act = action.strip().lower()
+    if act == "summary":
+        return _dump(store.summary())
+    if act == "complete_phase":
+        if not phase:
+            return _dump({"error": "phase is required", "valid": [p.value for p in JourneyPhase]})
+        return _dump(store.complete_phase(phase).model_dump(mode="json"))
+    if act == "shortlist_org":
+        return _dump(store.shortlist_org(value).model_dump(mode="json"))
+    if act == "track_repo":
+        return _dump(store.track_repo(value).model_dump(mode="json"))
+    if act == "track_issue":
+        return _dump(store.track_issue(value).model_dump(mode="json"))
+    if act == "note":
+        return _dump(store.add_note(value).model_dump(mode="json"))
+    return _dump(
+        {
+            "error": f"Unknown action '{action}'",
+            "valid": [
+                "summary",
+                "complete_phase",
+                "shortlist_org",
+                "track_repo",
+                "track_issue",
+                "note",
+            ],
+        }
+    )
+
+
+@mcp.tool()
+def gsoc_rate_limit() -> str:
+    """Show GitHub API rate limit status. Set GITHUB_TOKEN for higher limits."""
+    return _dump(toolkit().rate_limit())
+
+
+def main() -> None:
+    mcp.run(transport="stdio")
+
+
+if __name__ == "__main__":
+    main()
