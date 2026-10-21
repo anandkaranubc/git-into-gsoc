@@ -18,7 +18,7 @@ from rich.table import Table
 from rich.text import Text
 from typer.core import TyperGroup
 
-from git_into_gsoc import __version__
+from git_into_gsoc import __version__, onboarding
 from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.guidance import journey_overview
 from git_into_gsoc.models import LogEntry
@@ -85,7 +85,7 @@ app = typer.Typer(
         "Prepare for Google Summer of Code with real data: find organizations, "
         "check repositories, find beginner issues, and plan your proposal."
     ),
-    no_args_is_help=True,
+    invoke_without_command=True,
     rich_markup_mode="rich",
     cls=_FriendlyErrors,
     pretty_exceptions_show_locals=False,
@@ -160,6 +160,7 @@ def _version_callback(value: bool) -> None:
 
 @app.callback()
 def main_callback(
+    ctx: typer.Context,
     version: bool = typer.Option(
         False,
         "--version",
@@ -170,6 +171,68 @@ def main_callback(
 ) -> None:
     """Prepare for Google Summer of Code with real data."""
     del version
+    if ctx.invoked_subcommand is None:
+        _render_home(onboarding.home(_toolkit()))
+
+
+GUIDE_URL = "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md"
+
+# The handful of commands a newcomer needs first; `--help` lists every one.
+_HOME_COMMANDS = (
+    ("start", "Answer four questions, get organizations that fit you"),
+    ("next", "What to do right now, from your saved progress"),
+    ("orgs", "Rank organizations for your skills and interests"),
+    ("issues", "Find beginner issues nobody has claimed"),
+    ("program", "The GSoC timeline and where we are in it"),
+    ("doctor", "Check your setup if something does not work"),
+)
+
+
+def _when(milestone: dict[str, Any]) -> str:
+    days = milestone["days_until"]
+    when = {0: "today", 1: "tomorrow"}.get(days, f"in {days} days")
+    mark = "" if milestone["official"] else ", an estimate"
+    return f"{milestone['label']}, {milestone['at'][:10]} ({when}{mark})"
+
+
+def _render_program_line(program: dict[str, Any] | None) -> None:
+    if program:
+        console.print(f"\n[bold]GSoC {program['year']}[/bold]: {program['phase']}")
+        if program["next_milestone"]:
+            console.print(f"[dim]Next date: {_when(program['next_milestone'])}[/dim]")
+
+
+def _render_home(data: dict[str, Any]) -> None:
+    """What a bare `git-into-gsoc` shows: a short, personal starting point."""
+    data = _markup_safe(data)
+    console.print(
+        f"[bold]git into gsoc[/bold] [dim]{data['version']}[/dim]\n"
+        "Find your first open-source contribution and prepare for Google Summer of Code."
+    )
+    _render_program_line(data["program"])
+    if data["new_user"]:
+        console.print(
+            "\n[bold]New here?[/bold] Answer four questions and get organizations that fit "
+            "you. It takes about two minutes.\n  [cyan]git-into-gsoc start[/cyan]"
+        )
+    else:
+        who = f", @{data['github']}" if data["github"] else ""
+        console.print(
+            f"\n[bold]Welcome back{who}.[/bold] Your progress: {data['done']} of {data['total']}"
+        )
+        for step in data["milestones"]:
+            if step["done"]:
+                count = f" ({step['count']})" if step["count"] > 1 else ""
+                console.print(f"  [green]✓[/green] {step['label']}{count}")
+            else:
+                console.print(f"  [dim]○ {step['label']}[/dim]")
+        console.print(f"What to do now, with live checks:\n  [cyan]{data['next_command']}[/cyan]")
+    console.print("\n[bold]Commands to start with[/bold]")
+    for name, what in _HOME_COMMANDS:
+        console.print(f"  [cyan]{name:<8}[/cyan] {what}")
+    console.print(
+        f"\n[dim]Every command: git-into-gsoc --help. Step-by-step guide: {GUIDE_URL}[/dim]"
+    )
 
 
 class ProjectSize(StrEnum):
@@ -184,6 +247,211 @@ def _relative(days: int) -> str:
     if days > 0:
         return f"in {days}d"
     return f"{-days}d ago"
+
+
+def _stdin_is_interactive() -> bool:
+    return sys.stdin.isatty()
+
+
+def _ask(question: str, default: str = "") -> str:
+    """One question; Enter keeps the default, which may be empty (skip)."""
+    answer: str = typer.prompt(
+        question, default=default, show_default=bool(default), prompt_suffix="\n  > "
+    )
+    return strip_hidden(answer).strip()
+
+
+def _ask_github(toolkit: GSoCToolkit, default: str) -> tuple[str | None, list[str]]:
+    """Ask for a username until GitHub knows it or the person skips; return its languages."""
+    question = "1 of 4  Your GitHub username? It lets the tool read your public languages."
+    while True:
+        login = _ask(question, default)
+        if not login:
+            return None, []
+        try:
+            profile = toolkit.save_profile(github=login)
+        except GigError as exc:
+            reason = str(exc).rstrip(".")
+            console.print(f"  [yellow]![/yellow] {escape(reason)}.")
+            console.print("  Check the spelling and try again, or press Enter to skip.")
+            default = ""
+            continue
+        languages = [str(lang["name"]) for lang in profile.get("languages") or []][:4]
+        if profile.get("warning"):
+            console.print(f"  [yellow]![/yellow] {escape(profile['warning'])}")
+        elif languages:
+            console.print(
+                f"  [green]✓[/green] Found @{escape(login)}. Your public code is mostly {escape(', '.join(languages))}."
+            )
+        else:
+            console.print(
+                f"  [green]✓[/green] Found @{escape(login)}. No public code yet, which is fine."
+            )
+        return login, languages
+
+
+def _ask_hours(default: str) -> int | None:
+    while True:
+        answer = _ask("4 of 4  About how many hours a week can you give?", default)
+        if not answer:
+            return None
+        if answer.isdigit() and 1 <= int(answer) <= 80:
+            return int(answer)
+        console.print("  [yellow]![/yellow] Type a number from 1 to 80, or press Enter to skip.")
+
+
+def _render_topic_menu() -> None:
+    items = [f"{i:>2}  {label}" for i, (_, label) in enumerate(onboarding.TOPIC_CHOICES, 1)]
+    half = (len(items) + 1) // 2
+    right_column = items[half:] + [""] * (half - len(items[half:]))
+    for left, right in zip(items[:half], right_column, strict=True):
+        console.print(f"  [dim]{left:<40}{right}[/dim]", highlight=False)
+
+
+def _render_matches(data: dict[str, Any]) -> None:
+    orgs = data["organizations"]
+    if not orgs:
+        console.print(
+            "\nNo organizations matched those answers yet. Try broader words, or browse by topic."
+        )
+        return
+    console.print("\n[bold]Organizations that fit you[/bold]")
+    if data["catalog"].get("note"):
+        console.print(f"[dim]{data['catalog']['note']}[/dim]")
+    for index, org in enumerate(orgs, 1):
+        reasons = [r for r in org["match_reasons"] if not r.startswith("Accepted in")][:3]
+        console.print(f"  [bold]{index}. {org['name']}[/bold]  [dim]{'; '.join(reasons)}[/dim]")
+        if org.get("description"):
+            console.print(f"     {org['description']}")
+
+
+def _render_next_steps(data: dict[str, Any]) -> None:
+    if data["shortlisted"]:
+        console.print(f"\n[green]✓[/green] Your shortlist: {', '.join(data['shortlisted'])}")
+    console.print("\n[bold]Your next steps[/bold]")
+    for index, step in enumerate(data["next_steps"], 1):
+        console.print(f"  {index}. {step['title']}\n     [cyan]{step['command']}[/cyan]")
+    console.print(
+        "\n[dim]Change your answers any time: run start again, or git-into-gsoc profile.\n"
+        'Using an AI assistant? Ask it: "Help me get started with Google Summer of Code '
+        'using git-into-gsoc."[/dim]'
+    )
+
+
+def _interview(
+    toolkit: GSoCToolkit,
+    saved: dict[str, Any],
+    *,
+    ask_github: bool,
+    technologies: list[str] | None,
+    topics: list[str] | None,
+    hours: int | None,
+) -> tuple[list[str] | None, list[str] | None, int | None]:
+    """Ask whatever the options did not answer. The username is saved as it is checked."""
+    console.print(
+        Panel.fit(
+            "Four quick questions, then organizations that fit you and what to do next.\n"
+            "Press Enter to skip any question. Your answers stay on this computer.",
+            title="git into gsoc: start",
+        )
+    )
+    program = onboarding.program_now(toolkit)
+    if program:
+        _render_program_line(_markup_safe(program))
+        console.print(f"[dim]{escape(program['advice'])}[/dim]\n")
+    known: list[str] = []
+    if ask_github:
+        default = str(saved.get("github") or onboarding.signed_in_login(toolkit) or "")
+        known = [lang.lower() for lang in _ask_github(toolkit, default)[1]]
+    if technologies is None:
+        answer = _ask(
+            "2 of 4  Which languages and tools do you know? For example: "
+            + onboarding.TECH_EXAMPLES,
+            ", ".join(saved.get("technologies") or known),
+        )
+        technologies = split_csv(answer) or None
+    if topics is None:
+        console.print(
+            "3 of 4  What would you enjoy working on? Pick numbers or type your own words.",
+            highlight=False,
+        )
+        _render_topic_menu()
+        answer = _ask("Separate several with commas", ", ".join(saved.get("interests") or []))
+        topics = onboarding.parse_topics(answer) or None
+    if hours is None:
+        hours = _ask_hours(str(saved.get("hours_per_week") or ""))
+    return technologies, topics, hours
+
+
+@app.command("start", rich_help_panel="Start here")
+def start_cmd(
+    github: str | None = typer.Option(
+        None, "--github", "-g", help="Your GitHub username, to read your public languages"
+    ),
+    tech: str | None = typer.Option(
+        None, "--tech", "-t", help="Languages and tools you know, comma-separated"
+    ),
+    interests: str | None = typer.Option(
+        None,
+        "--interests",
+        "-i",
+        help="Topics you care about, comma-separated words or numbers from the start menu",
+    ),
+    hours: int | None = typer.Option(
+        None, "--hours", min=1, max=80, help="Hours per week you can give"
+    ),
+    no_input: bool = typer.Option(
+        False, "--no-input", help="Ask nothing; use the options given and your saved profile"
+    ),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """New here? Answer four questions and get organizations that fit you, plus next steps."""
+    toolkit = _toolkit()
+    saved = toolkit.progress.profile()
+    technologies = split_csv(tech) or None
+    topics = onboarding.parse_topics(interests) if interests else None
+    interactive = not no_input and output == Output.rich and _stdin_is_interactive()
+    if not interactive and not (github or technologies or topics or hours or saved):
+        if output == Output.json:
+            _emit({"needs_input": True, "questions": onboarding.questions()}, output)
+            return
+        console.print(
+            "start asks four questions, so run it in a terminal. Or give the answers as "
+            "options:\n  [cyan]git-into-gsoc start --github YOUR_USERNAME --tech python "
+            "--interests science --hours 10[/cyan]\n"
+            "[dim]Replace YOUR_USERNAME with yours. Every option can be left out.[/dim]"
+        )
+        return
+    if interactive:
+        technologies, topics, hours = _interview(
+            toolkit,
+            saved,
+            ask_github=github is None,
+            technologies=technologies,
+            topics=topics,
+            hours=hours,
+        )
+    data = onboarding.first_run(
+        toolkit,
+        github=github,
+        technologies=technologies,
+        interests=topics,
+        hours_per_week=hours,
+    )
+    if output == Output.json:
+        _emit(data, output)
+        return
+    data = _markup_safe(data)
+    _render_matches(data)
+    if interactive and data["organizations"]:
+        answer = _ask("Shortlist any of these now? Type their numbers, or press Enter to skip")
+        names = [org["name"] for org in data["organizations"]]
+        picks = [
+            names[int(p) - 1] for p in split_csv(answer) if p.isdigit() and 0 < int(p) <= len(names)
+        ]
+        if picks:
+            data = _markup_safe(onboarding.shortlist(toolkit, data, picks))
+    _render_next_steps(data)
 
 
 @app.command("program", rich_help_panel="Start here")

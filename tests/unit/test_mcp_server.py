@@ -67,7 +67,13 @@ def test_mcp_server_registers_prompts_and_progress_resource() -> None:
     from git_into_gsoc.mcp_server import mcp
 
     prompts = {p.name for p in mcp._prompt_manager.list_prompts()}
-    assert {"coach_phase", "before_you_comment", "first_pr_plan", "weekly_checkin"} <= prompts
+    assert {
+        "get_started",
+        "coach_phase",
+        "before_you_comment",
+        "first_pr_plan",
+        "weekly_checkin",
+    } <= prompts
     resources = {str(r.uri) for r in mcp._resource_manager.list_resources()}
     assert "gsoc://progress" in resources
 

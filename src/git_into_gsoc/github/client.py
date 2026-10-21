@@ -187,6 +187,14 @@ class GitHubClient:
         data = self._api(f"users/{validate_login(username)}")
         return data if isinstance(data, dict) else {}
 
+    def authenticated_login(self) -> str | None:
+        """The username the token belongs to, or None without a token."""
+        if not self.token:
+            return None
+        data = self._api("user", use_cache=False)
+        login = data.get("login") if isinstance(data, dict) else None
+        return validate_login(login) if isinstance(login, str) else None
+
     def list_user_repos(self, username: str, *, per_page: int = 30) -> list[dict[str, Any]]:
         data = self._api(
             f"users/{validate_login(username)}/repos",

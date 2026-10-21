@@ -22,10 +22,10 @@ Then open a new terminal and check:
 
 ```bash
 git-into-gsoc --version
-git-into-gsoc program
+git-into-gsoc start
 ```
 
-`program` should show the current GSoC phase and a timeline. It needs network access the first time to fetch official dates and falls back to an embedded snapshot when offline.
+`start` shows where the program is right now, asks four quick questions, and suggests organizations that fit you. Press Enter to skip any question. It needs network access the first time to fetch official dates and falls back to an embedded snapshot when offline. Run `git-into-gsoc` with no command any time to see your progress and what to do next.
 
 If you would rather see each step, this is what the script does:
 

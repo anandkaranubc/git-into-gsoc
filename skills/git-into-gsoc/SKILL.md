@@ -40,6 +40,12 @@ things: what they know (languages or tools), what they care about, and how much
 time they have each week. Then find their phase below and work on that one
 phase. Community participation and note-taking fit anywhere.
 
+For someone brand new, ask those questions in one short message, pass the
+answers to `gsoc_recommend_path` (it saves their profile on their computer), and
+show three organizations with a reason each plus one next step. The
+`get_started` MCP prompt runs exactly this. In a terminal, `git-into-gsoc start`
+asks the same questions itself.
+
 | Phase | Help them | Done when |
 |---|---|---|
 | `learn` | Understand how GSoC works, check eligibility, write down interests and time | They can explain the program in their own words and know where the rules are |
@@ -69,6 +75,7 @@ the person to run the installer. Never invent a result in its place.
 
 | Phase | Command | MCP tool |
 |---|---|---|
+| learn | `git-into-gsoc start` (asks four questions in a terminal; with options such as `--tech python --interests science` it asks nothing) | `gsoc_recommend_path`, or the `get_started` prompt |
 | learn | `git-into-gsoc program --year 2027` | `gsoc_program_info` |
 | discover | `git-into-gsoc orgs --tech python --topics science -n 5` | `gsoc_search_orgs` |
 | discover | `git-into-gsoc org "SymPy"` | `gsoc_org_details` |

@@ -2,6 +2,14 @@
 
 Start with a language you know and a topic you care about. You are looking for a community where you can learn and contribute, not just the highest score.
 
+The quickest first look is the guided start. It asks four questions (your GitHub username, which is optional, the languages you know, topics from a numbered list, and hours per week), saves the answers as your profile, and shows the three organizations that fit best:
+
+```bash
+git-into-gsoc start
+```
+
+To see a longer list, or to try other languages and topics, search directly:
+
 ```bash
 git-into-gsoc orgs --tech python --topics science -n 5
 ```

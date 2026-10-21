@@ -13,6 +13,21 @@ Options belong after their command, except the top-level `--version`. All data c
 
 Repositories can be written as `owner/name`, as any GitHub URL, or as the `git@github.com:owner/name.git` form that `git remote -v` prints. Issues can be written as `owner/name#123`, `owner/name 123`, or any issue or pull request URL, including a link copied from a single comment.
 
+## Get started
+
+```bash
+git-into-gsoc            # home: where the program is, your progress, and what to run next
+git-into-gsoc start      # four questions, then organizations that fit you
+```
+
+Run with no command, `git-into-gsoc` shows a short home screen: the current GSoC phase and the next date, then either a pointer to `start` (first time) or your progress in five steps (profile, shortlist, repository, issue, weekly note) with the command for what to do now. `git-into-gsoc --help` lists every command.
+
+`start` asks four questions and saves the answers as your profile: your GitHub username (optional; it reads the languages of your public repositories and suggests them as the next answer), the languages and tools you know, the topics you would enjoy (pick numbers from a list or type your own words), and hours per week. Press Enter to skip any question. It then shows the three organizations that fit best, with the reasons, lets you shortlist any of them by number, and prints your next steps with exact commands. Run it again whenever your answers change.
+
+| Command | Options | Result |
+|---|---|---|
+| `start` | `--github` / `-g`, `--tech` / `-t`, `--interests` / `-i` (words, or numbers from the start menu), `--hours`, `--no-input` | Questions in a terminal; with options or `--no-input`, it asks nothing. Without a terminal and without answers, it prints the options to use (`--output json` lists the questions, for an assistant to ask) |
+
 ## Learn and plan
 
 | Command | Options | Result |

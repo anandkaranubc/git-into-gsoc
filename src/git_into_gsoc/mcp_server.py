@@ -19,6 +19,7 @@ from git_into_gsoc.config import PROJECT_URL
 from git_into_gsoc.errors import GigError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, OFFICIAL_SOURCES, journey_overview
 from git_into_gsoc.models import JourneyPhase, LogEntry
+from git_into_gsoc.onboarding import TOPIC_CHOICES
 from git_into_gsoc.service import GSoCToolkit
 from git_into_gsoc.text import strip_hidden_all
 from git_into_gsoc.validation import split_csv
@@ -623,6 +624,29 @@ def progress_resource() -> str:
 
 
 _PHASES = ", ".join(p.value for p in JourneyPhase)
+_TOPICS = ", ".join(value for value, _ in TOPIC_CHOICES)
+
+
+@mcp.prompt(
+    name="get_started",
+    title="Get started with GSoC",
+    description="First-time setup: a few questions, organizations that fit, and one next step.",
+)
+def get_started_prompt() -> str:
+    return (
+        "I am new to Google Summer of Code and want to get started.\n"
+        "1. Call gsoc_program_info and tell me in one or two sentences where the program is "
+        "now. Say whether the dates are official or estimates.\n"
+        "2. In one short message, ask me up to four questions: my GitHub username (optional), "
+        "the languages and tools I know, what I would enjoy working on (offer examples such as "
+        f"{_TOPICS}), and about how many hours a week I can give. Wait for my answers.\n"
+        "3. Call gsoc_recommend_path with my answers. It saves my profile on this computer only. "
+        "Show the three organizations that fit best, each with its reason, and up to three "
+        "starter issues with their links.\n"
+        "4. Finish with one next step and the exact tool or command for it, such as reading "
+        "one organization with gsoc_org_details. Keep the whole reply short and plain. Never "
+        "invent organizations, issues, mentors, or dates."
+    )
 
 
 @mcp.prompt(
