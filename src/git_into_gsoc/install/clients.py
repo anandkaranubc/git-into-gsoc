@@ -285,7 +285,7 @@ def register_codex_toml(
 
 def registered_servers(home: Path, project: Path | None = None) -> list[tuple[str, Path]]:
     """Where our MCP server is already registered (for ``doctor``)."""
-    found: list[tuple[str, Path]] = []
+    found: dict[Path, str] = {}
     for assistant in ASSISTANTS.values():
         if not assistant.mcp:
             continue
@@ -307,19 +307,19 @@ def registered_servers(home: Path, project: Path | None = None) -> list[tuple[st
             except (ValueError, OSError, tomllib.TOMLDecodeError):
                 continue
             if hit:
-                found.append((assistant.label, path))
-    return found
+                found.setdefault(path.resolve(), assistant.label)
+    return [(label, path) for path, label in found.items()]
 
 
 def installed_skills(home: Path, project: Path | None = None) -> list[tuple[str, Path]]:
-    found: list[tuple[str, Path]] = []
+    found: dict[Path, str] = {}
     for assistant in ASSISTANTS.values():
         roots = [home] + ([project] if project else [])
         for root in roots:
             path = root / assistant.skill_dir / SERVER_NAME / "SKILL.md"
             if path.is_file():
-                found.append((assistant.label, path.parent))
-    return found
+                found.setdefault(path.parent.resolve(), assistant.label)
+    return [(label, path) for path, label in found.items()]
 
 
 def env_home() -> Path:

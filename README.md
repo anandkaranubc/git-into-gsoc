@@ -36,7 +36,8 @@ git-into-gsoc org "SymPy"                                  # ideas page, channel
 git-into-gsoc repos "SymPy"                                # which of its repos should I start in?
 git-into-gsoc repo sympy/sympy                             # will a newcomer's PR land here?
 git-into-gsoc issues --language python -n 5                # beginner issues that are actually free
-git-into-gsoc issue owner/repo#123                         # claims, PRs, and what to do before commenting
+git-into-gsoc issue owner/repo#123 --track                 # claims, PRs, what to do before commenting; save it
+git-into-gsoc proposal draft.md --github YOUR_USERNAME     # what organizations reject on, with evidence
 ```
 
 ## What you get

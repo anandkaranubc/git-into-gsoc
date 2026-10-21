@@ -113,6 +113,9 @@ def test_run_setup_user_scope_end_to_end(tmp_path: Path) -> None:
     assert (home / ".claude/skills/git-into-gsoc/SKILL.md").is_file()
     assert (home / ".cursor/mcp.json").is_file()
     assert {label for label, _ in installed_skills(home)} >= {"Cursor", "Claude Code"}
+    # doctor run from the home directory must not list every location twice
+    assert len(installed_skills(home, home)) == len(installed_skills(home))
+    assert len(registered_servers(home, home)) == len(registered_servers(home))
     assert {label for label, _ in registered_servers(home)} == {"Cursor", "Codex CLI", "Gemini CLI"}
     # second run changes nothing
     run_setup(plan)
