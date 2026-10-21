@@ -1,0 +1,31 @@
+{
+  "repo": "sympy/sympy",
+  "number": 30671,
+  "title": "Find bugs in the rewrite of SymPy's assumption system",
+  "url": "https://github.com/sympy/sympy/issues/30671",
+  "labels": [
+    "Easy to Fix",
+    "assumptions",
+    "good first issue"
+  ],
+  "comments": 3,
+  "availability": "available",
+  "reason": "Open, unassigned, no open PR or recent claim",
+  "assessment": {
+    "availability": "available",
+    "reason": "Open, unassigned, no open PR or recent claim",
+    "claims": [],
+    "linked_prs": [],
+    "assignees": [],
+    "maintainer_engaged": false,
+    "last_activity_days": 15,
+    "caveats": []
+  },
+  "before_you_comment": [
+    "Read the whole thread and any linked PRs first.",
+    "Reproduce the problem locally (or confirm the docs gap) before claiming.",
+    "Point to the code you would change and outline your approach in 2-3 sentences.",
+    "Ask whether the approach fits; do not just write 'can I work on this?'.",
+    "If someone claimed it recently, pick another issue rather than competing."
+  ]
+}

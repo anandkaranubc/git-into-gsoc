@@ -1,0 +1,239 @@
+{
+  "catalog": {
+    "year": 2026,
+    "source": "official",
+    "note": "2027 orgs are not announced yet; showing official 2026 participants, the best predictor of who returns.",
+    "count": 183
+  },
+  "count": 3,
+  "organizations": [
+    {
+      "name": "OWASP Foundation",
+      "slug": "owasp-foundation",
+      "description": "No more insecure software.",
+      "url": "https://owasp.org",
+      "category": "Security",
+      "topics": [
+        "web",
+        "cloud",
+        "application security",
+        "cybersecurity",
+        "DevSecOps"
+      ],
+      "technologies": [
+        "python",
+        "javascript",
+        "java",
+        "ZAP",
+        "Juice Shop"
+      ],
+      "license": "GPL-3.0",
+      "years_active": [
+        2016,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 26,
+      "projects_by_year": {
+        "2016": 5,
+        "2018": 8,
+        "2019": 12,
+        "2020": 12,
+        "2021": 14,
+        "2022": 15,
+        "2023": 11,
+        "2024": 10,
+        "2025": 12,
+        "2026": 26
+      },
+      "ideas_url": "https://owasp.org/www-community/initiatives/gsoc/gsoc2026ideas",
+      "guide_url": null,
+      "source_code": "https://github.com/owasp",
+      "github_orgs": [
+        "owasp"
+      ],
+      "github_repos": [],
+      "channels": [
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "chat",
+          "value": "https://owasp.org/slack/invite"
+        },
+        {
+          "kind": "mailingList",
+          "value": "https://groups.google.com/g/owasp-gsoc?pli=1"
+        }
+      ],
+      "official": true,
+      "match_score": 79.0,
+      "match_reasons": [
+        "Uses python",
+        "Accepted in 2026",
+        "Veteran mentoring org (10 years)",
+        "26 projects in 2026",
+        "Slots growing"
+      ]
+    },
+    {
+      "name": "International Catrobat Association",
+      "slug": "international-catrobat-association",
+      "description": "Free visual coding apps for computational thinking",
+      "url": "https://www.catrobat.org",
+      "category": "Programming languages, Artificial Intelligence",
+      "topics": [
+        "education",
+        "visual programming",
+        "mobile programming",
+        "game engines",
+        "creativity tools"
+      ],
+      "technologies": [
+        "python",
+        "javascript",
+        "swift",
+        "kotlin",
+        "flutter"
+      ],
+      "license": "AGPL-3.0",
+      "years_active": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 12,
+      "projects_by_year": {
+        "2016": 7,
+        "2017": 5,
+        "2018": 5,
+        "2019": 9,
+        "2020": 12,
+        "2021": 13,
+        "2022": 11,
+        "2023": 7,
+        "2024": 8,
+        "2025": 7,
+        "2026": 12
+      },
+      "ideas_url": "https://developer.catrobat.org/pages/development/google-summer-of-code/2026/",
+      "guide_url": "https://docs.google.com/document/d/1vOGY2C80raXLV6RVRHXoqiAhcnBJFeZdU8wqMm-Rgo0/edit?usp=sharing",
+      "source_code": "https://github.com/Catrobat/",
+      "github_orgs": [
+        "Catrobat"
+      ],
+      "github_repos": [],
+      "channels": [
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "chat",
+          "value": "https://github.com/Catrobat/Catroid#contributing"
+        }
+      ],
+      "official": true,
+      "match_score": 78.3,
+      "match_reasons": [
+        "Uses python",
+        "Accepted in 2026",
+        "Veteran mentoring org (11 years)",
+        "12 projects in 2026",
+        "Slots growing"
+      ]
+    },
+    {
+      "name": "MariaDB",
+      "slug": "mariadb",
+      "description": "The fastest growing Open Source Database",
+      "url": "https://mariadb.org",
+      "category": "Data",
+      "topics": [
+        "Database Engines",
+        "SQL Features"
+      ],
+      "technologies": [
+        "python",
+        "c/c++",
+        "perl",
+        "databases"
+      ],
+      "license": "GPL-2.0",
+      "years_active": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 8,
+      "projects_by_year": {
+        "2016": 5,
+        "2017": 1,
+        "2018": 1,
+        "2019": 4,
+        "2020": 2,
+        "2021": 4,
+        "2022": 6,
+        "2023": 5,
+        "2024": 4,
+        "2025": 6,
+        "2026": 8
+      },
+      "ideas_url": "https://mariadb.com/docs/general-resources/community/contributing-participating/google-summers-of-code/google-summer-of-code-2026",
+      "guide_url": "",
+      "source_code": "https://github.com/MariaDB/server",
+      "github_orgs": [
+        "MariaDB"
+      ],
+      "github_repos": [
+        "MariaDB/server"
+      ],
+      "channels": [
+        {
+          "kind": "chat",
+          "value": "https://mariadb.zulipchat.com/"
+        },
+        {
+          "kind": "mailingList",
+          "value": "https://lists.mariadb.org/postorius/lists/developers.lists.mariadb.org/"
+        }
+      ],
+      "official": true,
+      "match_score": 76.9,
+      "match_reasons": [
+        "Uses python",
+        "Accepted in 2026",
+        "Veteran mentoring org (11 years)",
+        "8 projects in 2026",
+        "Slots growing"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,267 @@
+{
+  "repo": "sympy/sympy",
+  "url": "https://github.com/sympy/sympy",
+  "description": "A computer algebra system written in pure Python",
+  "default_branch": "master",
+  "as_of_commit": "ee053c66194e56e8cbc6b8ca41edd420e8531adc",
+  "tree_truncated": false,
+  "stars": 15027,
+  "license": "Other",
+  "pushed_days_ago": 0,
+  "languages": [
+    {
+      "name": "Python",
+      "share": 99
+    },
+    {
+      "name": "XSLT",
+      "share": 1
+    },
+    {
+      "name": "ANTLR",
+      "share": 0
+    },
+    {
+      "name": "Perl",
+      "share": 0
+    }
+  ],
+  "code_map": [
+    {
+      "path": "sympy",
+      "files": 1601,
+      "main_extension": ".py",
+      "purpose": "source (main package)",
+      "purpose_is_guess": true
+    },
+    {
+      "path": "doc",
+      "files": 415,
+      "main_extension": ".rst",
+      "purpose": "docs",
+      "purpose_is_guess": true
+    },
+    {
+      "path": "bin",
+      "files": 28,
+      "main_extension": ".py",
+      "purpose": "tooling",
+      "purpose_is_guess": true
+    },
+    {
+      "path": ".github",
+      "files": 10,
+      "main_extension": ".yml",
+      "purpose": "tooling",
+      "purpose_is_guess": true
+    },
+    {
+      "path": "release",
+      "files": 9,
+      "main_extension": ".py",
+      "purpose": "unknown",
+      "purpose_is_guess": true
+    },
+    {
+      "path": ".ci",
+      "files": 5,
+      "main_extension": ".json",
+      "purpose": "unknown",
+      "purpose_is_guess": true
+    },
+    {
+      "path": "data",
+      "files": 3,
+      "main_extension": "(none)",
+      "purpose": "data",
+      "purpose_is_guess": true
+    },
+    {
+      "path": ".circleci",
+      "files": 1,
+      "main_extension": ".yml",
+      "purpose": "tooling",
+      "purpose_is_guess": true
+    },
+    {
+      "path": ".devcontainer",
+      "files": 1,
+      "main_extension": ".json",
+      "purpose": "unknown",
+      "purpose_is_guess": true
+    },
+    {
+      "path": ".",
+      "files": 21,
+      "main_extension": "",
+      "purpose": "project root",
+      "purpose_is_guess": false
+    }
+  ],
+  "entry_points": [],
+  "test_commands": [
+    {
+      "command": "pytest -n auto --timeout 10 --durations=50 --durations-min=5",
+      "source": ".github/workflows/runtests.yml"
+    },
+    {
+      "command": "pytest -Werror -n auto",
+      "source": ".github/workflows/runtests.yml"
+    },
+    {
+      "command": "pytest -n auto",
+      "source": ".github/workflows/runtests.yml"
+    },
+    {
+      "command": "pytest -m slow --timeout 595 -n auto -v --durations=0",
+      "source": ".github/workflows/runtests.yml"
+    }
+  ],
+  "setup_hints": [
+    "Dev container present: open in Codespaces or VS Code for a ready environment"
+  ],
+  "docs": {
+    "readme": "README.md",
+    "contributing": "CONTRIBUTING.md",
+    "architecture": [],
+    "governance": null,
+    "test_dirs": [
+      "sympy/core/tests",
+      "sympy/polys/tests",
+      "sympy/physics/quantum/tests",
+      "sympy/printing/tests",
+      "sympy/matrices/expressions/tests",
+      "sympy/physics/mechanics/tests",
+      "sympy/combinatorics/tests",
+      "sympy/utilities/tests"
+    ]
+  },
+  "maintainers": {
+    "active_committers_90d": [
+      {
+        "login": "smichr",
+        "commits": 31
+      },
+      {
+        "login": "asmeurer",
+        "commits": 6
+      },
+      {
+        "login": "sonusharma6-dsa",
+        "commits": 6
+      },
+      {
+        "login": "Upabjojr",
+        "commits": 6
+      },
+      {
+        "login": "Yi-111-a",
+        "commits": 5
+      },
+      {
+        "login": "sylee957",
+        "commits": 4
+      },
+      {
+        "login": "oscarbenjamin",
+        "commits": 4
+      },
+      {
+        "login": "Viranshul-P",
+        "commits": 4
+      }
+    ],
+    "commits_90d": 100,
+    "codeowners": [
+      {
+        "pattern": "/.github/CODEOWNERS",
+        "owners": "@oscarbenjamin @asmeurer"
+      },
+      {
+        "pattern": "/.github/workflows/",
+        "owners": "@oscarbenjamin @asmeurer"
+      },
+      {
+        "pattern": "/.circleci/",
+        "owners": "@oscarbenjamin @asmeurer"
+      },
+      {
+        "pattern": "/sympy/*laplace*",
+        "owners": "@hanspi42"
+      }
+    ],
+    "codeowners_path": ".github/CODEOWNERS"
+  },
+  "conventions": {
+    "dco": {
+      "required": false,
+      "evidence": []
+    },
+    "cla": {
+      "required": false,
+      "evidence": []
+    },
+    "conventional_commits": {
+      "expected": false,
+      "ratio": 0.08,
+      "evidence": [
+        "8 of the last 100 commits use type(scope): subject"
+      ]
+    },
+    "pre_commit": false,
+    "pr_checklist_items": 0,
+    "ai_disclosure_in_pr_template": true,
+    "codeowners": ".github/CODEOWNERS",
+    "required_checks_seen": [
+      "3.10 Doctests",
+      "3.10 Optional Dendendencies",
+      "3.10 Tests",
+      "3.11 Doctests",
+      "3.11 Optional Dendendencies",
+      "3.11 Tests",
+      "3.12 Doctests",
+      "3.12 Optional Dendendencies",
+      "3.12 Tests",
+      "3.13 Doctests",
+      "3.13 Optional Dendendencies",
+      "3.13 Tests"
+    ],
+    "gates": []
+  },
+  "policies": [],
+  "channels": [],
+  "example_pr": {
+    "number": 29859,
+    "url": "https://github.com/sympy/sympy/pull/29859",
+    "title": "polys: fix cross-type comparison",
+    "author": "11350613",
+    "files": 1,
+    "paths": [
+      "sympy/polys/matrices/normalforms.py"
+    ],
+    "touches_tests": false
+  },
+  "reading_plan": [
+    {
+      "path": "README.md",
+      "why": "What the project is and how to run it"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "why": "How this project wants changes made"
+    },
+    {
+      "path": "sympy/core/tests",
+      "why": "How behaviour is tested; your change will need a test here"
+    },
+    {
+      "path": ".github/workflows/runtests.yml",
+      "why": "What CI runs on your pull request"
+    },
+    {
+      "path": "https://github.com/sympy/sympy/pull/29859",
+      "why": "A recently merged small PR from an outside contributor (1 files): the shape of a change that lands"
+    }
+  ],
+  "note": "Purpose labels on the code map are guesses from directory names. Everything else names a real file, commit, or check. Read the files; do not rely on a summary."
+}

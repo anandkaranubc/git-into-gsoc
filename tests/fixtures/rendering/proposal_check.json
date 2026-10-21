@@ -1,0 +1,170 @@
+{
+  "word_count": 47,
+  "sections": {
+    "synopsis": null,
+    "benefits": null,
+    "deliverables": null,
+    "timeline": "timeline",
+    "about": null,
+    "contributions": null,
+    "ai_statement": null,
+    "availability": null
+  },
+  "links": [],
+  "findings": [
+    {
+      "id": "placeholders",
+      "status": "pass",
+      "title": "No template placeholders left",
+      "detail": ""
+    },
+    {
+      "id": "synopsis",
+      "status": "fail",
+      "title": "No synopsis section found",
+      "detail": "Add a heading such as 'Synopsis'; reviewers skim by section and skip proposals that lack one."
+    },
+    {
+      "id": "deliverables",
+      "status": "fail",
+      "title": "No deliverables section found",
+      "detail": "Add a heading such as 'Deliverable'; reviewers skim by section and skip proposals that lack one."
+    },
+    {
+      "id": "timeline",
+      "status": "pass",
+      "title": "Has a timeline section",
+      "detail": "timeline"
+    },
+    {
+      "id": "about",
+      "status": "fail",
+      "title": "No about section found",
+      "detail": "Add a heading such as 'About Me'; reviewers skim by section and skip proposals that lack one."
+    },
+    {
+      "id": "benefits",
+      "status": "warn",
+      "title": "No benefits section found",
+      "detail": "Most org templates ask for it; add it unless your org's template does not."
+    },
+    {
+      "id": "contributions",
+      "status": "warn",
+      "title": "No contributions section found",
+      "detail": "Most org templates ask for it; add it unless your org's template does not."
+    },
+    {
+      "id": "availability",
+      "status": "warn",
+      "title": "No availability section found",
+      "detail": "Most org templates ask for it; add it unless your org's template does not."
+    },
+    {
+      "id": "ai_statement",
+      "status": "warn",
+      "title": "No statement about AI use",
+      "detail": "Check the org's AI policy; many ask you to disclose how (or whether) you used AI."
+    },
+    {
+      "id": "links",
+      "status": "fail",
+      "title": "No links to your contributions",
+      "detail": "Link every PR, issue, or discussion you took part in for this org; prior interaction is the strongest acceptance signal."
+    },
+    {
+      "id": "timeline_detail",
+      "status": "fail",
+      "title": "No week-by-week timeline",
+      "detail": "Add 'Week 1', 'Week 2', ... with concrete deliverables and at least one buffer week."
+    },
+    {
+      "id": "buffer",
+      "status": "warn",
+      "title": "No buffer time in the timeline",
+      "detail": "Reviews and surprises take time; reserve some."
+    },
+    {
+      "id": "specificity",
+      "status": "fail",
+      "title": "No concrete references to code, files, or issues",
+      "detail": "Point at real files, functions, and issue numbers in the org's repository."
+    },
+    {
+      "id": "generic_phrasing",
+      "status": "fail",
+      "title": "6 generic phrase(s) or buzzword(s) that read as AI-written",
+      "detail": "'i am passionate about', 'cutting-edge', 'leverage', 'delve', 'in today's', 'game-changer'. Replace with specifics about this project and your own experience (https://developers.google.com/open-source/gsoc/resources/spam_proposals)."
+    },
+    {
+      "id": "length",
+      "status": "warn",
+      "title": "Short draft (47 words)",
+      "detail": "Most accepted proposals run 1,500 to 4,000 words."
+    }
+  ],
+  "summary": {
+    "pass": 2,
+    "warn": 6,
+    "fail": 7
+  },
+  "verdict": "Not ready: fix the failures first.",
+  "manual_checks": [
+    "Does it follow the organization's own template and answer every required question?",
+    "Could you explain every sentence and line of code without notes?",
+    "Did a mentor or community member see a draft before the deadline?",
+    "Is the submission on summerofcode.withgoogle.com, not only in a shared document?"
+  ],
+  "links_verified": false,
+  "checklist": [
+    {
+      "id": "org_template",
+      "title": "Follow the organization's proposal template",
+      "description": "Missing required sections is a common reason proposals are rejected.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "prior_contrib",
+      "title": "Link prior contributions to the org",
+      "description": "Link your merged pull requests, issues, reviews, or docs.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "community",
+      "title": "Show community interaction",
+      "description": "Take part in the public chat or mailing list before you submit.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "scope",
+      "title": "Clear scope, milestones, and weekly plan",
+      "description": "Say what you will deliver each week, what is optional, and what you will cut if you fall behind.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "ai_policy",
+      "title": "Respect the org's AI policy",
+      "description": "Say how you will use AI, or not, following the organization's rules.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "original",
+      "title": "Original authorship",
+      "description": "Write in your own voice. You must understand every claim.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "official_submit",
+      "title": "Submit only via the official GSoC site",
+      "description": "Emailing a proposal to a mentor is not a submission.",
+      "required": true,
+      "done": false
+    }
+  ]
+}

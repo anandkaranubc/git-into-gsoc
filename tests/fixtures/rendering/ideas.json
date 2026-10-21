@@ -1,0 +1,145 @@
+{
+  "found": true,
+  "org": "SymPy",
+  "ideas_url": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+  "past_proposals": [
+    {
+      "repo": "SammanSarkar/GSoC_archive_2025",
+      "path": "SymPy",
+      "files": 2,
+      "url": "https://github.com/SammanSarkar/GSoC_archive_2025/tree/HEAD/SymPy"
+    },
+    {
+      "repo": "pavanjoshi914/GSoC_archive",
+      "path": "2025/SymPy",
+      "files": 2,
+      "url": "https://github.com/pavanjoshi914/GSoC_archive/tree/HEAD/2025/SymPy"
+    },
+    {
+      "repo": "COPS-IITBHU/GSoC-Accepted-Proposals",
+      "path": "2020",
+      "files": 1,
+      "url": "https://github.com/COPS-IITBHU/GSoC-Accepted-Proposals/tree/HEAD/2020"
+    },
+    {
+      "repo": "COPS-IITBHU/GSoC-Accepted-Proposals",
+      "path": "2021",
+      "files": 1,
+      "url": "https://github.com/COPS-IITBHU/GSoC-Accepted-Proposals/tree/HEAD/2021"
+    },
+    {
+      "repo": "COPS-IITBHU/GSoC-Accepted-Proposals",
+      "path": "2023",
+      "files": 1,
+      "url": "https://github.com/COPS-IITBHU/GSoC-Accepted-Proposals/tree/HEAD/2023"
+    },
+    {
+      "repo": "COPS-IITBHU/GSoC-Accepted-Proposals",
+      "path": "2024",
+      "files": 1,
+      "url": "https://github.com/COPS-IITBHU/GSoC-Accepted-Proposals/tree/HEAD/2024"
+    }
+  ],
+  "past_proposals_note": "Accepted proposals other people chose to share, in community archives. Read them to calibrate scope and structure; never copy text, and remember they contain personal details.",
+  "fetched_url": "https://raw.githubusercontent.com/wiki/sympy/sympy/GSoC-Ideas.md",
+  "layout": "headings",
+  "count": 37,
+  "ideas": [
+    {
+      "title": "Group theory",
+      "section": "Mathematics Projects",
+      "description": "Idea Continue developing the group theory functionality of the combinatorics module. You should take a look at the GAP library, as this is the canonical group theory computation system right now. Algorithms to think about implementing: Computation of various subgroups of infinite finitely presented groups Computation of Galois groups for a given polynomial Finding kernels of homomorphisms with infinite domains Extend functionalities of polycyclic groups Quotient groups Automorphism groups Status",
+      "difficulty": "hard",
+      "difficulty_raw": "Medium/Difficult",
+      "size": null,
+      "hours": null,
+      "size_raw": "",
+      "mentors": [
+        "Divyanshu Thakur (@divyanshu132)"
+      ],
+      "skills": [],
+      "expected_outcome": "",
+      "links": [
+        "https://github.com/sympy/sympy/wiki/GSoC-2012-Report-Aleksandar-Makelov:-Computational-Group-Theory",
+        "https://gxyd.github.io/blogs/Gsoc2016-project/",
+        "https://github.com/sympy/sympy/wiki/GSoC-2017-Report-Valeriia-Gladkova:-Group-Theory",
+        "https://ravicharann.github.io/blog//final-report/",
+        "https://github.com/sympy/sympy/wiki/GSoC-2019-Report-Divyanshu-Thakur:-Group-Theory",
+        "https://github.com/sympy/sympy/pull/14830",
+        "https://github.com/sympy/sympy/wiki/GSoC-2012-Report-Aleksandar-Makelov:-Computational-Group-Theory#after-gsoc"
+      ],
+      "confidence": "high",
+      "labelled_fields": 3,
+      "source_url": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+      "match_score": 3.0,
+      "match_reasons": []
+    },
+    {
+      "title": "Solvers",
+      "section": "Mathematics Projects",
+      "description": "Idea SymPy already has a pretty powerful solve function. But it has a lot of major issues It doesn't have a consistent output for various types of solutions It needs to return a lot of types of solutions consistently: single solution : x == 1 Multiple solutions: x2 == 1 No Solution: x2 + 1 == 0; x is real Interval of solution: floor(x) == 0 Infinitely many solutions: sin(x) == 0 Multivariate functions with point solutions x2 + y2 == 0 Multivariate functions with non point solution x2 + y2 == 1 S",
+      "difficulty": null,
+      "difficulty_raw": "",
+      "size": null,
+      "hours": null,
+      "size_raw": "",
+      "mentors": [
+        "Shekhar (@Shekharrajak)"
+      ],
+      "skills": [],
+      "expected_outcome": "",
+      "links": [
+        "https://github.com/sympy/sympy/wiki/GSoC-2014-Application-Harsh-Gupta:-Solvers",
+        "https://github.com/sympy/sympy/wiki/GSoC-2015-Application-AMiT-Kumar--Solvers-:-Extending-Solveset",
+        "https://docs.google.com/document/d/1GljN3hj_qDzMvTAUW2X7idcsoDPhJ0uAqmMrqykSGGg/edit?usp=sharing",
+        "https://github.com/sympy/sympy/wiki/GSoC-2016-Shekhar-Prasad-Rajak-Application:-Solvers:-Completing-Solveset",
+        "https://docs.google.com/document/d/1kcZCdQuY3XxgHPuSA8vvwc6O8AbVZ-nYskMuXIia9hA/edit#",
+        "https://github.com/sympy/sympy/pull/14972",
+        "https://github.com/sympy/sympy/issues/13178",
+        "https://groups.google.com/forum/#!searchin/sympy/solvers/sympy/Oyz8SkR2fRk/RMpooqwu3oMJ",
+        "https://github.com/sympy/sympy/pull/2948",
+        "http://hargup.github.io/categories/sympy.html"
+      ],
+      "confidence": "medium",
+      "labelled_fields": 1,
+      "source_url": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+      "match_score": 1.0,
+      "match_reasons": []
+    },
+    {
+      "title": "Assumptions",
+      "section": "High Priority",
+      "description": "Idea The project is to completely remove our old assumptions system, replacing it with the new one. The difference between the two systems is outlined in the first two sections of [this blog post](http://matthewrocklin.com/blog/work/2013/02/05/Assuming). This project is challenging. It requires deep understanding of the core of SymPy, basic logical inference, excellent code organization, and attention to performance. It is also very important and of high value to the SymPy community. Numerous re",
+      "difficulty": null,
+      "difficulty_raw": "",
+      "size": null,
+      "hours": null,
+      "size_raw": "",
+      "mentors": [],
+      "skills": [],
+      "expected_outcome": "",
+      "links": [
+        "http://matthewrocklin.com/blog/work/2013/02/05/Assuming",
+        "https://github.com/sympy/sympy/issues/6730",
+        "https://github.com/sympy/sympy/pull/2508",
+        "https://groups.google.com/d/msg/sympy/PHR136kdxc4/eW4pKFcWmzIJ",
+        "https://github.com/sympy/sympy/wiki/GSoC-2015-Application-Sudhanshu-Mishra:-Assumptions",
+        "https://github.com/sympy/sympy/wiki/GSoC-2013-Application-Tom-Bachmann:-Removing-the-old-assumptions-module"
+      ],
+      "confidence": "medium",
+      "labelled_fields": 0,
+      "source_url": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+      "match_score": 0.0,
+      "match_reasons": []
+    }
+  ],
+  "skills_matched_on": [
+    "python"
+  ],
+  "ai_policy": [],
+  "sub_pages": [],
+  "followed": [],
+  "headings": [],
+  "note": "Parsed 37 idea block(s); 1 had no labelled fields and may be section headings rather than ideas. Empty fields were not on the page.",
+  "next_step": "Read the full idea on the page before contacting a mentor. Never copy its text into a proposal; reviewers compare proposals with the ideas page."
+}

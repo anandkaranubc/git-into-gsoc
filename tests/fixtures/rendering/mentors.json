@@ -1,0 +1,326 @@
+{
+  "found": true,
+  "org": "SymPy",
+  "years_covered": [
+    2023,
+    2024,
+    2025
+  ],
+  "projects": 16,
+  "mentors_total": 15,
+  "returning_mentors": 6,
+  "mentors_per_year": {
+    "2023": 9,
+    "2024": 7,
+    "2025": 7
+  },
+  "mentors": [
+    {
+      "name": "Jason Moore",
+      "years": [
+        2023,
+        2024,
+        2025
+      ],
+      "projects": 6,
+      "recent_projects": [
+        {
+          "year": 2025,
+          "title": "Symbolic Wrapping Geometries for Musculoskeletal Modeling in SymPy",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Rushabh-Mehta%3A-Implementing-Wrapping-Geometries-for-Musculoskeletal-Modeling"
+        },
+        {
+          "year": 2025,
+          "title": "Enhancing the Beam, Column and Structure2d Modules in SymPy’s Continuum Mechanics",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2025-Report-Udayagiri-Saibabu%3A%E2%80%90Enhancing-the-Beam%2C-Column-and-Structure2D-Modules-in-SymPy%E2%80%99s-Continuum-Mechanics"
+        },
+        {
+          "year": 2025,
+          "title": "Enhancing SymPy’s Control Module: Symbolic Stability and Discrete-Time Systems",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Leonardo-Mangani:-%22Enhancing-SymPy%E2%80%99s-Control-Module:-Symbolic-Stability-and-Discrete%E2%80%90Time-Systems%22"
+        }
+      ]
+    },
+    {
+      "name": "Oscar Benjamin",
+      "years": [
+        2023,
+        2024,
+        2025
+      ],
+      "projects": 4,
+      "recent_projects": [
+        {
+          "year": 2025,
+          "title": "FLINT-Backed Multivariate Polynomials in SymPy",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC'25-Final-Work-Report-by-Aasim-Ali:-FLINT%E2%80%90Backed-Multivariate-Polynomials-in-SymPy"
+        },
+        {
+          "year": 2025,
+          "title": "Implementing a Domain for Formal Power Series in SymPy",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Jatin-Bhardwaj:-%22A-New-Power-Series-Ring-Module-for-SymPy%22"
+        },
+        {
+          "year": 2024,
+          "title": "Improving Series Expansions and Limit Computations",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2024-Report-Arnab-Nandi-:-Improving-Series-Expansions-and-Limit-Computations"
+        }
+      ]
+    },
+    {
+      "name": "Aaron Meurer",
+      "years": [
+        2023,
+        2025
+      ],
+      "projects": 5,
+      "recent_projects": [
+        {
+          "year": 2025,
+          "title": "FLINT-Backed Multivariate Polynomials in SymPy",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC'25-Final-Work-Report-by-Aasim-Ali:-FLINT%E2%80%90Backed-Multivariate-Polynomials-in-SymPy"
+        },
+        {
+          "year": 2025,
+          "title": "Improving Relational Reasoning and Introducing Quantifier Support in SymPy's Assumptions Framework",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Final-Report-%E2%80%93-Krishnav-Bajoria-:-Extending-the-Assumptions-Module-and-Integrating-an-EUF-Theory-Solver"
+        },
+        {
+          "year": 2025,
+          "title": "Implementing a Domain for Formal Power Series in SymPy",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Jatin-Bhardwaj:-%22A-New-Power-Series-Ring-Module-for-SymPy%22"
+        }
+      ]
+    },
+    {
+      "name": "Francesco Bonazzi",
+      "years": [
+        2023,
+        2025
+      ],
+      "projects": 5,
+      "recent_projects": [
+        {
+          "year": 2025,
+          "title": "FLINT-Backed Multivariate Polynomials in SymPy",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC'25-Final-Work-Report-by-Aasim-Ali:-FLINT%E2%80%90Backed-Multivariate-Polynomials-in-SymPy"
+        },
+        {
+          "year": 2025,
+          "title": "Enhancing the Beam, Column and Structure2d Modules in SymPy’s Continuum Mechanics",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2025-Report-Udayagiri-Saibabu%3A%E2%80%90Enhancing-the-Beam%2C-Column-and-Structure2D-Modules-in-SymPy%E2%80%99s-Continuum-Mechanics"
+        },
+        {
+          "year": 2025,
+          "title": "Enhancing SymPy’s Control Module: Symbolic Stability and Discrete-Time Systems",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Leonardo-Mangani:-%22Enhancing-SymPy%E2%80%99s-Control-Module:-Symbolic-Stability-and-Discrete%E2%80%90Time-Systems%22"
+        }
+      ]
+    },
+    {
+      "name": "Advait Pote",
+      "years": [
+        2023,
+        2024
+      ],
+      "projects": 2,
+      "recent_projects": [
+        {
+          "year": 2024,
+          "title": "Extending Continuum Mechanics Module",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2024-Report-Shishir-Kushwaha-:-Extending-Continuum-Mechanics-Module"
+        },
+        {
+          "year": 2023,
+          "title": "Extending Continuum mechanics module: Introducing classes for Cables and Improving the Truss class",
+          "code_url": "https://tinyurl.com/gsoc23IshanP"
+        }
+      ]
+    },
+    {
+      "name": "Nikhil Maan",
+      "years": [
+        2023,
+        2024
+      ],
+      "projects": 2,
+      "recent_projects": [
+        {
+          "year": 2024,
+          "title": "Improving and Expanding the functionalities of the SymPy's Control Module.",
+          "code_url": "https://github.com/abhiphile/GSoC-2024-SymPy-Final-Report"
+        },
+        {
+          "year": 2023,
+          "title": "Improving And Expanding Functionalities Of SymPy's Control Module",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2023-:-Improving-and-Expanding-the-Functionalities-of-SymPy's-Control-Module-by-Anurag-Bhat"
+        }
+      ]
+    },
+    {
+      "name": "tjstienstra",
+      "years": [
+        2024
+      ],
+      "projects": 2,
+      "recent_projects": [
+        {
+          "year": 2024,
+          "title": "Implementing Specific Forces and Torques",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2024-Report-Hwayeon-Kang:-Implementing-Specific-Forces-and-Torques"
+        },
+        {
+          "year": 2024,
+          "title": "Enhancing Performance in SymPy Phyiscs/Mechanics and Phyiscs/Vector Modules",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2024-Report-Riccardo-Di-Girolamo:-Enhancing-Performance--in-SymPy-Mechanics-and-Vector-Modules"
+        }
+      ]
+    },
+    {
+      "name": "Anutosh Surendra Bhat",
+      "years": [
+        2024
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2024,
+          "title": "Improving Series Expansions and Limit Computations",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2024-Report-Arnab-Nandi-:-Improving-Series-Expansions-and-Limit-Computations"
+        }
+      ]
+    },
+    {
+      "name": "Hwayeon Kang",
+      "years": [
+        2025
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2025,
+          "title": "Symbolic Wrapping Geometries for Musculoskeletal Modeling in SymPy",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Rushabh-Mehta%3A-Implementing-Wrapping-Geometries-for-Musculoskeletal-Modeling"
+        }
+      ]
+    },
+    {
+      "name": "Ishan Pandhare",
+      "years": [
+        2024
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2024,
+          "title": "Extending Continuum Mechanics Module",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2024-Report-Shishir-Kushwaha-:-Extending-Continuum-Mechanics-Module"
+        }
+      ]
+    },
+    {
+      "name": "Kalevi Suominen",
+      "years": [
+        2023
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2023,
+          "title": "Improving Polynomial GCD",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2023-Report-Abhishek-Patidar-:-Improving-Polynomial-GCD"
+        }
+      ]
+    },
+    {
+      "name": "Prakhar Saxena",
+      "years": [
+        2023
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2023,
+          "title": "Extending Continuum mechanics module: Introducing classes for Cables and Improving the Truss class",
+          "code_url": "https://tinyurl.com/gsoc23IshanP"
+        }
+      ]
+    },
+    {
+      "name": "Smit Lunagariya",
+      "years": [
+        2023
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2023,
+          "title": "Improving And Expanding Functionalities Of SymPy's Control Module",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2023-:-Improving-and-Expanding-the-Functionalities-of-SymPy's-Control-Module-by-Anurag-Bhat"
+        }
+      ]
+    },
+    {
+      "name": "Tom van Woudenberg",
+      "years": [
+        2025
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2025,
+          "title": "Enhancing the Beam, Column and Structure2d Modules in SymPy’s Continuum Mechanics",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2025-Report-Udayagiri-Saibabu%3A%E2%80%90Enhancing-the-Beam%2C-Column-and-Structure2D-Modules-in-SymPy%E2%80%99s-Continuum-Mechanics"
+        }
+      ]
+    },
+    {
+      "name": "tilorc",
+      "years": [
+        2025
+      ],
+      "projects": 1,
+      "recent_projects": [
+        {
+          "year": 2025,
+          "title": "Improving Relational Reasoning and Introducing Quantifier Support in SymPy's Assumptions Framework",
+          "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Final-Report-%E2%80%93-Krishnav-Bajoria-:-Extending-the-Assumptions-Module-and-Integrating-an-EUF-Theory-Solver"
+        }
+      ]
+    }
+  ],
+  "repos_touched": [
+    {
+      "repo": "sympy/sympy",
+      "projects": 13
+    },
+    {
+      "repo": "abhiphile/GSoC-2024-SymPy-Final-Report",
+      "projects": 1
+    }
+  ],
+  "top_tech_tags": [
+    {
+      "tag": "python",
+      "projects": 16
+    },
+    {
+      "tag": "sympy",
+      "projects": 6
+    },
+    {
+      "tag": "lark",
+      "projects": 1
+    },
+    {
+      "tag": "cython",
+      "projects": 1
+    },
+    {
+      "tag": "git",
+      "projects": 1
+    }
+  ],
+  "source": "Official GSoC archive (completed projects only)",
+  "note": "Mentor names come from the public archive of completed projects, so they show who has mentored before, not who will mentor next year. Contact people in the organization's public channel, never by private message."
+}

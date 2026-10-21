@@ -1,0 +1,1245 @@
+{
+  "scope": {
+    "org": "SymPy",
+    "github_owners": [
+      "sympy"
+    ],
+    "repo": null
+  },
+  "username": "oscarbenjamin",
+  "counts": {
+    "prs_merged": 38,
+    "prs_open": 10,
+    "prs_closed_unmerged": 2,
+    "issues_opened": 50,
+    "threads_joined": 50,
+    "reviews_given": 50
+  },
+  "strength": "strong",
+  "first_activity_days_ago": 958,
+  "last_activity_days_ago": 6,
+  "repos": [
+    "sympy/sympy"
+  ],
+  "pull_requests": [
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30512,
+      "title": "fix(dsolve): Handle general solutions correctly in ricatti",
+      "url": "https://github.com/sympy/sympy/pull/30512",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-09-14T20:37:30Z",
+      "closed_at": "2026-09-14T22:42:38Z",
+      "comments": 1,
+      "labels": [
+        "solvers.dsolve"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30431,
+      "title": "test(integrals): test gh-7383 and gh-22126 meijerint examples",
+      "url": "https://github.com/sympy/sympy/pull/30431",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-09-05T19:02:09Z",
+      "closed_at": "2026-09-07T20:26:55Z",
+      "comments": 1,
+      "labels": [
+        "integrals",
+        "Add test to close",
+        "integrals.meijerg"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30367,
+      "title": "Merge 1.14 release branch",
+      "url": "https://github.com/sympy/sympy/pull/30367",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-08-29T15:29:24Z",
+      "closed_at": "2026-08-29T17:14:44Z",
+      "comments": 2,
+      "labels": []
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30255,
+      "title": "Revert \"Merge pull request #30079 from salastro/expsin_quadratic\"",
+      "url": "https://github.com/sympy/sympy/pull/30255",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-08-12T21:46:59Z",
+      "closed_at": "2026-08-13T09:59:54Z",
+      "comments": 1,
+      "labels": [
+        "integrals.manualintegrate",
+        "CI"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30243,
+      "title": "fix(ci): use exact version comment in actions workflow",
+      "url": "https://github.com/sympy/sympy/pull/30243",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-08-10T20:58:27Z",
+      "closed_at": "2026-08-12T16:46:18Z",
+      "comments": 1,
+      "labels": [
+        "actions",
+        "CI"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30216,
+      "title": "fix: don't pass invalid parameter to mpmath.nsum",
+      "url": "https://github.com/sympy/sympy/pull/30216",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-08-05T16:27:40Z",
+      "closed_at": "2026-08-05T18:12:05Z",
+      "comments": 1,
+      "labels": []
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30204,
+      "title": "fix: Use scipy sparse arrays instead of sparse matrices",
+      "url": "https://github.com/sympy/sympy/pull/30204",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-08-03T16:54:30Z",
+      "closed_at": "2026-08-04T16:43:55Z",
+      "comments": 4,
+      "labels": [
+        "physics.quantum",
+        "CI"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30124,
+      "title": "maint: update AUTHORS file",
+      "url": "https://github.com/sympy/sympy/pull/30124",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-23T16:54:21Z",
+      "closed_at": "2026-07-23T18:16:02Z",
+      "comments": 1,
+      "labels": [
+        "Releasing"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30093,
+      "title": "Exclude root-analysis tests with pathological threaded scaling",
+      "url": "https://github.com/sympy/sympy/pull/30093",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-18T02:42:30Z",
+      "closed_at": "2026-07-18T12:04:53Z",
+      "comments": 1,
+      "labels": [
+        "multithreading"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30091,
+      "title": "fix(core): Exclude evaluation-parameter tests from concurrent execution",
+      "url": "https://github.com/sympy/sympy/pull/30091",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-18T01:39:43Z",
+      "closed_at": "2026-07-18T12:22:47Z",
+      "comments": 1,
+      "labels": [
+        "core.evalf",
+        "mpmath",
+        "multithreading"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30090,
+      "title": "fix(core)(: Preserve Kind singleton identity under concurrent construction",
+      "url": "https://github.com/sympy/sympy/pull/30090",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-18T01:33:28Z",
+      "closed_at": "2026-07-18T11:57:38Z",
+      "comments": 1,
+      "labels": []
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30089,
+      "title": "Mark process-global state tests as thread-unsafe",
+      "url": "https://github.com/sympy/sympy/pull/30089",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-18T01:06:38Z",
+      "closed_at": "2026-07-18T13:16:52Z",
+      "comments": 1,
+      "labels": [
+        "multithreading"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30041,
+      "title": "typing: Add overloads for evaluate=False",
+      "url": "https://github.com/sympy/sympy/pull/30041",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-08T22:08:23Z",
+      "closed_at": "2026-07-09T18:54:45Z",
+      "comments": 2,
+      "labels": [
+        "CI",
+        "typing"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 30007,
+      "title": "fix: vendor mpmath's old repr_dps",
+      "url": "https://github.com/sympy/sympy/pull/30007",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-02T15:29:40Z",
+      "closed_at": "2026-07-03T15:48:26Z",
+      "comments": 4,
+      "labels": [
+        "CI",
+        "mpmath"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 29822,
+      "title": "typ(core): fix type inference for Expr + Expr",
+      "url": "https://github.com/sympy/sympy/pull/29822",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-06-01T21:41:55Z",
+      "closed_at": "2026-06-03T12:59:48Z",
+      "comments": 3,
+      "labels": [
+        "core",
+        "typing"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 29813,
+      "title": "fix(ci): add bin/slotscheck to run slotscheck",
+      "url": "https://github.com/sympy/sympy/pull/29813",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-05-30T13:16:53Z",
+      "closed_at": "2026-06-01T16:03:28Z",
+      "comments": 5,
+      "labels": [
+        "Code quality",
+        "CI"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 29791,
+      "title": "perf(core): Speed up Expr.round and mark more tests as slow",
+      "url": "https://github.com/sympy/sympy/pull/29791",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-05-23T13:05:51Z",
+      "closed_at": "2026-06-01T18:32:54Z",
+      "comments": 4,
+      "labels": [
+        "core",
+        "Performance"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 29790,
+      "title": "fix: pass rounding mode to mpmath's to_float",
+      "url": "https://github.com/sympy/sympy/pull/29790",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-05-23T12:18:19Z",
+      "closed_at": "2026-05-23T13:07:41Z",
+      "comments": 2,
+      "labels": [
+        "CI",
+        "mpmath"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 29787,
+      "title": "typ: add annotations to satisfy mypy 2.x",
+      "url": "https://github.com/sympy/sympy/pull/29787",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-05-22T19:35:28Z",
+      "closed_at": "2026-05-22T21:36:41Z",
+      "comments": 2,
+      "labels": [
+        "CI",
+        "typing"
+      ]
+    },
+    {
+      "kind": "pr",
+      "repo": "sympy/sympy",
+      "number": 29641,
+      "title": "Actions: run zizmor checks for Github Actions workflows",
+      "url": "https://github.com/sympy/sympy/pull/29641",
+      "state": "merged",
+      "author": "oscarbenjamin",
+      "created_at": "2026-04-03T16:41:02Z",
+      "closed_at": "2026-04-04T09:46:30Z",
+      "comments": 6,
+      "labels": [
+        "GitHub Actions",
+        "CI",
+        "security"
+      ]
+    }
+  ],
+  "issues": [
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 30430,
+      "title": "Outstanding meijerg problems from older issues",
+      "url": "https://github.com/sympy/sympy/issues/30430",
+      "state": "open",
+      "author": "oscarbenjamin",
+      "created_at": "2026-09-05T18:36:47Z",
+      "closed_at": null,
+      "comments": 0,
+      "labels": [
+        "integrals",
+        "integrals.meijerg"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 30125,
+      "title": "Release SymPy 1.15",
+      "url": "https://github.com/sympy/sympy/issues/30125",
+      "state": "open",
+      "author": "oscarbenjamin",
+      "created_at": "2026-07-23T16:57:02Z",
+      "closed_at": null,
+      "comments": 4,
+      "labels": []
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28954,
+      "title": "Docs build is broken",
+      "url": "https://github.com/sympy/sympy/issues/28954",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2026-01-16T12:20:41Z",
+      "closed_at": "2026-01-23T22:12:43Z",
+      "comments": 12,
+      "labels": [
+        "Documentation",
+        "CI"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28806,
+      "title": "Adding more type annotations to the codebase",
+      "url": "https://github.com/sympy/sympy/issues/28806",
+      "state": "open",
+      "author": "oscarbenjamin",
+      "created_at": "2025-12-21T13:17:04Z",
+      "closed_at": null,
+      "comments": 115,
+      "labels": [
+        "typing"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28717,
+      "title": "Type check errors with mypy and python-flint 0.8.0",
+      "url": "https://github.com/sympy/sympy/issues/28717",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-12-08T16:33:07Z",
+      "closed_at": "2026-02-23T18:32:20Z",
+      "comments": 7,
+      "labels": [
+        "flint",
+        "typing"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28708,
+      "title": "Determinant(A**0).diff(A) gives NotImplementedError",
+      "url": "https://github.com/sympy/sympy/issues/28708",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-12-07T13:44:56Z",
+      "closed_at": "2025-12-10T11:04:32Z",
+      "comments": 5,
+      "labels": [
+        "matrices.expressions"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28602,
+      "title": "Problems with numerical evaluation of solution to algebraic equations",
+      "url": "https://github.com/sympy/sympy/issues/28602",
+      "state": "open",
+      "author": "oscarbenjamin",
+      "created_at": "2025-11-15T21:05:05Z",
+      "closed_at": null,
+      "comments": 7,
+      "labels": [
+        "core.evalf"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28525,
+      "title": "CircleCI docs builds failing",
+      "url": "https://github.com/sympy/sympy/issues/28525",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-10-31T21:30:37Z",
+      "closed_at": "2026-01-11T16:14:07Z",
+      "comments": 1,
+      "labels": []
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28486,
+      "title": "Complex root refinement with CRootOf is slow",
+      "url": "https://github.com/sympy/sympy/issues/28486",
+      "state": "open",
+      "author": "oscarbenjamin",
+      "created_at": "2025-10-19T12:49:05Z",
+      "closed_at": null,
+      "comments": 9,
+      "labels": [
+        "polys",
+        "Performance",
+        "calculus",
+        "CI"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28413,
+      "title": "Aesara tests failing in the optional dependencies CI job",
+      "url": "https://github.com/sympy/sympy/issues/28413",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-09-17T12:35:48Z",
+      "closed_at": "2025-09-23T11:50:23Z",
+      "comments": 1,
+      "labels": [
+        "CI"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28395,
+      "title": "Division of PolyElement with `a / b`",
+      "url": "https://github.com/sympy/sympy/issues/28395",
+      "state": "open",
+      "author": "oscarbenjamin",
+      "created_at": "2025-09-12T14:21:43Z",
+      "closed_at": null,
+      "comments": 4,
+      "labels": [
+        "polys"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28349,
+      "title": "Pyodide CI jobs failing",
+      "url": "https://github.com/sympy/sympy/issues/28349",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-08-27T14:07:39Z",
+      "closed_at": "2025-08-27T22:30:33Z",
+      "comments": 2,
+      "labels": [
+        "CI"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28280,
+      "title": "Incorrect evaluation of numeric inequality when high precision is needed",
+      "url": "https://github.com/sympy/sympy/issues/28280",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-08-01T16:59:03Z",
+      "closed_at": "2025-12-20T00:09:41Z",
+      "comments": 4,
+      "labels": [
+        "core",
+        "core.evalf"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 28130,
+      "title": "limit of exponential with non-E base gives oo instead of zero",
+      "url": "https://github.com/sympy/sympy/issues/28130",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-06-09T22:22:28Z",
+      "closed_at": "2025-06-15T20:40:58Z",
+      "comments": 3,
+      "labels": [
+        "limits"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 27967,
+      "title": "Hypothesis test failing in CI",
+      "url": "https://github.com/sympy/sympy/issues/27967",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-04-18T11:00:46Z",
+      "closed_at": "2025-04-19T10:17:38Z",
+      "comments": 10,
+      "labels": [
+        "Testing",
+        "CI"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 27957,
+      "title": "Wrong result from triple integral with radicals",
+      "url": "https://github.com/sympy/sympy/issues/27957",
+      "state": "open",
+      "author": "oscarbenjamin",
+      "created_at": "2025-04-16T10:39:11Z",
+      "closed_at": null,
+      "comments": 1,
+      "labels": [
+        "integrals",
+        "limits"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 27939,
+      "title": "Release SymPy 1.14",
+      "url": "https://github.com/sympy/sympy/issues/27939",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-04-13T11:53:51Z",
+      "closed_at": "2026-03-02T19:23:03Z",
+      "comments": 2,
+      "labels": [
+        "Releasing"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 27883,
+      "title": "Pyodide jobs failing in CI",
+      "url": "https://github.com/sympy/sympy/issues/27883",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-04-03T10:42:04Z",
+      "closed_at": "2025-04-04T15:26:04Z",
+      "comments": 3,
+      "labels": [
+        "Alternate Python",
+        "CI"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 27855,
+      "title": "Code quality check fails because of new flake8 F824 error",
+      "url": "https://github.com/sympy/sympy/issues/27855",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-03-30T11:26:54Z",
+      "closed_at": "2025-03-31T14:06:09Z",
+      "comments": 2,
+      "labels": [
+        "Code quality",
+        "CI"
+      ]
+    },
+    {
+      "kind": "issue",
+      "repo": "sympy/sympy",
+      "number": 27845,
+      "title": "Remove old type annotation syntax",
+      "url": "https://github.com/sympy/sympy/issues/27845",
+      "state": "closed",
+      "author": "oscarbenjamin",
+      "created_at": "2025-03-29T11:27:38Z",
+      "closed_at": "2025-04-05T10:07:58Z",
+      "comments": 4,
+      "labels": [
+        "Easy to Fix",
+        "mypy",
+        "typing"
+      ]
+    }
+  ],
+  "threads_joined": [
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30716,
+      "title": "Fix finite binomial sum with symbolic integer parameter",
+      "url": "https://github.com/sympy/sympy/pull/30716",
+      "state": "merged",
+      "author": "tanush78",
+      "created_at": "2026-10-10T16:23:18Z",
+      "closed_at": "2026-10-18T19:23:40Z",
+      "comments": 4,
+      "labels": []
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30687,
+      "title": "use the D-finite recurrence for Stirling subset numbers in Touchard polynomials",
+      "url": "https://github.com/sympy/sympy/pull/30687",
+      "state": "merged",
+      "author": "DroneBetter",
+      "created_at": "2026-10-06T18:36:34Z",
+      "closed_at": "2026-10-10T23:12:53Z",
+      "comments": 5,
+      "labels": []
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30669,
+      "title": "polys: add a regression test for gh-29859",
+      "url": "https://github.com/sympy/sympy/pull/30669",
+      "state": "merged",
+      "author": "11350613",
+      "created_at": "2026-10-04T13:22:05Z",
+      "closed_at": "2026-10-04T14:30:21Z",
+      "comments": 3,
+      "labels": [
+        "polys"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30648,
+      "title": "Remove @moorepants from CODEOWNERS",
+      "url": "https://github.com/sympy/sympy/pull/30648",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-10-02T16:25:10Z",
+      "closed_at": "2026-10-03T15:47:33Z",
+      "comments": 4,
+      "labels": []
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30639,
+      "title": "build(deps): bump the actions group with 2 updates",
+      "url": "https://github.com/sympy/sympy/pull/30639",
+      "state": "merged",
+      "author": "dependabot[bot]",
+      "created_at": "2026-10-01T01:46:17Z",
+      "closed_at": "2026-10-01T13:32:06Z",
+      "comments": 0,
+      "labels": [
+        "GitHub Actions"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30569,
+      "title": "series: rewrite Min/Max to Abs during limit evaluation in gruntz",
+      "url": "https://github.com/sympy/sympy/pull/30569",
+      "state": "merged",
+      "author": "sonusharma6-dsa",
+      "created_at": "2026-09-23T11:41:17Z",
+      "closed_at": "2026-09-26T05:42:24Z",
+      "comments": 3,
+      "labels": []
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30558,
+      "title": "integrals: fix the floor terms added to atan(tan) and atan(cot) antiderivatives",
+      "url": "https://github.com/sympy/sympy/pull/30558",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-09-21T16:38:49Z",
+      "closed_at": "2026-10-16T16:17:08Z",
+      "comments": 22,
+      "labels": [
+        "integrals",
+        "integrals.definite"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30523,
+      "title": "Fix algebraicity of negative powers of zero",
+      "url": "https://github.com/sympy/sympy/pull/30523",
+      "state": "merged",
+      "author": "Sunt-ing",
+      "created_at": "2026-09-16T11:21:09Z",
+      "closed_at": "2026-09-16T12:57:50Z",
+      "comments": 6,
+      "labels": [
+        "assumptions"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30452,
+      "title": "exponentiation by squaring for fibonacci polynomials and tribonacci",
+      "url": "https://github.com/sympy/sympy/pull/30452",
+      "state": "merged",
+      "author": "DroneBetter",
+      "created_at": "2026-09-09T15:01:52Z",
+      "closed_at": "2026-09-13T18:21:19Z",
+      "comments": 2,
+      "labels": [
+        "functions"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30428,
+      "title": "Parenthesize Mod in code printers for negated products and reciprocal divisors",
+      "url": "https://github.com/sympy/sympy/pull/30428",
+      "state": "merged",
+      "author": "amannx21",
+      "created_at": "2026-09-05T09:04:40Z",
+      "closed_at": "2026-10-11T12:26:16Z",
+      "comments": 8,
+      "labels": [
+        "printing",
+        "codegen"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30405,
+      "title": "Remove use of flake8 and use only Ruff",
+      "url": "https://github.com/sympy/sympy/pull/30405",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-09-03T17:42:31Z",
+      "closed_at": "2026-09-06T09:51:52Z",
+      "comments": 2,
+      "labels": [
+        "CI"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30402,
+      "title": "Fix doctest exception format in xreplace docstring example",
+      "url": "https://github.com/sympy/sympy/pull/30402",
+      "state": "merged",
+      "author": "shkusaid",
+      "created_at": "2026-09-03T10:20:14Z",
+      "closed_at": "2026-09-04T21:25:55Z",
+      "comments": 2,
+      "labels": []
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30393,
+      "title": "owens_t: evaluate numerically by direct mpmath quadrature",
+      "url": "https://github.com/sympy/sympy/pull/30393",
+      "state": "merged",
+      "author": "Upabjojr",
+      "created_at": "2026-09-02T20:44:00Z",
+      "closed_at": "2026-09-03T19:11:39Z",
+      "comments": 6,
+      "labels": []
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30391,
+      "title": "Mark test_kane.test_implicit_dynamics as slow due to 10s timeouts in CI.",
+      "url": "https://github.com/sympy/sympy/pull/30391",
+      "state": "merged",
+      "author": "moorepants",
+      "created_at": "2026-09-02T13:11:36Z",
+      "closed_at": "2026-09-02T17:51:36Z",
+      "comments": 3,
+      "labels": [
+        "physics.mechanics"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30378,
+      "title": "build(deps): bump the actions group with 2 updates",
+      "url": "https://github.com/sympy/sympy/pull/30378",
+      "state": "merged",
+      "author": "dependabot[bot]",
+      "created_at": "2026-09-01T01:44:54Z",
+      "closed_at": "2026-09-01T02:30:00Z",
+      "comments": 0,
+      "labels": [
+        "GitHub Actions"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30371,
+      "title": "calculus: use intermediate value theorem in `function_range`",
+      "url": "https://github.com/sympy/sympy/pull/30371",
+      "state": "merged",
+      "author": "11350613",
+      "created_at": "2026-08-30T06:18:37Z",
+      "closed_at": "2026-09-02T07:41:27Z",
+      "comments": 4,
+      "labels": []
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30353,
+      "title": "Fix sign errors in li(z).rewrite(Shi)/Chi and erfi(z).rewrite(expint)",
+      "url": "https://github.com/sympy/sympy/pull/30353",
+      "state": "merged",
+      "author": "SaxdaAnhalta",
+      "created_at": "2026-08-26T20:14:49Z",
+      "closed_at": "2026-08-27T09:51:52Z",
+      "comments": 2,
+      "labels": [
+        "functions"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30350,
+      "title": "Fix order of besseli in the generic airyaiprime rewrite",
+      "url": "https://github.com/sympy/sympy/pull/30350",
+      "state": "merged",
+      "author": "SaxdaAnhalta",
+      "created_at": "2026-08-26T15:36:37Z",
+      "closed_at": "2026-08-26T18:00:48Z",
+      "comments": 2,
+      "labels": [
+        "functions"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30347,
+      "title": "Preserve precision in numerical evaluation of owens_t and Li",
+      "url": "https://github.com/sympy/sympy/pull/30347",
+      "state": "merged",
+      "author": "kadirb4rut",
+      "created_at": "2026-08-26T14:53:11Z",
+      "closed_at": "2026-08-26T18:09:40Z",
+      "comments": 4,
+      "labels": [
+        "core.evalf",
+        "functions"
+      ]
+    },
+    {
+      "kind": "discussion",
+      "repo": "sympy/sympy",
+      "number": 30344,
+      "title": "Set sort_key on NaN",
+      "url": "https://github.com/sympy/sympy/pull/30344",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-08-25T20:40:41Z",
+      "closed_at": "2026-08-26T17:04:53Z",
+      "comments": 5,
+      "labels": []
+    }
+  ],
+  "reviews": [
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30716,
+      "title": "Fix finite binomial sum with symbolic integer parameter",
+      "url": "https://github.com/sympy/sympy/pull/30716",
+      "state": "merged",
+      "author": "tanush78",
+      "created_at": "2026-10-10T16:23:18Z",
+      "closed_at": "2026-10-18T19:23:40Z",
+      "comments": 4,
+      "labels": []
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30648,
+      "title": "Remove @moorepants from CODEOWNERS",
+      "url": "https://github.com/sympy/sympy/pull/30648",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-10-02T16:25:10Z",
+      "closed_at": "2026-10-03T15:47:33Z",
+      "comments": 4,
+      "labels": []
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30639,
+      "title": "build(deps): bump the actions group with 2 updates",
+      "url": "https://github.com/sympy/sympy/pull/30639",
+      "state": "merged",
+      "author": "dependabot[bot]",
+      "created_at": "2026-10-01T01:46:17Z",
+      "closed_at": "2026-10-01T13:32:06Z",
+      "comments": 0,
+      "labels": [
+        "GitHub Actions"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30569,
+      "title": "series: rewrite Min/Max to Abs during limit evaluation in gruntz",
+      "url": "https://github.com/sympy/sympy/pull/30569",
+      "state": "merged",
+      "author": "sonusharma6-dsa",
+      "created_at": "2026-09-23T11:41:17Z",
+      "closed_at": "2026-09-26T05:42:24Z",
+      "comments": 3,
+      "labels": []
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30405,
+      "title": "Remove use of flake8 and use only Ruff",
+      "url": "https://github.com/sympy/sympy/pull/30405",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-09-03T17:42:31Z",
+      "closed_at": "2026-09-06T09:51:52Z",
+      "comments": 2,
+      "labels": [
+        "CI"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30393,
+      "title": "owens_t: evaluate numerically by direct mpmath quadrature",
+      "url": "https://github.com/sympy/sympy/pull/30393",
+      "state": "merged",
+      "author": "Upabjojr",
+      "created_at": "2026-09-02T20:44:00Z",
+      "closed_at": "2026-09-03T19:11:39Z",
+      "comments": 6,
+      "labels": []
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30378,
+      "title": "build(deps): bump the actions group with 2 updates",
+      "url": "https://github.com/sympy/sympy/pull/30378",
+      "state": "merged",
+      "author": "dependabot[bot]",
+      "created_at": "2026-09-01T01:44:54Z",
+      "closed_at": "2026-09-01T02:30:00Z",
+      "comments": 0,
+      "labels": [
+        "GitHub Actions"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30371,
+      "title": "calculus: use intermediate value theorem in `function_range`",
+      "url": "https://github.com/sympy/sympy/pull/30371",
+      "state": "merged",
+      "author": "11350613",
+      "created_at": "2026-08-30T06:18:37Z",
+      "closed_at": "2026-09-02T07:41:27Z",
+      "comments": 4,
+      "labels": []
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30353,
+      "title": "Fix sign errors in li(z).rewrite(Shi)/Chi and erfi(z).rewrite(expint)",
+      "url": "https://github.com/sympy/sympy/pull/30353",
+      "state": "merged",
+      "author": "SaxdaAnhalta",
+      "created_at": "2026-08-26T20:14:49Z",
+      "closed_at": "2026-08-27T09:51:52Z",
+      "comments": 2,
+      "labels": [
+        "functions"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30331,
+      "title": "fix(polys): terminate subresultants_pg sequences on zero remainder",
+      "url": "https://github.com/sympy/sympy/pull/30331",
+      "state": "merged",
+      "author": "morluto",
+      "created_at": "2026-08-24T01:37:46Z",
+      "closed_at": "2026-08-25T17:42:58Z",
+      "comments": 3,
+      "labels": [
+        "polys"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30296,
+      "title": "parse_expr: minus sign on unevaluated subtraction",
+      "url": "https://github.com/sympy/sympy/pull/30296",
+      "state": "merged",
+      "author": "SimonAllais",
+      "created_at": "2026-08-17T21:36:44Z",
+      "closed_at": "2026-08-22T17:03:19Z",
+      "comments": 3,
+      "labels": [
+        "parsing",
+        "unevaluated"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30266,
+      "title": "[GSoC 2026] Implements MN algorithm for character tables of symmetric groups",
+      "url": "https://github.com/sympy/sympy/pull/30266",
+      "state": "merged",
+      "author": "ForeverHaibara",
+      "created_at": "2026-08-14T08:41:10Z",
+      "closed_at": "2026-08-20T18:19:28Z",
+      "comments": 2,
+      "labels": [
+        "combinatorics"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30227,
+      "title": "[GsOC] Implementation of Zippel's GCD algorithm",
+      "url": "https://github.com/sympy/sympy/pull/30227",
+      "state": "merged",
+      "author": "luca-berton1",
+      "created_at": "2026-08-08T15:50:53Z",
+      "closed_at": "2026-08-25T13:54:30Z",
+      "comments": 11,
+      "labels": [
+        "polys"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30205,
+      "title": "functions: Add Jacobi theta functions",
+      "url": "https://github.com/sympy/sympy/pull/30205",
+      "state": "merged",
+      "author": "HeskethGD",
+      "created_at": "2026-08-03T17:57:15Z",
+      "closed_at": "2026-08-27T22:33:34Z",
+      "comments": 16,
+      "labels": [
+        "functions"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30187,
+      "title": "Bump the actions group with 5 updates",
+      "url": "https://github.com/sympy/sympy/pull/30187",
+      "state": "merged",
+      "author": "dependabot[bot]",
+      "created_at": "2026-08-01T01:43:53Z",
+      "closed_at": "2026-08-15T00:05:05Z",
+      "comments": 1,
+      "labels": [
+        "GitHub Actions"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30182,
+      "title": "improve evaluation speed for Min and Max with many arguments",
+      "url": "https://github.com/sympy/sympy/pull/30182",
+      "state": "merged",
+      "author": "cckolon",
+      "created_at": "2026-07-31T06:25:18Z",
+      "closed_at": "2026-08-16T16:59:03Z",
+      "comments": 2,
+      "labels": [
+        "functions"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30180,
+      "title": "Fix various bugs in the Risch Algorithm",
+      "url": "https://github.com/sympy/sympy/pull/30180",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-07-31T00:24:14Z",
+      "closed_at": "2026-08-19T18:11:39Z",
+      "comments": 18,
+      "labels": []
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30109,
+      "title": "[GSoC 2026] Implements combinatorics/character-table",
+      "url": "https://github.com/sympy/sympy/pull/30109",
+      "state": "merged",
+      "author": "ForeverHaibara",
+      "created_at": "2026-07-20T16:59:32Z",
+      "closed_at": "2026-08-13T14:07:16Z",
+      "comments": 7,
+      "labels": [
+        "combinatorics"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30049,
+      "title": "[GSoC] Refactoring the sparse polynomials in SymPy",
+      "url": "https://github.com/sympy/sympy/pull/30049",
+      "state": "merged",
+      "author": "luca-berton1",
+      "created_at": "2026-07-10T16:59:07Z",
+      "closed_at": "2026-08-05T11:28:45Z",
+      "comments": 8,
+      "labels": [
+        "polys"
+      ]
+    },
+    {
+      "kind": "review",
+      "repo": "sympy/sympy",
+      "number": 30040,
+      "title": "Add CLAUDE.md instructing Claude to not ignore the AI policy",
+      "url": "https://github.com/sympy/sympy/pull/30040",
+      "state": "merged",
+      "author": "asmeurer",
+      "created_at": "2026-07-08T17:51:43Z",
+      "closed_at": "2026-09-08T18:02:21Z",
+      "comments": 22,
+      "labels": []
+    }
+  ],
+  "evidence_markdown": [
+    "- merged PR: [sympy/sympy#30512](https://github.com/sympy/sympy/pull/30512) fix(dsolve): Handle general solutions correctly in ricatti (2026-09-14)",
+    "- merged PR: [sympy/sympy#30431](https://github.com/sympy/sympy/pull/30431) test(integrals): test gh-7383 and gh-22126 meijerint examples (2026-09-05)",
+    "- merged PR: [sympy/sympy#30367](https://github.com/sympy/sympy/pull/30367) Merge 1.14 release branch (2026-08-29)",
+    "- merged PR: [sympy/sympy#30255](https://github.com/sympy/sympy/pull/30255) Revert \"Merge pull request #30079 from salastro/expsin_quadratic\" (2026-08-12)",
+    "- merged PR: [sympy/sympy#30243](https://github.com/sympy/sympy/pull/30243) fix(ci): use exact version comment in actions workflow (2026-08-10)",
+    "- merged PR: [sympy/sympy#30216](https://github.com/sympy/sympy/pull/30216) fix: don't pass invalid parameter to mpmath.nsum (2026-08-05)",
+    "- merged PR: [sympy/sympy#30204](https://github.com/sympy/sympy/pull/30204) fix: Use scipy sparse arrays instead of sparse matrices (2026-08-03)",
+    "- merged PR: [sympy/sympy#30124](https://github.com/sympy/sympy/pull/30124) maint: update AUTHORS file (2026-07-23)",
+    "- merged PR: [sympy/sympy#30093](https://github.com/sympy/sympy/pull/30093) Exclude root-analysis tests with pathological threaded scaling (2026-07-18)",
+    "- merged PR: [sympy/sympy#30091](https://github.com/sympy/sympy/pull/30091) fix(core): Exclude evaluation-parameter tests from concurrent execution (2026-07-18)",
+    "- merged PR: [sympy/sympy#30090](https://github.com/sympy/sympy/pull/30090) fix(core)(: Preserve Kind singleton identity under concurrent construction (2026-07-18)",
+    "- merged PR: [sympy/sympy#30089](https://github.com/sympy/sympy/pull/30089) Mark process-global state tests as thread-unsafe (2026-07-18)"
+  ],
+  "gaps": [],
+  "how_to_use": [
+    "Paste the evidence lines into the 'About you' / prior contributions section.",
+    "Mention what each PR taught you about the codebase, not just that it merged.",
+    "Reviewers can see the same history; never list work you did not do."
+  ]
+}

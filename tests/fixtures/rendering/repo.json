@@ -1,0 +1,85 @@
+{
+  "health": {
+    "full_name": "sympy/sympy",
+    "url": "https://github.com/sympy/sympy",
+    "description": "A computer algebra system written in pure Python",
+    "language": "Python",
+    "stars": 15027,
+    "forks": 5588,
+    "open_issues": 5987,
+    "archived": false,
+    "disabled": false,
+    "pushed_at": "2026-10-21T05:31:59Z",
+    "license": "Other",
+    "topics": [
+      "computer-algebra",
+      "hacktoberfest",
+      "math",
+      "python",
+      "science"
+    ],
+    "has_contributing": true,
+    "has_code_of_conduct": true,
+    "has_issue_template": false,
+    "has_pr_template": true,
+    "has_ci": true,
+    "prs_sampled": 50,
+    "merge_rate": 0.62,
+    "median_pr_hours": 11.108055555555556,
+    "outsider_prs_sampled": 40,
+    "outsider_merge_rate": 0.55,
+    "outside_authors_merged": 16,
+    "median_first_response_hours": 7.27,
+    "first_response_sampled": 37,
+    "median_outsider_pr_size": 32,
+    "insiders_known": true,
+    "pr_source": "graphql",
+    "committers_last_year": 146,
+    "newcomer_committers_last_year": 46,
+    "bus_factor": 10,
+    "beginner_label": "good first issue",
+    "open_beginner_issues": 3,
+    "health_score": 100.0,
+    "grade": "A",
+    "signals": [
+      "Very recent activity (0d since push)",
+      "Has a CONTRIBUTING guide",
+      "Has a Code of Conduct",
+      "Issue/PR templates guide contributions",
+      "CI runs on pull requests",
+      "3 open 'good first issue' issue(s)",
+      "Healthy merge rate (62% of human PRs)",
+      "Merges outside contributors' PRs (55% of 40)",
+      "16 different outside author(s) merged recently",
+      "Pull requests from outsiders get a human reply within ~7h (median)",
+      "Merged PRs land in ~11h (median)",
+      "46 people landed their first and only commit in the last year (146 committers in total)",
+      "Merged outside PRs change ~32 lines (median); keep yours around that size",
+      "License: Other"
+    ],
+    "warnings": []
+  },
+  "contribution_guide": {
+    "repo": "sympy/sympy",
+    "contributing_url": "https://github.com/sympy/sympy/blob/master/CONTRIBUTING.md",
+    "contributing_excerpt": "## Contributing We welcome contributions from anyone, even if you are new to open source. Please read our [contributor guide]( https://docs.sympy.org/dev/contributing/index.html). If you are new and looking for some way to contribute a good place to start is to look at the issues tagged [Easy to Fix]( https://github.com/sympy/sympy/issues?q=is%3Aopen+is%3Aissue+label%3A%22Easy+to+Fix%22). Please note that all participants of this project are expected to follow our Code of Conduct. By participating in this project you agree to abide by its terms. See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).",
+    "code_of_conduct_url": "https://github.com/sympy/sympy/blob/master/CODE_OF_CONDUCT.md",
+    "toolchain": [
+      "Python project (pyproject.toml)",
+      "Python project (setup.py)"
+    ],
+    "devcontainer": true,
+    "setup_hints": [
+      "Dev container available: open in Codespaces/VS Code for a ready env",
+      "Python project (pyproject.toml)",
+      "Python project (setup.py)"
+    ],
+    "communication_channels": [],
+    "beginner_issue_labels": [
+      "Easy to Fix",
+      "Easy to Revive",
+      "good first issue"
+    ]
+  },
+  "recommendation": "Strong candidate. Go ahead with setup and pick an issue."
+}

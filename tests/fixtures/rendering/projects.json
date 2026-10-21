@@ -1,0 +1,33 @@
+{
+  "count": 3,
+  "projects": [
+    {
+      "year": 2026,
+      "org": "National Resource for Network Biology (NRNB)",
+      "title": "Evaluating and Improving Symbolic Regression Methods for Biological Network Dynamics",
+      "summary": "This project aims to improve and evaluate symbolic regression methods for discovering interpretable mathematical models of biological network...",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ek4xmFSR",
+      "code_url": null,
+      "score": 4.26
+    },
+    {
+      "year": 2026,
+      "org": "SymPy",
+      "title": "Extending Rule-Based Symbolic Integration",
+      "summary": "Symbolic integration is one of the central capabilities of any advanced calculator system e.g. Mathematica. SymPy currently provides several...",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PTyd6ZXi",
+      "code_url": null,
+      "score": 4.26
+    },
+    {
+      "year": 2026,
+      "org": "DBpedia",
+      "title": "Neural Extraction Framework: Enhancing Knowledge Graph Extraction via Neuro-Symbolic Integration",
+      "summary": "This project scales the DBpedia Neural Extraction Framework into a production-ready system by integrating a Neuro-Symbolic validation layer. Key...",
+      "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/JUH1W3j3",
+      "code_url": null,
+      "score": 4.26
+    }
+  ],
+  "note": "Accepted GSoC projects from the public archive. Use them to understand scope and what each org values. Never copy a past proposal."
+}

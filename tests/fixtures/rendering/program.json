@@ -1,0 +1,279 @@
+{
+  "year": 2027,
+  "dates_are_official": false,
+  "source": "ESTIMATE projected from official 2026 dates. Google has not published this timeline yet.",
+  "official_home": "https://summerofcode.withgoogle.com",
+  "official_timeline": "https://developers.google.com/open-source/gsoc/timeline",
+  "program_page": "https://summerofcode.withgoogle.com/programs/2027",
+  "phase": {
+    "id": "before_announcement",
+    "title": "Before the program is announced",
+    "advice": "The best time to start. Pick orgs that participated last year, contribute steadily, and treat every date as an estimate until Google publishes it."
+  },
+  "project_size": "medium",
+  "next_milestones": [
+    {
+      "key": "prog_announce",
+      "label": "Program Announce Date",
+      "at": "2026-12-02T19:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 42,
+      "window_days": 41
+    },
+    {
+      "key": "org_application_start",
+      "label": "Org Applications Open",
+      "at": "2027-01-18T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 89,
+      "window_days": 14
+    },
+    {
+      "key": "org_application_deadline",
+      "label": "Org Application Deadline",
+      "at": "2027-02-02T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 104,
+      "window_days": 14
+    }
+  ],
+  "timeline": [
+    {
+      "key": "prog_announce",
+      "label": "Program Announce Date",
+      "at": "2026-12-02T19:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 42,
+      "window_days": 41
+    },
+    {
+      "key": "org_application_start",
+      "label": "Org Applications Open",
+      "at": "2027-01-18T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 89,
+      "window_days": 14
+    },
+    {
+      "key": "org_application_deadline",
+      "label": "Org Application Deadline",
+      "at": "2027-02-02T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 104,
+      "window_days": 14
+    },
+    {
+      "key": "org_notification",
+      "label": "Org Notification Date",
+      "at": "2027-02-17T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 119,
+      "window_days": 14
+    },
+    {
+      "key": "org_announce_public",
+      "label": "Accepted Orgs Announced",
+      "at": "2027-02-18T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 120,
+      "window_days": 14
+    },
+    {
+      "key": "contributor_proposals_open",
+      "label": "Contributor Proposals Open",
+      "at": "2027-03-15T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 145,
+      "window_days": 14
+    },
+    {
+      "key": "proposal_deadline",
+      "label": "Proposal Deadline",
+      "at": "2027-03-30T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 160,
+      "window_days": 14
+    },
+    {
+      "key": "proposal_ranking_deadline",
+      "label": "Proposal Ranking Deadline",
+      "at": "2027-04-20T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 181,
+      "window_days": 14
+    },
+    {
+      "key": "project_announce_oa",
+      "label": "Projects Announced to Orgs",
+      "at": "2027-04-28T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 189,
+      "window_days": 14
+    },
+    {
+      "key": "project_announce_public",
+      "label": "Accepted Projects Announced",
+      "at": "2027-04-29T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 190,
+      "window_days": 14
+    },
+    {
+      "key": "project_work_start",
+      "label": "Project Work Period Start",
+      "at": "2027-05-24T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 215,
+      "window_days": 14
+    },
+    {
+      "key": "midterm_evaluation_start",
+      "label": "Midterm Evaluation Start (medium project)",
+      "at": "2027-07-05T18:00:00Z",
+      "project_size": "medium",
+      "official": false,
+      "status": "upcoming",
+      "days_until": 257,
+      "window_days": 14
+    },
+    {
+      "key": "midterm_evaluation_deadline",
+      "label": "Midterm Evaluation Deadline (medium project)",
+      "at": "2027-07-09T18:00:00Z",
+      "project_size": "medium",
+      "official": false,
+      "status": "upcoming",
+      "days_until": 261,
+      "window_days": 14
+    },
+    {
+      "key": "final_submission_start",
+      "label": "Final Submission Start (medium project)",
+      "at": "2027-08-16T18:00:00Z",
+      "project_size": "medium",
+      "official": false,
+      "status": "upcoming",
+      "days_until": 299,
+      "window_days": 14
+    },
+    {
+      "key": "final_submission_deadline",
+      "label": "Final Submission Deadline (medium project)",
+      "at": "2027-08-23T18:00:00Z",
+      "project_size": "medium",
+      "official": false,
+      "status": "upcoming",
+      "days_until": 306,
+      "window_days": 14
+    },
+    {
+      "key": "final_evaluation_start",
+      "label": "Final Evaluation Start (medium project)",
+      "at": "2027-08-23T18:00:00Z",
+      "project_size": "medium",
+      "official": false,
+      "status": "upcoming",
+      "days_until": 306,
+      "window_days": 14
+    },
+    {
+      "key": "final_evaluation_deadline",
+      "label": "Final Evaluation Deadline (medium project)",
+      "at": "2027-08-30T18:00:00Z",
+      "project_size": "medium",
+      "official": false,
+      "status": "upcoming",
+      "days_until": 313,
+      "window_days": 14
+    },
+    {
+      "key": "project_completion",
+      "label": "Project Completion Date (medium project)",
+      "at": "2027-11-08T18:00:00Z",
+      "project_size": "medium",
+      "official": false,
+      "status": "upcoming",
+      "days_until": 383,
+      "window_days": 14
+    },
+    {
+      "key": "program_end",
+      "label": "Program End Date",
+      "at": "2027-11-10T18:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 385,
+      "window_days": 14
+    }
+  ],
+  "stats": null,
+  "disclaimer": "ESTIMATE projected from official 2026 dates. Google has not published this timeline yet. Verify every date on https://summerofcode.withgoogle.com before acting.",
+  "latest_archived_org_year": 2026,
+  "default_target_year": 2027,
+  "official_sources": [
+    {
+      "title": "Google Summer of Code home",
+      "url": "https://summerofcode.withgoogle.com",
+      "why": "The official program site: organizations, proposals, and announcements"
+    },
+    {
+      "title": "GSoC resources",
+      "url": "https://developers.google.com/open-source/gsoc/resources",
+      "why": "Official guides, FAQ, timeline, and contacts"
+    },
+    {
+      "title": "Contributor / student guide",
+      "url": "https://google.github.io/gsocguides/student/",
+      "why": "Advice on writing a proposal and on working with a community"
+    },
+    {
+      "title": "AI tooling guidance",
+      "url": "https://developers.google.com/open-source/gsoc/resources/ai_guidance",
+      "why": "What the program expects when you use AI tools; organizations add their own rules"
+    },
+    {
+      "title": "Spam / low-quality proposal guidance",
+      "url": "https://developers.google.com/open-source/gsoc/resources/spam_proposals",
+      "why": "Why generic or low-effort proposals are rejected"
+    }
+  ],
+  "anti_spam_rules": [
+    "Never fabricate organizations, issues, mentors, or deadlines.",
+    "Read a project's contributing guide before opening a pull request, and never message many maintainers at once.",
+    "Do not submit an AI-written proposal unless the organization allows it. Many reject them.",
+    "Understand, and be able to explain, every line you submit.",
+    "Prefer a real fix, test, or documentation improvement over trivial typo changes.",
+    "Talk with the organization in its public channels before you propose a project.",
+    "Back every recommendation with evidence: issue links, pull request links, or docs.",
+    "If something is missing or uncertain, say so. Do not guess."
+  ]
+}

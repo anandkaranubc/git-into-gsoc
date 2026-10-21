@@ -1,0 +1,55 @@
+{
+  "scope": "custom",
+  "labels_used": [
+    "good first issue",
+    "help wanted"
+  ],
+  "note": "Searching sympy/sympy",
+  "count": 1,
+  "issues": [
+    {
+      "repo": "sympy/sympy",
+      "number": 30671,
+      "title": "Find bugs in the rewrite of SymPy's assumption system",
+      "url": "https://github.com/sympy/sympy/issues/30671",
+      "labels": [
+        "Easy to Fix",
+        "assumptions",
+        "good first issue"
+      ],
+      "created_at": "2026-10-04T21:19:07Z",
+      "updated_at": "2026-10-06T05:31:51Z",
+      "comments": 3,
+      "author": "TiloRC",
+      "filed_by_maintainer": false,
+      "body_excerpt": "If you are a beginner to SymPy please avoid posting to the mailing list unless you have a very good reason to and have put a lot of thought into whatever you're going to say. And alternative place you can discuss things is the new contributor's channel in [SymPy's Zulip](https://sympy.zulipchat.com/#narrow/channel/641746-new-contributors/topic//with/629429926). If you do intend to contribute to S…",
+      "availability": "available",
+      "availability_reason": "Open, unassigned, no open PR or recent claim",
+      "assessment": {
+        "availability": "available",
+        "reason": "Open, unassigned, no open PR or recent claim",
+        "claims": [],
+        "linked_prs": [],
+        "assignees": [],
+        "maintainer_engaged": false,
+        "last_activity_days": 15,
+        "caveats": []
+      },
+      "gsoc_org": "SymPy",
+      "beginner_score": 83.0,
+      "signals": [
+        "Beginner-friendly labels: good first issue",
+        "Availability: available",
+        "Part of GSoC org SymPy",
+        "Updated in last 30 days"
+      ]
+    }
+  ],
+  "before_you_comment": [
+    "Read the whole thread and any linked PRs first.",
+    "Reproduce the problem locally (or confirm the docs gap) before claiming.",
+    "Point to the code you would change and outline your approach in 2-3 sentences.",
+    "Ask whether the approach fits; do not just write 'can I work on this?'.",
+    "If someone claimed it recently, pick another issue rather than competing."
+  ]
+}

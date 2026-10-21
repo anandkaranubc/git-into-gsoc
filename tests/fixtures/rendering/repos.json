@@ -1,0 +1,58 @@
+{
+  "org": "SymPy",
+  "github_owners": [
+    "sympy"
+  ],
+  "linked_projects": [],
+  "ideas_url": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+  "ideas_page_read": true,
+  "count": 3,
+  "repos": [
+    {
+      "full_name": "sympy/sympy",
+      "url": "https://github.com/sympy/sympy",
+      "description": "A computer algebra system written in pure Python",
+      "language": "Python",
+      "stars": 15027,
+      "pushed_at": "2026-10-21T05:31:59Z",
+      "open_beginner_issues": 3,
+      "ideas_mention": true,
+      "score": 74.0,
+      "reasons": [
+        "Named on the GSoC ideas page",
+        "3 open beginner issue(s)",
+        "Pushed in the last 2 weeks"
+      ]
+    },
+    {
+      "full_name": "sympy/sympy_benchmarks",
+      "url": "https://github.com/sympy/sympy_benchmarks",
+      "description": "Some benchmarks of SymPy",
+      "language": "Python",
+      "stars": 18,
+      "pushed_at": "2026-07-30T23:13:50Z",
+      "open_beginner_issues": 0,
+      "ideas_mention": true,
+      "score": 49.4,
+      "reasons": [
+        "Named on the GSoC ideas page",
+        "Pushed 82d ago"
+      ]
+    },
+    {
+      "full_name": "sympy/sphinx-math-dollar",
+      "url": "https://github.com/sympy/sphinx-math-dollar",
+      "description": "Sphinx extension to let you write LaTeX math using $$",
+      "language": "Python",
+      "stars": 35,
+      "pushed_at": "2026-02-05T18:11:15Z",
+      "open_beginner_issues": 0,
+      "ideas_mention": true,
+      "score": 42.8,
+      "reasons": [
+        "Named on the GSoC ideas page"
+      ]
+    }
+  ],
+  "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`."
+}

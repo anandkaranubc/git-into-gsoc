@@ -1,0 +1,68 @@
+{
+  "checklist": [
+    {
+      "id": "org_template",
+      "title": "Follow the organization's proposal template",
+      "description": "Missing required sections is a common reason proposals are rejected.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "prior_contrib",
+      "title": "Link prior contributions to the org",
+      "description": "Link your merged pull requests, issues, reviews, or docs.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "community",
+      "title": "Show community interaction",
+      "description": "Take part in the public chat or mailing list before you submit.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "scope",
+      "title": "Clear scope, milestones, and weekly plan",
+      "description": "Say what you will deliver each week, what is optional, and what you will cut if you fall behind.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "ai_policy",
+      "title": "Respect the org's AI policy",
+      "description": "Say how you will use AI, or not, following the organization's rules.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "original",
+      "title": "Original authorship",
+      "description": "Write in your own voice. You must understand every claim.",
+      "required": true,
+      "done": false
+    },
+    {
+      "id": "official_submit",
+      "title": "Submit only via the official GSoC site",
+      "description": "Emailing a proposal to a mentor is not a submission.",
+      "required": true,
+      "done": false
+    }
+  ],
+  "structure": [
+    "Synopsis: one paragraph on the problem and what you will deliver",
+    "Benefits to the community",
+    "Deliverables, and what is out of scope",
+    "Implementation plan with milestones",
+    "Week-by-week timeline, with spare time for surprises",
+    "Related work and design notes",
+    "About you: relevant experience and links to your contributions",
+    "How you will use AI, following the organization's policy"
+  ],
+  "warnings": [
+    "Generic AI-written essays are often rejected. See Google's guidance on low-quality proposals.",
+    "Submit only through the official GSoC website.",
+    "Earlier interaction with the organization is often the strongest signal in your favor."
+  ]
+}

@@ -1,0 +1,609 @@
+{
+  "profile": null,
+  "profile_source": "flags",
+  "technologies_used": [
+    "python"
+  ],
+  "interests_used": [
+    "science"
+  ],
+  "recommended_orgs": [
+    {
+      "name": "NumFOCUS",
+      "slug": "numfocus",
+      "description": "NumFOCUS promotes open source scientific software.",
+      "url": "https://numfocus.org",
+      "category": "Science and medicine, Data",
+      "topics": [
+        "data science",
+        "graphics",
+        "ai",
+        "scientific computing",
+        "numerical computation"
+      ],
+      "technologies": [
+        "python",
+        "c++",
+        "r",
+        "julia"
+      ],
+      "license": "MIT",
+      "years_active": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 27,
+      "projects_by_year": {
+        "2016": 7,
+        "2017": 10,
+        "2018": 40,
+        "2019": 19,
+        "2020": 28,
+        "2021": 45,
+        "2022": 37,
+        "2023": 24,
+        "2024": 35,
+        "2025": 31,
+        "2026": 27
+      },
+      "ideas_url": "https://github.com/numfocus/gsoc/blob/master/2026/ideas-list.md",
+      "guide_url": "https://github.com/numfocus/gsoc/blob/master/CONTRIBUTING-contributors.md",
+      "source_code": "https://github.com/numfocus/gsoc#organizations-confirmed-under-numfocus-umbrella",
+      "github_orgs": [
+        "numfocus"
+      ],
+      "github_repos": [
+        "numfocus/gsoc"
+      ],
+      "channels": [
+        {
+          "kind": "mailingList",
+          "value": "https://groups.google.com/a/numfocus.org/forum/#!forum/gsoc"
+        },
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        }
+      ],
+      "official": true,
+      "match_score": 91.0,
+      "match_reasons": [
+        "Uses python",
+        "Related topic: science",
+        "Accepted in 2026",
+        "Veteran mentoring org (11 years)",
+        "27 projects in 2026"
+      ]
+    },
+    {
+      "name": "MDAnalysis",
+      "slug": "mdanalysis",
+      "description": "Analysis of molecular simulations data with Python",
+      "url": "https://www.mdanalysis.org",
+      "category": "Science and medicine, Data",
+      "topics": [
+        "science",
+        "computational-chemistry",
+        "high-performance-computing",
+        "molecular-simulation",
+        "machine-learning"
+      ],
+      "technologies": [
+        "python",
+        "cython",
+        "c/c++"
+      ],
+      "license": "LGPL-3.0",
+      "years_active": [
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 3,
+      "projects_by_year": {
+        "2020": 3,
+        "2021": 2,
+        "2022": 2,
+        "2023": 2,
+        "2024": 3,
+        "2025": 4,
+        "2026": 3
+      },
+      "ideas_url": "https://github.com/MDAnalysis/mdanalysis/wiki/GSoC-2026-Project-Ideas",
+      "guide_url": "https://github.com/MDAnalysis/mdanalysis/wiki/Google-Summer-Of-Code",
+      "source_code": "https://github.com/MDAnalysis/mdanalysis",
+      "github_orgs": [
+        "MDAnalysis"
+      ],
+      "github_repos": [
+        "MDAnalysis/mdanalysis"
+      ],
+      "channels": [
+        {
+          "kind": "mailingList",
+          "value": "https://github.com/MDAnalysis/mdanalysis/discussions"
+        },
+        {
+          "kind": "chat",
+          "value": "https://discord.com/channels/807348386012987462/"
+        },
+        {
+          "kind": "blog",
+          "value": "https://www.mdanalysis.org/blog/"
+        }
+      ],
+      "official": true,
+      "match_score": 91.0,
+      "match_reasons": [
+        "Uses python",
+        "Topic: science",
+        "Accepted in 2026",
+        "Mentored 5 of the last 5 years",
+        "3 projects in 2026"
+      ]
+    },
+    {
+      "name": "gprMax",
+      "slug": "gprmax",
+      "description": "Simulating electromagnetic wave propagation",
+      "url": "https://www.gprmax.com",
+      "category": "Science and medicine, Artificial Intelligence",
+      "topics": [
+        "science",
+        "engineering",
+        "geophysics",
+        "electromagnetics",
+        "ground penetrating radar"
+      ],
+      "technologies": [
+        "python",
+        "cuda",
+        "openmp",
+        "mpi",
+        "opencl"
+      ],
+      "license": "GPL-3.0",
+      "years_active": [
+        2019,
+        2021,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 3,
+      "projects_by_year": {
+        "2019": 2,
+        "2021": 4,
+        "2023": 4,
+        "2024": 4,
+        "2025": 4,
+        "2026": 3
+      },
+      "ideas_url": "https://github.com/gprMax/GSoC/blob/main/project-ideas-2026.md",
+      "guide_url": "https://github.com/gprMax/GSoC/blob/main/project-template.md",
+      "source_code": "https://github.com/gprMax/gprMax",
+      "github_orgs": [
+        "gprMax"
+      ],
+      "github_repos": [
+        "gprMax/gprMax"
+      ],
+      "channels": [
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "chat",
+          "value": "https://gprmax.zulipchat.com/join/gkhcp65r3zin6rfoqdhhhbu3/"
+        }
+      ],
+      "official": true,
+      "match_score": 89.0,
+      "match_reasons": [
+        "Uses python",
+        "Topic: science",
+        "Accepted in 2026",
+        "Mentored 4 of the last 5 years",
+        "3 projects in 2026"
+      ]
+    },
+    {
+      "name": "CERN-HSF",
+      "slug": "cern-hsf",
+      "description": "Umbrella for Particle Physics-related projects",
+      "url": "http://hepsoftwarefoundation.org/activities/gsoc.html",
+      "category": "Science and medicine, Artificial Intelligence",
+      "topics": [
+        "machine learning",
+        "big data",
+        "algorithmics",
+        "particle physics",
+        "Performance Optimisation"
+      ],
+      "technologies": [
+        "python",
+        "c/c++",
+        "data analysis",
+        "artificial intelligence",
+        "container orchestration"
+      ],
+      "license": "LGPL-3.0",
+      "years_active": [
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 26,
+      "projects_by_year": {
+        "2017": 20,
+        "2018": 26,
+        "2019": 29,
+        "2020": 34,
+        "2021": 25,
+        "2022": 21,
+        "2023": 16,
+        "2024": 17,
+        "2025": 25,
+        "2026": 26
+      },
+      "ideas_url": "https://hepsoftwarefoundation.org/gsoc/2026/summary.html",
+      "guide_url": "https://hepsoftwarefoundation.org/activities/gsoc.html#for-students",
+      "source_code": "https://github.com/HSF",
+      "github_orgs": [
+        "HSF"
+      ],
+      "github_repos": [],
+      "channels": [
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        }
+      ],
+      "official": true,
+      "match_score": 88.0,
+      "match_reasons": [
+        "Uses python",
+        "Category: Science and medicine, Artificial Intelligence",
+        "Accepted in 2026",
+        "Veteran mentoring org (10 years)",
+        "26 projects in 2026"
+      ]
+    },
+    {
+      "name": "INCF",
+      "slug": "incf",
+      "description": "An open & FAIR neuroscience standards organization",
+      "url": "https://www.incf.org",
+      "category": "Science and medicine, Artificial Intelligence",
+      "topics": [
+        "machine learning",
+        "data visualization",
+        "neuroscience",
+        "brain modelling",
+        "neuroimage processing"
+      ],
+      "technologies": [
+        "python",
+        "javascript",
+        "java",
+        "c++",
+        "gpu"
+      ],
+      "license": "BSD-3-Clause",
+      "years_active": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 23,
+      "projects_by_year": {
+        "2016": 12,
+        "2017": 13,
+        "2018": 16,
+        "2019": 17,
+        "2020": 21,
+        "2021": 21,
+        "2022": 35,
+        "2023": 22,
+        "2024": 27,
+        "2025": 25,
+        "2026": 23
+      },
+      "ideas_url": "https://docs.google.com/document/d/1XkelmTUV8zMtg99GsZhbYvPoyUG5uzEIWji7IXj0M4k/edit?tab=t.0",
+      "guide_url": "https://docs.google.com/document/d/16H8MlUl_0EbhL1IC4ddRZKYeMAd9JtAHCuxY5piZOGc/",
+      "source_code": "https://github.com/INCF",
+      "github_orgs": [
+        "INCF"
+      ],
+      "github_repos": [],
+      "channels": [
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        }
+      ],
+      "official": true,
+      "match_score": 88.0,
+      "match_reasons": [
+        "Uses python",
+        "Category: Science and medicine, Artificial Intelligence",
+        "Accepted in 2026",
+        "Veteran mentoring org (11 years)",
+        "23 projects in 2026"
+      ]
+    },
+    {
+      "name": "Machine Learning for Science (ML4SCI)",
+      "slug": "machine-learning-for-science-ml4sci",
+      "description": "Machine learning applications in science",
+      "url": "https://ml4sci.org/",
+      "category": "Science and medicine, Data",
+      "topics": [
+        "machine learning",
+        "science and medicine",
+        "algorithms",
+        "physics",
+        "astronomy"
+      ],
+      "technologies": [
+        "python",
+        "machine learning",
+        "c++",
+        "data analysis",
+        "artificial intelligence"
+      ],
+      "license": "LGPL-3.0",
+      "years_active": [
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 33,
+      "projects_by_year": {
+        "2021": 19,
+        "2022": 20,
+        "2023": 23,
+        "2024": 26,
+        "2025": 31,
+        "2026": 33
+      },
+      "ideas_url": "https://ml4sci.org/activities/gsoc2026.html",
+      "guide_url": null,
+      "source_code": "https://github.com/ML4SCI",
+      "github_orgs": [
+        "ML4SCI"
+      ],
+      "github_repos": [],
+      "channels": [
+        {
+          "kind": "mailingList",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "mailingList",
+          "value": "https://simba3.web.cern.ch/simba3/SelfSubscription.aspx?groupName=ml4sci-announce"
+        },
+        {
+          "kind": "chat",
+          "value": "https://app.gitter.im/#/room/#ML4SCI_general:gitter.im"
+        }
+      ],
+      "official": true,
+      "match_score": 87.0,
+      "match_reasons": [
+        "Uses python",
+        "Related topic: science",
+        "Accepted in 2026",
+        "Mentored 5 of the last 5 years",
+        "33 projects in 2026"
+      ]
+    },
+    {
+      "name": "UC OSPO",
+      "slug": "uc-ospo",
+      "description": "Amplifying Research Impact through Open Source",
+      "url": "https://ucsc-ospo.github.io/osre26/",
+      "category": "Science and medicine, Artificial Intelligence",
+      "topics": [
+        "education",
+        "bioinformatics",
+        "data science",
+        "AI/ML",
+        "research software"
+      ],
+      "technologies": [
+        "python",
+        "javascript",
+        "c/c++",
+        "machine learning",
+        "pytorch"
+      ],
+      "license": "0BSD",
+      "years_active": [
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 15,
+      "projects_by_year": {
+        "2023": 14,
+        "2024": 16,
+        "2025": 15,
+        "2026": 15
+      },
+      "ideas_url": "https://ucsc-ospo.github.io/osre26/#projects",
+      "guide_url": "https://ucsc-ospo.github.io/osre26/#forstudents",
+      "source_code": "https://github.com/uccross",
+      "github_orgs": [
+        "uccross",
+        "ucsc-ospo"
+      ],
+      "github_repos": [],
+      "channels": [
+        {
+          "kind": "chat",
+          "value": "https://ucsc-ospo.github.io/osre26/#forstudents"
+        },
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "blog",
+          "value": "https://ucsc-ospo.github.io/#blog"
+        }
+      ],
+      "official": true,
+      "match_score": 87.0,
+      "match_reasons": [
+        "Uses python",
+        "Related topic: science",
+        "Accepted in 2026",
+        "Mentored 4 of the last 5 years",
+        "15 projects in 2026"
+      ]
+    },
+    {
+      "name": "National Resource for Network Biology (NRNB)",
+      "slug": "national-resource-for-network-biology-nrnb",
+      "description": "Developing open source tools for network biology",
+      "url": "https://nrnb.org",
+      "category": "Science and medicine, Data",
+      "topics": [
+        "machine learning",
+        "web application",
+        "data science",
+        "scientific computing",
+        "network biology"
+      ],
+      "technologies": [
+        "python",
+        "javascript",
+        "html",
+        "css",
+        "LLM"
+      ],
+      "license": "LGPL-2.1",
+      "years_active": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+        2022,
+        2023,
+        2024,
+        2025,
+        2026
+      ],
+      "latest_year": 2026,
+      "num_projects_latest": 7,
+      "projects_by_year": {
+        "2016": 15,
+        "2017": 20,
+        "2018": 10,
+        "2019": 11,
+        "2020": 15,
+        "2021": 13,
+        "2022": 8,
+        "2023": 8,
+        "2024": 11,
+        "2025": 8,
+        "2026": 7
+      },
+      "ideas_url": "https://github.com/nrnb/GoogleSummerOfCode/issues",
+      "guide_url": "https://docs.google.com/document/d/1UdlsHvWoP3lU7QAPzlqs1ctQKeaWrXwdcOEuSIkdmio/edit?usp=sharing",
+      "source_code": "https://github.com/nrnb",
+      "github_orgs": [
+        "nrnb"
+      ],
+      "github_repos": [],
+      "channels": [
+        {
+          "kind": "chat",
+          "value": "https://github.com/nrnb/GoogleSummerOfCode/issues"
+        },
+        {
+          "kind": "email",
+          "value": "contact@example.org"
+        },
+        {
+          "kind": "mailingList",
+          "value": "https://groups.google.com/g/cytoscape-helpdesk"
+        },
+        {
+          "kind": "blog",
+          "value": "https://groups.google.com/g/cytoscape-helpdesk"
+        }
+      ],
+      "official": true,
+      "match_score": 86.5,
+      "match_reasons": [
+        "Uses python",
+        "Related topic: science",
+        "Accepted in 2026",
+        "Veteran mentoring org (11 years)",
+        "7 projects in 2026"
+      ]
+    }
+  ],
+  "starter_issues": [],
+  "starter_issue_error": null,
+  "next_steps": [
+    "Shortlist three organizations and join their community channels",
+    "Check one or two of their main repositories for health and a contributing guide",
+    "Make one meaningful contribution before writing a proposal",
+    "Read Google's AI guidance and each organization's AI policy"
+  ],
+  "evidence_note": "Organization rankings use the latest official list plus archive history. Next year's organizations are not final until Google announces them."
+}

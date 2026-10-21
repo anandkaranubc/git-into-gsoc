@@ -1,0 +1,39 @@
+{
+  "kind": "claim",
+  "template": "On sympy/sympy#30671, one comment:\n\nI'd like to work on this. I reproduced it on <commit> with <steps>.\nThe cause looks to be in <file or function>: <one sentence hypothesis>.\nPlan: <one or two lines>. I expect to open a PR by <date>.\nIf someone is already on it, tell me and I'll pick another issue.",
+  "must_fill": [
+    "How you reproduced it",
+    "Where the cause looks to be",
+    "Your plan in one or two lines",
+    "When you expect a PR"
+  ],
+  "rules": [
+    {
+      "rule": "One comment with your intention and a short plan; do not post a bare 'can I work on this?'.",
+      "source": "https://pandas.pydata.org/docs/development/contributing.html"
+    },
+    {
+      "rule": "Use the project's own claim mechanism when it has one (for example a /assign command).",
+      "source": "https://www.kubernetes.dev/docs/guide/first-contribution/"
+    },
+    {
+      "rule": "If someone claimed it recently, pick another issue; if you stop, say so in the thread.",
+      "source": "https://pandas.pydata.org/docs/development/contributing.html"
+    }
+  ],
+  "note": "Replace every <placeholder> with your own observation. Send nothing you cannot back up; reviewers read the same public history you do.",
+  "context": {
+    "issue": {
+      "repo": "sympy/sympy",
+      "number": 30671,
+      "title": "Find bugs in the rewrite of SymPy's assumption system",
+      "availability": "available"
+    },
+    "channels": [],
+    "claim_convention": {
+      "kind": "unknown",
+      "text": ""
+    },
+    "contributing_url": "https://github.com/sympy/sympy/blob/master/CONTRIBUTING.md"
+  }
+}

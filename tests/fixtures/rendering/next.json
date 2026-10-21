@@ -1,0 +1,71 @@
+{
+  "checked_at": "2026-10-21T13:57:38.407596+00:00",
+  "last_checked_at": null,
+  "program": {
+    "year": 2027,
+    "phase": {
+      "id": "before_announcement",
+      "title": "Before the program is announced",
+      "advice": "The best time to start. Pick orgs that participated last year, contribute steadily, and treat every date as an estimate until Google publishes it."
+    },
+    "dates_are_official": false,
+    "source": "ESTIMATE projected from official 2026 dates. Google has not published this timeline yet."
+  },
+  "deadlines": [
+    {
+      "key": "prog_announce",
+      "label": "Program Announce Date",
+      "at": "2026-12-02T19:00:00Z",
+      "project_size": null,
+      "official": false,
+      "status": "upcoming",
+      "days_until": 42,
+      "window_days": 41
+    }
+  ],
+  "time_budget": null,
+  "progress": {
+    "log_entries": 0,
+    "last_log_days_ago": null,
+    "target_year": 2027,
+    "completion": "0/10",
+    "percent": 0.0,
+    "next_phase": "learn",
+    "shortlisted_orgs": [],
+    "tracked_repos": [],
+    "tracked_issues": [],
+    "contributions": 0,
+    "profile": {
+      "technologies": [
+        "python"
+      ],
+      "interests": [
+        "science"
+      ]
+    },
+    "phases": {
+      "learn": false,
+      "discover": false,
+      "evaluate": false,
+      "orient": false,
+      "community": false,
+      "find_issues": false,
+      "contribute": false,
+      "iterate": false,
+      "proposal": false,
+      "track": false
+    },
+    "updated_at": "2026-10-21T13:57:38.618070+00:00"
+  },
+  "tracked_issues": [],
+  "changes": [],
+  "new_issues": [],
+  "actions": [
+    {
+      "title": "Shortlist 3 organizations that fit your skills",
+      "command": "git-into-gsoc recommend   # then: git-into-gsoc progress shortlist_org --value \"NAME\"",
+      "why": "Everything downstream (repos, issues, proposal) hangs off a shortlist."
+    }
+  ],
+  "note": "Actions are suggestions from your saved progress and public data. Dates for unpublished years are estimates; verify on the official site."
+}

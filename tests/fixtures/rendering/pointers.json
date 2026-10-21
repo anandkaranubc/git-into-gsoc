@@ -1,0 +1,167 @@
+{
+  "issue": {
+    "repo": "sympy/sympy",
+    "number": 30671,
+    "title": "Find bugs in the rewrite of SymPy's assumption system",
+    "url": "https://github.com/sympy/sympy/issues/30671",
+    "labels": [
+      "Easy to Fix",
+      "assumptions",
+      "good first issue"
+    ]
+  },
+  "as_of_commit": "ee053c66194e56e8cbc6b8ca41edd420e8531adc",
+  "files_likely_involved": [],
+  "code_search": [],
+  "search_links": [],
+  "code_search_note": "",
+  "similar_fixes": [
+    {
+      "issue": {
+        "number": 2975,
+        "title": "Integral result incorrect: simplifies sign away",
+        "url": "https://github.com/sympy/sympy/issues/2975"
+      },
+      "pull_request": {
+        "number": 18220,
+        "url": "https://github.com/sympy/sympy/pull/18220",
+        "title": "Test for issue #2975 Integral result incorrect: simplifies sign away",
+        "author": "vikrantmalik051",
+        "merged_at": "2020-01-04T13:52:24+00:00",
+        "opened_at": "2020-01-04T03:36:38+00:00",
+        "confidence": "likely fix"
+      },
+      "files": [
+        "sympy/integrals/tests/test_integrals.py"
+      ],
+      "additions": 6,
+      "deletions": 0,
+      "days_to_merge": 0
+    },
+    {
+      "issue": {
+        "number": 25723,
+        "title": "GCD missing polynomial factor",
+        "url": "https://github.com/sympy/sympy/issues/25723"
+      },
+      "pull_request": {
+        "number": 25725,
+        "url": "https://github.com/sympy/sympy/pull/25725",
+        "title": "dmp fix like #18566",
+        "author": "smichr",
+        "merged_at": "2023-09-24T13:46:54+00:00",
+        "opened_at": "2023-09-24T01:42:52+00:00",
+        "confidence": "closing PR"
+      },
+      "files": [
+        "sympy/polys/euclidtools.py",
+        "sympy/polys/tests/test_heuristicgcd.py"
+      ],
+      "additions": 13,
+      "deletions": 2,
+      "days_to_merge": 1
+    },
+    {
+      "issue": {
+        "number": 25603,
+        "title": "Simplifying And boolean operation removes a condition",
+        "url": "https://github.com/sympy/sympy/issues/25603"
+      },
+      "pull_request": {
+        "number": 25605,
+        "url": "https://github.com/sympy/sympy/pull/25605",
+        "title": "Made the changes in piecewise and added test for the difference in simplify and other in boolean piecewise",
+        "author": "geetikavadali",
+        "merged_at": "2023-08-31T20:54:35+00:00",
+        "opened_at": "2023-08-31T06:42:15+00:00",
+        "confidence": "closing PR"
+      },
+      "files": [
+        "sympy/functions/elementary/piecewise.py",
+        "sympy/functions/elementary/tests/test_piecewise.py"
+      ],
+      "additions": 20,
+      "deletions": 4,
+      "days_to_merge": 1
+    },
+    {
+      "issue": {
+        "number": 19427,
+        "title": "wrong integral value",
+        "url": "https://github.com/sympy/sympy/issues/19427"
+      },
+      "pull_request": {
+        "number": 25536,
+        "url": "https://github.com/sympy/sympy/pull/25536",
+        "title": "add regression test for #19427",
+        "author": "nschloe",
+        "merged_at": "2023-08-17T17:49:35+00:00",
+        "opened_at": "2023-08-17T07:03:30+00:00",
+        "confidence": "closing PR"
+      },
+      "files": [
+        "sympy/integrals/tests/test_integrals.py"
+      ],
+      "additions": 14,
+      "deletions": 0,
+      "days_to_merge": 0
+    },
+    {
+      "issue": {
+        "number": 25451,
+        "title": "Incorrect simplification when mixing basic logical operators and equality",
+        "url": "https://github.com/sympy/sympy/issues/25451"
+      },
+      "pull_request": {
+        "number": 25528,
+        "url": "https://github.com/sympy/sympy/pull/25528",
+        "title": "Improve Logical Simplification Handling in sympy.logic.boolalg",
+        "author": "sahinfalcon",
+        "merged_at": "2023-08-16T11:57:58+00:00",
+        "opened_at": "2023-08-16T09:54:16+00:00",
+        "confidence": "closing PR"
+      },
+      "files": [
+        ".mailmap",
+        "sympy/logic/boolalg.py",
+        "sympy/logic/tests/test_boolalg.py"
+      ],
+      "additions": 8,
+      "deletions": 23,
+      "days_to_merge": 0
+    }
+  ],
+  "similar_label": "good first issue",
+  "similar_note": "5 of 5 similar closed issues had a traceable fix PR.",
+  "fix_norm": {
+    "sample": 5,
+    "median_files": 2,
+    "max_files": 3,
+    "touches_tests_pct": 100,
+    "touches_docs_pct": 0,
+    "common_directories": [
+      {
+        "path": "sympy/integrals/tests",
+        "fixes": 2
+      },
+      {
+        "path": ".",
+        "fixes": 1
+      },
+      {
+        "path": "sympy/functions/elementary",
+        "fixes": 1
+      },
+      {
+        "path": "sympy/functions/elementary/tests",
+        "fixes": 1
+      },
+      {
+        "path": "sympy/logic",
+        "fixes": 1
+      }
+    ]
+  },
+  "next_step": "Open the files above and the fix PRs for similar issues before touching code. If no file resolved, the issue needs clarification: ask in the thread what part of the code it concerns.",
+  "note": "Pointers are places to read, not a diagnosis. The fix is yours to work out."
+}

@@ -1,0 +1,165 @@
+{
+  "found": true,
+  "catalog": {
+    "year": 2026,
+    "source": "official",
+    "note": "2027 orgs are not announced yet; showing official 2026 participants, the best predictor of who returns.",
+    "count": 183
+  },
+  "organization": {
+    "name": "SymPy",
+    "slug": "sympy",
+    "description": "SymPy is a Python library for symbolic mathematics",
+    "url": "https://www.sympy.org/",
+    "category": "Science and medicine",
+    "topics": [
+      "mathematics",
+      "physics",
+      "symbolic mathematics"
+    ],
+    "technologies": [
+      "python",
+      "numpy",
+      "jupyter"
+    ],
+    "license": "BSD-3-Clause",
+    "years_active": [
+      2016,
+      2017,
+      2018,
+      2019,
+      2020,
+      2021,
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "latest_year": 2026,
+    "num_projects_latest": 5,
+    "projects_by_year": {
+      "2016": 7,
+      "2017": 8,
+      "2018": 7,
+      "2019": 10,
+      "2020": 6,
+      "2021": 6,
+      "2022": 3,
+      "2023": 5,
+      "2024": 5,
+      "2025": 6,
+      "2026": 5
+    },
+    "ideas_url": "https://github.com/sympy/sympy/wiki/GSoC-Ideas",
+    "guide_url": "https://github.com/sympy/sympy/wiki/GSoC-Student-Instructions",
+    "source_code": "https://github.com/sympy/sympy",
+    "github_orgs": [
+      "sympy"
+    ],
+    "github_repos": [
+      "sympy/sympy"
+    ],
+    "channels": [
+      {
+        "kind": "mailingList",
+        "value": "https://groups.google.com/g/sympy"
+      }
+    ],
+    "official": true,
+    "match_score": 0.0,
+    "match_reasons": [],
+    "recent_projects": [
+      {
+        "year": 2026,
+        "org": "SymPy",
+        "title": "Enhancement of gcd for polynomials in the sparse representation",
+        "summary": "This project aims to enhance SymPy's GCD computation speed for polynomials in the sparse representation. I will implement Zippel's algorithm from...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/8qaoacDm",
+        "code_url": null,
+        "score": 0.26
+      },
+      {
+        "year": 2026,
+        "org": "SymPy",
+        "title": "Enhancing Assumptions via EUF Integration, LRA Robustness, and Property-Based Testing",
+        "summary": "This project focuses on making SymPy's assumptions system more robust, efficient, and reliable through a three component architectural upgrade. The...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/i3j6Xcjo",
+        "code_url": null,
+        "score": 0.26
+      },
+      {
+        "year": 2026,
+        "org": "SymPy",
+        "title": "Enhancing SymPy’s Integral Module: Rationalizing Substitutions and Contour Integration",
+        "summary": "The goal of this project is to improve the capabilities of the current integration module of SymPy. To do so, as a first step, rationalizing...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/P2DbjEp2",
+        "code_url": null,
+        "score": 0.26
+      },
+      {
+        "year": 2026,
+        "org": "SymPy",
+        "title": "Extending Rule-Based Symbolic Integration",
+        "summary": "Symbolic integration is one of the central capabilities of any advanced calculator system e.g. Mathematica. SymPy currently provides several...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PTyd6ZXi",
+        "code_url": null,
+        "score": 0.26
+      },
+      {
+        "year": 2026,
+        "org": "SymPy",
+        "title": "Group Representation Theory and Character Tables",
+        "summary": "This proposal aims to implement algorithms character tables computation algorithms for SymPy. Fourteen years ago in 2012, Aleksandar Makelov's GSoC...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/4hr0SZPK",
+        "code_url": null,
+        "score": 0.26
+      },
+      {
+        "year": 2025,
+        "org": "SymPy",
+        "title": "Enhancing SymPy’s Control Module: Symbolic Stability and Discrete-Time Systems",
+        "summary": "This project enhanced SymPy's physics/control module by introducing two fundamental features. First, a robust method for symbolic stability analysis...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/cpykfo3t",
+        "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Leonardo-Mangani:-%22Enhancing-SymPy%E2%80%99s-Control-Module:-Symbolic-Stability-and-Discrete%E2%80%90Time-Systems%22",
+        "score": 0.25
+      },
+      {
+        "year": 2025,
+        "org": "SymPy",
+        "title": "Enhancing the Beam, Column and Structure2d Modules in SymPy’s Continuum Mechanics",
+        "summary": "This project enhances SymPy’s Beam, Column, and Structure2D modules in the continuum_mechanics package by addressing key limitations in the current...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/K6y23OZP",
+        "code_url": "https://github.com/sympy/sympy/wiki/GSOC-2025-Report-Udayagiri-Saibabu%3A%E2%80%90Enhancing-the-Beam%2C-Column-and-Structure2D-Modules-in-SymPy%E2%80%99s-Continuum-Mechanics",
+        "score": 0.25
+      },
+      {
+        "year": 2025,
+        "org": "SymPy",
+        "title": "FLINT-Backed Multivariate Polynomials in SymPy",
+        "summary": "SymPy currently lacks an efficient backend for dense and sparse multivariate polynomials over ℤ and ℚ, leading to performance bottlenecks in many...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/LP8TlBsJ",
+        "code_url": "https://github.com/sympy/sympy/wiki/GSoC'25-Final-Work-Report-by-Aasim-Ali:-FLINT%E2%80%90Backed-Multivariate-Polynomials-in-SymPy",
+        "score": 0.25
+      },
+      {
+        "year": 2025,
+        "org": "SymPy",
+        "title": "Implementing a Domain for Formal Power Series in SymPy",
+        "summary": "This project implements a domain system for formal power series in SymPy, enhancing the ring_series module with PowerSeriesRing (Domain),...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/8VslkGZ9",
+        "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Report-Jatin-Bhardwaj:-%22A-New-Power-Series-Ring-Module-for-SymPy%22",
+        "score": 0.25
+      },
+      {
+        "year": 2025,
+        "org": "SymPy",
+        "title": "Improving Relational Reasoning and Introducing Quantifier Support in SymPy's Assumptions Framework",
+        "summary": "This GSoC project focuses on strengthening SymPy's assumptions system through a two-fold approach. The first component targets relational reasoning...",
+        "project_url": "https://summerofcode.withgoogle.com/programs/2025/projects/yUxTkz46",
+        "code_url": "https://github.com/sympy/sympy/wiki/GSoC-2025-Final-Report-%E2%80%93-Krishnav-Bajoria-:-Extending-the-Assumptions-Module-and-Integrating-an-EUF-Theory-Solver",
+        "score": 0.25
+      }
+    ]
+  }
+}

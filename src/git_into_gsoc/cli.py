@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import json
+import re
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 import typer
 from rich.console import Console
-from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -66,11 +66,36 @@ def _toolkit() -> GSoCToolkit:
     return GSoCToolkit()
 
 
+# Rich reads "[...]" as markup. Text from issues, ideas pages, CONTRIBUTING files, labels,
+# and the user's own notes must print literally: an unescaped "[x]" vanishes and an
+# unescaped "[/]" raises MarkupError. Same pattern as rich.markup.escape, but idempotent,
+# so escaping data once up front and again at a call site never shows a backslash.
+_MARKUP_TAG = re.compile(r"(?<!\\)(\[[a-z#/@][^\[\]]*\])")
+
+
+def escape(text: str) -> str:
+    escaped = _MARKUP_TAG.sub(r"\\\1", text)
+    if escaped.endswith("\\") and not escaped.endswith("\\\\"):
+        escaped += "\\"  # a trailing backslash would otherwise escape the next tag
+    return escaped
+
+
+def _markup_safe(value: Any) -> Any:
+    """Escape every string in command output before rich rendering (never for JSON)."""
+    if isinstance(value, str):
+        return escape(value)
+    if isinstance(value, dict):
+        return {k: _markup_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_markup_safe(v) for v in value]
+    return value
+
+
 def _emit(data: object, output: Output) -> None:
     if output == Output.json:
         console.print_json(json.dumps(data, default=str))
     else:
-        console.print(data)
+        console.print(data, markup=False)
 
 
 def _version_callback(value: bool) -> None:
@@ -120,6 +145,7 @@ def program_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     phase = data["phase"]
     badge = "[green]official[/green]" if data["dates_are_official"] else "[yellow]estimate[/yellow]"
     console.print(
@@ -196,6 +222,7 @@ def orgs_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     catalog = data["catalog"]
     table = Table(title="GSoC organizations", caption=catalog["note"], show_lines=False)
     table.add_column("Score", justify="right")
@@ -240,6 +267,7 @@ def org_cmd(
     if output == Output.json or not data.get("found"):
         _emit(data, Output.json)
         return
+    data = _markup_safe(data)
     org = data["organization"]
     lines = [f"[bold]{org['name']}[/bold]", org["description"]]
     for label, key in (
@@ -285,6 +313,7 @@ def projects_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     table = Table(title="Past accepted projects", caption=data["note"])
     table.add_column("Year")
     table.add_column("Organization", overflow="fold", max_width=26)
@@ -320,6 +349,7 @@ def ideas_cmd(
     if output == Output.json or not data.get("found"):
         _emit(data, Output.json)
         return
+    data = _markup_safe(data)
     lines = [f"[bold]{escape(data['org'])}[/bold]", f"Ideas page: {data['ideas_url']}"]
     if data.get("fetched_url") and data["fetched_url"] != data["ideas_url"]:
         lines.append(f"[dim]Read as: {data['fetched_url']}[/dim]")
@@ -378,6 +408,7 @@ def mentors_cmd(
     if output == Output.json or not data.get("found"):
         _emit(data, Output.json)
         return
+    data = _markup_safe(data)
     per_year = ", ".join(f"{y}: {n}" for y, n in data["mentors_per_year"].items())
     console.print(
         Panel(
@@ -431,6 +462,7 @@ def repos_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     caption = (
         "Ideas page read: repos it names are boosted."
         if data["ideas_page_read"]
@@ -468,6 +500,7 @@ def repo_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     health = data["health"]
     guide = data["contribution_guide"]
     console.print(
@@ -523,6 +556,7 @@ def orient_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     if codetour is not None:
         console.print(f"Wrote the CodeTour file to {codetour}", soft_wrap=True)
     langs = ", ".join(f"{x['name']} {x['share']}%" for x in data["languages"]) or "unknown"
@@ -662,6 +696,7 @@ def issues_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     table = Table(title="Beginner-friendly issues", caption=data["note"])
     table.add_column("Score", justify="right")
     table.add_column("Status")
@@ -700,6 +735,7 @@ def issue_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     assessment = data["assessment"]
     style = _STATUS_STYLE.get(data["availability"], "")
     lines = [
@@ -752,6 +788,7 @@ def profile_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     if not data:
         console.print(
             "No profile saved yet. Example:\n"
@@ -788,6 +825,7 @@ def pointers_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     issue = data["issue"]
     console.print(
         Panel(
@@ -866,6 +904,7 @@ def draft_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     console.print(Panel(Text(data["template"]), title=f"Draft: {data['kind']}"))
     if data.get("warning"):
         console.print(f"[yellow]![/yellow] {escape(data['warning'])}")
@@ -900,6 +939,7 @@ def recommend_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     console.print(Panel.fit(data["evidence_note"], title="Recommendations"))
     if data.get("profile"):
         console.print(
@@ -956,6 +996,7 @@ def contributions_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     counts = data["counts"]
     scope = data["scope"]
     where = scope["repo"] or ", ".join(scope["github_owners"]) or scope["org"]
@@ -1002,6 +1043,7 @@ def proposal_cmd(
         if output == Output.json:
             _emit(data, output)
             return
+        data = _markup_safe(data)
         console.print("[bold]Checklist[/bold]")
         for item in data["checklist"]:
             console.print(f"☐ {item['title']}: {item['description']}")
@@ -1019,6 +1061,7 @@ def proposal_cmd(
     if output == Output.json:
         _emit(report, output)
         return
+    report = _markup_safe(report)
     table = Table(title=f"Proposal check: {file.name} ({report['word_count']} words)")
     table.add_column("")
     table.add_column("Check")
@@ -1080,6 +1123,7 @@ def journey_cmd(output: Output = OUTPUT_OPTION) -> None:
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     phases = data["phases"]
     assert isinstance(phases, dict)
     for phase, guide in phases.items():
@@ -1102,6 +1146,7 @@ def next_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    data = _markup_safe(data)
     program = data["program"]
     badge = (
         "[green]official[/green]" if program["dates_are_official"] else "[yellow]estimate[/yellow]"
