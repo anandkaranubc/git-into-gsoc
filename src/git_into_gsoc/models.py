@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
@@ -204,6 +204,21 @@ class ProposalChecklistItem(BaseModel):
     done: bool = False
 
 
+class LogEntry(BaseModel):
+    """One weekly note: the structure mentors expect in progress updates."""
+
+    at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    goal: str = ""
+    done: str = ""
+    links: list[str] = Field(default_factory=list)
+    learned: str = ""
+    stuck: str = ""
+    next_step: str = ""
+
+    def is_empty(self) -> bool:
+        return not any([self.goal, self.done, self.links, self.learned, self.stuck, self.next_step])
+
+
 class ProgressState(BaseModel):
     version: int = 1
     target_year: int = 2027
@@ -216,6 +231,7 @@ class ProgressState(BaseModel):
     notes: list[str] = Field(default_factory=list)
     issue_status: dict[str, str] = Field(default_factory=dict)
     last_checked_at: datetime | None = None
+    weekly_log: list[LogEntry] = Field(default_factory=list)
     updated_at: datetime | None = None
 
 

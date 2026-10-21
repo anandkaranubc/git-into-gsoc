@@ -14,6 +14,8 @@ from mcp.types import ToolAnnotations
 from git_into_gsoc import __version__
 from git_into_gsoc.config import PROJECT_URL
 from git_into_gsoc.errors import GigError
+from git_into_gsoc.guidance import journey_overview
+from git_into_gsoc.models import JourneyPhase, LogEntry
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, OFFICIAL_SOURCES, journey_overview
 from git_into_gsoc.models import JourneyPhase
 from git_into_gsoc.service import GSoCToolkit
@@ -350,6 +352,38 @@ def gsoc_next(year: int = 0, recheck: bool = True) -> str:
     recheck=False skips the live GitHub checks.
     """
     return _dump(toolkit().next_steps(year=year or None, recheck=recheck))
+
+
+@mcp.tool()
+def gsoc_log(
+    goal: str = "",
+    done: str = "",
+    links: str = "",
+    learned: str = "",
+    stuck: str = "",
+    next_step: str = "",
+    limit: int = 5,
+) -> str:
+    """Write the contributor's weekly note (goal, what happened, links, learned, stuck, next
+    step), or list recent notes when every field is empty. Notes stay local; they feed the
+    `gsoc_next` reminder and give the contributor material for proposals and mentor updates.
+    links: comma-separated URLs. Ask the user for their own words; never invent progress.
+    """
+    store = toolkit().progress
+    entry = LogEntry(
+        goal=goal.strip(),
+        done=done.strip(),
+        links=split_csv(links),
+        learned=learned.strip(),
+        stuck=stuck.strip(),
+        next_step=next_step.strip(),
+    )
+    if entry.is_empty():
+        return _dump([e.model_dump(mode="json") for e in store.recent_logs(limit=limit)])
+    store.add_log(entry)
+    return _dump(
+        {"saved": entry.model_dump(mode="json"), "total_notes": len(store.load().weekly_log)}
+    )
 
 
 @mcp.tool()

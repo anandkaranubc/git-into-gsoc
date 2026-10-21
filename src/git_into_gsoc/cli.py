@@ -18,6 +18,7 @@ from typer.core import TyperGroup
 from git_into_gsoc import __version__
 from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, journey_overview
+from git_into_gsoc.models import LogEntry
 from git_into_gsoc.service import GSoCToolkit
 from git_into_gsoc.validation import split_csv
 
@@ -782,6 +783,60 @@ def next_cmd(
         console.print(f"     [cyan]{escape(action['command'])}[/cyan]")
         console.print(f"     [dim]{escape(action['why'])}[/dim]")
     console.print(f"\n[dim]{data['note']}[/dim]")
+
+
+@app.command("log")
+def log_cmd(
+    goal: str | None = typer.Option(None, "--goal", help="This week's goal"),
+    done: str | None = typer.Option(None, "--done", help="What you tried or finished"),
+    links: str | None = typer.Option(None, "--links", help="Links to work, comma-separated"),
+    learned: str | None = typer.Option(None, "--learned", help="What you learned"),
+    stuck: str | None = typer.Option(None, "--stuck", help="Where you are stuck"),
+    next_step: str | None = typer.Option(None, "--next", help="Your next small step"),
+    limit: int = typer.Option(5, "--limit", "-n", help="How many past notes to show"),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Write a weekly note, or show recent ones when you give no fields."""
+    store = _toolkit().progress
+    if any([goal, done, links, learned, stuck, next_step]):
+        entry = LogEntry(
+            goal=(goal or "").strip(),
+            done=(done or "").strip(),
+            links=split_csv(links),
+            learned=(learned or "").strip(),
+            stuck=(stuck or "").strip(),
+            next_step=(next_step or "").strip(),
+        )
+        store.add_log(entry)
+        entries = [entry]
+        title = "Saved this note"
+    else:
+        entries = store.recent_logs(limit=limit)
+        title = f"Last {len(entries)} note(s)"
+    if output == Output.json:
+        _emit([e.model_dump(mode="json") for e in entries], output)
+        return
+    if not entries:
+        console.print(
+            "No notes yet. Example:\n"
+            '  git-into-gsoc log --goal "Reproduce issue 12" --done "Reproduced on main" '
+            '--stuck "Flaky test" --next "Ask in the project chat"'
+        )
+        return
+    console.print(f"[bold]{title}[/bold]")
+    for entry in entries:
+        lines = []
+        for label, value in (
+            ("Goal", entry.goal),
+            ("Done", entry.done),
+            ("Links", ", ".join(entry.links)),
+            ("Learned", entry.learned),
+            ("Stuck", entry.stuck),
+            ("Next", entry.next_step),
+        ):
+            if value:
+                lines.append(f"{label}: {escape(value)}")
+        console.print(Panel(Text.from_markup("\n".join(lines)), title=f"{entry.at:%Y-%m-%d}"))
 
 
 @app.command("mcp")

@@ -8,7 +8,7 @@ from typing import Any
 
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, progress_path
 from git_into_gsoc.errors import InputError
-from git_into_gsoc.models import JourneyPhase, ProgressState
+from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
 
@@ -73,6 +73,20 @@ class ProgressStore:
         state.last_checked_at = at
         return self.save(state)
 
+    def add_log(self, entry: LogEntry) -> ProgressState:
+        if entry.is_empty():
+            raise InputError(
+                "Nothing to save: the note is empty.",
+                hint="Give at least one of --goal, --done, --links, --learned, --stuck, --next.",
+            )
+        state = self.load()
+        state.weekly_log.append(entry)
+        return self.save(state)
+
+    def recent_logs(self, limit: int = 5) -> list[LogEntry]:
+        entries = sorted(self.load().weekly_log, key=lambda e: e.at, reverse=True)
+        return entries[: max(1, limit)]
+
     def shortlist_org(self, name: str) -> ProgressState:
         name = _require(name, "organization name")
         state = self.load()
@@ -110,7 +124,10 @@ class ProgressStore:
         done = sum(1 for v in state.phases.values() if v)
         total = len(state.phases)
         next_phases = [k for k, v in state.phases.items() if not v]
+        last_log = max((e.at for e in state.weekly_log), default=None)
         return {
+            "log_entries": len(state.weekly_log),
+            "last_log_days_ago": (datetime.now(UTC) - last_log).days if last_log else None,
             "target_year": state.target_year,
             "completion": f"{done}/{total}",
             "percent": round(100.0 * done / total, 1) if total else 0.0,

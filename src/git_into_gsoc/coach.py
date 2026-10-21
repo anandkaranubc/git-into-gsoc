@@ -15,6 +15,8 @@ DEADLINE_HORIZON_DAYS = 45
 SOON_DAYS = 14
 PROPOSAL_PHASES = {"org_exploration", "proposal_window", "proposal_review"}
 PROPOSAL_KEYS = {"contributor_proposals_open", "proposal_deadline"}
+LOG_REMINDER_DAYS = 7
+ACTIVE_PHASES = {"community_bonding", "coding"}
 
 
 def _action(title: str, command: str, why: str) -> dict[str, str]:
@@ -135,6 +137,18 @@ def plan_actions(
                 f"{len(new_issues)} new beginner issue(s) appeared since your last check",
                 f"git-into-gsoc issue {newest['repo']}#{newest['number']}",
                 "New issues have no competition yet; check availability before commenting.",
+            )
+        )
+
+    last_log = max((entry.at for entry in state.weekly_log), default=None)
+    contributing = bool(repos or tracked_issues) or phase_id in ACTIVE_PHASES
+    log_due = last_log is None or (now - last_log).days >= LOG_REMINDER_DAYS
+    if contributing and log_due:
+        actions.append(
+            _action(
+                "Write this week's note: goal, what happened, links, what is stuck",
+                'git-into-gsoc log --goal "..." --done "..." --links URL --stuck "..." --next "..."',
+                "A short weekly record is what mentors ask for and what your proposal draws on.",
             )
         )
 
