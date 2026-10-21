@@ -2,18 +2,32 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
 from git_into_gsoc.errors import GigError
 from git_into_gsoc.github.client import GitHubClient
+from git_into_gsoc.github.repos import mentioned_repos, repo_lead_score
 from git_into_gsoc.gsoc.client import GSoCClient
+from git_into_gsoc.gsoc.ideas import fetch_ideas_text
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
+from git_into_gsoc.models import RepoLead
 from git_into_gsoc.progress.store import ProgressStore
-from git_into_gsoc.validation import parse_issue_ref
+from git_into_gsoc.validation import parse_issue_ref, validate_login
+
+
+def _parse_iso(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
+    except ValueError:
+        return None
+
 
 BEFORE_YOU_COMMENT = [
     "Read the whole thread and any linked PRs first.",
@@ -133,6 +147,71 @@ class GSoCToolkit:
             + ". Use --scope all to search every repository."
         )
         return owner_names, shortlist, note
+
+    def discover_repos(
+        self,
+        org: str,
+        *,
+        language: str | None = None,
+        limit: int = 10,
+        year: int | None = None,
+    ) -> dict[str, Any]:
+        """Rank an org's repositories for a first contribution.
+
+        `org` may be a GSoC org name (resolved to its GitHub orgs and ideas page)
+        or a GitHub login.
+        """
+        gsoc_org = self.gsoc.get_organization(org, year=year)
+        owners = list((gsoc_org.github_orgs if gsoc_org else [])[:3])
+        if not owners:
+            owners = [validate_login(org, kind="GitHub org/user or GSoC org name")]
+        ideas_url = gsoc_org.ideas_url if gsoc_org else None
+        ideas = fetch_ideas_text(self.http, ideas_url, self.settings.archive_ttl_seconds)
+
+        cutoff = datetime.now(UTC) - timedelta(days=365)
+        leads: list[RepoLead] = []
+        for owner in owners:
+            repos = [
+                r
+                for r in self.github.list_owner_repos(owner)
+                if not r.get("archived")
+                and not r.get("fork")
+                and r.get("has_issues", True)
+                and (_parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
+            ]
+            counts = self.github.beginner_issue_counts(owner) if repos else {}
+            mentioned = mentioned_repos(ideas, [owner], repos) if ideas else set()
+            for repo in repos:
+                full = str(repo.get("full_name"))
+                beginner = counts.get(full.lower(), 0)
+                in_ideas = full.lower() in mentioned
+                score, reasons = repo_lead_score(
+                    repo, beginner_issues=beginner, ideas_mention=in_ideas, language=language
+                )
+                leads.append(
+                    RepoLead(
+                        full_name=full,
+                        url=str(repo.get("html_url")),
+                        description=repo.get("description"),
+                        language=repo.get("language"),
+                        stars=int(repo.get("stargazers_count") or 0),
+                        pushed_at=_parse_iso(repo.get("pushed_at")),
+                        open_beginner_issues=beginner,
+                        ideas_mention=in_ideas,
+                        score=score,
+                        reasons=reasons,
+                    )
+                )
+        leads.sort(key=lambda lead: (-lead.score, -lead.stars))
+        return {
+            "org": gsoc_org.name if gsoc_org else owners[0],
+            "github_owners": owners,
+            "ideas_url": ideas_url,
+            "ideas_page_read": bool(ideas),
+            "count": min(limit, len(leads)),
+            "repos": [lead.model_dump(mode="json") for lead in leads[:limit]],
+            "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
+        }
 
     def find_issues(
         self,

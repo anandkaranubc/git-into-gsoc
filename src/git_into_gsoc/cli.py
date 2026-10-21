@@ -267,29 +267,62 @@ def projects_cmd(
     console.print(table)
 
 
+@app.command("repos")
+def repos_cmd(
+    org: str = typer.Argument(..., help="GSoC org name (e.g. 'GNU Radio') or GitHub login"),
+    language: str | None = typer.Option(None, "--language", "-l", help="Prefer this language"),
+    limit: int = typer.Option(10, "--limit", "-n"),
+    output: Output = Output.rich,
+) -> None:
+    """Rank an org's repositories: ideas-page mentions, open beginner issues, activity."""
+    data = _toolkit().discover_repos(org, language=language, limit=limit)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    caption = (
+        "Ideas page read: repos it names are boosted."
+        if data["ideas_page_read"]
+        else "Ideas page not readable; ranking uses activity and beginner issues."
+    )
+    table = Table(
+        title=f"{data['org']} repositories ({', '.join(data['github_owners'])})", caption=caption
+    )
+    table.add_column("Score", justify="right")
+    table.add_column("Repository", overflow="fold")
+    table.add_column("Why", overflow="fold")
+    for repo in data["repos"]:
+        table.add_row(f"{repo['score']:.0f}", repo["full_name"], "; ".join(repo["reasons"]) or "—")
+    console.print(table)
+    console.print(f"[dim]{data['next_step']}[/dim]")
+
+
 @app.command("repo")
 def repo_cmd(full_name: str, output: Output = Output.rich) -> None:
-    """Evaluate repository health for contributors."""
+    """Will a newcomer's PR land here? Health grade, merge behaviour, and setup path."""
     data = _toolkit().evaluate_repo(full_name)
     if output == Output.json:
         _emit(data, output)
         return
     health = data["health"]
+    guide = data["contribution_guide"]
     console.print(
         Panel.fit(
-            f"[bold]{health['full_name']}[/bold]  grade={health['grade']}  "
-            f"score={health['health_score']}\n{data['recommendation']}",
+            f"[bold]{health['full_name']}[/bold]  grade [bold]{health['grade']}[/bold]  "
+            f"({health['health_score']:.0f}/100)\n{data['recommendation']}",
             title="Repo health",
         )
     )
-    if health.get("signals"):
-        console.print("[green]Signals[/green]")
-        for s in health["signals"]:
-            console.print(f"  ✓ {s}")
-    if health.get("warnings"):
-        console.print("[yellow]Warnings[/yellow]")
-        for w in health["warnings"]:
-            console.print(f"  ! {w}")
+    for signal in health.get("signals") or []:
+        console.print(f"  [green]✓[/green] {signal}")
+    for warning in health.get("warnings") or []:
+        console.print(f"  [yellow]![/yellow] {warning}")
+    console.print("\n[bold]Getting set up[/bold]")
+    for hint in guide.get("setup_hints") or []:
+        console.print(f"  • {hint}")
+    if guide.get("contributing_url"):
+        console.print(f"  • Read first: {guide['contributing_url']}")
+    if guide.get("communication_channels"):
+        console.print(f"  • Channels mentioned: {', '.join(guide['communication_channels'])}")
 
 
 class Scope(StrEnum):

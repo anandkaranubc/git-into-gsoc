@@ -114,11 +114,23 @@ def gsoc_past_projects(query: str = "", org: str = "", since: int = 0, limit: in
 
 @mcp.tool()
 def gsoc_evaluate_repo(full_name: str) -> str:
-    """Evaluate a GitHub repository's health and contributor-friendliness.
+    """Will a newcomer's PR land here? Health grade (A-F) with signals and warnings:
+    activity, CONTRIBUTING/CoC/templates, CI, open beginner issues, bot-free merge rate,
+    outside-contributor merge rate, review speed; plus toolchain/dev-container setup hints.
 
-    full_name: owner/repo (e.g. sympy/sympy)
+    full_name: owner/repo or a GitHub URL (e.g. sympy/sympy)
     """
     return _dump(toolkit().evaluate_repo(full_name))
+
+
+@mcp.tool()
+def gsoc_discover_repos(org: str, language: str = "", limit: int = 10) -> str:
+    """Rank a mentoring org's GitHub repositories for a first contribution.
+
+    org: GSoC org name ("GNU Radio") or GitHub login. Repos named on the org's ideas page,
+    with open good-first-issues, recent pushes, and the preferred `language` rank highest.
+    """
+    return _dump(toolkit().discover_repos(org, language=language or None, limit=limit))
 
 
 @mcp.tool()
