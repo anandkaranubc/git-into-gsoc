@@ -1,0 +1,98 @@
+"""Validation and parsing for GitHub identifiers.
+
+Everything that ends up in an API path or a search query passes through here so
+user (or model) input cannot traverse to other endpoints or inject qualifiers.
+"""
+
+from __future__ import annotations
+
+import re
+from urllib.parse import urlparse
+
+from git_into_gsoc.errors import InputError
+
+_LOGIN_RE = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$")
+_REPO_RE = re.compile(r"^[A-Za-z0-9._-]{1,100}$")
+_SEARCH_TERM_RE = re.compile(r"[^\w+#.\- ]", flags=re.UNICODE)
+_GITHUB_HOSTS = {"github.com", "www.github.com"}
+
+
+def validate_login(value: str, *, kind: str = "GitHub user/org") -> str:
+    login = (value or "").strip().lstrip("@")
+    if not _LOGIN_RE.match(login):
+        raise InputError(
+            f"Invalid {kind}: {value!r}",
+            hint="Use the GitHub handle only, e.g. `octocat` or `sympy`.",
+        )
+    return login
+
+
+def _split_github_path(value: str) -> list[str]:
+    raw = value.strip()
+    if raw.startswith(("http://", "https://")) or raw.startswith(tuple(_GITHUB_HOSTS)):
+        parsed = urlparse(raw if "://" in raw else f"https://{raw}")
+        if parsed.netloc.lower() not in _GITHUB_HOSTS:
+            raise InputError(f"Not a github.com URL: {value!r}")
+        return [p for p in parsed.path.split("/") if p]
+    return [p for p in raw.split("/") if p]
+
+
+def parse_repo(value: str) -> tuple[str, str]:
+    """Parse `owner/repo` or a GitHub URL into a validated (owner, repo) pair."""
+    parts = _split_github_path(value or "")
+    if len(parts) < 2:
+        raise InputError(
+            f"Repository must look like owner/repo, got {value!r}",
+            hint="Example: sympy/sympy or https://github.com/sympy/sympy",
+        )
+    owner = validate_login(parts[0], kind="repository owner")
+    repo = parts[1].removesuffix(".git")
+    if not _REPO_RE.match(repo) or repo in {".", ".."}:
+        raise InputError(f"Invalid repository name: {parts[1]!r}")
+    return owner, repo
+
+
+def parse_issue_ref(value: str, number: int | None = None) -> tuple[str, str, int]:
+    """Parse `owner/repo#123`, `owner/repo 123`, or an issue/PR URL."""
+    raw = (value or "").strip()
+    if number is None and "#" in raw:
+        repo_part, _, num = raw.partition("#")
+        owner, repo = parse_repo(repo_part)
+        return owner, repo, _parse_number(num)
+    parts = _split_github_path(raw)
+    if number is None and len(parts) >= 4 and parts[2] in {"issues", "pull"}:
+        owner, repo = parse_repo("/".join(parts[:2]))
+        return owner, repo, _parse_number(parts[3])
+    owner, repo = parse_repo(raw)
+    if number is None:
+        raise InputError(
+            f"Missing issue number for {value!r}",
+            hint="Use owner/repo#123, an issue URL, or pass the number separately.",
+        )
+    return owner, repo, _parse_number(str(number))
+
+
+def _parse_number(value: str) -> int:
+    try:
+        num = int(value.strip())
+    except ValueError as exc:
+        raise InputError(f"Invalid issue number: {value!r}") from exc
+    if num <= 0:
+        raise InputError(f"Issue number must be positive, got {num}")
+    return num
+
+
+def search_term(value: str) -> str:
+    """Make free text safe to embed in a GitHub search qualifier value."""
+    cleaned = _SEARCH_TERM_RE.sub(" ", value or "")
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    if not cleaned:
+        raise InputError(f"Empty or invalid search term: {value!r}")
+    return f'"{cleaned}"' if " " in cleaned else cleaned
+
+
+def split_csv(value: str | list[str] | None) -> list[str]:
+    if value is None:
+        return []
+    items = value if isinstance(value, list) else value.split(",")
+    return [item.strip() for item in items if item and item.strip()]

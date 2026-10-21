@@ -8,10 +8,11 @@ from typing import Any
 from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
-from git_into_gsoc.http_client import CachedHttpClient, HttpError
+from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import Availability, ContributionGuide, IssueCandidate, RepoHealth
 from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
+from git_into_gsoc.validation import parse_repo, search_term, validate_login
 
 BEGINNER_LABELS = (
     "good first issue",
@@ -76,9 +77,20 @@ class GitHubClient:
             headers["Authorization"] = f"Bearer {self.token}"
         return headers
 
-    def _api(self, path: str, params: dict[str, Any] | None = None) -> Any:
-        url = f"{self.settings.github_api_url.rstrip('/')}/{path.lstrip('/')}"
-        return self.http.get_json(url, headers=self._headers(), params=params)
+    def _api(
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+        *,
+        ttl: int | None = None,
+        use_cache: bool = True,
+        accept: str | None = None,
+    ) -> Any:
+        url = f"{self.settings.github_api_url.rstrip('/')}/{quote(path.lstrip('/'), safe='/')}"
+        headers = self._headers()
+        if accept:
+            headers["Accept"] = accept
+        return self.http.get_json(url, headers=headers, params=params, ttl=ttl, use_cache=use_cache)
 
     def rate_limit(self) -> dict[str, Any]:
         data = self._api("rate_limit")
@@ -91,16 +103,17 @@ class GitHubClient:
         }
 
     def get_repo(self, owner: str, repo: str) -> dict[str, Any]:
+        owner, repo = parse_repo(f"{owner}/{repo}")
         data = self._api(f"repos/{owner}/{repo}")
         return data if isinstance(data, dict) else {}
 
     def get_user(self, username: str) -> dict[str, Any]:
-        data = self._api(f"users/{username}")
+        data = self._api(f"users/{validate_login(username)}")
         return data if isinstance(data, dict) else {}
 
     def list_user_repos(self, username: str, *, per_page: int = 30) -> list[dict[str, Any]]:
         data = self._api(
-            f"users/{username}/repos",
+            f"users/{validate_login(username)}/repos",
             params={"sort": "updated", "per_page": per_page, "type": "owner"},
         )
         return data if isinstance(data, list) else []
@@ -132,18 +145,18 @@ class GitHubClient:
         return data.get("items", []) if isinstance(data, dict) else []
 
     def get_issue(self, owner: str, repo: str, number: int) -> dict[str, Any]:
-        data = self._api(f"repos/{owner}/{repo}/issues/{number}")
+        owner, repo = parse_repo(f"{owner}/{repo}")
+        data = self._api(f"repos/{owner}/{repo}/issues/{int(number)}", ttl=300)
         return data if isinstance(data, dict) else {}
 
     def get_issue_timeline(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
-        url = (
-            f"{self.settings.github_api_url.rstrip('/')}"
-            f"/repos/{owner}/{repo}/issues/{number}/timeline"
-        )
-        headers = self._headers()
-        headers["Accept"] = "application/vnd.github+json"
+        owner, repo = parse_repo(f"{owner}/{repo}")
         try:
-            data = self.http.get_json(url, headers=headers, use_cache=False)
+            data = self._api(
+                f"repos/{owner}/{repo}/issues/{int(number)}/timeline",
+                params={"per_page": 100},
+                ttl=300,
+            )
         except HttpError:
             return []
         return data if isinstance(data, list) else []
@@ -163,25 +176,30 @@ class GitHubClient:
         return data if isinstance(data, list) else []
 
     def contents_exists(self, owner: str, repo: str, path: str) -> bool:
+        owner, repo = parse_repo(f"{owner}/{repo}")
         try:
-            self._api(f"repos/{owner}/{repo}/contents/{quote(path)}")
+            self._api(f"repos/{owner}/{repo}/contents/{path}")
             return True
-        except HttpError as exc:
-            if exc.status_code == 404:
-                return False
+        except NotFoundError:
+            return False
+        except HttpError:
             return False
 
     def get_raw_file(self, owner: str, repo: str, path: str) -> str | None:
-        url = f"https://raw.githubusercontent.com/{owner}/{repo}/HEAD/{path}"
+        owner, repo = parse_repo(f"{owner}/{repo}")
+        url = f"{self.settings.github_api_url.rstrip('/')}/repos/{owner}/{repo}/contents/" + quote(
+            path.lstrip("/"), safe="/"
+        )
+        headers = self._headers()
+        headers["Accept"] = "application/vnd.github.raw+json"
         try:
-            return self.http.get_text(url, headers=self._headers())
+            return self.http.get_text(url, headers=headers)
         except HttpError:
             return None
 
     def repo_health(self, full_name: str) -> RepoHealth:
-        if "/" not in full_name:
-            raise ValueError("Repository must be in owner/repo form")
-        owner, repo = full_name.split("/", 1)
+        owner, repo = parse_repo(full_name)
+        full_name = f"{owner}/{repo}"
         raw = self.get_repo(owner, repo)
         has_contributing = any(
             self.contents_exists(owner, repo, p)
@@ -261,17 +279,18 @@ class GitHubClient:
         min_stars: int = 50,
     ) -> list[IssueCandidate]:
         label_terms = labels or ["good first issue", "help wanted"]
-        label_query = " ".join(f'label:"{label}"' for label in label_terms[:3])
+        label_query = " ".join(f"label:{search_term(label)}" for label in label_terms[:3])
         parts = ["is:issue", "is:open", "no:assignee", label_query]
         if language:
-            parts.append(f"language:{language}")
+            parts.append(f"language:{search_term(language)}")
         if org:
-            parts.append(f"org:{org}")
+            parts.append(f"org:{validate_login(org, kind='organization')}")
         if repo:
-            parts.append(f"repo:{repo}")
+            owner_name, repo_name = parse_repo(repo)
+            parts.append(f"repo:{owner_name}/{repo_name}")
         if topics:
             for topic in topics[:3]:
-                parts.append(f"topic:{topic}")
+                parts.append(f"topic:{search_term(topic)}")
         if min_stars > 0 and not repo:
             parts.append(f"stars:>={min_stars}")
 
@@ -317,7 +336,7 @@ class GitHubClient:
         return candidates[:max_results]
 
     def check_issue_availability(self, full_name: str, number: int) -> tuple[Availability, str]:
-        owner, repo = full_name.split("/", 1)
+        owner, repo = parse_repo(full_name)
         try:
             issue = self.get_issue(owner, repo, number)
         except HttpError as exc:
@@ -383,7 +402,8 @@ class GitHubClient:
         return Availability.AVAILABLE, "Open, unassigned, no linked open PR detected"
 
     def contribution_guide(self, full_name: str) -> ContributionGuide:
-        owner, repo = full_name.split("/", 1)
+        owner, repo = parse_repo(full_name)
+        full_name = f"{owner}/{repo}"
         contributing_path = None
         contributing_text = ""
         for path in (
