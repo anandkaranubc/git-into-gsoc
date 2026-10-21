@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from git_into_gsoc.models import Availability, IssueAssessment, IssueClaim, LinkedPullRequest
+from git_into_gsoc.text import straight_quotes
 
 MAINTAINER_ROLES = {"OWNER", "MEMBER", "COLLABORATOR"}
 # Labels projects use to mark an issue as taken, with or without an assignee.
@@ -130,16 +131,18 @@ def _is_bot(user: dict[str, Any] | None) -> bool:
 
 
 def is_claim(text: str) -> bool:
-    return bool(_CLAIM_RE.search(text or ""))
+    # "I'd like to take this one", typed with a curly apostrophe, went unseen on
+    # OWASP/SecurityShepherd#411.
+    return bool(_CLAIM_RE.search(straight_quotes(text)))
 
 
 def is_grant(text: str) -> bool:
-    return bool(_GRANT_RE.search(text or ""))
+    return bool(_GRANT_RE.search(straight_quotes(text)))
 
 
 def is_release(text: str) -> bool:
     """A comment that gives an issue back: a bot command, a withdrawal, or an auto-unassign."""
-    return bool(_RELEASE_RE.search(text or ""))
+    return bool(_RELEASE_RE.search(straight_quotes(text)))
 
 
 def _mentioned_pulls(body: str, repo: str) -> list[int]:

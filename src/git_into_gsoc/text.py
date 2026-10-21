@@ -57,6 +57,18 @@ def strip_hidden_all(value: Any) -> Any:
     return value
 
 
+# Phone keyboards and macOS type a curly apostrophe (U+2019) in "I'm"; patterns are
+# written with a straight one. Curly double quotes are folded the same way.
+_TYPOGRAPHIC = str.maketrans(
+    {"\u2019": "'", "\u2018": "'", "\u02bc": "'", "\u201c": '"', "\u201d": '"'}
+)
+
+
+def straight_quotes(text: str) -> str:
+    """Text with curly apostrophes and quotes made straight, for pattern matching."""
+    return (text or "").translate(_TYPOGRAPHIC)
+
+
 def clean_untrusted(text: str | None, *, limit: int = 400) -> str:
     """Strip hidden characters, comments and risky tags, collapse whitespace, cap length."""
     if not text:

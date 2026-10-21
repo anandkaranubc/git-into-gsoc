@@ -488,3 +488,19 @@ def test_a_closed_or_other_repo_pr_in_a_comment_does_not_count() -> None:
         issue, timeline, now=NOW, pull_lookup=lambda n: {"number": n, "state": "closed"}
     )
     assert found.availability == Availability.AVAILABLE
+
+
+C = "\u2019"  # the curly apostrophe phone keyboards type
+
+
+def test_a_claim_typed_with_a_curly_apostrophe_counts() -> None:
+    # OWASP/SecurityShepherd#411 (2026-10-21) showed as available: its only comment,
+    # "I'd like to take this one", was typed with a curly apostrophe (C).
+    assert is_claim(f"I{C}d like to take this one.")
+    assert is_claim(f"I{C}m working on this")
+    assert is_claim(f"I{C}ll take this")
+    assert is_grant(f"That{C}s fine, go ahead")
+    found = assess_issue(
+        _issue(), [_comment("aadi", f"I{C}d like to take this one. Plan: ...", 10)], now=NOW
+    )
+    assert found.availability == Availability.CLAIMED

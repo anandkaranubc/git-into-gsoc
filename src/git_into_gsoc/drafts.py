@@ -11,6 +11,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from git_into_gsoc.text import straight_quotes
+
 DRAFT_KINDS = ("intro", "question", "claim", "pr", "review-reply", "status", "final")
 
 GUIDE_FIRST_CONTACT = "https://google.github.io/gsocguides/student/making-first-contact"
@@ -188,8 +190,9 @@ _CONVENTION_PATTERNS = [
 
 def claim_convention(text: str) -> dict[str, str]:
     """How this project wants issues claimed, read from its CONTRIBUTING or templates."""
+    text = straight_quotes(text)
     for kind, pattern in _CONVENTION_PATTERNS:
-        match = pattern.search(text or "")
+        match = pattern.search(text)
         if match:
             found = match.group(1) if match.groups() else match.group(0)
             return {"kind": kind, "text": found.strip()}
@@ -509,7 +512,7 @@ def check_message(kind: str, text: str) -> dict[str, Any]:
 
     if kind not in _RENDERERS:
         raise ValueError(f"Unknown draft kind: {kind}. Choose one of {', '.join(DRAFT_KINDS)}.")
-    body = text or ""
+    body = straight_quotes(text)
     lower = body.lower()
     words = word_count(body)
     findings: list[dict[str, str]] = []

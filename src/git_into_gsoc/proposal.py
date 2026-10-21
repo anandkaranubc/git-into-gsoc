@@ -13,6 +13,8 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
+from git_into_gsoc.text import straight_quotes
+
 Status = Literal["pass", "warn", "fail"]
 
 SECTION_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -223,12 +225,12 @@ def word_count(text: str) -> int:
 
 
 def generic_phrases(text: str) -> list[str]:
-    lower = text.lower()
+    lower = straight_quotes(text).lower()  # a curly apostrophe matches too
     return [p for p in GENERIC_PHRASES if p in lower]
 
 
 def buzzwords(text: str) -> list[str]:
-    lower = text.lower()
+    lower = straight_quotes(text).lower()
     return [b for b in BUZZWORDS if b in lower]
 
 
