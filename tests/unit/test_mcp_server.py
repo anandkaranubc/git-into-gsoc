@@ -33,6 +33,8 @@ def test_mcp_server_imports_and_registers_tools() -> None:
 def test_every_tool_has_a_title_and_annotations() -> None:
     from git_into_gsoc.mcp_server import mcp
 
+    names = [t.name for t in mcp._tool_manager.list_tools()]
+    assert len(names) == len(set(names)), "a tool is registered twice"
     for tool in mcp._tool_manager.list_tools():
         assert tool.title, tool.name
         assert tool.annotations is not None, tool.name

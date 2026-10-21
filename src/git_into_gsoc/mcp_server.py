@@ -258,7 +258,6 @@ def gsoc_orient_repo(full_name: str) -> str:
     return _call(toolkit().orient_repo, full_name)
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(
     title="Rank an organization's repositories", annotations=READ_ONLY, structured_output=False
 )
