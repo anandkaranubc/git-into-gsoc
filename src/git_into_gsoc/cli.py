@@ -2109,9 +2109,9 @@ def setup_cmd(
     console.print(table)
     if plan.project:
         console.print(f"./ is {plan.project}")
-    console.print(f"MCP command: {' '.join(plan.command)}")
+    console.print(f"MCP command: {' '.join(plan.command)}", soft_wrap=True)
     for step in plan.manual:
-        console.print(f"  [yellow]manual:[/yellow] {step}")
+        console.print(f"  [yellow]manual:[/yellow] {step}", soft_wrap=True)
     if dry_run or remove or not plan.changes:
         return
     ready = {"created", "updated", "unchanged"}
@@ -2173,8 +2173,8 @@ def doctor_cmd() -> None:
     settings = get_settings()
     source = settings.github_token_source()
     console.print(f"git-into-gsoc {__version__}  (Python {sys.version.split()[0]})")
-    console.print(f"cache: {_writable(cache_dir, cache_location)}")
-    console.print(f"data:  {_writable(data_dir, data_location)}")
+    console.print(f"cache: {_writable(cache_dir, cache_location)}", soft_wrap=True)
+    console.print(f"data:  {_writable(data_dir, data_location)}", soft_wrap=True)
     if source:
         console.print(f"GitHub token: [green]found[/green] via {source}")
     else:
@@ -2199,7 +2199,7 @@ def doctor_cmd() -> None:
     source_dir: Path | None = None
     try:
         source_dir = skill_source()
-        console.print(f"skill source: {source_dir}")
+        console.print(f"skill source: {source_dir}", soft_wrap=True)
     except InstallError as exc:
         console.print(f"[red]skill source:[/red] {exc}")
     home, project = env_home(), Path.cwd()
