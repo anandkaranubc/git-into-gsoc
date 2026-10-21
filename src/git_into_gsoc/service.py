@@ -376,6 +376,8 @@ class GSoCToolkit:
                         reasons=reasons,
                     )
                 )
+        searched = [*owners, *(o for o, _ in linked_owners)]
+        leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
         return {
             "org": gsoc_org.name if gsoc_org else owners[0],
@@ -387,6 +389,54 @@ class GSoCToolkit:
             "repos": [lead.model_dump(mode="json") for lead in leads[:limit]],
             "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
         }
+
+    def _repos_named_on_page(
+        self, text: str, searched: list[str], *, language: str | None, limit: int = 6
+    ) -> list[RepoLead]:
+        """Organization-owned repositories an ideas page names under other GitHub owners.
+
+        Open Robotics names colcon/colcon-mixin and open-rmf/crossflow on its page,
+        outside its own openrobotics and osrf owners. A link to a person's repository
+        is usually a reference or a mentor's profile, so only organizations count.
+        """
+        skip = {o.lower() for o in searched} | _NOT_OWNERS  # already listed in full
+        named: list[str] = []
+        for match in _GITHUB_PROJECT_RE.finditer(text):
+            owner, repo = match.group(1), match.group(2)
+            if not repo or owner.lower() in skip or repo.lower() in _NOT_REPOS:
+                continue
+            full = f"{owner}/{repo.removesuffix('.git')}"
+            if full not in named:
+                named.append(full)
+        found: list[RepoLead] = []
+        for full in named[:limit]:
+            try:
+                raw = self.github.get_repo(*full.split("/", 1))
+            except GigError:
+                continue
+            if (raw.get("owner") or {}).get("type") != "Organization":
+                continue
+            if raw.get("archived") or raw.get("fork"):
+                continue
+            score, reasons = repo_lead_score(
+                raw, beginner_issues=0, ideas_mention=True, language=language
+            )
+            reasons.append("Under another GitHub owner that the ideas page links to")
+            found.append(
+                RepoLead(
+                    full_name=str(raw.get("full_name") or full),
+                    url=str(raw.get("html_url") or f"https://github.com/{full}"),
+                    description=clean_untrusted(raw.get("description"), limit=300) or None,
+                    language=raw.get("language"),
+                    stars=int(raw.get("stargazers_count") or 0),
+                    pushed_at=_parse_iso(raw.get("pushed_at")),
+                    open_beginner_issues=0,
+                    ideas_mention=True,
+                    score=score,
+                    reasons=reasons,
+                )
+            )
+        return found
 
     def find_issues(
         self,

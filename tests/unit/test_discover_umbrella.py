@@ -139,3 +139,49 @@ def test_an_org_without_github_anywhere_gets_a_clear_error() -> None:
     with pytest.raises(NotFoundError, match="lists no GitHub organization") as caught:
         _discover_without_owners("# Ideas\n\nAll our code is on https://gitlab.example.org.\n")
     assert caught.value.hint and "ideas page" in caught.value.hint
+
+
+def test_repositories_the_ideas_page_names_under_other_owners_are_ranked() -> None:
+    # Open Robotics (2026-10-21): its ideas page names colcon/colcon-mixin and
+    # open-rmf/crossflow, but `repos` listed only openrobotics/osrf repositories.
+    page = (
+        "# Ideas\n\n## Mixins\nWork in https://github.com/colcon/colcon-mixin to add mixins.\n"
+        "Mentor: https://github.com/jdoe\n"
+        "Inspired by https://github.com/someone/personal-bench (a personal repo).\n"
+    )
+
+    def repo_meta(request: httpx.Request) -> httpx.Response:
+        owner, name = request.url.path.split("/")[2:4]
+        kind = "User" if owner == "someone" else "Organization"
+        return httpx.Response(
+            200,
+            json={
+                "full_name": f"{owner}/{name}",
+                "html_url": f"https://github.com/{owner}/{name}",
+                "owner": {"login": owner, "type": kind},
+                "language": "Python",
+                "stargazers_count": 50,
+                "pushed_at": datetime.now(UTC).isoformat(),
+                "archived": False,
+                "fork": False,
+            },
+        )
+
+    with respx.mock(assert_all_called=False) as api:
+        _mock_sources(api)
+        api.get(SYMPY_RAW).mock(return_value=httpx.Response(200, text=page))
+        api.get(url__regex=r"https://api\.github\.com/orgs/[\w.-]+/repos.*").mock(
+            side_effect=_repos
+        )
+        api.get(url__regex=r"https://api\.github\.com/repos/[\w.-]+/[\w.-]+$").mock(
+            side_effect=repo_meta
+        )
+        api.get(url__regex=r"https://api\.github\.com/search/issues.*").mock(
+            return_value=httpx.Response(200, json={"total_count": 0, "items": []})
+        )
+        data = GSoCToolkit().discover_repos("SymPy", limit=10)
+    names = {r["full_name"] for r in data["repos"]}
+    assert "colcon/colcon-mixin" in names
+    assert "someone/personal-bench" not in names  # a person's repository, not a project
+    mixin = next(r for r in data["repos"] if r["full_name"] == "colcon/colcon-mixin")
+    assert any("ideas page" in reason for reason in mixin["reasons"])
