@@ -36,6 +36,8 @@ After the first publish, users can install with `uv tool install git-into-gsoc` 
 
 Merging the release pull request also starts `Release assets and MCP registry` (`.github/workflows/mcp-registry.yml`). The release workflow dispatches it with the new tag, because a release created with the built-in Actions token does not fire the `release` event. The workflow checks out the tagged source, builds the wheel and source archive with `python -m build` and the MCPB bundle with `scripts/build_mcpb.py`, and uploads all three as release assets. A **wheel** is Python's ready-to-install package file, so `uv tool install <wheel URL>` or `pipx install <wheel URL>` installs that exact release without PyPI. The workflow then rewrites `server.json` to point at the bundle and publishes with `mcp-publisher login github-oidc`. Nothing to configure.
 
+The workflow downloads a fixed `mcp-publisher` release and checks it against its published checksum before running it. To move to a newer release, change `MCP_PUBLISHER_VERSION` and `MCP_PUBLISHER_SHA256` in the workflow, taking the checksum from the `mcp-publisher_linux_amd64.tar.gz` line in that release's `registry_<version>_checksums.txt`.
+
 To rebuild the assets for a tag, run the workflow from the Actions tab with the tag name, or `gh workflow run mcp-registry.yml -f tag=v0.2.1`. When that version is already in the registry, the run refreshes the wheel and the source archive, checks that the bundle on the release still matches the checksum the registry recorded (restoring it when it is missing), and skips the publish step. The bundle is built with fixed entry times, so the same tag always gives the same bytes.
 
 ## Checks before merging a release

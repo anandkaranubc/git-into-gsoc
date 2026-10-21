@@ -36,12 +36,18 @@ jobs:
     name: Build assets and publish
     runs-on: ubuntu-latest
     steps:
+      # The tag reaches the shell as data, never as script text, and must look
+      # like vX.Y.Z before any later step uses it.
       - name: Resolve tag
-        id: tag
+        env:
+          INPUT_TAG: ${{ github.event.release.tag_name || inputs.tag }}
         run: |
-          TAG="${{ github.event.release.tag_name || inputs.tag }}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          if [[ ! "$INPUT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            printf '::error::%q is not a release tag such as v0.2.0.\n' "$INPUT_TAG"
+            exit 1
+          fi
+          echo "TAG=${INPUT_TAG}" >> "$GITHUB_ENV"
+          echo "VERSION=${INPUT_TAG#v}" >> "$GITHUB_ENV"
 
       # The workflow's own ref supplies server.json and the build script; the
       # assets are built from the tagged source so their contents match the
@@ -56,7 +62,7 @@ jobs:
           python-version: "3.12"
 
       - name: Check out the tagged source
-        run: git worktree add /tmp/tagged-source "${{ steps.tag.outputs.tag }}"
+        run: git worktree add /tmp/tagged-source "$TAG"
 
       - name: Build the wheel and source archive from the tag
         run: |
@@ -69,14 +75,13 @@ jobs:
       - name: Check that the built version matches the tag
         run: |
           ls -l dist
-          test -f "dist/git_into_gsoc-${{ steps.tag.outputs.version }}-py3-none-any.whl"
-          test -f "dist/git_into_gsoc-${{ steps.tag.outputs.version }}.tar.gz"
+          test -f "dist/git_into_gsoc-${VERSION}-py3-none-any.whl"
+          test -f "dist/git_into_gsoc-${VERSION}.tar.gz"
 
       - name: Look the version up in the registry
         id: registry
         run: |
           NAME="$(jq -r .name server.json)"
-          VERSION="${{ steps.tag.outputs.version }}"
           RECORD="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers/${NAME//\//%2F}/versions/${VERSION}" || true)"
           RECORDED_SHA="$(jq -r '.server.packages[0].fileSha256 // empty' <<<"$RECORD" 2>/dev/null || true)"
           if [ -n "$RECORDED_SHA" ]; then
@@ -90,21 +95,20 @@ jobs:
       - name: Attach the wheel and source archive to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/*.whl dist/*.tar.gz --clobber
+        run: gh release upload "$TAG" dist/*.whl dist/*.tar.gz --clobber
 
       - name: Attach the bundle to the release
         if: steps.registry.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/git-into-gsoc.mcpb --clobber
+        run: gh release upload "$TAG" dist/git-into-gsoc.mcpb --clobber
 
       - name: Check that the published bundle still matches the registry
         if: steps.registry.outputs.publish == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
+          RECORDED: ${{ steps.registry.outputs.recorded_sha }}
         run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          RECORDED="${{ steps.registry.outputs.recorded_sha }}"
           BUILT="$(openssl dgst -sha256 dist/git-into-gsoc.mcpb | awk '{print $NF}')"
           mkdir -p published
           if gh release download "$TAG" --pattern git-into-gsoc.mcpb --dir published --clobber; then
@@ -125,19 +129,28 @@ jobs:
       - name: Point server.json at the release asset
         if: steps.registry.outputs.publish == 'true'
         run: |
-          TAG="${{ steps.tag.outputs.tag }}"
-          VERSION="${{ steps.tag.outputs.version }}"
           SHA=$(openssl dgst -sha256 dist/git-into-gsoc.mcpb | awk '{print $NF}')
-          URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/git-into-gsoc.mcpb"
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/git-into-gsoc.mcpb"
           jq --arg v "$VERSION" --arg url "$URL" --arg sha "$SHA" \
             '.version = $v | .packages = [{"registryType": "mcpb", "identifier": $url, "fileSha256": $sha, "transport": {"type": "stdio"}}]' \
             server.json > server.tmp && mv server.tmp server.json
           cat server.json
 
+      # A fixed release, checked against its published checksum, because this
+      # job can publish to the registry and change the release. To update it,
+      # take the version and the linux_amd64 line from that release's
+      # registry_<version>_checksums.txt.
       - name: Install mcp-publisher
         if: steps.registry.outputs.publish == 'true'
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.1
+          MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
         run: |
-          curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
+          curl -fsSL -o mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum --check --strict
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+          ./mcp-publisher --version
 
       - name: Authenticate to the MCP registry with GitHub OIDC
         if: steps.registry.outputs.publish == 'true'
