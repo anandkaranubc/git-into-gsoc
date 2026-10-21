@@ -37,7 +37,7 @@ You do not have to install anything locally for some assistants:
 - **Gemini CLI extension**: the repository ships `gemini-extension.json`; install it from the repository URL with Gemini CLI's extension command (see [Gemini CLI's extension documentation](https://geminicli.com/docs/extensions/)).
 - **MCP registry**: clients that browse the public MCP registry can find the server as `io.github.anandkaranubc/git-into-gsoc`; every release publishes an updated entry and a bundle automatically.
 
-`setup` remains the right choice when you want the skill in a specific assistant's folder or the server registered in a project.
+`setup` remains the right choice when you want the skill in a specific assistant's folder or the server registered in a project. To undo it later, run `git-into-gsoc setup --remove` with the same `--scope` and `--assistant` options; it deletes only what setup created and leaves the rest of each config file alone.
 
 ## Doing it by hand
 

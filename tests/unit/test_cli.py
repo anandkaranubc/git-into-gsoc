@@ -120,3 +120,12 @@ def test_help_groups_commands_for_beginners() -> None:
         "Maintenance",
     ):
         assert panel in result.output, panel
+
+
+def test_cli_setup_remove_dry_run(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("GIG_HOME", str(tmp_path))
+    result = runner.invoke(
+        app, ["setup", "--remove", "--dry-run", "--assistant", "cursor", "--output", "json"]
+    )
+    assert result.exit_code == 0, result.output
+    assert '"remove": true' in result.output

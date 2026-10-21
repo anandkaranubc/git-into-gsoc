@@ -6,7 +6,7 @@ the single install path on macOS, Linux, and Windows; ``install.sh`` and
 """
 
 from git_into_gsoc.install.clients import ASSISTANTS, Assistant, Change, detect_assistants
-from git_into_gsoc.install.plan import SetupPlan, plan_setup, run_setup
+from git_into_gsoc.install.plan import SetupPlan, plan_setup, run_removal, run_setup
 from git_into_gsoc.install.skill import copy_skill, skill_source
 
 __all__ = [
@@ -17,6 +17,7 @@ __all__ = [
     "copy_skill",
     "detect_assistants",
     "plan_setup",
+    "run_removal",
     "run_setup",
     "skill_source",
 ]

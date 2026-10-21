@@ -49,6 +49,19 @@ def copy_skill(source: Path, dest: Path, *, dry_run: bool = False) -> str:
     return action
 
 
+def remove_skill(dest: Path, *, dry_run: bool = False) -> str:
+    """Delete a copied skill folder. Returns removed|unchanged."""
+    if not dest.exists() and not dest.is_symlink():
+        return "unchanged"
+    if dry_run:
+        return "removed"
+    if dest.is_symlink() or dest.is_file():
+        dest.unlink()
+    else:
+        shutil.rmtree(dest)
+    return "removed"
+
+
 def _same_tree(source: Path, dest: Path) -> bool:
     expected = {p.relative_to(source): p for p in skill_files(source)}
     try:

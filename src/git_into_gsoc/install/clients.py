@@ -44,6 +44,7 @@ class McpTarget:
     manual_hint: str = ""
     cli: tuple[str, list[str]] | None = None  # (executable, argv prefix) for user scope
     cli_check: tuple[str, list[str]] | None = None  # exits 0 when already registered
+    cli_remove: tuple[str, list[str]] | None = None  # removes the registration again
 
 
 @dataclass(frozen=True)
@@ -85,6 +86,7 @@ ASSISTANTS: dict[str, Assistant] = {
                 ["mcp", "add", "--scope", "user", "--transport", "stdio", SERVER_NAME, "--"],
             ),
             cli_check=("claude", ["mcp", "get", SERVER_NAME]),
+            cli_remove=("claude", ["mcp", "remove", "--scope", "user", SERVER_NAME]),
             manual_hint=(
                 "claude mcp add --scope user --transport stdio git-into-gsoc -- {command}"
             ),
@@ -281,6 +283,47 @@ def register_codex_toml(
     _backup(path)
     path.write_text(new_text, encoding="utf-8")
     return action, ""
+
+
+def unregister_json(path: Path, key: str, *, dry_run: bool = False) -> tuple[str, str]:
+    """Drop our server entry from a JSON config, leaving everything else untouched."""
+    if not path.exists():
+        return "unchanged", ""
+    try:
+        data = _read_json(path)
+    except (ValueError, OSError) as exc:
+        return "skipped", f"could not parse {path.name}: {exc}"
+    servers = data.get(key)
+    if not isinstance(servers, dict) or SERVER_NAME not in servers:
+        return "unchanged", ""
+    if dry_run:
+        return "removed", ""
+    servers = dict(servers)
+    del servers[SERVER_NAME]
+    data[key] = servers
+    _backup(path)
+    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return "removed", ""
+
+
+def unregister_codex_toml(path: Path, *, dry_run: bool = False) -> tuple[str, str]:
+    """Drop ``[mcp_servers.git-into-gsoc]`` from Codex's config.toml."""
+    if not path.exists():
+        return "unchanged", ""
+    existing = path.read_text(encoding="utf-8")
+    try:
+        tomllib.loads(existing)
+    except tomllib.TOMLDecodeError as exc:
+        return "skipped", f"could not parse {path.name}: {exc}"
+    if not _TOML_SECTION.search(existing):
+        return "unchanged", ""
+    if dry_run:
+        return "removed", ""
+    new_text = _TOML_SECTION.sub("", existing, count=1).rstrip("\n") + "\n"
+    tomllib.loads(new_text)
+    _backup(path)
+    path.write_text(new_text, encoding="utf-8")
+    return "removed", ""
 
 
 def registered_servers(home: Path, project: Path | None = None) -> list[tuple[str, Path]]:

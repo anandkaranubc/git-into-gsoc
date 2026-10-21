@@ -1254,10 +1254,13 @@ def setup_cmd(
     skill: bool = typer.Option(True, "--skill/--no-skill", help="Copy the Agent Skill"),
     mcp: bool = typer.Option(True, "--mcp/--no-mcp", help="Register the MCP server"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show the plan without writing"),
+    remove: bool = typer.Option(
+        False, "--remove", help="Undo: delete the skill copies and the MCP registrations"
+    ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Install the Agent Skill and register the MCP server with your AI assistants."""
-    from git_into_gsoc.install import plan_setup, run_setup
+    from git_into_gsoc.install import plan_setup, run_removal, run_setup
     from git_into_gsoc.install.clients import env_home
 
     project = (project_dir or Path.cwd()).resolve() if scope == SetupScope.project else None
@@ -1269,11 +1272,15 @@ def setup_cmd(
         install_skill=skill,
         install_mcp=mcp,
     )
-    run_setup(plan, dry_run=dry_run)
+    if remove:
+        run_removal(plan, dry_run=dry_run)
+    else:
+        run_setup(plan, dry_run=dry_run)
     if output == Output.json:
         _emit(
             {
                 "scope": plan.scope,
+                "remove": remove,
                 "root": str(plan.root),
                 "command": plan.command,
                 "assistants": [a.key for a in plan.assistants],
@@ -1298,13 +1305,20 @@ def setup_cmd(
             "[yellow]No AI assistant detected.[/yellow] Use --assistant to pick one, "
             "for example: git-into-gsoc setup --assistant claude-code"
         )
-    title = ("Plan (dry run)" if dry_run else "Setup complete") + f" · {plan.scope} scope"
+    done = "Removal complete" if remove else "Setup complete"
+    title = ("Plan (dry run)" if dry_run else done) + f" · {plan.scope} scope"
     table = Table(title=title)
     table.add_column("Assistant")
     table.add_column("What")
     table.add_column("Result")
     table.add_column("Path", overflow="fold")
-    styles = {"created": "green", "updated": "green", "unchanged": "dim", "skipped": "yellow"}
+    styles = {
+        "created": "green",
+        "updated": "green",
+        "removed": "green",
+        "unchanged": "dim",
+        "skipped": "yellow",
+    }
     for change in plan.changes:
         result = change.action + (f" ({change.note})" if change.note else "")
         table.add_row(
@@ -1321,7 +1335,7 @@ def setup_cmd(
     console.print(f"MCP command: {' '.join(plan.command)}")
     for step in plan.manual:
         console.print(f"  [yellow]manual:[/yellow] {step}")
-    if not dry_run and plan.changes:
+    if not dry_run and plan.changes and not remove:
         console.print(
             "\nRestart your assistant, then ask it: "
             '"Use the git-into-gsoc skill and call gsoc_program_info."'

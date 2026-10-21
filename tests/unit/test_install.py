@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from git_into_gsoc.errors import GigError
-from git_into_gsoc.install import copy_skill, plan_setup, run_setup, skill_source
+from git_into_gsoc.install import copy_skill, plan_setup, run_removal, run_setup, skill_source
 from git_into_gsoc.install.clients import (
     SERVER_NAME,
     installed_skills,
@@ -169,3 +169,38 @@ def test_run_setup_project_scope_writes_into_project(tmp_path: Path) -> None:
     assert (project / ".claude/skills/git-into-gsoc/SKILL.md").is_file()
     assert not (project / ".codeium").exists()  # windsurf has no project scope
     assert not any(home.iterdir())
+
+
+def test_removal_undoes_setup_and_keeps_other_entries(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / ".cursor").mkdir()
+    (home / ".cursor" / "mcp.json").write_text(
+        json.dumps({"mcpServers": {"other": {"command": "x"}}}), encoding="utf-8"
+    )
+    (home / ".codex").mkdir()
+    (home / ".codex" / "config.toml").write_text('model = "o3"\n', encoding="utf-8")
+    plan = plan_setup(
+        scope="user",
+        assistants=["cursor", "codex", "gemini"],
+        home=home,
+        project=None,
+        command=CMD,
+        use_cli=False,
+    )
+    run_setup(plan)
+    assert (home / ".cursor/skills/git-into-gsoc/SKILL.md").is_file()
+    run_removal(plan, dry_run=True)
+    assert (home / ".cursor/skills/git-into-gsoc/SKILL.md").is_file()  # dry run touches nothing
+    run_removal(plan)
+    actions = {(c.assistant, c.kind): c.action for c in plan.changes}
+    assert actions[("Cursor", "skill")] == "removed" and actions[("Cursor", "mcp")] == "removed"
+    assert actions[("Codex CLI", "mcp")] == "removed"
+    assert not (home / ".cursor/skills/git-into-gsoc").exists()
+    cursor = json.loads((home / ".cursor/mcp.json").read_text(encoding="utf-8"))
+    assert cursor["mcpServers"] == {"other": {"command": "x"}}
+    codex = tomllib.loads((home / ".codex/config.toml").read_text(encoding="utf-8"))
+    assert codex == {"model": "o3"}
+    assert registered_servers(home) == []
+    run_removal(plan)
+    assert {c.action for c in plan.changes} == {"unchanged"}

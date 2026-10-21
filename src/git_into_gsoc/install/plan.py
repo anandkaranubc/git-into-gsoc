@@ -18,8 +18,10 @@ from git_into_gsoc.install.clients import (
     register_via_cli,
     server_command,
     server_entry,
+    unregister_codex_toml,
+    unregister_json,
 )
-from git_into_gsoc.install.skill import InstallError, copy_skill, skill_source
+from git_into_gsoc.install.skill import InstallError, copy_skill, remove_skill, skill_source
 
 
 @dataclass
@@ -102,6 +104,49 @@ def run_setup(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
         for assistant in plan.assistants:
             plan.changes.append(_register(plan, assistant, dry_run=dry_run))
     return plan
+
+
+def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
+    """Undo what run_setup did for the same scope and assistants."""
+    plan.changes = []
+    plan.manual = []
+    if plan.install_skill:
+        for assistant in [ASSISTANTS["agents"], *plan.assistants]:
+            dest = plan.root / assistant.skill_dir / SERVER_NAME
+            plan.changes.append(
+                Change(assistant.label, "skill", dest, remove_skill(dest, dry_run=dry_run))
+            )
+    if plan.install_mcp:
+        for assistant in plan.assistants:
+            plan.changes.append(_unregister(plan, assistant, dry_run=dry_run))
+    return plan
+
+
+def _unregister(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change:
+    target = assistant.mcp
+    if target is None:
+        return Change(assistant.label, "mcp", plan.root, "unchanged", "no MCP support")
+    rel = target.project_path if plan.scope == "project" else target.user_path
+    if rel is None:
+        if plan.scope == "user" and target.cli_remove and plan.use_cli:
+            executable = shutil.which(target.cli_remove[0])
+            if executable and plan.home.resolve() == Path.home().resolve():
+                if dry_run:
+                    return Change(assistant.label, "mcp", Path(executable), "removed", "via cli")
+                ok, output = register_via_cli(executable, target.cli_remove[1])
+                note = "via cli" if ok else f"cli reported: {output[-120:]}"
+                return Change(
+                    assistant.label, "mcp", Path(executable), "removed" if ok else "unchanged", note
+                )
+        plan.manual.append(f"{assistant.label}: remove the server named {SERVER_NAME} by hand")
+        return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
+    path = plan.root / rel
+    if target.fmt == "toml-codex":
+        action, note = unregister_codex_toml(path, dry_run=dry_run)
+    else:
+        key = "servers" if target.fmt == "json-servers" else "mcpServers"
+        action, note = unregister_json(path, key, dry_run=dry_run)
+    return Change(assistant.label, "mcp", path, action, note)
 
 
 def _register(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change:
