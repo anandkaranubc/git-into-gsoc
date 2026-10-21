@@ -1,7 +1,8 @@
-"""Write the plugin and extension manifests from one definition.
+"""Write the plugin and extension manifests and the install links from one definition.
 
-The values live in ``src/git_into_gsoc/install/distribution.py``. Run this after
-changing them; ``--check`` (used by the tests) fails when a committed file differs
+The values live in ``src/git_into_gsoc/install/distribution.py``. The install
+buttons in README.md and docs/assistants.md sit between generated-block markers.
+Run this after changing any of them; ``--check`` (used by the tests) fails when a committed file differs
 from what would be written, and names the file.
 
 Usage: python scripts/sync_integrations.py [--check]
@@ -11,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -18,14 +20,27 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from git_into_gsoc import __version__  # noqa: E402
-from git_into_gsoc.install.distribution import manifests  # noqa: E402
+from git_into_gsoc.install.distribution import install_badges, manifests  # noqa: E402
+
+# Generated blocks inside hand-written pages, between these two markers.
+BLOCK = re.compile(
+    r"(<!-- generated:install-links -->\n).*?(<!-- /generated:install-links -->)", re.S
+)
+PAGES_WITH_LINKS = ("README.md", "docs/assistants.md")
 
 
 def rendered() -> dict[Path, str]:
-    return {
+    files = {
         ROOT / rel: json.dumps(data, indent=2, ensure_ascii=False) + "\n"
         for rel, data in manifests(__version__).items()
     }
+    for rel in PAGES_WITH_LINKS:
+        page = ROOT / rel
+        text = page.read_text(encoding="utf-8")
+        if not BLOCK.search(text):
+            raise SystemExit(f"{rel} has no <!-- generated:install-links --> block")
+        files[page] = BLOCK.sub(lambda m: m.group(1) + install_badges() + "\n" + m.group(2), text)
+    return files
 
 
 def main(args: list[str] | None = None) -> int:

@@ -10,6 +10,10 @@ description: >
   CLI or MCP tools and official GSoC pages. Never fabricates organizations,
   issues, mentors, or deadlines, and never encourages bulk or low-quality
   contributions.
+license: MIT
+compatibility: >
+  Live data needs the git-into-gsoc MCP server or CLI and internet access. The
+  written guidance works without them.
 ---
 
 # git-into-gsoc

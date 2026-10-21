@@ -74,3 +74,23 @@ def test_the_smoke_check_talks_to_the_real_server(tmp_path: Path) -> None:
     summary = json.loads(result.stdout)
     assert summary["server"] == "git-into-gsoc" and summary["tools"] >= 20
     assert summary["instructions"] is True
+
+
+def test_kiro_link_decodes_to_the_remote_server() -> None:
+    link = urlparse(d.kiro_install_link())
+    assert (link.netloc, link.path) == ("kiro.dev", "/launch/mcp/add")
+    config = json.loads(parse_qs(link.query)["config"][0])
+    assert config == {"command": "uvx", "args": d.remote_command()[1:]}
+
+
+def test_the_readme_buttons_carry_every_link() -> None:
+    badges = d.install_badges()
+    for link in (
+        d.cursor_install_link(),
+        d.vscode_install_link(),
+        d.vscode_install_link(insiders=True),
+        d.kiro_install_link(),
+    ):
+        assert f"]({link})" in badges
+    for page in ("README.md", "docs/assistants.md"):
+        assert badges in (ROOT / page).read_text(encoding="utf-8"), page

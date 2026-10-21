@@ -1,0 +1,167 @@
+# Use git-into-gsoc in your AI assistant
+
+git-into-gsoc gives an assistant two things:
+
+- An **Agent Skill**: written instructions that teach the assistant to coach you through GSoC without inventing organizations, issues, or deadlines.
+- An **MCP server**: a small program on your computer that lets the assistant run the tool's searches and checks. MCP stands for Model Context Protocol.
+
+Neither the plugins nor setup pre-approve anything: your assistant still asks before running a tool, as its own settings say. Each tool declares whether it only reads or also saves to your local progress file, and assistants use that to decide when to ask.
+
+Pick your assistant below. Each route installs both parts, and each one says how to update and remove it. If you also want the `git-into-gsoc` command in your terminal, use the [one-line installer](guide/02-install.md) and then `git-into-gsoc setup`. Setup configures every assistant it finds at once.
+
+## Before you start: install uv
+
+Every plugin and link below starts the server with [uv](https://docs.astral.sh/uv/), a free tool that installs Python programs together with the Python they need. If `uv --version` prints a version, you already have it. Otherwise install it once:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh        # macOS, Linux, WSL
+```
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"   # Windows
+```
+
+Open a new terminal afterwards. The first time an assistant starts the server, uv downloads what it needs, which can take up to a minute. Later starts take about a second.
+
+## Claude Code
+
+```bash
+claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc
+```
+
+Inside a Claude Code session you can type the same thing as `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`. Versions older than 2.1.292 need two steps: `claude plugin marketplace add anandkaranubc/git-into-gsoc`, then `claude plugin install git-into-gsoc@git-into-gsoc`. Start a new session afterwards.
+
+- **Update:** `claude plugin update git-into-gsoc@git-into-gsoc`. To update automatically, open `/plugin`, go to Marketplaces, and turn on auto-update for `git-into-gsoc`.
+- **Remove:** `claude plugin uninstall git-into-gsoc@git-into-gsoc`, then `claude plugin marketplace remove git-into-gsoc`.
+- **For a team:** commit this as `.claude/settings.json` in your project, and Claude Code offers the plugin to everyone who opens it:
+
+  ```json
+  {
+    "extraKnownMarketplaces": {
+      "git-into-gsoc": { "source": { "source": "github", "repo": "anandkaranubc/git-into-gsoc" } }
+    },
+    "enabledPlugins": { "git-into-gsoc@git-into-gsoc": true }
+  }
+  ```
+
+The same plugin works in Claude Desktop's Code tab. In claude.ai and Claude Desktop chats, you can add the marketplace under Customize, Plugins, Add marketplace. The skill then works in chat, but chat does not run local MCP servers, so it cannot fetch live data there.
+
+## Codex (CLI and the ChatGPT desktop app)
+
+```bash
+codex plugin marketplace add anandkaranubc/git-into-gsoc
+codex plugin add git-into-gsoc@git-into-gsoc
+```
+
+- **Update:** `codex plugin marketplace upgrade git-into-gsoc`, then run `codex plugin add git-into-gsoc@git-into-gsoc` again.
+- **Remove:** `codex plugin remove git-into-gsoc@git-into-gsoc`, then `codex plugin marketplace remove git-into-gsoc`.
+- The Codex extension for VS Code and other editors does not support plugins. Use `git-into-gsoc setup` there; it shares Codex's settings file.
+- To install only the skill, type this in Codex: `$skill-installer install https://github.com/anandkaranubc/git-into-gsoc/tree/main/skills/git-into-gsoc`
+
+## GitHub Copilot CLI
+
+```bash
+copilot plugin marketplace add anandkaranubc/git-into-gsoc
+copilot plugin install git-into-gsoc@git-into-gsoc
+```
+
+- **Update:** `copilot plugin update git-into-gsoc@git-into-gsoc`.
+- **Remove:** `copilot plugin uninstall git-into-gsoc@git-into-gsoc`.
+
+VS Code picks up plugins installed this way too.
+
+## VS Code (GitHub Copilot)
+
+Choose one:
+
+- **The plugin** (skill and server): open the Command Palette, run **Chat: Install Plugin From Source**, and enter `https://github.com/anandkaranubc/git-into-gsoc`.
+- **Only the server, with one click:** use the VS Code button below. VS Code shows the server and asks you to confirm.
+- **`git-into-gsoc setup`**: writes `~/.copilot/mcp-config.json`, which VS Code's Copilot sessions and Copilot CLI both read, and puts the skill in `~/.agents/skills`.
+
+Installed plugins are listed in the Extensions view under `@agentPlugins`, where you can manage or remove them. To remove a server added with the button, run **MCP: Open User Configuration** and delete the `git-into-gsoc` entry.
+
+## Cursor
+
+Run `git-into-gsoc setup` after the [one-line installer](guide/02-install.md). This is the route we test, and it gives Cursor both the skill and the server. Or use the Cursor button below for the server alone. Cursor asks you to confirm, then adds it to `~/.cursor/mcp.json`. To add the skill too, run `npx skills add anandkaranubc/git-into-gsoc -g -a cursor`.
+
+- **Update:** buttons always start the newest release. For setup, re-run the installer.
+- **Remove:** delete the `git-into-gsoc` entry from `~/.cursor/mcp.json`, or run `git-into-gsoc setup --remove --assistant cursor`.
+
+## Gemini CLI
+
+```bash
+gemini extensions install https://github.com/anandkaranubc/git-into-gsoc --auto-update
+```
+
+- Gemini CLI starts MCP servers only in folders you trust. Answer yes when it asks, or run `/permissions` in the folder.
+- **Update:** with `--auto-update` it updates itself at start. Otherwise run `gemini extensions update git-into-gsoc`.
+- **Remove:** `gemini extensions uninstall git-into-gsoc`.
+- Since 18 June 2026, Gemini CLI needs a paid Gemini API key or Gemini Code Assist Standard or Enterprise. On a free Google account, use Antigravity.
+
+## Antigravity
+
+```bash
+agy plugin install https://github.com/anandkaranubc/git-into-gsoc
+```
+
+Antigravity converts the extension into a plugin with the skill and the server.
+
+- **Update:** run the same command again.
+- **Remove:** `agy plugin uninstall git-into-gsoc`.
+- `git-into-gsoc setup --assistant antigravity` works too.
+
+## Windsurf (Devin Desktop)
+
+Run `git-into-gsoc setup` after the [one-line installer](guide/02-install.md). It writes Devin Desktop's `~/.config/devin/mcp_config.json`, or `~/.codeium/windsurf/mcp_config.json` for Windsurf before it was renamed. It puts the skill in `~/.agents/skills`, which Devin Desktop reads.
+
+## Claude Desktop (without the plugin)
+
+Every [release](https://github.com/anandkaranubc/git-into-gsoc/releases/latest) has a `git-into-gsoc.mcpb` file, an MCP bundle. Download it and open it, or drag it into Claude Desktop's Settings, Extensions. A bundle does not update itself: install the new file from a later release to update.
+
+## Any other assistant
+
+Most assistants read skills from `~/.agents/skills` and accept MCP servers in a settings file. This includes Zed, Goose, OpenCode, Amp, JetBrains Junie, Cline, Kilo Code, Kiro, Warp, Qwen Code, Factory Droid, and Augment. Two community tools set both up for you:
+
+```bash
+npx skills add anandkaranubc/git-into-gsoc -g
+npx add-mcp "uvx --from git+https://github.com/anandkaranubc/git-into-gsoc@stable git-into-gsoc mcp" --name git-into-gsoc
+```
+
+The first copies the skill; the second asks which assistants to add the server to. Both need [Node.js](https://nodejs.org/). Kiro also has a button below.
+
+## One-click buttons
+
+These add only the MCP server. They run the newest release from GitHub, so they need uv and [Git](https://git-scm.com/downloads). The server starts with the latest version each time the assistant starts it.
+
+<!-- generated:install-links -->
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=git-into-gsoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLWZyb20iLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL2FuYW5ka2FyYW51YmMvZ2l0LWludG8tZ3NvY0BzdGFibGUiLCJnaXQtaW50by1nc29jIiwibWNwIl19) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D&quality=insiders) [![Add to Kiro](https://img.shields.io/badge/Kiro-Add_server-7138CC?style=flat-square&logo=kiro&logoColor=white)](https://kiro.dev/launch/mcp/add?name=git-into-gsoc&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D)
+<!-- /generated:install-links -->
+
+## Plugin or setup?
+
+| | Plugin or extension | `git-into-gsoc setup` |
+|---|---|---|
+| Needs | uv | The [one-line installer](guide/02-install.md) |
+| You also get | Nothing else | The `git-into-gsoc` command in your terminal |
+| Updates | With the assistant's own update command | Run the installer again |
+| Server starts | From the plugin's own copy, so it always matches the skill | From the installed command, offline and fastest |
+| Assistants | One at a time | Every one it finds, in one run |
+
+Use one route per assistant. Setup skips an assistant that already has the plugin, so you never get the server twice.
+
+## What we test
+
+`scripts/check_agents.py` installs the plugin and runs `git-into-gsoc setup` for each assistant command it finds. It uses a throwaway home folder, signs in nowhere, and calls no model. Then it checks that the assistant can start the server. CI runs it with Claude Code, Codex, Gemini CLI, and Copilot CLI on every change to the files they read, and with their newest releases every week.
+
+| Assistant | Plugin route | Setup route |
+|---|---|---|
+| Claude Code | Server connected | Server connected |
+| Codex | Server answers from the plugin's folder | Server answers |
+| Gemini CLI | Server connected | Server connected |
+| Copilot CLI | Plugin and server registered; Copilot starts servers only after you sign in, so the start is not tested | Server registered and answers |
+| Antigravity (local runs) | Converted plugin's server answers | Server enabled |
+| Cursor agent CLI (local runs) | Not tested | Server started, 25 tools listed |
+
+Not tested automatically: the VS Code and Cursor buttons, VS Code's Install Plugin From Source, Devin Desktop, and the Claude Desktop bundle. Each follows its vendor's documented format. Please [report a problem](https://github.com/anandkaranubc/git-into-gsoc/issues) if one does not work for you.
+
+[Assistant setup guide](guide/03-connect-your-ai-assistant.md) · [Troubleshooting](troubleshooting.md) · [MCP tool reference](mcp.md) · [Guide contents](README.md)

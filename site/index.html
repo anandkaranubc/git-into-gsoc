@@ -67,7 +67,7 @@ git-into-gsoc program</code></pre>
 
         <div class="after">
           <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md">Read the beginner guide</a>
-          <p class="fine">Needs Git and Python 3.11 or newer. macOS, Linux, and WSL; Windows users run <code>install.ps1</code> in PowerShell. The installer uses uv or pipx when you have one and sets up your assistants. No GitHub token needed to start. <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/02-install.md">Explicit steps and a from-clone install</a>.</p>
+          <p class="fine">Needs only an internet connection. macOS, Linux, and WSL; Windows users run <code>install.ps1</code> in PowerShell. The installer downloads the newest release, uses uv, pipx, or Python 3.11+ (and offers to install uv when you have none), then sets up your assistants. No GitHub token needed to start. <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/02-install.md">Explicit steps and a from-clone install</a>.</p>
         </div>
       </div>
 
@@ -230,17 +230,17 @@ git-into-gsoc program</code></pre>
       <div class="two">
         <div>
           <ul class="clients" aria-label="Works with">
-            <li>Claude Code</li><li>Cursor</li><li>Codex</li><li>Gemini CLI</li><li>Windsurf</li><li>VS Code</li><li>any MCP client</li>
+            <li>Claude Code</li><li>Codex</li><li>Cursor</li><li>VS Code</li><li>Copilot CLI</li><li>Gemini CLI</li><li>Antigravity</li><li>Windsurf</li><li>any MCP client</li>
           </ul>
-          <p>One command finds the assistants on your machine, copies the skill into each one, and registers the MCP server in its configuration, keeping a backup of anything it touches. The installer already ran it for you; run it again whenever you add an assistant. The <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md">assistant setup guide</a> covers manual configuration, and the <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/mcp.md">MCP reference</a> lists every tool.</p>
+          <p>One command finds the assistants on your machine, copies the skill into each one, and registers the MCP server in its configuration, keeping a backup of anything it touches. The installer already ran it for you; run it again whenever you add an assistant. Prefer a plugin? Claude Code, Codex, Copilot, Gemini CLI, and Antigravity install the skill and server with their own commands, listed on the <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/assistants.md">assistant page</a> with one-click buttons for VS Code and Cursor. The <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md">assistant setup guide</a> covers manual configuration, and the <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/mcp.md">MCP reference</a> lists every tool.</p>
         </div>
         <div class="term">
           <div class="term-bar"><span>terminal</span><button class="copy" type="button" data-copy="mcp" aria-label="Copy setup commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button></div>
 <pre><code id="mcp-code">git-into-gsoc setup
 git-into-gsoc doctor</code></pre>
-<pre aria-label="What setup does"><span class="c">setup    finds your assistants (claude code, cursor, codex,
-         gemini, windsurf, vs code), copies the skill, and
-         registers the mcp server. keeps .bak copies.
+<pre aria-label="What setup does"><span class="c">setup    finds your assistants (claude code, codex, cursor,
+         vs code, gemini, antigravity, windsurf), copies the
+         skill, and registers the mcp server. keeps .bak copies.
 doctor   shows what is configured and where</span></pre>
         </div>
       </div>

@@ -29,7 +29,7 @@ Open a new terminal so it can find the new command, then run:
 git-into-gsoc program
 ```
 
-The installer downloads the newest release and installs it with [uv](https://docs.astral.sh/uv/), pipx, or Python 3.11 or newer, whichever you have. If you have none of them, it offers to install uv, which brings its own Python. Then it runs `git-into-gsoc setup`, which copies the Agent Skill and registers the MCP server for every assistant it finds on your machine (Claude Code, Cursor, Codex, Gemini CLI, Windsurf, VS Code). Prefer explicit steps? These do the same thing:
+The installer downloads the newest release and installs it with [uv](https://docs.astral.sh/uv/), pipx, or Python 3.11 or newer, whichever you have. If you have none of them, it offers to install uv, which brings its own Python. Then it runs `git-into-gsoc setup`, which copies the Agent Skill and registers the MCP server for every assistant it finds on your machine (Claude Code, Codex, Cursor, VS Code and Copilot CLI, Gemini CLI, Antigravity, Windsurf). Prefer explicit steps? These do the same thing:
 
 ```bash
 uv tool install git+https://github.com/anandkaranubc/git-into-gsoc   # needs Git; or: pipx install git+https://...
@@ -37,8 +37,6 @@ git-into-gsoc setup
 ```
 
 On Windows, run `irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex` in PowerShell. To work from a clone instead, see [installation](docs/guide/02-install.md).
-
-Claude Code users can install the skill and the MCP server together as a plugin: `/plugin marketplace add anandkaranubc/git-into-gsoc`, then `/plugin install git-into-gsoc@git-into-gsoc`. It needs [uv](https://docs.astral.sh/uv/) and runs the server straight from this repository.
 
 `program` shows the current GSoC phase and timeline with no GitHub token needed. Then tell the tool about yourself once and ask it what to do:
 
@@ -62,6 +60,25 @@ git-into-gsoc contributions --org "SymPy"                  # your PRs, issues, a
 git-into-gsoc proposal draft.md --github YOUR_USERNAME     # what organizations reject on, with evidence
 ```
 
+## Use it inside your AI assistant
+
+Each line installs the Agent Skill and the MCP server together, and updates with the assistant's own update command. You need [uv](https://docs.astral.sh/uv/), a free tool that starts the server.
+
+| Assistant | Command |
+|---|---|
+| Claude Code | `claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc` |
+| Codex | `codex plugin marketplace add anandkaranubc/git-into-gsoc`, then `codex plugin add git-into-gsoc@git-into-gsoc` |
+| GitHub Copilot CLI | `copilot plugin marketplace add anandkaranubc/git-into-gsoc`, then `copilot plugin install git-into-gsoc@git-into-gsoc` |
+| Gemini CLI | `gemini extensions install https://github.com/anandkaranubc/git-into-gsoc --auto-update` |
+| Antigravity | `agy plugin install https://github.com/anandkaranubc/git-into-gsoc` |
+| VS Code, Cursor, Windsurf, and others | See [use git-into-gsoc in your AI assistant](docs/assistants.md) |
+
+One-click buttons for the MCP server alone (they also need [Git](https://git-scm.com/downloads)):
+
+<!-- generated:install-links -->
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=git-into-gsoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyItLWZyb20iLCJnaXQraHR0cHM6Ly9naXRodWIuY29tL2FuYW5ka2FyYW51YmMvZ2l0LWludG8tZ3NvY0BzdGFibGUiLCJnaXQtaW50by1nc29jIiwibWNwIl19) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D&quality=insiders) [![Add to Kiro](https://img.shields.io/badge/Kiro-Add_server-7138CC?style=flat-square&logo=kiro&logoColor=white)](https://kiro.dev/launch/mcp/add?name=git-into-gsoc&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22--from%22%2C%22git%2Bhttps%3A%2F%2Fgithub.com%2Fanandkaranubc%2Fgit-into-gsoc%40stable%22%2C%22git-into-gsoc%22%2C%22mcp%22%5D%7D)
+<!-- /generated:install-links -->
+
 ## What you get
 
 | Layer | What it does |
@@ -79,6 +96,8 @@ git-into-gsoc proposal draft.md --github YOUR_USERNAME     # what organizations 
 - **Repository ranking** reads the org's GSoC ideas page and counts open, unassigned beginner issues per repository.
 - **Repository health** measures what matters to newcomers: whether outside contributors' PRs get merged, review speed, open beginner issues, community files, and CI.
 - **Issue availability** reads each issue's timeline: linked PRs, assignees, "can I work on this?" claims with dates, maintainer approvals, and contested threads.
+
+The tool only reads. It contacts summerofcode.withgoogle.com, api.gsocorganizations.dev, api.github.com, commits.ecosyste.ms, and the ideas page each organization published, and it never posts anywhere. Your profile and progress stay in a file on your computer. Details are in [sources and limitations](docs/sources.md).
 
 ## Where to go next
 

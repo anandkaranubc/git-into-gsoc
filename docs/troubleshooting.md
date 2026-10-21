@@ -77,6 +77,15 @@ Some organizations host ideas on wikis that block automated readers. `repos` the
 
 Run `git-into-gsoc doctor`: it lists which assistants have the skill and which config files register the MCP server. If yours is missing, run `git-into-gsoc setup --assistant NAME` and restart the assistant. If you moved or reinstalled the tool, re-run setup so the registered path is updated; it reports `updated` for the files it changed. A `setup` row that ends in `left as is` means setup did not change that config file. Usually the file has comments or trailing commas, which VS Code and Cursor allow but which setup will not rewrite, because rewriting would drop your comments. Setup then prints a manual step with the exact entry to paste, and `doctor` finds the entry once you add it. Before every write setup saves a `.bak` copy next to the file, and it keeps the file's permissions and any symlink. Use the [assistant guide](guide/03-connect-your-ai-assistant.md) for the manual equivalents.
 
+## A plugin or one-click button installed, but the tools never appear
+
+- `uvx: command not found`, or the server shows as failed: plugins and buttons start the server with [uv](https://docs.astral.sh/uv/). Install it (see [before you start](assistants.md#before-you-start-install-uv)), open a new terminal, and restart the assistant.
+- The first start downloads what the server needs and can take up to a minute. An assistant may report it as disconnected or timed out the first time. Restart the assistant once the download is done.
+- Gemini CLI shows the server as disabled: it starts MCP servers only in folders you trust. Run `/permissions` in the folder, or answer yes when it asks.
+- Codex says the server took too long to start: the plugin allows 120 seconds. A config you wrote yourself may have only Codex's default of 10. Add `startup_timeout_sec = 60` under `[mcp_servers."git-into-gsoc"]` in `~/.codex/config.toml`, or run `git-into-gsoc setup --assistant codex`, which writes it for you.
+- One-click buttons install from GitHub with Git. If `git` is missing, install [Git](https://git-scm.com/downloads) or use the plugin route instead.
+- The skill is listed twice: use one route per assistant. `git-into-gsoc setup --remove --assistant NAME` takes away what setup added, and `doctor` lists every copy it finds.
+
 ## Progress will not load
 
 If `progress.json` is damaged (for example by a manual edit), the tool keeps it as `progress.damaged-<date>.json` next to the original, prints a one-line warning, and starts a fresh file, so every command keeps working. Copy any entries you need back from the kept file. A file that cannot be read at all, because of its permissions or another program holding it, is different: the command stops with `Cannot read` and leaves the file where it is. `doctor` shows the data directory. Saves are atomic and locked, so a crash or an assistant and the CLI saving at the same moment cannot damage the file; if a save reports that another process is saving and none is running, delete the `progress.json.lock` file it names. See [local data](configuration.md).

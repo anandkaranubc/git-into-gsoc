@@ -107,6 +107,36 @@ def vscode_install_link(command: list[str] | None = None, *, insiders: bool = Fa
     return f"https://vscode.dev/redirect/mcp/install?{query}"
 
 
+def kiro_install_link(command: list[str] | None = None) -> str:
+    """Kiro's web install link; ``config`` is the server as URL-encoded JSON."""
+    config = quote(_compact(stdio_entry(command or remote_command())), safe="")
+    return f"https://kiro.dev/launch/mcp/add?name={SERVER_NAME}&config={config}"
+
+
+def install_badges() -> str:
+    """The one-click install buttons shown in the README and the assistant guide."""
+    shield = "https://img.shields.io/badge/{0}-{1}-{2}?style=flat-square&logo={3}&logoColor=white"
+    buttons = [
+        (
+            "Add to Cursor",
+            "https://cursor.com/deeplink/mcp-install-dark.svg",
+            cursor_install_link(),
+        ),
+        (
+            "Install in VS Code",
+            shield.format("VS_Code", "Install_server", "0098FF", "visualstudiocode"),
+            vscode_install_link(),
+        ),
+        (
+            "Install in VS Code Insiders",
+            shield.format("VS_Code_Insiders", "Install_server", "24bfa5", "visualstudiocode"),
+            vscode_install_link(insiders=True),
+        ),
+        ("Add to Kiro", shield.format("Kiro", "Add_server", "7138CC", "kiro"), kiro_install_link()),
+    ]
+    return " ".join(f"[![{alt}]({image})]({link})" for alt, image, link in buttons)
+
+
 def goose_install_link(command: list[str] | None = None) -> str:
     """Goose's extension install link (goose://extension?cmd=...&arg=...)."""
     cmd = command or remote_command()

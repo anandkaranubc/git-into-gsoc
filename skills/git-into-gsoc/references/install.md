@@ -44,6 +44,21 @@ current folder, then the GitHub CLI (`gh auth token`) when `gh` is installed
 and logged in. `doctor` reports which source it used without printing the
 token. Never paste a token into chat.
 
+## Install inside an assistant, without the terminal tool
+
+Most assistants can install the skill and the MCP server together as a plugin
+or extension. Each needs [uv](https://docs.astral.sh/uv/) to start the server:
+
+- Claude Code: `claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`
+- Codex: `codex plugin marketplace add anandkaranubc/git-into-gsoc`, then `codex plugin add git-into-gsoc@git-into-gsoc`
+- Copilot CLI: `copilot plugin marketplace add anandkaranubc/git-into-gsoc`, then `copilot plugin install git-into-gsoc@git-into-gsoc`
+- Gemini CLI: `gemini extensions install https://github.com/anandkaranubc/git-into-gsoc`
+- Antigravity: `agy plugin install https://github.com/anandkaranubc/git-into-gsoc`
+
+The repository's [assistant page](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/assistants.md)
+covers VS Code, Cursor, Windsurf, Claude Desktop, and others, with update and
+removal steps.
+
 ## Connect an assistant
 
 MCP (Model Context Protocol) lets an assistant call the tool directly. The

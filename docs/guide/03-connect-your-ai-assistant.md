@@ -9,35 +9,38 @@ There are two separate parts:
 
 An assistant that can run terminal commands can also use the skill with the CLI directly.
 
-## One command does both
+## Two ways to connect
+
+**If you ran the one-line installer** from [chapter 2](02-install.md), it already ran `git-into-gsoc setup` for every assistant it found. Restart your assistant and skip to [verify the connection](#verify-the-connection). Run setup again any time you install another assistant:
 
 ```bash
 git-into-gsoc setup
 ```
 
-Setup detects the assistants on your machine, copies the skill into each one's skills folder, and registers the MCP server in each one's configuration file, merging with whatever is already there and keeping a `.bak` copy. It prints a table of what it created, updated, or left unchanged. Useful variations:
+Setup detects the assistants on your machine. It puts the skill in the folders they read, and registers the MCP server in each one's configuration file. It merges with whatever is already there and keeps a `.bak` copy. Most assistants share one copy of the skill in `~/.agents/skills`, so each lists it once. It prints a table of what it created, updated, or left unchanged. Useful variations:
 
 ```bash
 git-into-gsoc setup --dry-run                      # preview only
 git-into-gsoc setup --assistant claude-code        # one assistant (claude-code, cursor, codex, gemini, antigravity, windsurf, vscode, all)
 git-into-gsoc setup --scope project                # inside the current repository instead of your home folder
 git-into-gsoc setup --no-mcp                       # skill only
+git-into-gsoc setup --remove                       # undo, leaving the rest of each config file alone
 git-into-gsoc doctor                               # shows which assistants have the skill and where MCP is registered
 ```
 
 For Claude Code at user scope, setup runs `claude mcp add` for you when the `claude` command is installed; otherwise it prints the exact command to run. Then restart your assistant.
 
+**If you only want it inside your assistant**, install it as a plugin or extension with your assistant's own command. You do not need the installer, only [uv](https://docs.astral.sh/uv/), a free tool that starts the server. The plugin updates with your assistant. For example:
+
+```bash
+claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc     # Claude Code
+gemini extensions install https://github.com/anandkaranubc/git-into-gsoc          # Gemini CLI
+agy plugin install https://github.com/anandkaranubc/git-into-gsoc                 # Antigravity
+```
+
+[Use git-into-gsoc in your AI assistant](../assistants.md) has the command for every assistant (Codex, Copilot, VS Code, Cursor, Windsurf, Claude Desktop, and others), one-click buttons, and how to update and remove each one.
+
 Skill discovery depends on your assistant version. If it does not find the skill, ask it to read the `SKILL.md` file inside the folder that `doctor` prints as "skill source".
-
-## Other ways to connect
-
-You do not have to install anything locally for some assistants:
-
-- **Claude Code plugin**: `/plugin marketplace add anandkaranubc/git-into-gsoc`, then `/plugin install git-into-gsoc@git-into-gsoc` installs the skill and the MCP server together. It runs the server with [uv](https://docs.astral.sh/uv/) straight from this repository, so uv must be installed.
-- **Gemini CLI extension**: the repository ships `gemini-extension.json`; install it from the repository URL with Gemini CLI's extension command (see [Gemini CLI's extension documentation](https://geminicli.com/docs/extensions/)).
-- **MCP registry**: clients that browse the public MCP registry can find the server as `io.github.anandkaranubc/git-into-gsoc`; every release publishes an updated entry and a bundle automatically.
-
-`setup` remains the right choice when you want the skill in a specific assistant's folder or the server registered in a project. To undo it later, run `git-into-gsoc setup --remove` with the same `--scope` and `--assistant` options; it deletes only what setup created and leaves the rest of each config file alone.
 
 ## Doing it by hand
 

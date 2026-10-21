@@ -1,0 +1,54 @@
+name: Stable branch
+
+# Keeps the `stable` branch on the newest release. One-click install links and copied
+# MCP configs run `uvx --from git+https://github.com/<repo>@stable`, so they always
+# start the newest release and never unreleased work from main, and the links never
+# have to change. Runs after every Release workflow run (a release made with the
+# built-in token fires no `release` event) and by hand. No code is checked out.
+
+on:
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: stable-branch
+  cancel-in-progress: false
+
+jobs:
+  move:
+    name: Point stable at the newest release
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Move stable to the newest release tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TAG="$(gh release view --repo "$REPO" --json tagName --jq .tagName)"
+          SHA="$(gh api "repos/$REPO/commits/$TAG" --jq .sha)"
+          if gh api "repos/$REPO/git/ref/heads/stable" >/dev/null 2>&1; then
+            CURRENT="$(gh api "repos/$REPO/git/ref/heads/stable" --jq .object.sha)"
+          else
+            CURRENT=""
+          fi
+          if [ "$CURRENT" = "$SHA" ]; then
+            echo "stable is already at $TAG ($SHA)."
+          elif [ -z "$CURRENT" ]; then
+            gh api -X POST "repos/$REPO/git/refs" -f ref=refs/heads/stable -f sha="$SHA" >/dev/null
+            echo "Created stable at $TAG ($SHA)."
+          else
+            # Releases only move forward along main, so this is always a fast-forward;
+            # anything else fails here instead of rewriting the branch.
+            gh api -X PATCH "repos/$REPO/git/refs/heads/stable" -f sha="$SHA" -F force=false >/dev/null
+            echo "Moved stable to $TAG ($SHA)."
+          fi
+          echo "\`stable\` points at $TAG ($SHA)." >> "$GITHUB_STEP_SUMMARY"

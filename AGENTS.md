@@ -25,5 +25,6 @@ Never invent organizations, issues, mentors, or deadlines. Never encourage bulk,
 - Every CLI option needs help text. Errors should say what happened and what to try next.
 - Write docs and messages in plain language with short sentences. Define a term when it first appears. Do not use em dashes.
 - Edit the skill in `skills/git-into-gsoc/` only. The copies under `.agents/skills/` and `.claude/skills/` are written by `git-into-gsoc setup` (which the installers run) and ignored by Git, like the project config files it writes.
+- Plugin manifests (`.claude-plugin/`, `.codex-plugin/`, `gemini-extension.json`) and the install buttons in `README.md` and `docs/assistants.md` are generated. Edit `src/git_into_gsoc/install/distribution.py`, then run `python scripts/sync_integrations.py`.
 - Use Conventional Commits (`feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `ci`, `chore`) and keep each change focused. Pull requests are squash-merged with the PR title as the commit message.
 - Never commit tokens or personal data. `.env` is ignored for that reason.

@@ -40,6 +40,10 @@ The workflow downloads a fixed `mcp-publisher` release and checks it against its
 
 To rebuild the assets for a tag, run the workflow from the Actions tab with the tag name, or `gh workflow run mcp-registry.yml -f tag=v0.2.1`. When that version is already in the registry, the run refreshes the wheel and the source archive, checks that the bundle on the release still matches the checksum the registry recorded (restoring it when it is missing), and skips the publish step. The bundle is built with fixed entry times, so the same tag always gives the same bytes.
 
+## 5. Plugins and one-click links (automatic)
+
+Release Please also bumps `version` in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `gemini-extension.json`, so Claude Code, Codex, Copilot, and Gemini CLI offer the update. After each release, `.github/workflows/stable-branch.yml` moves the `stable` branch to the new tag; the one-click install buttons and copied configs run `uvx --from git+https://github.com/anandkaranubc/git-into-gsoc@stable`, so they get the new release without any change to the links. See [distribution](distribution.md) for how the manifests are generated and checked, and for directory listings that need the owner.
+
 ## Checks before merging a release
 
 ```bash
