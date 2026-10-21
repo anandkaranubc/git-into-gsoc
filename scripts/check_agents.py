@@ -203,7 +203,8 @@ def plugin_copilot(box: Sandbox, source: str) -> tuple[str, str]:
     if "Plugin" not in output:
         raise CheckFailed(f"`copilot mcp get` does not show the plugin server:\n{_tail(output)}")
     # Copilot CLI starts MCP servers only for a signed-in session, so the server itself
-    # is not started here.
+    # is not started here. A signed-in run once showed it expands ${CLAUDE_PLUGIN_ROOT}
+    # in args and starts the server in the plugin folder.
     return "registered", "plugin installed and its server registered (start needs a Copilot login)"
 
 
