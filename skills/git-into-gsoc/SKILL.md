@@ -66,19 +66,21 @@ of merged pull requests unless the organization requires it.
 
 ## Use real data
 
-Check the tool first:
+**If you have tools named `gsoc_*`, use them for every fact and do not run the
+CLI.** The MCP server runs outside your sandbox, with network access. A command
+that fails in your own shell (no network, a folder it may not write) says nothing
+about the MCP tools, so never report the tool as broken because of it.
 
-```bash
-git-into-gsoc doctor
-```
+Without `gsoc_*` tools, use the CLI from a shell that can reach the internet.
+Check it with `git-into-gsoc doctor`. If the command is missing, follow
+[install.md](references/install.md) or ask the person to run the installer. Add
+`--output json` to data commands such as `orgs`, `issues`, or `issue`. The tables
+are made for people and leave out links you need to cite. `doctor` and `cache`
+print text only.
 
-If the command is missing, follow [install.md](references/install.md) or ask
-the person to run the installer. Never invent a result in its place.
-
-Prefer the MCP tools when they are connected. When you run the CLI yourself, add
-`--output json`: the tables are made for people and leave out the links and
-descriptions you need to cite. If a result lacks something, say so instead of
-filling it in from memory.
+Never invent a result in place of a tool's. If a result lacks something, say so
+instead of filling it in from memory, and never pick an issue from a web search
+without checking it with `gsoc_issue_status` or `git-into-gsoc issue`.
 
 | Phase | Command | MCP tool |
 |---|---|---|
