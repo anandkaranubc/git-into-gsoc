@@ -167,3 +167,12 @@ def test_recommend_path_asks_the_client_only_when_it_can_and_must(monkeypatch) -
     tools = _run(mcp_server.mcp.list_tools())
     schema = next(t.input_schema for t in tools if t.name == "gsoc_recommend_path")
     assert set(schema["properties"]) == {"github_username", "technologies", "interests"}
+
+
+def test_http_request_lines_stay_out_of_the_mcp_log() -> None:
+    import logging
+
+    import git_into_gsoc.mcp_server  # noqa: F401
+
+    assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
+    assert logging.getLogger("httpcore").getEffectiveLevel() >= logging.WARNING

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import json
+import logging
 from collections.abc import Callable
 from typing import Any, TypeVar
 
@@ -605,6 +606,12 @@ def weekly_checkin_prompt() -> str:
         "If I have been stuck for more than a few days without asking anyone, call gsoc_draft with "
         "kind=question and help me ask in the project's public channel."
     )
+
+
+# The SDK logs at INFO; httpx then logs every request URL, search terms included, into
+# the assistant's MCP log. Keep warnings and errors only.
+for _logger in ("httpx", "httpcore"):
+    logging.getLogger(_logger).setLevel(logging.WARNING)
 
 
 def main() -> None:
