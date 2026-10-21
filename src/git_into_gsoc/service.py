@@ -415,6 +415,12 @@ class GSoCToolkit:
         use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
         if not use_gsoc:
             note = "Searching " + (f"{repo}" if repo else f"org {org}" if org else "all of GitHub")
+            if repo:
+                # `repo` counts every unassigned beginner issue; this list is stricter.
+                note += (
+                    ". Left out: issues with an assignee or a linked pull request, and ones "
+                    "not updated in a year, so `repo` may count more."
+                )
         if from_profile:
             note += f" Using {language} from your saved profile; pass a language to change it."
         labels_used: list[str] = [label] if label else ["good first issue", "help wanted"]

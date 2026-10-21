@@ -57,3 +57,13 @@ def test_too_few_interest_matches_are_kept_first_and_filled_from_the_language(
     assert searched[1][0] == "apache"
     assert [i["repo"] for i in data["issues"]] == ["osrf/rocker", "apache/x"]  # interests first
     assert "Only 1 issue(s) came from those" in data["note"]
+
+
+def test_a_repository_search_says_what_it_leaves_out(monkeypatch: Any) -> None:
+    # A simulated run saw `repo` count 38 beginner issues and `issues --repo` show 2.
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
+    monkeypatch.setattr(toolkit.github, "list_labels", lambda o, r: [])
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: [])
+    data = toolkit.find_issues(repo="ArduPilot/ardupilot", max_results=3)
+    assert "Left out: issues with an assignee or a linked pull request" in data["note"]
