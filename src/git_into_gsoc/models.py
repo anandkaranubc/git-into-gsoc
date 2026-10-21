@@ -212,6 +212,7 @@ class ProjectIdea(BaseModel):
     expected_outcome: str = ""
     links: list[str] = Field(default_factory=list)
     confidence: str = "low"  # high | medium | low
+    labelled_fields: int = 0
     source_url: str = ""
     match_score: float = 0.0
     match_reasons: list[str] = Field(default_factory=list)

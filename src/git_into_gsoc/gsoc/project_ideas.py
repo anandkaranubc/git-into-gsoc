@@ -108,7 +108,15 @@ LABELS: dict[str, tuple[str, ...]] = {
         "see also",
     ),
 }
-_LABEL_LOOKUP = {alias: field for field, aliases in LABELS.items() for alias in aliases}
+
+
+def _norm_label(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().lower()).rstrip(" .:")
+
+
+_LABEL_LOOKUP = {
+    _norm_label(alias): field for field, aliases in LABELS.items() for alias in aliases
+}
 _LABEL_LINE_RE = re.compile(
     r"^\s*(?:[-*+•]\s*)?(?:\*\*|__)?\s*(?P<label>[A-Za-z][A-Za-z()/ .-]{1,40}?)\s*(?:\*\*|__)?\s*:\s*(?P<value>.*)$"
 )
@@ -140,10 +148,13 @@ _NON_IDEA_HEADINGS = (
     "ai usage policy",
     "draft ideas",
 )
+_COMMENT_RE = re.compile(r"^\s*(?:\[//\]:\s*#|#(?!#*\s)|<!--)")
+_BULLET_RE = re.compile(r"^\s*(?:[-*+•]|\d+[.)])\s+")
 _AI_RE = re.compile(r"\b(ai|llm|llms|chatgpt|copilot|gemini|claude|language model)s?\b", re.I)
 _POLICY_RE = re.compile(
-    r"\b(propos|submission|polic|allow|permit|prohibit|forbid|ban|reject|disclos|generated|"
-    r"disclose|plagiar|cheat|assist|offload|rely)\w*",
+    r"\b(propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
+    r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
+    r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|accept\w*)\b",
     re.I,
 )
 
@@ -293,9 +304,12 @@ def html_to_lines(raw: str) -> list[str]:
 
 def markdown_to_lines(raw: str) -> list[str]:
     lines = []
-    for line in raw[:MAX_CHARS].splitlines():
+    text = re.sub(r"<!--.*?-->", " ", raw[:MAX_CHARS], flags=re.S)
+    for line in text.splitlines():
         stripped = line.rstrip()
         if not stripped.strip():
+            continue
+        if _COMMENT_RE.match(stripped):
             continue
         if re.match(r"^\s*(?:---+|===+|\*\*\*+)\s*$", stripped):
             continue
@@ -331,7 +345,7 @@ def _label(line: str) -> tuple[str, str, str] | None:
     match = _LABEL_LINE_RE.match(line)
     if not match:
         return None
-    label = re.sub(r"\s+", " ", match.group("label")).strip().lower().rstrip(".")
+    label = _norm_label(match.group("label"))
     field = _LABEL_LOOKUP.get(label)
     if field is None:
         return None
@@ -339,6 +353,7 @@ def _label(line: str) -> tuple[str, str, str] | None:
 
 
 def _clean(value: str) -> str:
+    value = _BULLET_RE.sub("", value)
     value = re.sub(r"\*\*|__|`", "", value)
     return re.sub(r"\s+", " ", value).strip()
 
@@ -394,20 +409,53 @@ def ai_policy_sentences(text: str, limit: int = 3) -> list[str]:
     return found
 
 
-def _choose_level(lines: list[str]) -> int | None:
+def _candidate_levels(lines: list[str]) -> list[int]:
     counts: dict[int, int] = {}
     for line in lines:
         head = _heading(line)
-        if head and head[1].strip().lower().rstrip(".:") not in _LABEL_LOOKUP:
+        if head and _norm_label(head[1]) not in _LABEL_LOOKUP:
             counts[head[0]] = counts.get(head[0], 0) + 1
-    candidates = [
-        (count, -level) for level, count in counts.items() if count >= MIN_IDEAS_FOR_LAYOUT
-    ]
-    if not candidates:
-        return None
-    # Most frequent level wins; on a tie prefer the deeper one (idea headings sit under sections).
-    best = max(candidates)
-    return -best[1]
+    return [level for level, count in counts.items() if count >= MIN_IDEAS_FOR_LAYOUT]
+
+
+def _split_blocks(
+    lines: list[str], level: int
+) -> tuple[list[tuple[str, list[str], str | None]], list[str]]:
+    """Blocks at `level` plus the lines that sit outside any block (page rules live there)."""
+    blocks: list[tuple[str, list[str], str | None]] = []
+    outside: list[str] = []
+    section: str | None = None
+    title: str | None = None
+    body: list[str] = []
+    for line in lines:
+        head = _heading(line)
+        if head and head[0] < level:
+            if title is not None:
+                blocks.append((title, body, section))
+                title, body = None, []
+            section = head[1]
+            outside.append(line)
+            continue
+        if head and head[0] == level:
+            if title is not None:
+                blocks.append((title, body, section))
+            title, body = head[1], []
+            continue
+        if title is not None:
+            body.append(line)
+        else:
+            outside.append(line)
+    if title is not None:
+        blocks.append((title, body, section))
+    return blocks, outside
+
+
+def _labelled(idea: ProjectIdea) -> int:
+    return sum(
+        1
+        for value in (idea.difficulty, idea.size, idea.mentors, idea.skills, idea.expected_outcome)
+        if value
+    )
 
 
 def _is_non_idea(title: str) -> bool:
@@ -430,7 +478,7 @@ def _parse_block(
     for line in body:
         head = _heading(line)
         if head:
-            label = head[1].strip().lower().rstrip(".:")
+            label = _norm_label(head[1])
             current = _LABEL_LOOKUP.get(label)
             if current is None:
                 current = None
@@ -456,11 +504,7 @@ def _parse_block(
             if cleaned not in idea.links:
                 idea.links.append(cleaned)
     idea.links = idea.links[:10]
-    labelled_fields = sum(
-        1
-        for value in (idea.difficulty, idea.size, idea.mentors, idea.skills, idea.expected_outcome)
-        if value
-    )
+    labelled_fields = _labelled(idea)
     if labelled_fields >= 2:
         idea.confidence = "high"
     elif labelled_fields == 1 or len(body) >= 3:
@@ -474,6 +518,7 @@ def _assign(idea: ProjectIdea, field: str, value: str) -> None:
     value = value.strip()
     if not value:
         return
+    idea.labelled_fields += 1
     if field == "difficulty":
         idea.difficulty_raw = (idea.difficulty_raw + " " + _clean(value)).strip()
         idea.difficulty = normalize_difficulty(idea.difficulty_raw) or idea.difficulty
@@ -516,49 +561,44 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
 
 
 def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
-    level = _choose_level(lines)
     doc = IdeasDocument(source_url=source_url, fetched_url=source_url)
     doc.headings = [h[1] for line in lines if (h := _heading(line))][:60]
-    doc.ai_policy = ai_policy_sentences("\n".join(lines))
-    if level is None:
+    levels = _candidate_levels(lines)
+    if not levels:
         doc.layout = "unstructured"
         doc.sub_pages = _sub_pages(lines)
+        doc.ai_policy = ai_policy_sentences("\n".join(lines))
         return doc
 
-    blocks: list[tuple[str, list[str], str | None]] = []
-    section: str | None = None
-    title: str | None = None
-    body: list[str] = []
-    for line in lines:
-        head = _heading(line)
-        if head and head[0] < level:
-            if title is not None:
-                blocks.append((title, body, section))
-                title, body = None, []
-            section = head[1]
-            continue
-        if head and head[0] == level:
-            if title is not None:
-                blocks.append((title, body, section))
-            title, body = head[1], []
-            continue
-        if title is not None:
-            body.append(line)
-    if title is not None:
-        blocks.append((title, body, section))
+    # Try every candidate level; keep the one whose blocks carry the most labelled fields.
+    best: tuple[int, int, int, list[ProjectIdea], list[str]] | None = None
+    for level in levels:
+        blocks, outside = _split_blocks(lines, level)
+        ideas = [
+            _parse_block(t, b, section=s, source_url=source_url)
+            for t, b, s in blocks
+            if not _is_non_idea(t)
+        ]
+        yield_ = sum(_labelled(i) for i in ideas)
+        key = (yield_, len(ideas), level)
+        if best is None or key > best[:3]:
+            best = (*key, ideas, outside)
+    assert best is not None
+    _, _, _, ideas, outside = best
+    doc.ai_policy = ai_policy_sentences("\n".join(outside))
 
-    ideas = [
-        _parse_block(t, b, section=s, source_url=source_url)
-        for t, b, s in blocks
-        if not _is_non_idea(t)
-    ]
-    good = [i for i in ideas if i.confidence in {"high", "medium"}]
-    link_only = all(
-        not any(i.description or i.mentors or i.skills or i.size for i in ideas) and i.links
-        for i in ideas
-    )
-    if ideas and (link_only or not good):
-        doc.layout = "index" if any(i.links for i in ideas) else "unstructured"
+    labelled_blocks = sum(1 for i in ideas if _labelled(i))
+    if ideas and labelled_blocks * 2 >= len(ideas):
+        # On a mostly labelled page, a block with no recognised field at all is a
+        # section heading (intro, collaborations, how to apply), not an idea.
+        ideas = [i for i in ideas if i.labelled_fields or i.links]
+    with_links = sum(1 for i in ideas if i.links)
+    if ideas and labelled_blocks == 0 and with_links >= max(1, len(ideas) // 2):
+        doc.layout = "index"
+        doc.sub_pages = _sub_pages(lines)
+        return doc
+    if not ideas:
+        doc.layout = "unstructured"
         doc.sub_pages = _sub_pages(lines)
         return doc
     doc.layout = "headings"
