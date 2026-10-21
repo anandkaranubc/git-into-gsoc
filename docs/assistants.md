@@ -57,6 +57,7 @@ codex plugin add git-into-gsoc@git-into-gsoc
 - **Update:** `codex plugin marketplace upgrade git-into-gsoc`, then run `codex plugin add git-into-gsoc@git-into-gsoc` again.
 - **Remove:** `codex plugin remove git-into-gsoc@git-into-gsoc`, then `codex plugin marketplace remove git-into-gsoc`.
 - The Codex extension for VS Code and other editors does not support plugins. Use `git-into-gsoc setup` there; it shares Codex's settings file.
+- With `git-into-gsoc setup --scope project`, Codex reads the project's `.codex/config.toml` only after you mark that folder as trusted, which Codex asks about the first time you open it there. Until then `codex mcp list` shows no server. User scope (the default) has no such step.
 - To install only the skill, type this in Codex: `$skill-installer install https://github.com/anandkaranubc/git-into-gsoc/tree/main/skills/git-into-gsoc`
 
 ## GitHub Copilot CLI
