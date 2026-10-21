@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.4.0...v0.5.0) (2026-10-21)
+
+
+### Features
+
+* **github:** measure first human reply on the REST path from recent repository comments ([#56](https://github.com/anandkaranubc/git-into-gsoc/issues/56)) ([f804536](https://github.com/anandkaranubc/git-into-gsoc/commit/f804536db4191a2fe07e5092b870847d13a602b5))
+* **github:** read the insider set from the public assignees endpoint without a token ([#54](https://github.com/anandkaranubc/git-into-gsoc/issues/54)) ([6fa7694](https://github.com/anandkaranubc/git-into-gsoc/commit/6fa7694ed8236a2c9c0f0ad3eae99732a49d160a))
+* time budget, umbrella projects in repos, maintainer and reserved-label issue signals, PR setup commands, and elicitation ([#57](https://github.com/anandkaranubc/git-into-gsoc/issues/57)) ([d76225f](https://github.com/anandkaranubc/git-into-gsoc/commit/d76225f4b1a90c35ef5b4c1a19cb2bce1f6666fe))
+
 ## [0.4.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.3.1...v0.4.0) (2026-10-21)
 
 
