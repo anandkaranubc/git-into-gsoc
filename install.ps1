@@ -3,12 +3,13 @@
   git-into-gsoc one-shot installer for Windows PowerShell.
 
 .DESCRIPTION
-  From a clone:   .\install.ps1 [-NoUserSkills | -UserSkills] [-Assistant name] [-SkillOnly] [-McpOnly] [-DryRun]
+  From a clone:   .\install.ps1 [-NoUserSkills | -UserSkills] [-Assistant name] [-SkillOnly] [-McpOnly] [-DryRun] [-InstallUv]
                   -> installs the package into .\.venv, then runs `git-into-gsoc setup`
   From anywhere:  irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
                   -> installs the tool with uv or pipx (or a private venv), then runs setup
 
-  Requires Python 3.11 or newer on PATH as `py` or `python`.
+  Needs uv, pipx, or Python 3.11 or newer on PATH as `py` or `python`. When none of
+  them is present it offers to install uv, which brings its own Python.
 #>
 [CmdletBinding()]
 param(
@@ -17,7 +18,8 @@ param(
   [string[]]$Assistant = @(),
   [switch]$SkillOnly,
   [switch]$McpOnly,
-  [switch]$DryRun
+  [switch]$DryRun,
+  [switch]$InstallUv
 )
 
 $ErrorActionPreference = "Stop"
@@ -47,44 +49,99 @@ function Find-Python {
   throw "Python 3.11 or newer is required. Install it from https://www.python.org/downloads/ (tick 'Add python.exe to PATH') and run this script again."
 }
 
-# PyPI is used only for a release that this repository's own release workflow published.
-# The name "git-into-gsoc" is not reserved on PyPI until the first upload, so anyone
-# could claim it; PyPI checks the trusted-publishing attestation on every upload and
-# serves the publisher it verified, which an upload from another repository cannot fake.
-# Anything else (no release yet, another publisher, no network) installs from GitHub.
-# An explicit GIG_REPO_URL means "install exactly this source", so PyPI is skipped.
-function Get-VerifiedPyPISpec {
+# Where the package comes from, best first:
+#   1. PyPI, but only for a release that this repository's own release workflow published.
+#      The name "git-into-gsoc" is not reserved on PyPI until the first upload, so anyone
+#      could claim it; PyPI checks the trusted-publishing attestation on every upload and
+#      serves the publisher it verified, which an upload from another repository cannot fake.
+#   2. The wheel attached to the newest GitHub release: a finished package, so neither
+#      Git nor a build step is needed.
+#   3. The source on GitHub (needs Git), when the release cannot be looked up.
+# An explicit GIG_REPO_URL means "install exactly this source", so 1 and 2 are skipped.
+function Get-LatestReleaseVersion {
   if ($env:GIG_REPO_URL) { return $null }
   try {
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$OwnRepo/releases/latest" -TimeoutSec 10
     $version = "$($release.tag_name)".TrimStart("v")
-    if (-not $version) { return $null }
-    $wheel = "git_into_gsoc-$version-py3-none-any.whl"
-    $provenance = Invoke-RestMethod -Uri "https://pypi.org/integrity/git-into-gsoc/$version/$wheel/provenance" -TimeoutSec 10
+    if ($version) { return $version }
+  } catch { }
+  return $null
+}
+
+function Get-VerifiedPyPISpec([string]$Version) {
+  try {
+    $wheel = "git_into_gsoc-$Version-py3-none-any.whl"
+    $provenance = Invoke-RestMethod -Uri "https://pypi.org/integrity/git-into-gsoc/$Version/$wheel/provenance" -TimeoutSec 10
     foreach ($bundle in $provenance.attestation_bundles) {
       if ($bundle.publisher.kind -eq "GitHub" -and $bundle.publisher.repository -eq $OwnRepo) {
-        return "git-into-gsoc==$version"
+        return "git-into-gsoc==$Version"
       }
     }
-  } catch {
-    return $null
-  }
+  } catch { }
+  return $null
+}
+
+function Get-ReleaseWheelSpec([string]$Version) {
+  $url = "https://github.com/$OwnRepo/releases/download/v$Version/git_into_gsoc-$Version-py3-none-any.whl"
+  try {
+    Invoke-WebRequest -Uri $url -Method Head -UseBasicParsing -TimeoutSec 15 | Out-Null
+    return $url
+  } catch { }
   return $null
 }
 
 function Get-InstallSpec {
-  $spec = Get-VerifiedPyPISpec
-  if ($spec) {
-    Log "Using $spec from PyPI (published by $OwnRepo)"
-    return $spec
+  $version = Get-LatestReleaseVersion
+  if ($version) {
+    $spec = Get-VerifiedPyPISpec $version
+    if ($spec) {
+      Log "Using $spec from PyPI (published by $OwnRepo)"
+      return $spec
+    }
+    $spec = Get-ReleaseWheelSpec $version
+    if ($spec) {
+      Log "Using release v$version from GitHub"
+      return $spec
+    }
   }
   Log "Using the source on GitHub ($RepoUrl)"
+  if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
+    throw "Installing from the source needs Git, which was not found. Install it from https://git-scm.com/downloads and run this script again."
+  }
   return "git+$RepoUrl"
+}
+
+# uv installs Python by itself, so a computer without Python 3.11 can still install
+# the tool. It is only offered when there is no uv, no pipx, and no usable Python.
+function Test-PythonOk {
+  try { Find-Python | Out-Null; return $true } catch { return $false }
+}
+
+function Request-Uv {
+  if ((Get-Command uv -ErrorAction SilentlyContinue) -or (Get-Command pipx -ErrorAction SilentlyContinue) -or (Test-PythonOk)) { return }
+  Write-Host "This computer has no uv, no pipx, and no Python 3.11 or newer."
+  Write-Host "uv is a free tool from Astral (https://docs.astral.sh/uv/) that installs Python"
+  Write-Host "programs and the Python they need, into your user folder only."
+  $yes = $InstallUv
+  if (-not $yes -and [Environment]::UserInteractive -and -not [Console]::IsInputRedirected) {
+    $answer = Read-Host "Install uv now? [Y/n]"
+    $yes = ($answer -eq "" -or $answer -match "^[Yy]")
+  }
+  if (-not $yes) {
+    throw "Install Python 3.11 or newer (https://www.python.org/downloads/) or uv (https://docs.astral.sh/uv/), then run this script again. To let this script install uv for you, add -InstallUv."
+  }
+  Log "Installing uv from https://astral.sh/uv/install.ps1"
+  powershell -ExecutionPolicy ByPass -NoProfile -Command "irm https://astral.sh/uv/install.ps1 | iex"
+  $env:Path = "$(Join-Path $env:USERPROFILE '.local\bin');$env:Path"
+  if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    throw "uv was installed but is not on PATH yet. Open a new terminal and run this script again."
+  }
 }
 
 $GigBin = $null
 
 if (-not $SkillOnly) {
+  if ($Mode -ne "checkout") { Request-Uv }
   if ($Mode -eq "checkout") {
     Log "Installing git-into-gsoc into $Root\.venv"
     $py = Find-Python

@@ -17,7 +17,7 @@ You can use it in a terminal or let an AI assistant use it for you. It never fab
 
 ## Try it
 
-You need Git and Python 3.11 or newer. These commands work on macOS, Linux, and Linux on Windows through WSL. For Windows PowerShell steps, see [installation](docs/guide/02-install.md).
+You need an internet connection. These commands work on macOS, Linux, and Linux on Windows through WSL. For Windows PowerShell steps, see [installation](docs/guide/02-install.md).
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
@@ -29,10 +29,10 @@ Open a new terminal so it can find the new command, then run:
 git-into-gsoc program
 ```
 
-The installer uses [uv](https://docs.astral.sh/uv/) or pipx when you have one, installs the tool, and runs `git-into-gsoc setup`, which copies the Agent Skill and registers the MCP server for every assistant it finds on your machine (Claude Code, Cursor, Codex, Gemini CLI, Windsurf, VS Code). Prefer explicit steps? These do the same thing:
+The installer downloads the newest release and installs it with [uv](https://docs.astral.sh/uv/), pipx, or Python 3.11 or newer, whichever you have. If you have none of them, it offers to install uv, which brings its own Python. Then it runs `git-into-gsoc setup`, which copies the Agent Skill and registers the MCP server for every assistant it finds on your machine (Claude Code, Cursor, Codex, Gemini CLI, Windsurf, VS Code). Prefer explicit steps? These do the same thing:
 
 ```bash
-uv tool install git+https://github.com/anandkaranubc/git-into-gsoc   # or: pipx install git+https://...
+uv tool install git+https://github.com/anandkaranubc/git-into-gsoc   # needs Git; or: pipx install git+https://...
 git-into-gsoc setup
 ```
 
