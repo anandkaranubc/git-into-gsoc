@@ -40,7 +40,7 @@ Put these in `.env` or export them in the process environment. Environment varia
 | `GIG_MAX_CONCURRENCY` | `6` | Parallel GitHub requests when verifying issues or grading a repository |
 | `GIG_SEARCH_MIN_INTERVAL_SECONDS` | `2` | Minimum spacing between GitHub search calls, which have a separate, lower limit |
 | `GIG_CACHE_DIR`, `GIG_DATA_DIR` | platform defaults | Override where the cache and `progress.json` live |
-| `GIG_GITHUB_API_URL`, `GIG_GSOC_ORGS_API_URL`, `GIG_GSOC_OFFICIAL_API_URL` | public endpoints | Alternate endpoints, mainly for development and tests |
+| `GIG_GITHUB_API_URL`, `GIG_GSOC_ORGS_API_URL`, `GIG_GSOC_OFFICIAL_API_URL`, `GIG_ECOSYSTEMS_COMMITS_API_URL` | public endpoints | Alternate endpoints, mainly for development and tests |
 | `GIG_USER_AGENT` | package name and version | How the tool identifies itself to the APIs; usually left unchanged |
 
 ## What is saved locally?
