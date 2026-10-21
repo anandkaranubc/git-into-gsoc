@@ -41,6 +41,16 @@ def _split_github_path(value: str) -> list[str]:
     return [p for p in raw.split("/") if p]
 
 
+def _is_github_link(value: str) -> bool:
+    """A URL or SSH remote, as opposed to a bare owner/repo name."""
+    raw = value.strip()
+    return bool(
+        re.match(r"^(?:ssh://)?git@github\.com[:/]", raw, re.IGNORECASE)
+        or raw.startswith(("http://", "https://"))
+        or raw.lower().startswith(tuple(_GITHUB_HOSTS))
+    )
+
+
 def parse_repo(value: str) -> tuple[str, str]:
     """Parse `owner/repo` or a GitHub URL into a validated (owner, repo) pair.
 
@@ -48,8 +58,7 @@ def parse_repo(value: str) -> tuple[str, str]:
     `a/b/c` is not a GitHub repository.
     """
     parts = _split_github_path(value or "")
-    is_link = "github.com" in (value or "").lower()
-    if len(parts) < 2 or (len(parts) > 2 and not is_link):
+    if len(parts) < 2 or (len(parts) > 2 and not _is_github_link(value or "")):
         raise InputError(
             f"Repository must look like owner/repo, got {value!r}",
             hint="Example: sympy/sympy or https://github.com/sympy/sympy",
