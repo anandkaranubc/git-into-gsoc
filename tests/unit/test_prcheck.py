@@ -137,3 +137,44 @@ def test_changelog_entry_in_the_fragment_folder_and_gates_listed() -> None:
     )
     assert "changelog" in _ids(report, "pass")
     assert report["what_happens_next"] == ["Needs 2 approving reviews"]
+
+
+# OWASP/threat-dragon's template offers two exclusive options (2026-10-21, PR #1913).
+EITHER_OR = (
+    "- [x] appropriate unit tests have been created and/or modified\n"
+    "- [{a}] *either* no AI-generated content has been used in this pull request\n"
+    "- [{b}] *or* any [use of AI](../blob/main/contributing.md#use-of-ai) in this pull "
+    "request has been disclosed below:\n"
+)
+
+
+def _checklist(body: str) -> dict[str, Any] | None:
+    report = check_pull_request(
+        _pull(body="Fixes #3. The reader crashed on empty files; it now returns [].\n" + body),
+        FILES,
+        [_commit("Fix empty input")],
+        [],
+        rules=_rules(),
+        pr_template=TEMPLATE,
+    )
+    return next((f for f in report["findings"] if f["id"] == "checklist"), None)
+
+
+def test_one_ticked_option_of_an_either_or_pair_is_enough() -> None:
+    assert _checklist(EITHER_OR.format(a=" ", b="x")) is None
+    assert _checklist(EITHER_OR.format(a="x", b=" ")) is None
+    neither = _checklist(EITHER_OR.format(a=" ", b=" "))
+    assert neither is not None
+    assert neither["title"] == "1 checklist item(s) unticked"
+    assert "either no AI-generated content has been used in this pull request" in neither["detail"]
+    assert "*" not in neither["detail"] and "](" not in neither["detail"]
+
+
+def test_long_unticked_items_are_cut_at_a_word() -> None:
+    item = (
+        "you have considered any changes required for the functional tests, the desktop "
+        "build, and the documentation site"
+    )
+    found = _checklist(f"- [ ] {item}\n")
+    assert found is not None
+    assert "functional tests, the desktop build, and\u2026. Tick them" in found["detail"]

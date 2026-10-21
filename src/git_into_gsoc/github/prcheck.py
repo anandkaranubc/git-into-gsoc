@@ -30,8 +30,9 @@ _ISSUE_REF_RE = re.compile(
     r"(?:[\w.-]+/[\w.-]+)?#\d+|github\.com/[\w.-]+/[\w.-]+/issues/\d+",
     re.I,
 )
-_UNCHECKED_RE = re.compile(r"^\s*[-*]\s*\[ \]\s*(.+)$", re.M)
-_CHECKED_RE = re.compile(r"^\s*[-*]\s*\[[xX]\]", re.M)
+_ITEM_RE = re.compile(r"^\s*[-*]\s*\[([ xX])\]\s*(.+)$", re.M)
+_MD_LINK_RE = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
+_MD_EMPHASIS_RE = re.compile(r"(?<![\w*])(\*\*|__|\*|_)(?=\S)(.+?)(?<=\S)\1(?![\w*])")
 _AI_MENTION_RE = re.compile(
     r"\b(?:ai|llm|chatgpt|copilot|claude|gemini|cursor|assisted-by|generated)\b", re.I
 )
@@ -58,6 +59,38 @@ class Finding:
 
 def _is_code(path: str) -> bool:
     return not _TEST_PATH_RE.search(path) and not _DOC_PATH_RE.search(path)
+
+
+def _plain(text: str) -> str:
+    text = _MD_EMPHASIS_RE.sub(r"\2", _MD_LINK_RE.sub(r"\1", text))
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _short(text: str, limit: int = 90) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit].rsplit(" ", 1)[0].rstrip(",;:") + "\u2026"
+
+
+def unticked_items(body: str) -> list[str]:
+    """Checklist items left unticked, in plain text.
+
+    Templates sometimes offer exclusive options ("*either* no AI was used" /
+    "*or* AI use is disclosed below"). Ticking one option settles the group; a
+    group with none ticked is reported once, by its first option.
+    """
+    items = [(mark != " ", _plain(text)) for mark, text in _ITEM_RE.findall(body)]
+    unticked: list[str] = []
+    i = 0
+    while i < len(items):
+        group = [items[i]]
+        if items[i][1].lower().startswith("either"):
+            while i + len(group) < len(items) and re.match(r"or\b", items[i + len(group)][1], re.I):
+                group.append(items[i + len(group)])
+        if not any(ticked for ticked, _ in group):
+            unticked.append(group[0][1])
+        i += len(group)
+    return unticked
 
 
 def check_pull_request(
@@ -166,8 +199,8 @@ def check_pull_request(
         )
 
     template_items = len(re.findall(r"^\s*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
-    unchecked = _UNCHECKED_RE.findall(body)
-    if template_items and not unchecked and not _CHECKED_RE.search(body):
+    unchecked = unticked_items(body)
+    if template_items and not _ITEM_RE.search(body):
         findings.append(
             Finding(
                 "checklist",
@@ -177,7 +210,7 @@ def check_pull_request(
             )
         )
     elif unchecked:
-        shown = "; ".join(item.strip()[:60] for item in unchecked[:3])
+        shown = "; ".join(_short(item) for item in unchecked[:3])
         findings.append(
             Finding(
                 "checklist",
