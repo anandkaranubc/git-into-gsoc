@@ -570,7 +570,8 @@ class GitHubClient:
         shortlist: list[IssueCandidate] = []
         for candidate in prelim:
             owner_key = candidate.repo.split("/")[0].lower()
-            if per_repo_count.get(candidate.repo, 0) >= per_repo:
+            # One repository asked for by name may fill the list; otherwise spread it out.
+            if not repo and per_repo_count.get(candidate.repo, 0) >= per_repo:
                 continue
             if per_owner_count.get(owner_key, 0) >= per_owner:
                 continue

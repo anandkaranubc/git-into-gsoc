@@ -384,3 +384,31 @@ def test_javascript_and_typescript_are_searched_together() -> None:
     js, py = (call.request.url.params["q"] for call in search.calls)
     assert "(language:javascript OR language:typescript)" in js
     assert "language:python" in py and "OR language" not in py
+
+
+@respx.mock
+def test_a_single_repository_search_is_not_capped_at_two() -> None:
+    # A simulated run asked `issues --repo ArduPilot/ardupilot -n 40` and got 2.
+    def item(number: int) -> dict[str, Any]:
+        return {
+            "id": number,
+            "number": number,
+            "title": f"Fix {number}",
+            "html_url": f"https://github.com/acme/lib/issues/{number}",
+            "repository_url": "https://api.github.com/repos/acme/lib",
+            "labels": [{"name": "good first issue"}],
+            "state": "open",
+            "assignees": [],
+            "comments": 1,
+            "updated_at": datetime.now(UTC).isoformat(),
+            "body": "Expected: works. Steps to reproduce: run it.",
+        }
+
+    respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(200, json={"items": [item(n) for n in range(1, 7)]})
+    )
+    respx.get(url__regex=r"https://api\.github\.com/repos/.*/timeline.*").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    results = GitHubClient().find_beginner_issues(repo="acme/lib", max_results=5)
+    assert len(results) == 5
