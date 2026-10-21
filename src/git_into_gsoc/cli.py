@@ -706,8 +706,7 @@ def setup_cmd(
             "for example: git-into-gsoc setup --assistant claude-code"
         )
     title = ("Plan (dry run)" if dry_run else "Setup complete") + f" · {plan.scope} scope"
-    where = f"./ = {plan.project}   " if plan.project else ""
-    table = Table(title=title, caption=f"{where}MCP command: {' '.join(plan.command)}")
+    table = Table(title=title)
     table.add_column("Assistant")
     table.add_column("What")
     table.add_column("Result")
@@ -719,9 +718,14 @@ def setup_cmd(
             change.assistant,
             change.kind,
             f"[{styles.get(change.action, '')}]{result}[/]",
-            _short_path(change.path, plan.home, plan.project),
+            ""
+            if change.action == "skipped" and change.path == plan.root
+            else _short_path(change.path, plan.home, plan.project),
         )
     console.print(table)
+    if plan.project:
+        console.print(f"./ is {plan.project}")
+    console.print(f"MCP command: {' '.join(plan.command)}")
     for step in plan.manual:
         console.print(f"  [yellow]manual:[/yellow] {step}")
     if not dry_run and plan.changes:
