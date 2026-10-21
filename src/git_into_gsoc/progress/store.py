@@ -84,8 +84,11 @@ class ProgressStore:
         return self.save(state)
 
     def recent_logs(self, limit: int = 5) -> list[LogEntry]:
-        entries = sorted(self.load().weekly_log, key=lambda e: e.at, reverse=True)
-        return entries[: max(1, limit)]
+        # Newest first; entries saved within the same clock tick keep insertion order,
+        # so the index breaks ties (Windows timestamps are coarse).
+        indexed = list(enumerate(self.load().weekly_log))
+        indexed.sort(key=lambda pair: (pair[1].at, pair[0]), reverse=True)
+        return [entry for _, entry in indexed][: max(1, limit)]
 
     def shortlist_org(self, name: str) -> ProgressState:
         name = _require(name, "organization name")

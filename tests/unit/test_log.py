@@ -80,3 +80,11 @@ def test_next_reminds_to_log_when_contributing() -> None:
     state.weekly_log = [LogEntry(goal="fresh", at=NOW - timedelta(days=2))]
     actions = plan_actions(state, program, tracked_issues=tracked, new_issues=[], now=NOW)
     assert not any("git-into-gsoc log" in a["command"] for a in actions)
+
+
+def test_recent_logs_break_timestamp_ties_by_insertion_order() -> None:
+    store = ProgressStore()
+    same = datetime(2026, 10, 21, 12, 0, tzinfo=UTC)
+    store.add_log(LogEntry(goal="first", at=same))
+    store.add_log(LogEntry(goal="second", at=same))
+    assert [e.goal for e in store.recent_logs(limit=2)] == ["second", "first"]
