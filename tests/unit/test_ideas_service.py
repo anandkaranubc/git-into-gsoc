@@ -145,10 +145,21 @@ def test_past_proposal_folders_match_org_names() -> None:
             {"path": "2024/sympy", "type": "tree"},
             {"path": "2024/sympy/one.pdf", "type": "blob"},
         ],
+        # Archives sorted by year name each file "Org - Year - Author".
+        "COPS-IITBHU/GSoC-Accepted-Proposals": [
+            {"path": "2024", "type": "tree"},
+            {"path": "2024/SymPy - 2024 - Someone.pdf", "type": "blob"},
+            {"path": "2024/Other Org - 2024 - Someone Else.pdf", "type": "blob"},
+            {"path": "2023", "type": "tree"},
+            {"path": "2023/sympy-2023-proposal.pdf", "type": "blob"},
+            {"path": "README.md", "type": "blob"},
+        ],
     }
     found = proposal_folders(lambda owner, repo: trees.get(f"{owner}/{repo}", []), "SymPy")
     assert [(f["repo"], f["path"], f["files"]) for f in found] == [
         ("SammanSarkar/GSoC_archive_2025", "SymPy", 2),
+        ("COPS-IITBHU/GSoC-Accepted-Proposals", "2023", 1),
+        ("COPS-IITBHU/GSoC-Accepted-Proposals", "2024", 1),
         ("pavanjoshi914/GSoC_archive", "2024/sympy", 1),
     ]
     assert found[0]["url"].endswith("/tree/HEAD/SymPy")

@@ -26,6 +26,7 @@ MIN_IDEAS_FOR_LAYOUT = 2
 
 _GDOC = re.compile(r"^/document/d/([A-Za-z0-9_-]+)")
 _URL_RE = re.compile(r"https?://[^\s<>()\"'\]]+")
+_MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
 _HOURS_RE = re.compile(r"\b(90|175|350)\s*(?:h\b|hr|hrs|hours|-hour|hour)?", re.I)
 _SIZE_WORD_RE = re.compile(r"\b(small|medium|large)\b", re.I)
 
@@ -398,17 +399,40 @@ def normalize_difficulty(value: str) -> str | None:
     return None
 
 
+def _paragraphs(text: str) -> list[str]:
+    """Join wrapped lines into paragraphs; a heading or a list item starts a new one."""
+    chunks: list[list[str]] = []
+    for line in text.splitlines():
+        if not line.strip():
+            continue
+        if not chunks or _heading(line) or _BULLET_RE.match(line):
+            chunks.append([line])
+        else:
+            chunks[-1].append(line)
+    return [" ".join(chunk) for chunk in chunks]
+
+
 def ai_policy_sentences(text: str, limit: int = 3) -> list[str]:
-    """Sentences that look like a rule about AI/LLM use (not AI as a topic)."""
+    """Sentences that look like a rule about AI/LLM use (not AI as a topic).
+
+    Links are ignored when matching: a list of links to sub-pages is not a rule,
+    even when a domain ends in ".ai" or a path says "proposed".
+    """
     found: list[str] = []
-    flat = re.sub(r"\s+", " ", re.sub(r"[#*_`]+", "", text))
-    for sentence in re.split(r"(?<=[.!?])\s+", flat):
-        if _AI_RE.search(sentence) and _POLICY_RE.search(sentence):
-            clean = clean_untrusted(sentence.strip(), limit=400)
-            if 20 <= len(clean) <= 400 and clean not in found:
+    for paragraph in _paragraphs(text):
+        flat = re.sub(r"\s+", " ", re.sub(r"[#*_`]+", "", paragraph))
+        for sentence in re.split(r"(?<=[.!?])\s+", flat):
+            sentence = sentence.strip()
+            prose = _URL_RE.sub(" ", sentence)
+            if not (_AI_RE.search(prose) and _POLICY_RE.search(prose)):
+                continue
+            if not 20 <= len(sentence) <= 400:
+                continue
+            clean = clean_untrusted(sentence, limit=400)
+            if clean not in found:
                 found.append(clean)
             if len(found) >= limit:
-                break
+                return found
     return found
 
 
@@ -548,6 +572,19 @@ def _assign(idea: ProjectIdea, field: str, value: str) -> None:
                 idea.links.append(cleaned)
 
 
+# Headings whose links lead away from ideas (navigation, people, process). A
+# heading about ideas, such as "Ideas Pages" on an umbrella index, keeps its links.
+_NAV_HEADINGS = tuple(h for h in _NON_IDEA_HEADINGS if "idea" not in h and h != "template")
+
+
+def _is_nav_heading(title: str) -> bool:
+    low = title.lower().strip(" :")
+    return any(
+        low == word or low.startswith(word + " ") or low.endswith(" " + word)
+        for word in _NAV_HEADINGS
+    )
+
+
 def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
     """Outbound links grouped under headings: the shape of an umbrella index page."""
     pages: list[dict[str, str]] = []
@@ -558,12 +595,16 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
         if head:
             current = head[1]
             continue
+        if _is_nav_heading(current):
+            continue
+        titles = {url.rstrip(".,;:)"): text for text, url in _MD_LINK_RE.findall(line)}
         for url in _URL_RE.findall(line):
             cleaned = url.rstrip(".,;:)")
-            if cleaned in seen or _is_non_idea(current):
+            if cleaned in seen:
                 continue
             seen.add(cleaned)
-            pages.append({"title": current or cleaned, "url": cleaned})
+            title = _clean(titles.get(cleaned) or "") or current or cleaned
+            pages.append({"title": title, "url": cleaned})
     return pages[:40]
 
 
@@ -572,8 +613,11 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
     doc.headings = [h[1] for line in lines if (h := _heading(line))][:60]
     levels = _candidate_levels(lines)
     if not levels:
-        doc.layout = "unstructured"
         doc.sub_pages = _sub_pages(lines)
+        # A page that is mostly links to other pages, such as an umbrella
+        # organization's list of its projects, is an index even without headings.
+        mostly_links = len(doc.sub_pages) >= 3 and len(doc.sub_pages) * 3 >= len(lines)
+        doc.layout = "index" if mostly_links else "unstructured"
         doc.ai_policy = ai_policy_sentences("\n".join(lines))
         return doc
 

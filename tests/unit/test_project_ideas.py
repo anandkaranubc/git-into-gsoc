@@ -79,6 +79,30 @@ def test_umbrella_index_reports_sub_pages_not_ideas() -> None:
     assert doc.sub_pages[0]["title"] == "Sub-project Alpha"
 
 
+def test_umbrella_links_index_without_subheadings() -> None:
+    doc = extract_ideas(markdown_to_lines(_read("umbrella_links_index.md")), source_url="https://x")
+    assert doc.layout == "index"
+    assert doc.ideas == []
+    titles = [p["title"] for p in doc.sub_pages]
+    assert titles[:3] == ["Alpha Lab", "Beta Toolkit", "Gamma Solver"]
+    assert all(p["url"].startswith("https://") for p in doc.sub_pages)
+    assert not any("old/project" in p["url"] for p in doc.sub_pages)
+    # Links to a ".ai" domain and a "Proposed-Projects" page are not a policy.
+    assert doc.ai_policy == []
+
+
+def test_ai_policy_ignores_links_and_survives_wrapped_lines() -> None:
+    wrapped = (
+        "Use of AI tools such as ChatGPT must be\n"
+        "disclosed in your proposal.\n"
+        "- [Solver](https://solver.ai/dev/#gsoc)\n"
+        "- [Stats](https://github.com/x/y/wiki/GSOC-2026-Proposed-Projects)\n"
+    )
+    assert ai_policy_sentences(wrapped) == [
+        "Use of AI tools such as ChatGPT must be disclosed in your proposal."
+    ]
+
+
 def test_ai_policy_sentences() -> None:
     text = _read("wiki_headings.md")
     found = ai_policy_sentences(text)
