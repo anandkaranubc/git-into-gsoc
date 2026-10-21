@@ -26,22 +26,22 @@ _PHASES: list[tuple[str, str, str, str]] = [
         "prog_announce",
         "announced",
         "Program announced",
-        "Read the rules and FAQ. The org list is not out yet, so keep contributing to "
-        "orgs that participated last year.",
+        "Read the rules and FAQ. The organization list is not out yet, so keep "
+        "contributing to organizations that took part last year.",
     ),
     (
         "org_application_start",
         "org_applications",
         "Organizations are applying",
-        "Orgs are being selected. Past participants are the safest bets; deepen one or "
-        "two contributions there.",
+        "Organizations are being selected. Those that took part last year are the "
+        "safest bets; deepen one or two contributions there.",
     ),
     (
         "org_announce_public",
         "org_exploration",
         "Accepted organizations announced",
-        "Shortlist accepted orgs, read their ideas pages, introduce yourself publicly, "
-        "and land a first meaningful PR.",
+        "Shortlist accepted organizations, read their ideas pages, introduce yourself "
+        "publicly, and get a first meaningful pull request reviewed.",
     ),
     (
         "contributor_proposals_open",
@@ -60,13 +60,14 @@ _PHASES: list[tuple[str, str, str, str]] = [
         "project_announce_public",
         "community_bonding",
         "Community bonding",
-        "Meet your mentor, agree on milestones, and get the dev environment solid.",
+        "Meet your mentor, agree on milestones, and get your development setup working.",
     ),
     (
         "project_work_start",
         "coding",
         "Coding period",
-        "Ship weekly, surface blockers early, and keep evaluation deliverables visible.",
+        "Deliver something every week, raise blockers early, and keep what you will show at "
+        "evaluations visible.",
     ),
     (
         "program_end",

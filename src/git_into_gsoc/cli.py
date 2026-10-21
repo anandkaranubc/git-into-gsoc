@@ -230,7 +230,7 @@ def org_cmd(
     ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Show ideas page, channels, GitHub orgs, slot history, and past projects."""
+    """Show one organization's ideas page, channels, GitHub organizations, and past projects."""
     data = _toolkit().org_details(name, year=year)
     if shortlist and data.get("found"):
         _toolkit().progress.shortlist_org(data["organization"]["name"])
@@ -272,13 +272,13 @@ def org_cmd(
 
 @app.command("projects")
 def projects_cmd(
-    query: str | None = typer.Argument(None, help="Keywords, e.g. 'graph neural networks'"),
+    query: str | None = typer.Argument(None, help="Keywords, for example 'graph neural networks'"),
     org: str | None = typer.Option(None, "--org", help="Limit to one organization"),
     since: int | None = typer.Option(None, "--since", help="Earliest program year"),
     limit: int = typer.Option(15, "--limit", "-n", help="How many projects to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Search past accepted GSoC projects to calibrate scope and find orgs."""
+    """Search past accepted GSoC projects to judge scope and find organizations."""
     data = _toolkit().past_projects(query, org=org, since=since, limit=limit)
     if output == Output.json:
         _emit(data, output)
@@ -294,12 +294,14 @@ def projects_cmd(
 
 @app.command("repos")
 def repos_cmd(
-    org: str = typer.Argument(..., help="GSoC org name (e.g. 'GNU Radio') or GitHub login"),
+    org: str = typer.Argument(
+        ..., help="GSoC organization name, for example 'GNU Radio', or its GitHub login"
+    ),
     language: str | None = typer.Option(None, "--language", "-l", help="Prefer this language"),
-    limit: int = typer.Option(10, "--limit", "-n"),
-    output: Output = Output.rich,
+    limit: int = typer.Option(10, "--limit", "-n", help="How many repositories to show"),
+    output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Rank an org's repositories: ideas-page mentions, open beginner issues, activity."""
+    """Rank an organization's repositories by ideas-page mentions, beginner issues, and activity."""
     data = _toolkit().discover_repos(org, language=language, limit=limit)
     if output == Output.json:
         _emit(data, output)
@@ -333,7 +335,7 @@ def repo_cmd(
     track: bool = typer.Option(False, "--track", help="Also save this repo to your progress"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Check whether a newcomer's PR can land here: health grade, merge behaviour, setup path."""
+    """Check whether a newcomer's pull request can land here: grade, merge history, setup hints."""
     data = _toolkit().evaluate_repo(full_name)
     if track:
         _toolkit().progress.track_repo(data["health"]["full_name"])
@@ -398,7 +400,7 @@ def issues_cmd(
     limit: int = typer.Option(10, "--limit", "-n", help="How many issues to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Find beginner issues that still look free: no PR, assignee, or recent claim."""
+    """Find beginner issues that still look free: no pull request, assignee, or recent claim."""
     data = _toolkit().find_issues(
         language=language, org=org, repo=repo, label=label, scope=scope.value, max_results=limit
     )
@@ -433,7 +435,7 @@ def issue_cmd(
     track: bool = typer.Option(False, "--track", help="Also save this issue to your progress"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Check whether an issue is free to pick up: PRs, claims, assignees, activity."""
+    """Check whether an issue is free to pick up: pull requests, claims, assignees, activity."""
     data = _toolkit().issue_status(ref, number)
     if track:
         _toolkit().progress.track_issue(data["url"])
@@ -599,7 +601,7 @@ def progress_cmd(
 
 @app.command("journey")
 def journey_cmd(output: Output = OUTPUT_OPTION) -> None:
-    """Print the full contributor journey overview."""
+    """Show every phase of the journey with its goal and actions."""
     data = journey_overview()
     if output == Output.json:
         _emit(data, output)
@@ -659,7 +661,7 @@ def setup_cmd(
     skill: bool = typer.Option(True, "--skill/--no-skill", help="Copy the Agent Skill"),
     mcp: bool = typer.Option(True, "--mcp/--no-mcp", help="Register the MCP server"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show the plan without writing"),
-    output: Output = Output.rich,
+    output: Output = OUTPUT_OPTION,
 ) -> None:
     """Install the Agent Skill and register the MCP server with your AI assistants."""
     from git_into_gsoc.install import plan_setup, run_setup

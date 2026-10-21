@@ -306,14 +306,14 @@ class GSoCToolkit:
             "recommended_orgs": orgs,
             "starter_issues": issues,
             "next_steps": [
-                "Shortlist 3 orgs and join their communication channels",
-                "Evaluate 1-2 flagship repos for health and CONTRIBUTING fit",
-                "Land a meaningful first contribution before writing a proposal",
-                "Read official AI guidance and each org's AI policy",
+                "Shortlist three organizations and join their community channels",
+                "Check one or two of their main repositories for health and a contributing guide",
+                "Make one meaningful contribution before writing a proposal",
+                "Read Google's AI guidance and each organization's AI policy",
             ],
             "evidence_note": (
-                f"Org rankings use archive data through {LATEST_ARCHIVED_YEAR}. "
-                "GSoC 2027 org lists are not final until officially announced."
+                "Organization rankings use the latest official list plus archive history. "
+                "Next year's organizations are not final until Google announces them."
             ),
         }
 
@@ -346,19 +346,19 @@ class GSoCToolkit:
         return {
             "checklist": [i.model_dump() for i in proposal_checklist()],
             "structure": [
-                "Synopsis: one paragraph on the problem and your proposed outcome",
+                "Synopsis: one paragraph on the problem and what you will deliver",
                 "Benefits to the community",
-                "Deliverables and non-goals",
+                "Deliverables, and what is out of scope",
                 "Implementation plan with milestones",
-                "Timeline (weekly) with buffer",
-                "Related prior art / design notes",
+                "Week-by-week timeline, with spare time for surprises",
+                "Related work and design notes",
                 "About you: relevant experience and links to your contributions",
-                "AI usage statement aligned to org policy",
+                "How you will use AI, following the organization's policy",
             ],
             "warnings": [
-                "Generic AI-written essays are often rejected. See the official spam guidance",
-                "Submit only through the official GSoC website",
-                "Prior org interaction is often the strongest acceptance signal",
+                "Generic AI-written essays are often rejected. See Google's guidance on low-quality proposals.",
+                "Submit only through the official GSoC website.",
+                "Earlier interaction with the organization is often the strongest signal in your favor.",
             ],
         }
 
