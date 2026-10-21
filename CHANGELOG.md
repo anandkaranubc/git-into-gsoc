@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.13.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.12.0...v0.13.0) (2026-10-21)
+
+
+### Features
+
+* **issue:** check GitLab issues through GitLab's public API ([#181](https://github.com/anandkaranubc/git-into-gsoc/issues/181)) ([92437e8](https://github.com/anandkaranubc/git-into-gsoc/commit/92437e89f4190ff95264df9e9ce287979eca1a79))
+
+
+### Bug Fixes
+
+* **doctor:** see the Claude Code registration that claude mcp add made ([#183](https://github.com/anandkaranubc/git-into-gsoc/issues/183)) ([69db68f](https://github.com/anandkaranubc/git-into-gsoc/commit/69db68f22ead04c682b91ddd3813c852176685ae))
+* **issues:** catch claims the way newcomers actually write them ([#179](https://github.com/anandkaranubc/git-into-gsoc/issues/179)) ([1993ca1](https://github.com/anandkaranubc/git-into-gsoc/commit/1993ca1509c9c37d399c895ad9eac4e450c89228))
+* **issues:** name the organizations a language search could not cover ([#186](https://github.com/anandkaranubc/git-into-gsoc/issues/186)) ([e2accf3](https://github.com/anandkaranubc/git-into-gsoc/commit/e2accf3ef9346075accbae32a35046c082c7ceee))
+* **matching:** keep ideas when a page suddenly reads empty, and rank ideas that require a skill you lack lower ([#178](https://github.com/anandkaranubc/git-into-gsoc/issues/178)) ([8b16722](https://github.com/anandkaranubc/git-into-gsoc/commit/8b16722652c55aeabda1ddf27f47dc88fd85e1f8))
+* **recommend:** leave repositories for events out of starter issues ([#187](https://github.com/anandkaranubc/git-into-gsoc/issues/187)) ([4ab939f](https://github.com/anandkaranubc/git-into-gsoc/commit/4ab939fc656a751da8ef350edb40b50582148723))
+* **skill:** use the MCP tools when they are connected, never a sandboxed shell ([#180](https://github.com/anandkaranubc/git-into-gsoc/issues/180)) ([240040e](https://github.com/anandkaranubc/git-into-gsoc/commit/240040ef6670612e62b70b10759a3af83f501c09))
+
+
+### Documentation
+
+* **skill:** what to do when the first message asks for everything at once ([#185](https://github.com/anandkaranubc/git-into-gsoc/issues/185)) ([d0a6381](https://github.com/anandkaranubc/git-into-gsoc/commit/d0a6381adfc832e0375a4bfc519387882141e147))
+
 ## [0.12.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.11.0...v0.12.0) (2026-10-21)
 
 
