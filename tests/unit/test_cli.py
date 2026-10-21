@@ -129,3 +129,25 @@ def test_cli_setup_remove_dry_run(tmp_path, monkeypatch) -> None:  # type: ignor
     )
     assert result.exit_code == 0, result.output
     assert '"remove": true' in result.output
+
+
+def test_contributions_uses_the_saved_profile_or_asks_for_a_username(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc import cli
+    from git_into_gsoc.progress.store import ProgressStore
+
+    seen: list[str] = []
+
+    class Fake:
+        progress = ProgressStore()
+
+        def contribution_evidence(self, username, **kw):  # type: ignore[no-untyped-def]
+            seen.append(username)
+            return {"username": username}
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    missing = runner.invoke(app, ["contributions", "--org", "SymPy"])
+    assert missing.exit_code == 1 and "No GitHub username" in missing.output
+    Fake.progress.set_profile(github="octocat")
+    saved = runner.invoke(app, ["contributions", "--org", "SymPy", "--output", "json"])
+    assert saved.exit_code == 0, saved.output
+    assert seen == ["octocat"]

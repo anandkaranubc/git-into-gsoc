@@ -984,7 +984,9 @@ _STRENGTH_STYLE = {"strong": "green", "developing": "cyan", "starting": "yellow"
 
 @app.command("contributions", rich_help_panel="Contribute and apply")
 def contributions_cmd(
-    github: str = typer.Option(..., "--github", "-g", help="Your GitHub username"),
+    github: str | None = typer.Option(
+        None, "--github", "-g", help="Your GitHub username (default: the one saved by `profile`)"
+    ),
     org: str | None = typer.Option(None, "--org", help="GSoC org name or GitHub org"),
     repo: str | None = typer.Option(None, "--repo", help="owner/repo to scope to"),
     output: Output = OUTPUT_OPTION,
@@ -992,7 +994,15 @@ def contributions_cmd(
     """Collect your PRs, issues, and reviews in an org's repos as proposal evidence."""
     if not org and not repo:
         raise typer.BadParameter("Pass --org or --repo")
-    data = _toolkit().contribution_evidence(github, org=org, repo=repo)
+    toolkit = _toolkit()
+    username = github or str(toolkit.progress.profile().get("github") or "")
+    if not username:
+        raise InputError(
+            "No GitHub username given.",
+            hint="Pass --github YOUR_USERNAME, or save it once with "
+            "`git-into-gsoc profile --github YOUR_USERNAME`.",
+        )
+    data = toolkit.contribution_evidence(username, org=org, repo=repo)
     if output == Output.json:
         _emit(data, output)
         return
