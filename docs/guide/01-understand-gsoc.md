@@ -32,7 +32,7 @@ Save the same answers for the tool, so every recommendation fits you without ret
 git-into-gsoc profile --tech python --interests science --hours 10 --tz Asia/Kolkata
 ```
 
-Add `--github YOUR_USERNAME` and it also reads your public repositories to confirm your main language. The profile lives only on your computer.
+Add `--github YOUR_USERNAME` and it also reads your public repositories to confirm your main language; offline, it saves the username and reads the languages next time. The profile lives only on your computer.
 
 You can start by reading documentation or reproducing a bug. You do not need to be an expert in the whole codebase. The time you can spend preparing may differ from the time a GSoC project requires; discuss the project schedule before applying.
 

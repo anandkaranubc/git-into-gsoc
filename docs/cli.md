@@ -11,7 +11,7 @@ git-into-gsoc --install-completion     # tab completion for your shell
 
 Options belong after their command, except the top-level `--version`. All data commands accept `--output rich` (the default, tables and panels) or `--output json` (for scripts and assistants). `doctor`, `cache`, `mcp`, and `--version` do not accept `--output`.
 
-Repositories can be written as `owner/name` or as any GitHub URL. Issues can be written as `owner/name#123`, an issue URL, or `owner/name 123`.
+Repositories can be written as `owner/name`, as any GitHub URL, or as the `git@github.com:owner/name.git` form that `git remote -v` prints. Issues can be written as `owner/name#123`, `owner/name 123`, or any issue or pull request URL, including a link copied from a single comment.
 
 ## Learn and plan
 
