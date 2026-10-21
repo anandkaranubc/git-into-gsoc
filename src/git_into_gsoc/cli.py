@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
 
 import typer
@@ -560,12 +561,122 @@ def mcp_cmd() -> None:
     mcp_main()
 
 
+def _short_path(path: Path, home: Path, project: Path | None = None) -> str:
+    for root, prefix in ((project, "./"), (home, "~/")):
+        if root is None:
+            continue
+        try:
+            return prefix + path.relative_to(root).as_posix()
+        except ValueError:
+            continue
+    return str(path)
+
+
+class SetupScope(StrEnum):
+    user = "user"
+    project = "project"
+
+
+@app.command("setup")
+def setup_cmd(
+    assistant: list[str] | None = typer.Option(
+        None,
+        "--assistant",
+        "-a",
+        help=(
+            "Assistant to configure (repeatable): claude-code, cursor, codex, gemini, "
+            "windsurf, vscode, or all. Default: every assistant detected on this machine."
+        ),
+    ),
+    scope: SetupScope = typer.Option(
+        SetupScope.user,
+        "--scope",
+        help="user: your home folder; project: the current repository (or --project-dir)",
+    ),
+    project_dir: Path | None = typer.Option(
+        None, "--project-dir", help="Project root for --scope project (default: current dir)"
+    ),
+    skill: bool = typer.Option(True, "--skill/--no-skill", help="Copy the Agent Skill"),
+    mcp: bool = typer.Option(True, "--mcp/--no-mcp", help="Register the MCP server"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show the plan without writing"),
+    output: Output = Output.rich,
+) -> None:
+    """Install the Agent Skill and register the MCP server with your AI assistants."""
+    from git_into_gsoc.install import plan_setup, run_setup
+    from git_into_gsoc.install.clients import env_home
+
+    project = (project_dir or Path.cwd()).resolve() if scope == SetupScope.project else None
+    plan = plan_setup(
+        scope=scope.value,
+        assistants=assistant or None,
+        home=env_home(),
+        project=project,
+        install_skill=skill,
+        install_mcp=mcp,
+    )
+    run_setup(plan, dry_run=dry_run)
+    if output == Output.json:
+        _emit(
+            {
+                "scope": plan.scope,
+                "root": str(plan.root),
+                "command": plan.command,
+                "assistants": [a.key for a in plan.assistants],
+                "dry_run": dry_run,
+                "changes": [
+                    {
+                        "assistant": c.assistant,
+                        "kind": c.kind,
+                        "path": str(c.path),
+                        "action": c.action,
+                        "note": c.note,
+                    }
+                    for c in plan.changes
+                ],
+                "manual_steps": plan.manual,
+            },
+            output,
+        )
+        return
+    if not plan.assistants:
+        console.print(
+            "[yellow]No AI assistant detected.[/yellow] Use --assistant to pick one, "
+            "for example: git-into-gsoc setup --assistant claude-code"
+        )
+    title = ("Plan (dry run)" if dry_run else "Setup complete") + f" · {plan.scope} scope"
+    where = f"./ = {plan.project}   " if plan.project else ""
+    table = Table(title=title, caption=f"{where}MCP command: {' '.join(plan.command)}")
+    table.add_column("Assistant")
+    table.add_column("What")
+    table.add_column("Result")
+    table.add_column("Path", overflow="fold")
+    styles = {"created": "green", "updated": "green", "unchanged": "dim", "skipped": "yellow"}
+    for change in plan.changes:
+        result = change.action + (f" ({change.note})" if change.note else "")
+        table.add_row(
+            change.assistant,
+            change.kind,
+            f"[{styles.get(change.action, '')}]{result}[/]",
+            _short_path(change.path, plan.home, plan.project),
+        )
+    console.print(table)
+    for step in plan.manual:
+        console.print(f"  [yellow]manual:[/yellow] {step}")
+    if not dry_run and plan.changes:
+        console.print(
+            "\nRestart your assistant, then ask it: "
+            '"Use the git-into-gsoc skill and call gsoc_program_info."'
+        )
+
+
 @app.command("doctor")
 def doctor_cmd() -> None:
-    """Check your setup: version, GitHub token, data locations, and API access."""
+    """Check your setup: version, GitHub token, data locations, API access, skill, and MCP."""
     import sys
 
     from git_into_gsoc.config import cache_dir, data_dir, get_settings
+    from git_into_gsoc.install.clients import env_home, installed_skills, registered_servers
+    from git_into_gsoc.install.skill import InstallError, skill_source
 
     settings = get_settings()
     source = settings.github_token_source()
@@ -584,6 +695,23 @@ def doctor_cmd() -> None:
         console.print(f"GitHub rate: {rl.get('remaining')}/{rl.get('limit')} remaining")
     except GigError as exc:
         console.print(f"[red]GitHub check failed:[/red] {exc}")
+    try:
+        console.print(f"skill source: {skill_source()}")
+    except InstallError as exc:
+        console.print(f"[red]skill source:[/red] {exc}")
+    home, project = env_home(), Path.cwd()
+    skills = installed_skills(home, project)
+    servers = registered_servers(home, project)
+    if skills:
+        console.print("skill installed for: " + ", ".join(f"{label}" for label, _ in skills))
+    else:
+        console.print("skill installed for: [yellow]none[/yellow] (run `git-into-gsoc setup`)")
+    if servers:
+        console.print(
+            "MCP registered in: " + ", ".join(_short_path(path, home) for _, path in servers)
+        )
+    else:
+        console.print("MCP registered in: [yellow]nowhere yet[/yellow] (run `git-into-gsoc setup`)")
 
 
 @app.command("cache")

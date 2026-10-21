@@ -43,3 +43,12 @@ coverage.xml
 .agents/skills/
 .cursor/skills/
 .claude/skills/
+
+# Written by `git-into-gsoc setup --scope project` (machine-specific paths)
+.mcp.json
+.cursor/mcp.json
+.vscode/mcp.json
+.gemini/
+.codex/
+.github/skills/
+*.bak

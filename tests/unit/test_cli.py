@@ -45,3 +45,19 @@ def test_cli_program_shows_estimate_and_phase() -> None:
     assert "2027" in result.stdout
     assert "estimate" in result.stdout
     assert "Now:" in result.stdout
+
+
+def test_cli_setup_dry_run_reports_plan(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("GIG_HOME", str(tmp_path))
+    result = runner.invoke(app, ["setup", "--dry-run", "--assistant", "cursor", "--output", "json"])
+    assert result.exit_code == 0, result.output
+    assert '"dry_run": true' in result.output
+    assert "mcp.json" in result.output
+    assert not (tmp_path / ".cursor").exists()
+
+
+def test_cli_setup_rejects_unknown_assistant(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("GIG_HOME", str(tmp_path))
+    result = runner.invoke(app, ["setup", "--assistant", "emacs"])
+    assert result.exit_code == 1
+    assert "Unknown assistant" in result.output
