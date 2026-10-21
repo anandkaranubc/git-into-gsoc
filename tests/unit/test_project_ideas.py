@@ -374,3 +374,17 @@ def test_a_blank_idea_template_is_not_an_idea() -> None:
     )
     doc = extract_ideas(markdown_to_lines(page), source_url="https://example.org/ideas")
     assert [i.title for i in doc.ideas] == ["Faster builds"]
+
+
+def test_application_guidance_is_not_an_idea() -> None:
+    # Open Robotics: "What to Include in Your Proposal PDF File / Experience" was listed
+    # as a project idea.
+    page = (
+        "# GSoC Ideas\n\n## Ideas\n### Faster builds\n- Mentors: Ada Example\n"
+        "- Difficulty: Easy\n- Size: 175 hours\n\n### Review dashboard\n"
+        "- Mentors: Ben Example\n- Difficulty: Medium\n- Size: 90 hours\n\n"
+        "## What to Include in Your Proposal PDF File\n### Experience\n"
+        "- Skills: list what you know\n- Difficulty: n/a\n"
+    )
+    doc = extract_ideas(markdown_to_lines(page), source_url="https://example.org/ideas")
+    assert [i.title for i in doc.ideas] == ["Faster builds", "Review dashboard"]

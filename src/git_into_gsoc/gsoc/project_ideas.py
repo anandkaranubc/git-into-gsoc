@@ -773,10 +773,24 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
 _TEMPLATE_TITLES = {"title", "project title", "idea title", "your title", "name of the project"}
 
 
+# Headings that tell applicants what to send, not what to build.
+_GUIDANCE_RE = re.compile(
+    r"\bhow to apply\b|\bwhat to include\b|\byour (?:proposal|application)\b|"
+    r"\b(?:proposal|application) (?:template|guidelines?|format|pdf)\b",
+    re.I,
+)
+
+
 def _is_template(idea: ProjectIdea) -> bool:
+    """A blank template for new ideas, or advice on what to put in a proposal."""
     title = re.sub(r"[<>\[\]{}]", "", idea.title).strip().lower()
     section = (idea.section or "").strip().lower()
-    return title in _TEMPLATE_TITLES or "template" in section or title.startswith("template")
+    return (
+        title in _TEMPLATE_TITLES
+        or "template" in section
+        or title.startswith("template")
+        or bool(_GUIDANCE_RE.search(f"{section} / {title}"))
+    )
 
 
 def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
