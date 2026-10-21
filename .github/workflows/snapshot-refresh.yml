@@ -38,6 +38,8 @@ jobs:
       # does not open every week. The token only lists public repositories; ideas
       # pages are fetched without it. Failed pages keep last month's evidence.
       - name: Refresh ideas-page and repository evidence
+        # A failure here keeps last month's evidence; the snapshot still goes out.
+        continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ github.token }}
           EVENT: ${{ github.event_name }}

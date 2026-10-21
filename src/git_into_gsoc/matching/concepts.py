@@ -293,10 +293,13 @@ def find_tag_concepts(tag: str) -> dict[str, int]:
     """Concepts a tag names: any safe spelling inside it, or an ambiguous word that is
     the whole tag ("go", "performance"), but not one inside a longer tag ("systems
     management" is not systems programming)."""
-    whole = _term_index().get(re.sub(r"\s+", " ", tag.strip().lower()))
     found = find_concepts(tag)
-    for key in whole or ():
-        found.setdefault(key, 1)
+    index = _term_index()
+    cleaned = re.sub(r"\s+", " ", tag.strip().lower())
+    # "c/c++", "C\\C++" and "c/rust/go" are lists: each part may be a short word.
+    for part in {cleaned, *(p.strip() for p in re.split(r"[/\\,]", cleaned))}:
+        for key in index.get(part) or ():
+            found.setdefault(key, 1)
     return found
 
 

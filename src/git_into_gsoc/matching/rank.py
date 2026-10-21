@@ -80,7 +80,7 @@ class OrgMatch:
     profile: OrgProfile
     score: float
     relevance: float
-    fit: str
+    fit: str | None
     skill_fit: float | None = None
     interest_fit: float | None = None
     skills: list[TermMatch] = field(default_factory=list)
@@ -333,7 +333,8 @@ class OrgIndex:
         query = query.strip()
         category = category.strip().lower()
         ceiling = math.log(len(self.profiles) + 1) + 1.0
-        query_wants = build_profile(interests=[query]).interests if query else []
+        query_person = build_profile(interests=[query]) if query else None
+        query_wants = [*query_person.interests, *query_person.skills] if query_person else []
         if query and not query_wants:
             query_wants = [Want(raw=query, concepts=())]
         filtered = bool(query or category or not person.empty)
@@ -457,7 +458,8 @@ class OrgIndex:
         if active:
             readiness_lines.append(f"{active} GitHub repositories pushed in the last year")
 
-        fit = _fit_level(relevance, interests, skills)
+        # A fit needs something to fit: a category or a bare listing has none.
+        fit = _fit_level(relevance, interests, skills) if (query or not person.empty) else None
         return OrgMatch(
             org=org,
             profile=profile,

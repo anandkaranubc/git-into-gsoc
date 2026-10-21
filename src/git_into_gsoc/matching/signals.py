@@ -18,6 +18,7 @@ number is a count of something a person can open and check.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -36,6 +37,8 @@ from git_into_gsoc.matching.concepts import (
 )
 
 SIGNALS_FILE = "org_signals.json"
+# MediaWiki section headings end in an "[edit]" link.
+_EDIT_LINK = re.compile(r"\s*\[\s*edit(?:\s+source)?\s*\]\s*$", re.I)
 MAX_IDEAS_KEPT = 40
 MAX_TITLE = 100
 _FOLLOW_SUB_PAGES = 8
@@ -90,7 +93,8 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
         mentions.update(named)
         mentors.update(str(m).lower() for m in idea.get("mentors") or [])
         if len(kept) < MAX_IDEAS_KEPT:
-            entry: dict[str, Any] = {"t": str(idea.get("title") or "")[:MAX_TITLE]}
+            title = _EDIT_LINK.sub("", str(idea.get("title") or "")).strip()
+            entry: dict[str, Any] = {"t": title[:MAX_TITLE]}
             if idea.get("difficulty"):
                 entry["d"] = idea["difficulty"]
             if idea.get("size"):

@@ -60,19 +60,27 @@ def issue_fit(issue: dict[str, Any], person: ContributorProfile) -> tuple[float,
     return bonus, reasons
 
 
-def personalize(issues: list[dict[str, Any]], person: ContributorProfile) -> list[dict[str, Any]]:
-    """Issues with a `fits_you` list, free ones first, then by score plus fit."""
+def personalize(
+    issues: list[dict[str, Any]], person: ContributorProfile, *, reorder: bool = True
+) -> list[dict[str, Any]]:
+    """Issues with a `fits_you` list.
+
+    With `reorder`, verified free issues come first, then by score plus fit. Without
+    it the caller's order stands (find_issues puts an organization's own
+    repositories before the ones its ideas page links to).
+    """
     if person.empty and person.experience is None:
         return issues
     scored = []
     for position, issue in enumerate(issues):
         bonus, reasons = issue_fit(issue, person)
         scored.append((issue | {"fits_you": reasons}, bonus, position))
-    scored.sort(
-        key=lambda item: (
-            item[0].get("availability") not in {"available", "unknown"},
-            -(float(item[0].get("beginner_score") or 0.0) + item[1]),
-            item[2],
+    if reorder:
+        scored.sort(
+            key=lambda item: (
+                item[0].get("availability") != "available",
+                -(float(item[0].get("beginner_score") or 0.0) + item[1]),
+                item[2],
+            )
         )
-    )
     return [issue for issue, _, _ in scored]

@@ -221,3 +221,48 @@ def test_an_unticked_template_box_is_not_what_the_issue_is_about() -> None:
     assert not any("Accessibility" in r for r in reasons)
     ticked = {"title": "Alt text", "body_excerpt": "- [x] Accessibility Screen readers skip it"}
     assert any("Accessibility" in r for r in issue_fit(ticked, person)[1])
+
+
+def test_find_issues_order_stands_and_only_recommend_reorders() -> None:
+    person = build_profile(technologies=["css"])
+    issues = [
+        {
+            "repo": "own/a",
+            "number": 1,
+            "title": "Refactor",
+            "availability": "available",
+            "beginner_score": 60,
+        },
+        {
+            "repo": "linked/b",
+            "number": 2,
+            "title": "Fix CSS",
+            "availability": "available",
+            "beginner_score": 60,
+        },
+        {
+            "repo": "x/c",
+            "number": 3,
+            "title": "Fix CSS too",
+            "availability": "unknown",
+            "beginner_score": 90,
+        },
+    ]
+    kept = personalize(issues, person, reorder=False)
+    assert [i["number"] for i in kept] == [1, 2, 3]
+    assert kept[1]["fits_you"] == ["Names CSS, which you know"]
+    # Reordered: verified free issues first; one whose history could not be checked waits.
+    assert [i["number"] for i in personalize(issues, person)] == [2, 1, 3]
+
+
+def test_repository_topics_are_read_one_by_one() -> None:
+    pushed = (datetime.now(UTC) - timedelta(days=3)).isoformat()
+    repo = {"pushed_at": pushed, "language": "TypeScript", "topics": ["react", "frontend"]}
+    _, reasons = repo_lead_score(
+        repo,
+        beginner_issues=0,
+        ideas_mention=False,
+        language=None,
+        person=build_profile(technologies=["react"]),
+    )
+    assert "Uses React, which you know" in reasons

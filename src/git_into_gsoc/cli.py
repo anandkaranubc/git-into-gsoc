@@ -586,13 +586,17 @@ def orgs_cmd(
             + ". Pass --tech or --topics to search differently."
         )
     for note in data.get("read_as") or []:
-        console.print(f"[dim]{escape(note)}[/dim]")
-    table = Table(title="GSoC organizations", caption=catalog["note"], show_lines=False)
+        console.print(f"[dim]{note}[/dim]")
+    caption = (
+        catalog["note"] + " Years: how many years it took part. Projects: contributor "
+        "projects accepted per year ('24:5 means 5 in 2024)."
+    )
+    table = Table(title="GSoC organizations", caption=caption, show_lines=False)
     table.add_column("Fit", no_wrap=True)
     table.add_column("Organization", overflow="fold", max_width=28)
     table.add_column("Why it fits", overflow="fold")
     table.add_column("Years", justify="right")
-    table.add_column("Slots", no_wrap=True)
+    table.add_column("Projects", no_wrap=True)
     for org in data["organizations"]:
         why = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
         table.add_row(
@@ -605,7 +609,7 @@ def orgs_cmd(
     console.print(table)
     if not data["organizations"]:
         hint = data.get("hint") or "Try broader --tech or --topics."
-        console.print(f"[yellow]No organizations matched.[/yellow] {escape(hint)}")
+        console.print(f"[yellow]No organizations matched.[/yellow] {hint}")
         return
     _print_org_evidence(data["organizations"][:3])
     if data.get("how_ranked"):
@@ -630,13 +634,13 @@ def _print_org_evidence(orgs: list[dict[str, Any]]) -> None:
         learn = org.get("skills_to_learn") or []
         if not (lines or cautions):
             continue
-        console.print(f"\n[bold]{escape(org['name'])}[/bold]")
+        console.print(f"\n[bold]{org['name']}[/bold]")
         for line in lines:
-            console.print(f"  • {escape(line)}")
+            console.print(f"  • {line}")
         if learn:
-            console.print(f"  • Its ideas also ask for: {escape(', '.join(learn))}")
+            console.print(f"  • Its ideas also ask for: {', '.join(learn)}")
         for line in cautions:
-            console.print(f"  [yellow]![/yellow] {escape(line)}")
+            console.print(f"  [yellow]![/yellow] {line}")
 
 
 @app.command("org", rich_help_panel="Find an organization")
@@ -1518,14 +1522,14 @@ def recommend_cmd(
         )
     used = ", ".join(data["technologies_used"] + data["interests_used"]) or "none"
     level = data.get("experience") or {}
-    about = [f"Matching on: {escape(used)} ({data['profile_source']})"]
+    about = [f"Matching on: {used} ({data['profile_source']})"]
     if level.get("level"):
-        about.append(f"experience: {level['level']} ({escape(str(level.get('from') or ''))})")
+        about.append(f"experience: {level['level']} ({level.get('from') or ''})")
     if data.get("hours_per_week"):
         about.append(f"{data['hours_per_week']} hours a week")
     console.print("; ".join(about))
     for note in data.get("read_as") or []:
-        console.print(f"[dim]{escape(note)}[/dim]")
+        console.print(f"[dim]{note}[/dim]")
     if data.get("hours_note"):
         console.print(f"[yellow]![/yellow] {data['hours_note']}")
     table = Table(title="Organizations")
@@ -1542,7 +1546,7 @@ def recommend_cmd(
     if data.get("ideas_that_fit"):
         console.print("\n[bold]Ideas that fit you[/bold]")
         for group in data["ideas_that_fit"]:
-            console.print(f"[bold]{escape(group['org'])}[/bold] [dim]{escape(group['note'])}[/dim]")
+            console.print(f"[bold]{group['org']}[/bold] [dim]{group['note']}[/dim]")
             for idea in group["ideas"]:
                 parts = []
                 if idea["you_have"]:
@@ -1552,9 +1556,7 @@ def recommend_cmd(
                 if idea["you_would_learn"]:
                     parts.append("you would learn " + ", ".join(idea["you_would_learn"]))
                 parts += idea["stated"]
-                console.print(
-                    f"  • {escape(idea['title'])} [dim]({escape('; '.join(parts))})[/dim]"
-                )
+                console.print(f"  • {idea['title']} [dim]({'; '.join(parts)})[/dim]")
     if data["starter_issues"]:
         caption = f"From {data['starter_issue_scope']}." if data.get("starter_issue_scope") else ""
         if data.get("starter_issues_hidden"):
@@ -1572,8 +1574,8 @@ def recommend_cmd(
             issues.add_row(
                 f"[{_STATUS_STYLE.get(status, '')}]{status}[/]",
                 f"{issue['repo']}#{issue['number']}",
-                escape(issue["title"]),
-                escape("; ".join(issue.get("fits_you") or [])),
+                issue["title"],
+                "; ".join(issue.get("fits_you") or []),
             )
         console.print(issues)
     elif data.get("starter_issue_error"):
@@ -1588,10 +1590,10 @@ def recommend_cmd(
     if data.get("learning_path"):
         console.print("\n[bold]Your path from here[/bold]")
         for step in data["learning_path"]:
-            console.print(f"  {step['n']}. {escape(step['step'])}")
-            console.print(f"     [dim]{escape(step['why'])}[/dim]")
+            console.print(f"  {step['n']}. {step['step']}")
+            console.print(f"     [dim]{step['why']}[/dim]")
             if step.get("command"):
-                console.print(f"     → {escape(step['command'])}")
+                console.print(f"     → {step['command']}")
     console.print(f"\n[dim]{data['evidence_note']}[/dim]")
 
 

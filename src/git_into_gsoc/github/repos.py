@@ -475,9 +475,9 @@ def repo_lead_score(
         reasons.append(f"Written in {repo_language}")
         credited = True
     if person is not None and not person.empty:
-        topics = " ".join(str(t).replace("-", " ") for t in repo.get("topics") or [])
         named = set(find_tag_concepts(repo_language)) if repo_language else set()
-        named.update(find_tag_concepts(topics) if topics else {})
+        for topic in repo.get("topics") or []:
+            named.update(find_tag_concepts(str(topic).replace("-", " ")))
         named.update(find_concepts(str(repo.get("description") or "")))
         skills = sorted(c for c in named if c in known_skills(person))
         if skills and not credited:

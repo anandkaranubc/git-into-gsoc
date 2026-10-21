@@ -182,3 +182,27 @@ def test_match_term_explains_a_match_through_a_neighbour() -> None:
     term = match_term(profile, build_profile(interests=["astronomy"]).interests[0])
     assert term.how == "related" and term.via == "Physics"
     assert 0 < term.strength < 0.5
+
+
+def test_a_query_that_names_a_skill_searches_that_skill() -> None:
+    # `orgs --query go` and `--query js` returned nothing when the query was read
+    # only as a plain word of three letters or more.
+    go = _org("Gopher Club", tech=["golang"], topics=["cloud"])
+    js = _org("Script Shop", tech=["javascript"], topics=["web"])
+    assert [m.org.name for m in _rank([go, js, ASTRO], query="go")] == ["Gopher Club"]
+    assert [m.org.name for m in _rank([go, js, ASTRO], query="js")] == ["Script Shop"]
+    assert [m.org.name for m in _rank([go, js, ASTRO], query="pyhton")] == ["Star Lab"]
+
+
+def test_a_slashed_tag_keeps_its_short_words() -> None:
+    both = _org("Compiler Co", tech=["c/c++"], topics=["compilers"])
+    mixed = _org("Poly", tech=["C/Rust/Go"], topics=["cloud"])
+    names = {m.org.name for m in _rank([both, mixed, CPP], technologies=["c"])}
+    assert names == {"Compiler Co", "Poly"}
+
+
+def test_no_fit_is_claimed_when_nothing_personal_was_given() -> None:
+    assert all(m.fit is None for m in _rank())
+    science = _org("Lab", tech=["python"], topics=[], category="Science and medicine")
+    assert [m.fit for m in _rank([science], category="science")] == [None]
+    assert _rank(query="star")[0].fit == "strong"

@@ -110,3 +110,10 @@ def test_experience_comes_from_the_person_first_then_merged_pull_requests() -> N
         "you said so",
     )
     assert effective_experience({}) == (None, None)
+
+
+def test_slashed_tags_name_every_part() -> None:
+    assert {"c", "c++"} <= set(find_tag_concepts("c/c++"))
+    assert {"c", "c++"} <= set(find_tag_concepts("C\\C++"))
+    assert {"c", "rust", "go"} <= set(find_tag_concepts("c/rust/go"))
+    assert {"dart", "flutter"} <= set(find_tag_concepts("dart/flutter"))

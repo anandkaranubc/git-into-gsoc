@@ -34,8 +34,8 @@ Three public sources describe each organization:
 | Source | What it tells us | How fresh |
 |---|---|---|
 | Its official GSoC listing (tags, categories, tagline, description) | What the organization says it works on and with | The latest official list, embedded and refreshed weekly |
-| Its ideas page | How many ideas, the difficulty and size each states, and the skills and subjects they name | Read for every organization each week and shipped as `data/org_signals.json` |
-| Its GitHub repositories | How many were pushed to in the last year, and their languages and topics | Same weekly refresh |
+| Its ideas page | How many ideas, the difficulty and size each states, and the skills and subjects they name | Read for every organization once a month and shipped as `data/org_signals.json` |
+| Its GitHub repositories | How many were pushed to in the last year, and their languages and topics | Same monthly refresh |
 
 A tag the organization chose counts most. A word in its description, ideas page, or repositories counts less, and more when several sources agree. A subject that tags, ideas, and code all mention is central to an organization; a single tag may be a side interest. The ideas evidence always names its year ("listed as a skill in 9 of 12 2026 ideas"), because last year's page says what an organization works on even before the new one appears.
 
@@ -68,12 +68,12 @@ Set them once with `profile --experience new|some|experienced --hours 10`, or pa
 
 Google announces each year's organizations around February. Until then, `orgs` and `recommend` use the latest official list and say plainly that none of these organizations is confirmed for the coming year ([official API](https://summerofcode.withgoogle.com/api/program/), checked 2026-10-21: the 2027 program does not exist yet).
 
-`recommend` also reads what its top five organizations posted about the coming year, in their issue trackers and wiki home pages. One whose maintainers say it will not take part moves to the end with the post as its first caveat, and its issues are left out of the starter list. A maintainer post about the coming year becomes a readiness line. A name you search that took part in earlier years but is not on the current list gets an explanation instead of an empty table.
+`recommend` also reads what its top five organizations (three without a GitHub token) posted about the coming year, in their issue trackers and wiki home pages. One whose maintainers say it will not take part moves to the end with the post as its first caveat, and its issues are left out of the starter list. A maintainer post about the coming year becomes a readiness line. A name you search that took part in earlier years but is not on the current list gets an explanation instead of an empty table.
 
 ## Repositories, issues, and ideas
 
 - **`repos ORG`** ranks an organization's repositories by whether its ideas page names them, open beginner issues, recent activity, and now also whether their language, topics, and description match your skills and interests. Very large repositories (over about 1 GB) say so, because cloning and building take longer.
-- **`issues`** keeps availability and the beginner score first, then adds what you bring: an issue that names a skill you have or a subject you care about moves up and says so. People new to open source get a small lift for documentation and test issues. Personalised first-issue research found that newcomers' first issues share their task type, language, and domain ([Xiao et al., ASE 2023](https://arxiv.org/abs/2308.09038)).
+- **`issues`** keeps its order (availability, the beginner score, and an organization's own repositories before the ones its ideas page links to) and says what in each issue fits you. **`recommend`** goes further with its starter issues: an issue that names a skill you have or a subject you care about moves up, and people new to open source get a small lift for documentation and test issues. Personalised first-issue research found that newcomers' first issues share their task type, language, and domain ([Xiao et al., ASE 2023](https://arxiv.org/abs/2308.09038)).
 - **`ideas ORG`** matches ideas by concept, so `reactjs` matches React and `c` no longer matches every idea that contains the letter c, and lists the skills each idea would teach.
 
 ## How well it works
@@ -87,14 +87,14 @@ Each has a dev half, used while tuning, and a test half, checked once at the end
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
-| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.774** |
-| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.650** |
+| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.773** |
+| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.638** |
 | Personas: strong fits found in the top 10 | 0.763 | **0.854** |
 | Personas: picks in the top 5 that judges called wrong | 14 | **5** |
-| Accepted projects: accepting organization in the top 5 | 52.1% | **64.7%** |
-| Accepted projects: accepting organization in the top 10 | 62.2% | **74.8%** |
+| Accepted projects: accepting organization in the top 5 | 52.1% | **63.9%** |
+| Accepted projects: accepting organization in the top 10 | 62.2% | **75.6%** |
 
-Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/test_match_benchmark.py`) fails if a change makes them clearly worse, and the weekly data refresh runs it too.
+Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/test_match_benchmark.py`) fails if a change makes them clearly worse, and CI runs it on the monthly data refresh too.
 
 ## Known limits
 

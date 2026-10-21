@@ -81,6 +81,7 @@ from git_into_gsoc.gsoc.project_ideas import (
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
+from git_into_gsoc.matching.concepts import resolve as resolve_concept
 from git_into_gsoc.matching.ideas import ideas_for
 from git_into_gsoc.matching.issues import personalize
 from git_into_gsoc.matching.path import learning_path
@@ -326,7 +327,8 @@ class GSoCToolkit:
     def _empty_search_hint(self, query: str | None, list_year: int) -> str:
         """Why nothing matched: often the name is an organization from an earlier year."""
         default = "Try broader --tech or --topics, or fewer words in --query."
-        if not query:
+        # A skill or subject word ("js", "robotics") is not an organization's name.
+        if not query or len(query.strip()) < 4 or resolve_concept(query).concepts:
             return default
         try:
             name = self.gsoc.resolve_org_name(query)
@@ -887,8 +889,10 @@ class GSoCToolkit:
             "labels_used": labels_used,
             "note": note,
             "count": len(issues),
-            # What in each issue fits the saved profile; free issues stay first.
-            "issues": personalize([_issue_dict(i) for i in issues], self._saved_person()),
+            # What in each issue fits the saved profile; the order above stands.
+            "issues": personalize(
+                [_issue_dict(i) for i in issues], self._saved_person(), reorder=False
+            ),
             "before_you_comment": BEFORE_YOU_COMMENT,
             "next_steps": [] if issues else _when_no_issues(language, org=asked_org, repo=repo),
         }

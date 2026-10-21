@@ -40,6 +40,7 @@ class IdeaFit:
     to_learn: list[str] = field(default_factory=list)
     topics: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
+    too_big: bool = False
 
 
 def known_skills(person: ContributorProfile) -> set[str]:
@@ -52,7 +53,8 @@ def known_skills(person: ContributorProfile) -> set[str]:
         for concept in want.concepts:
             known.add(concept)
             known.update(broader_of(concept))
-    return known
+    # Only skills: React's broader "frontend" is a subject, not something one knows.
+    return {c for c in known if kind_of(c) == SKILL}
 
 
 def wanted_domains(person: ContributorProfile) -> set[str]:
@@ -97,6 +99,7 @@ def fit_idea(
         score += 0.3
     level = person.experience or "some"
     notes: list[str] = []
+    too_big = False
     if difficulty:
         score += 0.15 * _DIFFICULTY_FOR[level].get(difficulty, 0.5)
         notes.append(f"stated difficulty: {difficulty}")
@@ -106,6 +109,7 @@ def fit_idea(
         if person.hours_per_week and hours:
             if hours > person.hours_per_week * LONGEST_CODING_WEEKS:
                 score -= 0.3
+                too_big = True
                 notes.append(f"too big for {person.hours_per_week} hours a week")
             else:
                 score += 0.05
@@ -115,6 +119,7 @@ def fit_idea(
         to_learn=[label(c) for c in to_learn][:4],
         topics=[label(c) for c in topics],
         notes=notes,
+        too_big=too_big,
     )
 
 
@@ -138,7 +143,7 @@ def ideas_for(
             difficulty=idea.get("d"),
             size=idea.get("s"),
         )
-        if fit.score <= 0.15 or not (fit.have or fit.topics):
+        if fit.score <= 0.15 or not (fit.have or fit.topics) or fit.too_big:
             continue
         scored.append((fit.score, str(idea.get("t") or ""), fit))
     scored.sort(key=lambda item: (-item[0], item[1]))
