@@ -306,6 +306,19 @@ def manifest_commands(names: set[str], *, package_json: str | None) -> tuple[lis
     return [], None
 
 
+def _distinct(commands: list[str] | None, limit: int = 2) -> list[str]:
+    """One command per tool and action: "npm clean-install --ignore-scripts" repeats
+    "npm clean-install"."""
+    seen: set[str] = set()
+    out: list[str] = []
+    for command in commands or []:
+        key = " ".join(command.split()[:2])
+        if key not in seen:
+            seen.add(key)
+            out.append(command)
+    return out[:limit]
+
+
 def _from(ctx: dict[str, Any]) -> str:
     source = ctx.get("commands_source")
     return f"(from {source})" if source and source != "CI" else "as CI does"
@@ -341,7 +354,7 @@ def _setup_commands(ctx: dict[str, Any]) -> list[str]:
         f"  cd {name} && git remote add upstream https://github.com/{repo}.git && git fetch upstream",
         f"  git switch -c {branch} upstream/{base}",
         *_venv_line(ctx),
-        *(f"  {cmd}   # install {_from(ctx)}" for cmd in (ctx.get("install_commands") or [])[:2]),
+        *(f"  {cmd}   # install {_from(ctx)}" for cmd in _distinct(ctx.get("install_commands"))),
         f"  {test_cmd}"
         + (
             ""

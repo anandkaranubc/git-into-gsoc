@@ -258,3 +258,19 @@ def test_pr_draft_says_when_no_test_command_exists(monkeypatch) -> None:  # type
     )
     assert "npm ci   # install (from package.json)" in draft["template"]
     assert "npm run build   # no test command found; at least check it builds" in draft["template"]
+
+
+def test_pr_draft_lists_each_install_step_once() -> None:
+    from git_into_gsoc.drafts import render_draft
+
+    # OWASP/threat-dragon: "npm clean-install" and "npm clean-install --ignore-scripts".
+    draft = render_draft(
+        "pr",
+        context={
+            "repo": "OWASP/threat-dragon",
+            "default_branch": "main",
+            "install_commands": ["npm clean-install", "npm clean-install --ignore-scripts"],
+            "test_commands": ["npm run test:desktop"],
+        },
+    )
+    assert draft["template"].count("npm clean-install") == 1
