@@ -56,6 +56,10 @@ def test_hours_note_says_which_project_sizes_fit() -> None:
     three = hours_note(3)
     assert three is not None and "even a small project" in three and "about 30 weeks" in three
     assert "large projects would not fit" in (hours_note(10) or "")
+    # A simulated run at 15 hours a week was told to choose a small idea, though a
+    # medium one (about 175 hours) fits in 12 weeks.
+    assert "Choose a small or medium idea" in (hours_note(15) or "")
+    assert "Choose a small idea" in (hours_note(5) or "")
     assert hours_note(16) is None  # 350 hours in 22 weeks
     assert hours_note(None) is None and hours_note("lots") is None
 
