@@ -1,4 +1,4 @@
-"""Repository health scoring for contributor success likelihood."""
+"""Repository health scoring: how likely is a newcomer's PR to land here?"""
 
 from __future__ import annotations
 
@@ -8,18 +8,19 @@ from git_into_gsoc.models import RepoHealth
 
 
 def _grade(score: float) -> str:
-    if score >= 90:
+    if score >= 85:
         return "A"
-    if score >= 80:
+    if score >= 72:
         return "B"
-    if score >= 70:
+    if score >= 58:
         return "C"
-    if score >= 55:
+    if score >= 45:
         return "D"
     return "F"
 
 
 def score_repo_health(health: RepoHealth) -> RepoHealth:
+    """Weights sum to 100. Outsider merge rate is the strongest newcomer signal."""
     score = 0.0
     signals: list[str] = []
     warnings: list[str] = []
@@ -27,81 +28,93 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
     if health.archived or health.disabled:
         health.health_score = 0.0
         health.grade = "F"
-        health.warnings = ["Repository is archived or disabled — do not contribute here for GSoC"]
+        health.warnings = ["Repository is archived or disabled; do not contribute here for GSoC"]
         health.signals = []
         return health
 
-    # Recency of pushes
     if health.pushed_at:
         days = (datetime.now(UTC) - health.pushed_at.astimezone(UTC)).days
         if days <= 14:
-            score += 25
+            score += 20
             signals.append(f"Very recent activity ({days}d since push)")
         elif days <= 45:
-            score += 20
+            score += 15
             signals.append(f"Active ({days}d since push)")
         elif days <= 120:
-            score += 10
+            score += 7
             signals.append(f"Somewhat active ({days}d since push)")
         else:
             warnings.append(f"Stale repository ({days}d since last push)")
     else:
         warnings.append("Missing push timestamp")
 
-    # Community files
     if health.has_contributing:
-        score += 15
-        signals.append("Has CONTRIBUTING guide")
+        score += 12
+        signals.append("Has a CONTRIBUTING guide")
     else:
-        warnings.append("No CONTRIBUTING file detected")
-
+        warnings.append("No CONTRIBUTING guide detected; ask maintainers how to start")
     if health.has_code_of_conduct:
-        score += 5
-        signals.append("Has Code of Conduct")
-
+        score += 4
+        signals.append("Has a Code of Conduct")
+    if health.has_issue_template or health.has_pr_template:
+        score += 4
+        signals.append("Issue/PR templates guide contributions")
     if health.has_ci:
-        score += 10
-        signals.append("CI config detected")
+        score += 8
+        signals.append("CI runs on pull requests")
 
-    if health.beginner_labels_present:
+    if health.open_beginner_issues:
         score += 10
-        signals.append("Beginner-friendly issue labels present")
+        signals.append(f"{health.open_beginner_issues} open '{health.beginner_label}' issue(s)")
+    elif health.beginner_label:
+        score += 4
+        warnings.append(f"'{health.beginner_label}' label exists but no open issues use it")
 
-    # Merge rate
-    if health.merge_rate is not None:
+    if health.merge_rate is not None and health.prs_sampled >= 5:
         if health.merge_rate >= 0.5:
-            score += 15
-            signals.append(f"Healthy merge rate ({health.merge_rate:.0%})")
+            score += 12
+            signals.append(f"Healthy merge rate ({health.merge_rate:.0%} of human PRs)")
         elif health.merge_rate >= 0.25:
-            score += 8
+            score += 6
             signals.append(f"Moderate merge rate ({health.merge_rate:.0%})")
         else:
             warnings.append(f"Low merge rate ({health.merge_rate:.0%})")
 
+    if health.outsider_merge_rate is not None and health.outsider_prs_sampled >= 3:
+        rate = health.outsider_merge_rate
+        if rate >= 0.4:
+            score += 12
+            signals.append(f"Merges outside contributors' PRs ({rate:.0%})")
+        elif rate >= 0.2:
+            score += 6
+            signals.append(f"Sometimes merges outside PRs ({rate:.0%})")
+        else:
+            warnings.append(f"Rarely merges PRs from outside contributors ({rate:.0%})")
+    if health.newcomers_merged:
+        signals.append(f"{health.newcomers_merged} first-time contributor(s) merged recently")
+
     if health.median_pr_hours is not None:
         if health.median_pr_hours <= 72:
             score += 10
-            signals.append(f"Fast PR turnaround (~{health.median_pr_hours:.0f}h median)")
+            signals.append(f"Fast reviews (~{health.median_pr_hours:.0f}h median to merge)")
         elif health.median_pr_hours <= 240:
             score += 5
-            signals.append(f"OK PR turnaround (~{health.median_pr_hours:.0f}h median)")
+            signals.append(f"Reasonable reviews (~{health.median_pr_hours / 24:.0f}d median)")
         else:
-            warnings.append(f"Slow PR reviews (~{health.median_pr_hours:.0f}h median)")
-
-    # Size / popularity bands — prefer mid-size active projects for newcomers
-    if 100 <= health.stars <= 20000:
-        score += 5
-        signals.append("Star count in approachable active range")
-    elif health.stars < 20:
-        warnings.append("Very small star count — verify the project is still maintained")
-    elif health.stars > 50000:
-        warnings.append("Extremely popular repo — competition for issues may be fierce")
+            warnings.append(f"Slow reviews (~{health.median_pr_hours / 24:.0f}d median to merge)")
 
     if health.license:
-        score += 5
+        score += 4
         signals.append(f"License: {health.license}")
     else:
-        warnings.append("No license detected via GitHub API")
+        warnings.append("No license detected")
+
+    if 50 <= health.stars <= 30000:
+        score += 4
+    elif health.stars < 20:
+        warnings.append("Very small project; confirm it is still maintained")
+    elif health.stars > 50000:
+        warnings.append("Very popular repo: beginner issues go fast, expect competition")
 
     health.health_score = round(min(score, 100.0), 1)
     health.grade = _grade(health.health_score)

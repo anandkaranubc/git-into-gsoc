@@ -11,6 +11,13 @@ from urllib.parse import quote
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.github.availability import assess_issue
+from git_into_gsoc.github.repos import (
+    channels_in,
+    contributing_path,
+    detect_toolchain,
+    pick_beginner_label,
+    pull_stats,
+)
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import (
     Availability,
@@ -23,34 +30,7 @@ from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.validation import parse_repo, search_term, validate_login
 
-BEGINNER_LABELS = (
-    "good first issue",
-    "good-first-issue",
-    "beginner",
-    "beginner friendly",
-    "beginner-friendly",
-    "easy",
-    "starter",
-    "first-timers-only",
-    "hacktoberfest",
-    "help wanted",
-    "help-wanted",
-    "newcomer",
-    "gsoc",
-    "outreachy",
-)
-
 MAX_QUERY_CHARS = 256
-
-COMMUNITY_FILE_CANDIDATES = (
-    "CONTRIBUTING.md",
-    "CONTRIBUTING.rst",
-    "CONTRIBUTING",
-    ".github/CONTRIBUTING.md",
-    "docs/CONTRIBUTING.md",
-    "CODE_OF_CONDUCT.md",
-    ".github/CODE_OF_CONDUCT.md",
-)
 
 
 def _parse_dt(value: str | None) -> datetime | None:
@@ -67,6 +47,17 @@ def _excerpt(text: str | None, limit: int = 400) -> str:
         return ""
     cleaned = re.sub(r"\s+", " ", text).strip()
     return cleaned if len(cleaned) <= limit else cleaned[: limit - 1] + "…"
+
+
+def _license_name(license_obj: Any) -> str | None:
+    """SPDX id when GitHub recognises the license, otherwise its display name."""
+    if not isinstance(license_obj, dict):
+        return None
+    spdx = str(license_obj.get("spdx_id") or "")
+    if spdx and spdx != "NOASSERTION":
+        return spdx
+    name = str(license_obj.get("name") or "")
+    return name or None
 
 
 def _repo_from_item(item: dict[str, Any]) -> str:
@@ -235,58 +226,64 @@ class GitHubClient:
         except HttpError:
             return None
 
-    def repo_health(self, full_name: str) -> RepoHealth:
-        owner, repo = parse_repo(full_name)
-        full_name = f"{owner}/{repo}"
-        raw = self.get_repo(owner, repo)
-        has_contributing = any(
-            self.contents_exists(owner, repo, p)
-            for p in (
-                "CONTRIBUTING.md",
-                ".github/CONTRIBUTING.md",
-                "CONTRIBUTING",
-                "docs/CONTRIBUTING.md",
-            )
-        )
-        has_coc = any(
-            self.contents_exists(owner, repo, p)
-            for p in ("CODE_OF_CONDUCT.md", ".github/CODE_OF_CONDUCT.md")
-        )
-        has_ci = any(
-            self.contents_exists(owner, repo, p)
-            for p in (
-                ".github/workflows",
-                ".travis.yml",
-                ".circleci/config.yml",
-                "Jenkinsfile",
-                ".gitlab-ci.yml",
-            )
-        )
-
-        pulls = self.list_pulls(owner, repo, state="closed", per_page=40)
-        merged = [p for p in pulls if p.get("merged_at")]
-        merge_rate = (len(merged) / len(pulls)) if pulls else None
-        pr_hours: list[float] = []
-        for pull in merged[:20]:
-            created = _parse_dt(pull.get("created_at"))
-            merged_at = _parse_dt(pull.get("merged_at"))
-            if created and merged_at:
-                pr_hours.append((merged_at - created).total_seconds() / 3600.0)
-        median_pr_hours = sorted(pr_hours)[len(pr_hours) // 2] if pr_hours else None
-
-        labels_present = False
+    def community_profile(self, owner: str, repo: str) -> dict[str, Any]:
         try:
-            sample = self.search_issues(
-                f'repo:{full_name} is:issue is:open label:"good first issue"',
-                per_page=1,
-            )
-            labels_present = bool(sample)
+            data = self._api(f"repos/{owner}/{repo}/community/profile")
         except HttpError:
-            labels_present = False
+            return {}
+        return data if isinstance(data, dict) else {}
 
+    def workflow_count(self, owner: str, repo: str) -> int:
+        try:
+            data = self._api(f"repos/{owner}/{repo}/actions/workflows", params={"per_page": 1})
+        except HttpError:
+            return 0
+        return int(data.get("total_count") or 0) if isinstance(data, dict) else 0
+
+    def list_labels(self, owner: str, repo: str) -> list[dict[str, Any]]:
+        try:
+            data = self._api(f"repos/{owner}/{repo}/labels", params={"per_page": 100})
+        except HttpError:
+            return []
+        return data if isinstance(data, list) else []
+
+    def count_open_issues_with_label(self, owner: str, repo: str, label: str) -> int:
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/issues",
+                params={"labels": label, "state": "open", "per_page": 100},
+                ttl=900,
+            )
+        except HttpError:
+            return 0
+        return sum(1 for i in data if "pull_request" not in i) if isinstance(data, list) else 0
+
+    def root_listing(self, owner: str, repo: str) -> list[dict[str, Any]]:
+        try:
+            data = self._api(f"repos/{owner}/{repo}/contents/")
+        except HttpError:
+            return []
+        return data if isinstance(data, list) else []
+
+    def repo_health(self, full_name: str) -> RepoHealth:
+        """~6 core API calls: metadata, community profile, workflows, PRs, labels, issues."""
+        owner, repo = parse_repo(full_name)
+        raw = self.get_repo(owner, repo)
+        owner, repo = (raw.get("full_name") or f"{owner}/{repo}").split("/", 1)
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            profile_f = pool.submit(self.community_profile, owner, repo)
+            workflows_f = pool.submit(self.workflow_count, owner, repo)
+            pulls_f = pool.submit(self.list_pulls, owner, repo, state="closed", per_page=60)
+            labels_f = pool.submit(self.list_labels, owner, repo)
+            profile, workflows = profile_f.result(), workflows_f.result()
+            pulls, labels = pulls_f.result(), labels_f.result()
+        files = profile.get("files") or {}
+        stats = pull_stats(pulls)
+        label = pick_beginner_label(labels)
+        open_beginner = self.count_open_issues_with_label(owner, repo, label) if label else None
         health = RepoHealth(
-            full_name=raw.get("full_name", full_name),
-            url=raw.get("html_url", f"https://github.com/{full_name}"),
+            full_name=f"{owner}/{repo}",
+            url=raw.get("html_url", f"https://github.com/{owner}/{repo}"),
             description=raw.get("description"),
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
@@ -295,13 +292,23 @@ class GitHubClient:
             archived=bool(raw.get("archived")),
             disabled=bool(raw.get("disabled")),
             pushed_at=_parse_dt(raw.get("pushed_at")),
-            license=(raw.get("license") or {}).get("spdx_id"),
-            has_contributing=has_contributing,
-            has_code_of_conduct=has_coc,
-            has_ci=has_ci,
-            merge_rate=merge_rate,
-            median_pr_hours=median_pr_hours,
-            beginner_labels_present=labels_present,
+            license=_license_name(raw.get("license")),
+            topics=list(raw.get("topics") or []),
+            has_contributing=bool(files.get("contributing")),
+            has_code_of_conduct=bool(
+                files.get("code_of_conduct") or files.get("code_of_conduct_file")
+            ),
+            has_issue_template=bool(files.get("issue_template")),
+            has_pr_template=bool(files.get("pull_request_template")),
+            has_ci=workflows > 0,
+            prs_sampled=stats.sampled,
+            merge_rate=stats.merge_rate,
+            median_pr_hours=stats.median_hours,
+            outsider_prs_sampled=stats.outsider_sampled,
+            outsider_merge_rate=stats.outsider_merge_rate,
+            newcomers_merged=stats.newcomers_merged,
+            beginner_label=label,
+            open_beginner_issues=open_beginner,
         )
         return score_repo_health(health)
 
@@ -350,7 +357,7 @@ class GitHubClient:
         prelim: list[IssueCandidate] = []
         per_repo_count: dict[str, int] = {}
         for item in items:
-            if item.get("id") in seen or item.get("pull_request"):
+            if item.get("id") in seen or "pull_request" in item:
                 continue
             seen.add(int(item.get("id") or 0))
             candidate = _candidate_from_search(item)
@@ -395,7 +402,7 @@ class GitHubClient:
     def assess(self, full_name: str, number: int) -> tuple[dict[str, Any], IssueAssessment]:
         owner, repo = parse_repo(full_name)
         issue = self.get_issue(owner, repo, number)
-        if issue.get("pull_request"):
+        if "pull_request" in issue:
             raise InputError(
                 f"{owner}/{repo}#{number} is a pull request, not an issue",
                 hint="Pass the issue number the PR addresses.",
@@ -415,68 +422,56 @@ class GitHubClient:
     def contribution_guide(self, full_name: str) -> ContributionGuide:
         owner, repo = parse_repo(full_name)
         full_name = f"{owner}/{repo}"
-        contributing_path = None
-        contributing_text = ""
-        for path in (
-            "CONTRIBUTING.md",
-            ".github/CONTRIBUTING.md",
-            "docs/CONTRIBUTING.md",
-            "CONTRIBUTING.rst",
-            "CONTRIBUTING",
-        ):
-            text = self.get_raw_file(owner, repo, path)
-            if text:
-                contributing_path = f"https://github.com/{full_name}/blob/HEAD/{path}"
-                contributing_text = text
-                break
-
-        coc_url = None
-        for path in ("CODE_OF_CONDUCT.md", ".github/CODE_OF_CONDUCT.md"):
-            if self.contents_exists(owner, repo, path):
-                coc_url = f"https://github.com/{full_name}/blob/HEAD/{path}"
-                break
-
-        setup_hints: list[str] = []
-        channels: list[str] = []
-        labels: list[str] = []
-        lower = contributing_text.lower()
-        for needle, hint in (
-            ("npm install", "Node/npm toolchain detected"),
-            ("pnpm", "pnpm toolchain detected"),
-            ("yarn", "Yarn toolchain detected"),
-            ("pip install", "Python/pip toolchain detected"),
-            ("poetry", "Poetry toolchain detected"),
-            ("cargo ", "Rust/Cargo toolchain detected"),
-            ("go mod", "Go modules toolchain detected"),
-            ("gradle", "Gradle toolchain detected"),
-            ("maven", "Maven toolchain detected"),
-            ("docker", "Docker mentioned in contributing docs"),
-            ("pre-commit", "pre-commit hooks expected"),
-            ("make ", "Makefile targets may exist"),
-        ):
-            if needle in lower:
-                setup_hints.append(hint)
-
-        for needle in ("discord", "slack", "zulip", "irc", "matrix", "mailing list", "discourse"):
-            if needle in lower:
-                channels.append(needle)
-
-        for label in BEGINNER_LABELS:
-            if label in lower:
-                labels.append(label)
-
-        if not labels:
-            labels = ["good first issue", "help wanted"]
-
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            profile_f = pool.submit(self.community_profile, owner, repo)
+            root_f = pool.submit(self.root_listing, owner, repo)
+            labels_f = pool.submit(self.list_labels, owner, repo)
+            profile, root, labels = profile_f.result(), root_f.result(), labels_f.result()
+        files = profile.get("files") or {}
+        path = contributing_path(profile)
+        text = (self.get_raw_file(owner, repo, path) if path else None) or ""
+        coc = files.get("code_of_conduct_file") or files.get("code_of_conduct") or {}
+        toolchain, devcontainer = detect_toolchain(root)
+        hints = list(toolchain)
+        if devcontainer:
+            hints.insert(0, "Dev container available: open in Codespaces/VS Code for a ready env")
+        if not hints:
+            hints.append("Read README.md and CONTRIBUTING.md before coding")
+        beginner = [str(lab.get("name")) for lab in labels if pick_beginner_label([lab])]
         return ContributionGuide(
             repo=full_name,
-            contributing_url=contributing_path,
-            contributing_excerpt=_excerpt(contributing_text, 1200),
-            code_of_conduct_url=coc_url,
-            setup_hints=setup_hints or ["Read README.md and CONTRIBUTING.md before coding"],
-            communication_channels=channels,
-            beginner_issue_labels=labels,
+            contributing_url=(files.get("contributing") or {}).get("html_url"),
+            contributing_excerpt=_excerpt(text, 1500),
+            code_of_conduct_url=coc.get("html_url"),
+            toolchain=toolchain,
+            devcontainer=devcontainer,
+            setup_hints=hints,
+            communication_channels=channels_in(text),
+            beginner_issue_labels=beginner or ["good first issue"],
         )
+
+    def list_owner_repos(self, owner: str) -> list[dict[str, Any]]:
+        owner = validate_login(owner, kind="GitHub org/user")
+        params = {"sort": "pushed", "per_page": 100, "type": "public"}
+        try:
+            data = self._api(f"orgs/{owner}/repos", params=params)
+        except NotFoundError:
+            data = self._api(f"users/{owner}/repos", params={**params, "type": "owner"})
+        return data if isinstance(data, list) else []
+
+    def beginner_issue_counts(self, owner: str) -> dict[str, int]:
+        """Open, unassigned beginner issues per repo for one GitHub owner (1 search call)."""
+        owner = validate_login(owner, kind="GitHub org/user")
+        query = f'org:{owner} is:issue is:open no:assignee archived:false label:"good first issue"'
+        try:
+            items = self.search_issues(query, per_page=100)
+        except NotFoundError:
+            items = self.search_issues(query.replace("org:", "user:", 1), per_page=100)
+        counts: dict[str, int] = {}
+        for item in items:
+            repo = _repo_from_item(item).lower()
+            counts[repo] = counts.get(repo, 0) + 1
+        return counts
 
     def infer_profile_languages(self, username: str) -> dict[str, Any]:
         user = self.get_user(username)

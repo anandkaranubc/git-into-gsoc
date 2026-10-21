@@ -116,12 +116,20 @@ class RepoHealth(BaseModel):
     disabled: bool = False
     pushed_at: datetime | None = None
     license: str | None = None
+    topics: list[str] = Field(default_factory=list)
     has_contributing: bool = False
     has_code_of_conduct: bool = False
+    has_issue_template: bool = False
+    has_pr_template: bool = False
     has_ci: bool = False
+    prs_sampled: int = 0
     merge_rate: float | None = None
     median_pr_hours: float | None = None
-    beginner_labels_present: bool = False
+    outsider_prs_sampled: int = 0
+    outsider_merge_rate: float | None = None
+    newcomers_merged: int = 0
+    beginner_label: str | None = None
+    open_beginner_issues: int | None = None
     health_score: float = 0.0
     grade: str = "F"
     signals: list[str] = Field(default_factory=list)
@@ -152,9 +160,24 @@ class ContributionGuide(BaseModel):
     contributing_url: str | None = None
     contributing_excerpt: str = ""
     code_of_conduct_url: str | None = None
+    toolchain: list[str] = Field(default_factory=list)
+    devcontainer: bool = False
     setup_hints: list[str] = Field(default_factory=list)
     communication_channels: list[str] = Field(default_factory=list)
     beginner_issue_labels: list[str] = Field(default_factory=list)
+
+
+class RepoLead(BaseModel):
+    full_name: str
+    url: str
+    description: str | None = None
+    language: str | None = None
+    stars: int = 0
+    pushed_at: datetime | None = None
+    open_beginner_issues: int = 0
+    ideas_mention: bool = False
+    score: float = 0.0
+    reasons: list[str] = Field(default_factory=list)
 
 
 class ProposalChecklistItem(BaseModel):

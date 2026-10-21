@@ -17,14 +17,34 @@ def test_repo_health_rewards_active_welcoming_projects() -> None:
         has_contributing=True,
         has_code_of_conduct=True,
         has_ci=True,
-        beginner_labels_present=True,
+        beginner_label="good first issue",
+        open_beginner_issues=4,
+        prs_sampled=40,
         merge_rate=0.7,
+        outsider_prs_sampled=12,
+        outsider_merge_rate=0.6,
+        newcomers_merged=3,
         median_pr_hours=24,
         license="MIT",
     )
     scored = score_repo_health(health)
-    assert scored.health_score >= 80
-    assert scored.grade in {"A", "B"}
+    assert scored.health_score >= 85
+    assert scored.grade == "A"
+    assert any("outside contributors" in s for s in scored.signals)
+
+
+def test_repo_health_warns_when_outsiders_rarely_merged() -> None:
+    health = RepoHealth(
+        full_name="acme/closed",
+        url="https://github.com/acme/closed",
+        pushed_at=datetime.now(UTC) - timedelta(days=3),
+        prs_sampled=30,
+        merge_rate=0.8,
+        outsider_prs_sampled=10,
+        outsider_merge_rate=0.1,
+    )
+    scored = score_repo_health(health)
+    assert any("Rarely merges" in w for w in scored.warnings)
 
 
 def test_repo_health_zeros_archived() -> None:
