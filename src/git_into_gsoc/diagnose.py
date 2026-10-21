@@ -106,7 +106,10 @@ PATTERNS: tuple[Pattern, ...] = (
         r"lock ?file[^\n]{0,60}(?:out of (?:date|sync)|not (?:consistent|up to date))|"
         r"package-lock\.json[^\n]{0,40}(?:out of sync|not in sync)|`npm ci` can only install",
         "The lock file and the dependency list disagree, so a strict install refuses to continue.",
-        "Use the install command from the contributing guide or CI rather than regenerating the lock file in your pull request.",
+        "Use the install command from the README, contributing guide, or CI. If the strict "
+        "install still refuses, the plain one (such as npm install) updates the lock file on "
+        "your machine: keep that change out of your pull request (git checkout -- "
+        "package-lock.json before you commit) and tell the maintainers the lock file is stale.",
     ),
     _p(
         "out_of_memory",

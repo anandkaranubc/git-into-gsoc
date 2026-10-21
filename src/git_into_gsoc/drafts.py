@@ -333,6 +333,22 @@ def _venv_line(ctx: dict[str, Any]) -> list[str]:
     ]
 
 
+def _lockfile_line(ctx: dict[str, Any]) -> list[str]:
+    """What to do when a guessed `npm ci` meets a lock file the project let go stale.
+
+    CI would fail too if its own `npm ci` hit that, so this is only for commands
+    read from package.json. ruxailab/web-eye-tracker-front was such a case.
+    """
+    if ctx.get("commands_source") == "CI":
+        return []
+    if "npm ci" not in (ctx.get("install_commands") or []):
+        return []
+    return [
+        "  # if npm ci says the lock file is out of sync: run npm install instead, and run",
+        "  # git checkout -- package-lock.json before you commit so that change stays out",
+    ]
+
+
 def _setup_commands(ctx: dict[str, Any]) -> list[str]:
     """The exact git commands for a first pull request, with the real default branch."""
     repo = str(ctx.get("repo") or "")
@@ -355,6 +371,7 @@ def _setup_commands(ctx: dict[str, Any]) -> list[str]:
         f"  git switch -c {branch} upstream/{base}",
         *_venv_line(ctx),
         *(f"  {cmd}   # install {_from(ctx)}" for cmd in _distinct(ctx.get("install_commands"))),
+        *_lockfile_line(ctx),
         f"  {test_cmd}"
         + (
             ""

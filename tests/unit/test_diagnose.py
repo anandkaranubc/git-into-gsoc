@@ -124,3 +124,13 @@ def test_cli_reads_a_utf16_log_from_windows_powershell(tmp_path) -> None:
     assert "missing module" in result.output and "numpy" in result.output
     missing = runner.invoke(app, ["diagnose", str(tmp_path / "nope.txt")])
     assert missing.exit_code != 0 and "Cannot read" in missing.output
+
+
+def test_a_stale_lock_file_gets_a_way_forward() -> None:
+    # A real run on ruxailab/web-eye-tracker-front: `npm ci` refused; `npm install` built.
+    line = (
+        "npm error `npm ci` can only install packages when your package.json and package-lock.json"
+    )
+    cause = diagnose_output(line + " or npm-shrinkwrap.json are in sync.")["causes"][0]
+    advice = " ".join(str(v) for v in cause.values())
+    assert "npm install" in advice and "git checkout -- package-lock.json" in advice

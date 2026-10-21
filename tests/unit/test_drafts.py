@@ -300,3 +300,23 @@ def test_intro_goes_to_a_public_channel_never_a_mentor_email(monkeypatch) -> Non
     ]
     assert draft["template"].startswith("In https://chat.example.org, once:")
     assert "gsoc-mentors@example.org" not in draft["template"]
+
+
+def test_a_guessed_npm_ci_says_what_to_do_about_a_stale_lock_file() -> None:
+    from git_into_gsoc.drafts import render_draft
+
+    # ruxailab/web-eye-tracker-front (2026-10-21): no CI install step, and `npm ci`
+    # refused because package-lock.json was out of date. `npm install` then built.
+    context = {
+        "repo": "ruxailab/web-eye-tracker-front",
+        "default_branch": "main",
+        "install_commands": ["npm ci"],
+        "commands_source": "package.json",
+        "test_commands": ["npm run build"],
+        "test_is_build": True,
+    }
+    template = render_draft("pr", context=context)["template"]
+    assert "lock file is out of sync: run npm install instead" in template
+    assert "git checkout -- package-lock.json before you commit" in template
+    from_ci = render_draft("pr", context={**context, "commands_source": "CI"})["template"]
+    assert "out of sync" not in from_ci
