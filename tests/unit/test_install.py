@@ -67,7 +67,7 @@ def test_register_json_refuses_to_clobber_invalid_file(tmp_path: Path) -> None:
     path = tmp_path / "mcp.json"
     path.write_text("{not json", encoding="utf-8")
     action, note = register_json(path, "mcpServers", server_entry(CMD, "json-mcpServers"))
-    assert action == "skipped" and "could not parse" in note
+    assert action == "skipped" and "not plain JSON" in note and "left as is" in note
     assert path.read_text(encoding="utf-8") == "{not json"
 
 
@@ -204,3 +204,63 @@ def test_removal_undoes_setup_and_keeps_other_entries(tmp_path: Path) -> None:
     assert registered_servers(home) == []
     run_removal(plan)
     assert {c.action for c in plan.changes} == {"unchanged"}
+
+
+JSONC = '{\n  // my servers\n  "mcpServers": {\n    "other": {"command": "x"},\n  }\n}\n'
+
+
+def test_register_json_reads_a_file_with_a_byte_order_mark(tmp_path: Path) -> None:
+    path = tmp_path / "settings.json"
+    path.write_bytes(b'\xef\xbb\xbf{"theme": "dark"}\n')
+    entry = server_entry(CMD, "json-mcpServers")
+    assert register_json(path, "mcpServers", entry) == ("updated", "")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert data["theme"] == "dark" and data["mcpServers"][SERVER_NAME] == entry
+
+
+def test_a_config_with_comments_is_left_alone_with_a_manual_step(tmp_path: Path) -> None:
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    config = home / ".cursor/mcp.json"
+    config.write_text(JSONC, encoding="utf-8")
+    plan = plan_setup(
+        scope="user", assistants=["cursor"], home=home, project=None, command=CMD, use_cli=False
+    )
+    run_setup(plan)
+    change = next(c for c in plan.changes if c.kind == "mcp")
+    assert change.action == "skipped" and "left as is" in change.note
+    assert config.read_text(encoding="utf-8") == JSONC
+    assert not (home / ".cursor/mcp.json.bak").exists()
+    step = next(s for s in plan.manual if s.startswith("Cursor"))
+    assert SERVER_NAME in step and json.dumps(CMD[0]) in step
+
+
+def test_doctor_finds_a_server_added_by_hand_to_a_config_with_comments(tmp_path: Path) -> None:
+    (tmp_path / ".cursor").mkdir()
+    (tmp_path / ".cursor/mcp.json").write_text(
+        JSONC.replace('"other"', f'"{SERVER_NAME}": {{"command": "a//b"}},\n    "other"'),
+        encoding="utf-8",
+    )
+    assert [label for label, _ in registered_servers(tmp_path)] == ["Cursor"]
+
+
+def test_config_writes_keep_symlinks_and_permissions(tmp_path: Path) -> None:
+    import os
+    import stat
+
+    real = tmp_path / "dotfiles" / "mcp.json"
+    real.parent.mkdir()
+    real.write_text('{"mcpServers": {}}\n', encoding="utf-8")
+    link = tmp_path / "mcp.json"
+    try:
+        link.symlink_to(real)
+    except OSError:
+        pytest.skip("symlinks need extra rights on this system")
+    if os.name == "posix":
+        real.chmod(0o600)
+    assert register_json(link, "mcpServers", server_entry(CMD, "json-mcpServers"))[0] == "updated"
+    assert link.is_symlink(), "the dotfiles link was replaced by a plain file"
+    assert SERVER_NAME in json.loads(real.read_text(encoding="utf-8"))["mcpServers"]
+    if os.name == "posix":
+        assert stat.S_IMODE(real.stat().st_mode) == 0o600
+    assert not list(real.parent.glob("*.tmp")), "a temporary file was left behind"

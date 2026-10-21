@@ -8,12 +8,14 @@ network code, and every write is preceded by a ``.bak`` copy.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -211,16 +213,70 @@ def _backup(path: Path) -> None:
         shutil.copy2(path, path.with_name(path.name + ".bak"))
 
 
+def _read_text(path: Path) -> str:
+    # utf-8-sig: Windows editors often save JSON with a byte-order mark.
+    return path.read_text(encoding="utf-8-sig")
+
+
 def _read_json(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
-    text = path.read_text(encoding="utf-8").strip()
+    text = _read_text(path).strip()
     if not text:
         return {}
-    data = json.loads(text)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        # Usually comments or trailing commas, which VS Code and Cursor accept.
+        # Rewriting would drop the person's comments, so the file is left alone.
+        raise ValueError(f"not plain JSON ({exc.msg}, line {exc.lineno}), left as is") from exc
     if not isinstance(data, dict):
-        raise ValueError(f"{path} does not contain a JSON object")
+        raise ValueError("does not contain a JSON object, left as is")
     return data
+
+
+# Strings come first in each pattern, so "//" or ",}" inside a string is kept.
+_JSONC_COMMENT = re.compile(r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*.*?\*/', re.S)
+_JSONC_TRAILING_COMMA = re.compile(r'"(?:\\.|[^"\\])*"|,(?=\s*[}\]])')
+
+
+def _keep_strings(match: re.Match[str]) -> str:
+    return match.group(0) if match.group(0).startswith('"') else ""
+
+
+def _read_jsonc(path: Path) -> dict[str, Any]:
+    """Read JSON that may have comments or trailing commas. Only for checking what is
+    registered: writing it back would lose the comments."""
+    text = _JSONC_COMMENT.sub(_keep_strings, _read_text(path))
+    text = _JSONC_TRAILING_COMMA.sub(_keep_strings, text).strip()
+    data = json.loads(text) if text else {}
+    return data if isinstance(data, dict) else {}
+
+
+def _write_config(path: Path, text: str) -> None:
+    """Replace a config file in one step, keeping its permissions and any symlink.
+
+    A crash or Ctrl+C mid-write must never leave a person's assistant settings
+    half written, and a dotfiles symlink must keep pointing at its target.
+    """
+    target = path.resolve() if path.is_symlink() else path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        mode = target.stat().st_mode & 0o777
+    else:
+        umask = os.umask(0)
+        os.umask(umask)
+        mode = 0o666 & ~umask
+    fd, tmp = tempfile.mkstemp(dir=target.parent, prefix=f".{target.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(text)
+        os.chmod(tmp, mode)
+        os.replace(tmp, target)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp)
+        raise
 
 
 def register_json(
@@ -230,10 +286,10 @@ def register_json(
     try:
         data = _read_json(path)
     except (ValueError, OSError) as exc:
-        return "skipped", f"could not parse {path.name}: {exc}"
+        return "skipped", f"{path.name} is {exc}"
     servers = data.get(key)
     if servers is not None and not isinstance(servers, dict):
-        return "skipped", f"{path.name} has a non-object {key!r}"
+        return "skipped", f"{path.name} has a non-object {key!r}, left as is"
     servers = dict(servers or {})
     if servers.get(SERVER_NAME) == entry:
         return "unchanged", ""
@@ -242,9 +298,8 @@ def register_json(
         return action, ""
     servers[SERVER_NAME] = entry
     data[key] = servers
-    path.parent.mkdir(parents=True, exist_ok=True)
     _backup(path)
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    _write_config(path, json.dumps(data, indent=2) + "\n")
     return action, ""
 
 
@@ -257,13 +312,13 @@ def register_codex_toml(
     path: Path, command: list[str], *, dry_run: bool = False
 ) -> tuple[str, str]:
     """Add or replace ``[mcp_servers.git-into-gsoc]`` in Codex's config.toml."""
-    existing = path.read_text(encoding="utf-8") if path.exists() else ""
+    existing = _read_text(path) if path.exists() else ""
     args = ", ".join(json.dumps(a) for a in command[1:])
     block = f'[mcp_servers."{SERVER_NAME}"]\ncommand = {json.dumps(command[0])}\nargs = [{args}]\n'
     try:
         current = tomllib.loads(existing).get("mcp_servers", {}).get(SERVER_NAME)
     except tomllib.TOMLDecodeError as exc:
-        return "skipped", f"could not parse {path.name}: {exc}"
+        return "skipped", f"{path.name} is not valid TOML ({exc}), left as is"
     if current == {"command": command[0], "args": command[1:]}:
         return "unchanged", ""
     if _TOML_SECTION.search(existing):
@@ -279,9 +334,8 @@ def register_codex_toml(
     action = "updated" if path.exists() else "created"
     if dry_run:
         return action, ""
-    path.parent.mkdir(parents=True, exist_ok=True)
     _backup(path)
-    path.write_text(new_text, encoding="utf-8")
+    _write_config(path, new_text)
     return action, ""
 
 
@@ -292,7 +346,7 @@ def unregister_json(path: Path, key: str, *, dry_run: bool = False) -> tuple[str
     try:
         data = _read_json(path)
     except (ValueError, OSError) as exc:
-        return "skipped", f"could not parse {path.name}: {exc}"
+        return "skipped", f"{path.name} is {exc}"
     servers = data.get(key)
     if not isinstance(servers, dict) or SERVER_NAME not in servers:
         return "unchanged", ""
@@ -302,7 +356,7 @@ def unregister_json(path: Path, key: str, *, dry_run: bool = False) -> tuple[str
     del servers[SERVER_NAME]
     data[key] = servers
     _backup(path)
-    path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    _write_config(path, json.dumps(data, indent=2) + "\n")
     return "removed", ""
 
 
@@ -310,11 +364,11 @@ def unregister_codex_toml(path: Path, *, dry_run: bool = False) -> tuple[str, st
     """Drop ``[mcp_servers.git-into-gsoc]`` from Codex's config.toml."""
     if not path.exists():
         return "unchanged", ""
-    existing = path.read_text(encoding="utf-8")
+    existing = _read_text(path)
     try:
         tomllib.loads(existing)
     except tomllib.TOMLDecodeError as exc:
-        return "skipped", f"could not parse {path.name}: {exc}"
+        return "skipped", f"{path.name} is not valid TOML ({exc}), left as is"
     if not _TOML_SECTION.search(existing):
         return "unchanged", ""
     if dry_run:
@@ -322,7 +376,7 @@ def unregister_codex_toml(path: Path, *, dry_run: bool = False) -> tuple[str, st
     new_text = _TOML_SECTION.sub("", existing, count=1).rstrip("\n") + "\n"
     tomllib.loads(new_text)
     _backup(path)
-    path.write_text(new_text, encoding="utf-8")
+    _write_config(path, new_text)
     return "removed", ""
 
 
@@ -342,11 +396,11 @@ def registered_servers(home: Path, project: Path | None = None) -> list[tuple[st
                 continue
             try:
                 if assistant.mcp.fmt == "toml-codex":
-                    data = tomllib.loads(path.read_text(encoding="utf-8"))
+                    data = tomllib.loads(_read_text(path))
                     hit = SERVER_NAME in (data.get("mcp_servers") or {})
                 else:
                     key = "servers" if assistant.mcp.fmt == "json-servers" else "mcpServers"
-                    hit = SERVER_NAME in (_read_json(path).get(key) or {})
+                    hit = SERVER_NAME in (_read_jsonc(path).get(key) or {})
             except (ValueError, OSError, tomllib.TOMLDecodeError):
                 continue
             if hit:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -166,11 +167,18 @@ def _register(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change
     path = plan.root / rel
     if target.fmt == "toml-codex":
         action, note = register_codex_toml(path, plan.command, dry_run=dry_run)
+        by_hand = (
+            f'[mcp_servers."{SERVER_NAME}"] with command = {json.dumps(plan.command[0])} '
+            f"and args = {json.dumps(plan.command[1:])}"
+        )
     else:
         key = "servers" if target.fmt == "json-servers" else "mcpServers"
-        action, note = register_json(
-            path, key, server_entry(plan.command, target.fmt), dry_run=dry_run
-        )
+        entry = server_entry(plan.command, target.fmt)
+        action, note = register_json(path, key, entry, dry_run=dry_run)
+        by_hand = f'inside "{key}": "{SERVER_NAME}": {json.dumps(entry)}'
+    if action == "skipped":
+        # The file was left alone (comments, invalid syntax); say exactly what to add.
+        plan.manual.append(f"{assistant.label}: add this to {path}, {by_hand}")
     return Change(assistant.label, "mcp", path, action, note)
 
 

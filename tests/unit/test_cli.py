@@ -170,3 +170,13 @@ def test_not_found_org_is_an_error_and_limits_must_be_positive(monkeypatch) -> N
     assert as_json.exit_code == 1 and '"found": false' in as_json.output
     assert runner.invoke(app, ["orgs", "-n", "0"]).exit_code == 2
     assert runner.invoke(app, ["issues", "-n", "-5"]).exit_code == 2
+
+
+def test_cli_setup_says_when_nothing_was_set_up(tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setenv("GIG_HOME", str(tmp_path))
+    (tmp_path / ".cursor").mkdir()
+    (tmp_path / ".cursor/mcp.json").write_text('{\n  // mine\n  "mcpServers": {}\n}\n')
+    result = runner.invoke(app, ["setup", "--assistant", "cursor", "--no-skill"])
+    assert result.exit_code == 0, result.output
+    assert "Nothing was set up" in result.output
+    assert "Restart your assistant" not in result.output

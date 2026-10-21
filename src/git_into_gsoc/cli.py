@@ -1472,11 +1472,15 @@ def setup_cmd(
     console.print(f"MCP command: {' '.join(plan.command)}")
     for step in plan.manual:
         console.print(f"  [yellow]manual:[/yellow] {step}")
-    if not dry_run and plan.changes and not remove:
+    if dry_run or remove or not plan.changes:
+        return
+    if any(c.action in {"created", "updated", "unchanged"} for c in plan.changes):
         console.print(
             "\nRestart your assistant, then ask it: "
             '"Use the git-into-gsoc skill and call gsoc_program_info."'
         )
+    else:
+        console.print("\nNothing was set up. Follow the manual steps above, then run `doctor`.")
 
 
 @app.command("doctor", rich_help_panel="Maintenance")
