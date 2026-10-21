@@ -15,7 +15,7 @@ from git_into_gsoc.config import (
     get_settings,
     latest_program_year,
 )
-from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, render_draft
+from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
 from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
@@ -106,6 +106,9 @@ BEFORE_YOU_COMMENT = [
     "If someone claimed it recently, pick another issue rather than competing.",
 ]
 
+
+# Project files that say how to install and test, in the order they are trusted.
+_MANIFESTS = ("package.json", "pyproject.toml", "setup.py", "Cargo.toml", "go.mod", "Gemfile")
 
 # Match reasons from an organization's own topic tags or category; a passing mention in
 # its description (LLVM mentions "embedded") is too weak to count as an interest match.
@@ -1349,6 +1352,25 @@ class GSoCToolkit:
                     ci = self._ci_setup(repo)
                     context["test_commands"] = [c["command"] for c in ci["test_commands"]]
                     context["install_commands"] = [c["command"] for c in ci["install_commands"]]
+                    context["commands_source"] = "CI"
+                    if not context["test_commands"]:
+                        # No test step in CI: use the project's own manifest, and say so.
+                        root = self.github.root_listing(owner_name, repo_name)
+                        names = {str(e.get("name")) for e in root}
+                        package = (
+                            self.github.get_raw_file(owner_name, repo_name, "package.json")
+                            if "package.json" in names
+                            else None
+                        )
+                        install, check = manifest_commands(names, package_json=package)
+                        if install or check:
+                            context["install_commands"] = install
+                            context["test_commands"] = [check] if check else []
+                            context["test_is_build"] = bool(check and "build" in check)
+                            context["commands_source"] = next(
+                                (n for n in _MANIFESTS if n in names),
+                                "the project's files",
+                            )
                 except GigError:
                     pass
             guide = self.github.contribution_guide(repo)

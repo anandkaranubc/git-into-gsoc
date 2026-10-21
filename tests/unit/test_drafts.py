@@ -219,3 +219,42 @@ def test_pr_draft_uses_the_install_and_test_commands_ci_runs(monkeypatch) -> Non
     assert "pytest -n auto   # run the tests once" in draft["template"]
     assert "<the project's test command>" not in draft["template"]
     assert "python3 -m venv .venv" in draft["template"]  # before any pip install
+
+
+def test_manifest_commands_fill_in_when_ci_has_no_tests() -> None:
+    from git_into_gsoc.drafts import manifest_commands
+
+    # processing/p5.sound.js (2026-10-21): no test workflow, package.json has only "build".
+    names = {"package.json", "package-lock.json"}
+    install, check = manifest_commands(names, package_json='{"scripts": {"build": "rollup -c"}}')
+    assert install == ["npm ci"] and check == "npm run build"
+    install, check = manifest_commands(
+        {"package.json", "yarn.lock"}, package_json='{"scripts": {"test": "jest"}}'
+    )
+    assert install == ["yarn install"] and check == "yarn test"
+    npm_default = '{"scripts": {"test": "echo \\"Error: no test specified\\" && exit 1"}}'
+    assert manifest_commands({"package.json"}, package_json=npm_default)[1] is None
+    assert manifest_commands({"pyproject.toml", "tests"}, package_json=None) == (
+        ["pip install -e ."],
+        "pytest",
+    )
+    assert manifest_commands({"Cargo.toml"}, package_json=None) == ([], "cargo test")
+    assert manifest_commands({"Gemfile"}, package_json=None) == (["bundle install"], None)
+
+
+def test_pr_draft_says_when_no_test_command_exists(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.drafts import render_draft
+
+    draft = render_draft(
+        "pr",
+        context={
+            "repo": "processing/p5.sound.js",
+            "default_branch": "main",
+            "install_commands": ["npm ci"],
+            "commands_source": "package.json",
+            "test_commands": ["npm run build"],
+            "test_is_build": True,
+        },
+    )
+    assert "npm ci   # install (from package.json)" in draft["template"]
+    assert "npm run build   # no test command found; at least check it builds" in draft["template"]

@@ -270,6 +270,47 @@ def _pr(ctx: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+_NPM_DEFAULT_TEST = "no test specified"
+
+
+def manifest_commands(names: set[str], *, package_json: str | None) -> tuple[list[str], str | None]:
+    """Install commands and a test (or build) command from a project's own manifest files.
+
+    Used when CI shows none. `names` are the files and folders at the repository root.
+    """
+    import json
+
+    if "package.json" in names:
+        runner = "yarn" if "yarn.lock" in names else "pnpm" if "pnpm-lock.yaml" in names else "npm"
+        install = {"npm": "npm ci" if "package-lock.json" in names else "npm install"}.get(
+            runner, f"{runner} install"
+        )
+        try:
+            scripts = json.loads(package_json or "{}").get("scripts") or {}
+        except (ValueError, AttributeError):
+            scripts = {}
+        test = scripts.get("test")
+        if test and _NPM_DEFAULT_TEST not in str(test):
+            return [install], f"{runner} test"
+        if scripts.get("build"):
+            return [install], f"{runner} run build"
+        return [install], None
+    if names & {"pyproject.toml", "setup.py", "setup.cfg"}:
+        return ["pip install -e ."], ("pytest" if names & {"tests", "test"} else None)
+    if "Cargo.toml" in names:
+        return [], "cargo test"
+    if "go.mod" in names:
+        return [], "go test ./..."
+    if "Gemfile" in names:
+        return ["bundle install"], None
+    return [], None
+
+
+def _from(ctx: dict[str, Any]) -> str:
+    source = ctx.get("commands_source")
+    return f"(from {source})" if source and source != "CI" else "as CI does"
+
+
 def _venv_line(ctx: dict[str, Any]) -> list[str]:
     """A private Python environment first: many systems refuse a global pip install."""
     if not any(re.search(r"\bpip3? install\b", c) for c in ctx.get("install_commands") or []):
@@ -289,7 +330,10 @@ def _setup_commands(ctx: dict[str, Any]) -> list[str]:
     number = (ctx.get("issue") or {}).get("number")
     branch = f"fix-{number}-<short-name>" if number else "<short-branch-name>"
     base = ctx.get("default_branch") or "<default branch>"
-    test_cmd = (ctx.get("test_commands") or ["<the project's test command>"])[0]
+    test_cmd = (
+        ctx.get("test_commands")
+        or ["<no test command found; ask the maintainers how they test changes>"]
+    )[0]
     return [
         "",
         "Before you start, once:",
@@ -297,8 +341,15 @@ def _setup_commands(ctx: dict[str, Any]) -> list[str]:
         f"  cd {name} && git remote add upstream https://github.com/{repo}.git && git fetch upstream",
         f"  git switch -c {branch} upstream/{base}",
         *_venv_line(ctx),
-        *(f"  {cmd}   # install as CI does" for cmd in (ctx.get("install_commands") or [])[:2]),
-        f"  {test_cmd}   # run the tests once before changing anything",
+        *(f"  {cmd}   # install {_from(ctx)}" for cmd in (ctx.get("install_commands") or [])[:2]),
+        f"  {test_cmd}"
+        + (
+            ""
+            if not ctx.get("test_commands")
+            else "   # no test command found; at least check it builds"
+            if ctx.get("test_is_build")
+            else "   # run the tests once before changing anything"
+        ),
         "When the change is ready:",
         f"  git push -u origin {branch}   # then open the pull request against {base}",
     ]

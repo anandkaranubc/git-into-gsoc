@@ -594,3 +594,39 @@ def test_ci_versions_put_the_usual_one_first_and_other_implementations_last() ->
     python = ci_environment({"runtests.yml": workflow})["runtimes"][0]
     assert python["versions"] == ["3.10", "3.11", "3.13", "3.14", "pypy2.7", "pypy-3.11"]
     assert python["most_used"] == "3.14"
+
+
+def test_ci_install_commands_skip_pip_upgrades_and_prefer_the_common_one() -> None:
+    from git_into_gsoc.github.orientation import ci_install_commands
+
+    # sympy/sympy runtests.yml (2026-10-21), shortened.
+    workflow = (
+        "jobs:\n  a:\n    steps:\n      - run: python -m pip install --upgrade pip setuptools\n"
+        "      - run: pip install -r requirements-dev.txt\n      - run: pip install .\n"
+        "  b:\n    steps:\n      - run: python -m pip install --upgrade pip\n"
+        "      - run: pip install -r requirements-dev.txt\n      - run: pytest -n auto\n"
+    )
+    commands = [c["command"] for c in ci_install_commands({"runtests.yml": workflow})]
+    assert commands[0] == "pip install -r requirements-dev.txt"
+    assert not any("--upgrade pip" in c for c in commands)
+    node = "jobs:\n  t:\n    steps:\n      - run: npm ci\n      - run: npm test\n"
+    assert [c["command"] for c in ci_install_commands({"n.yml": node})] == ["npm ci"]
+
+
+def test_automation_workflows_are_not_read_as_the_test_setup() -> None:
+    # CircuitVerse/Interactive-Book: orient said "CI uses Node.js 16" from
+    # issue-assign-to-contributor.yml, a bot that assigns issues.
+    paths = [f".github/workflows/{n}.yml" for n in ("deploy", "issue-assign-to-contributor")]
+    paths += [".github/workflows/language.yml"]
+    assert rank_workflows(paths, limit=3)[-1].endswith("issue-assign-to-contributor.yml")
+
+
+def test_installing_npm_itself_is_not_the_project_install() -> None:
+    from git_into_gsoc.github.orientation import ci_install_commands
+
+    # OWASP/threat-dragon: the draft listed "npm install --global npm@11.18.0".
+    workflow = (
+        "jobs:\n  t:\n    steps:\n      - run: npm install --global npm@11.18.0\n"
+        "      - run: npm clean-install\n      - run: npm run test:unit\n"
+    )
+    assert [c["command"] for c in ci_install_commands({"t.yml": workflow})] == ["npm clean-install"]

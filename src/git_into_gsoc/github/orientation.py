@@ -432,7 +432,8 @@ def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
 
 _INSTALL_RE = re.compile(
     r"\b(?:pip3? install|python -m pip install|uv (?:sync|pip install)|poetry install|"
-    r"pdm install|hatch env create|conda env create|npm (?:ci|install)|yarn(?: install)?\b|"
+    r"pdm install|hatch env create|conda env create|npm (?:ci|clean-install|install)|"
+    r"yarn(?: install)?\b|"
     r"pnpm install|bundle install|go mod download|cargo (?:build|fetch))",
     re.I,
 )
@@ -440,7 +441,9 @@ _INSTALL_RE = re.compile(
 
 # "pip install --upgrade pip setuptools" prepares the installer; it installs nothing of the project.
 _TOOLING_ONLY_RE = re.compile(
-    r"install\s+(?:(?:-U|--upgrade|-q|--quiet)\s+)*(?:(?:pip|setuptools|wheel|build|uv)\b\s*)+$",
+    r"install\s+(?:(?:-U|--upgrade|-q|--quiet)\s+)*(?:(?:pip|setuptools|wheel|build|uv)\b\s*)+$"
+    # "npm install --global npm@11" updates npm itself, not the project.
+    r"|\b(?:npm|pnpm) (?:install|i)\b.*(?:-g|--global)\b",
     re.I,
 )
 
@@ -784,6 +787,8 @@ def rank_workflows(paths: list[str], *, limit: int = 2) -> list[str]:
     # test nothing; quality gates and pull-request workflows run the tests more often
     # than builds do.
     tiers = (
+        r"assign|triage|greet|welcome|first[-_]?interaction|dependabot|codeql|lock|"
+        r"\bbots?\b|[-_]bot\b|issue",
         r"convention|ratchet|size|lint|format|spell|label|stale|comment",
         r"unit",
         r"test|pytest|tox|nox",
@@ -791,7 +796,7 @@ def rank_workflows(paths: list[str], *, limit: int = 2) -> list[str]:
         r"main|build",
         r"release|publish|deploy|docs|close|welcome",
     )
-    order = (7, 0, 1, 2, 3, 5)
+    order = (8, 7, 0, 1, 2, 3, 5)
 
     def priority(path: str) -> tuple[int, str]:
         name = path.rsplit("/", 1)[-1].lower()
