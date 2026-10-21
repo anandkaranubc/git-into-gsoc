@@ -8,7 +8,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from git_into_gsoc.coach import plan_actions, time_budget, upcoming_deadlines
-from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
+from git_into_gsoc.config import (
+    DEFAULT_TARGET_YEAR,
+    LATEST_ARCHIVED_YEAR,
+    get_settings,
+    latest_program_year,
+)
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, render_draft
 from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.github.client import GitHubClient
@@ -65,7 +70,7 @@ from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProgressState, ProjectIdea, RepoLead
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.text import clean_untrusted
-from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_login
+from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_login, validate_year
 
 
 def _parse_iso(value: Any) -> datetime | None:
@@ -97,6 +102,7 @@ class GSoCToolkit:
         self.progress = ProgressStore()
 
     def program_info(self, year: int | None = None, project_size: str = "medium") -> dict[str, Any]:
+        year = validate_year(year, latest=latest_program_year(self.settings))
         year = year or self.settings.target_year
         offline = False
         try:

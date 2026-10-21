@@ -42,9 +42,14 @@ def _split_github_path(value: str) -> list[str]:
 
 
 def parse_repo(value: str) -> tuple[str, str]:
-    """Parse `owner/repo` or a GitHub URL into a validated (owner, repo) pair."""
+    """Parse `owner/repo` or a GitHub URL into a validated (owner, repo) pair.
+
+    A pasted link may go deeper (`.../tree/main/docs`); a bare name may not, since
+    `a/b/c` is not a GitHub repository.
+    """
     parts = _split_github_path(value or "")
-    if len(parts) < 2:
+    is_link = "github.com" in (value or "").lower()
+    if len(parts) < 2 or (len(parts) > 2 and not is_link):
         raise InputError(
             f"Repository must look like owner/repo, got {value!r}",
             hint="Example: sympy/sympy or https://github.com/sympy/sympy",
@@ -107,3 +112,18 @@ def split_csv(value: str | list[str] | None) -> list[str]:
         return []
     items = value if isinstance(value, list) else value.split(",")
     return [item.strip() for item in items if item and item.strip()]
+
+
+FIRST_GSOC_YEAR = 2005
+
+
+def validate_year(year: int | None, *, latest: int) -> int | None:
+    """A program year GSoC has had or is about to have; None or 0 means "not given"."""
+    if not year:
+        return None
+    if not FIRST_GSOC_YEAR <= year <= latest:
+        raise InputError(
+            f"GSoC years run from {FIRST_GSOC_YEAR} to {latest}, got {year}",
+            hint="Leave out the year to use the coming program.",
+        )
+    return year

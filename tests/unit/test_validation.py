@@ -9,6 +9,7 @@ from git_into_gsoc.validation import (
     search_term,
     split_csv,
     validate_login,
+    validate_year,
 )
 
 
@@ -20,6 +21,7 @@ from git_into_gsoc.validation import (
         ("github.com/numpy/numpy.git", ("numpy", "numpy")),
         ("https://github.com/rust-lang/rust/issues/1", ("rust-lang", "rust")),
         (" pandas-dev/pandas/ ", ("pandas-dev", "pandas")),
+        ("https://github.com/sympy/sympy/tree/master/doc", ("sympy", "sympy")),
     ],
 )
 def test_parse_repo_accepts_names_and_urls(raw: str, expected: tuple[str, str]) -> None:
@@ -28,7 +30,16 @@ def test_parse_repo_accepts_names_and_urls(raw: str, expected: tuple[str, str]) 
 
 @pytest.mark.parametrize(
     "raw",
-    ["sympy", "../etc/passwd", "owner/..", "https://gitlab.com/a/b", "a b/c", "-bad/repo", ""],
+    [
+        "sympy",
+        "../etc/passwd",
+        "owner/..",
+        "https://gitlab.com/a/b",
+        "a b/c",
+        "-bad/repo",
+        "",
+        "a/b/c",  # used to reach the API and come back as "HTTP 404 from api.github.com"
+    ],
 )
 def test_parse_repo_rejects_invalid(raw: str) -> None:
     with pytest.raises(InputError):
@@ -83,3 +94,31 @@ def test_issue_refs_from_pasted_links_and_remotes() -> None:
     assert parse_issue_ref("sympy/sympy#12") == ("sympy", "sympy", 12)
     assert parse_repo("git@github.com:sympy/sympy.git") == ("sympy", "sympy")
     assert parse_repo("ssh://git@github.com/sympy/sympy.git") == ("sympy", "sympy")
+
+
+@pytest.mark.parametrize("year", [1999, 2004, 3000, -1])
+def test_years_outside_the_program_are_rejected(year: int) -> None:
+    with pytest.raises(InputError) as caught:
+        validate_year(year, latest=2027)
+    assert "2005" in str(caught.value)
+
+
+def test_years_inside_the_program_pass() -> None:
+    assert validate_year(None, latest=2027) is None
+    assert validate_year(0, latest=2027) is None  # MCP tools send 0 for "not given"
+    assert validate_year(2005, latest=2027) == 2005
+    assert validate_year(2027, latest=2027) == 2027
+
+
+def test_program_and_org_list_refuse_years_gsoc_never_had() -> None:
+    from git_into_gsoc.gsoc.client import GSoCClient
+    from git_into_gsoc.service import GSoCToolkit
+
+    # `orgs --year 1999` showed the 2026 list saying "live sources unreachable";
+    # `program --year 3000` projected 2026 dates 974 years forward.
+    with pytest.raises(InputError):
+        GSoCClient().catalog(1999)
+    with pytest.raises(InputError):
+        GSoCToolkit().program_info(3000)
+    with pytest.raises(InputError):
+        GSoCToolkit().program_info(2004)

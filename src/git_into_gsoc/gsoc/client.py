@@ -21,13 +21,19 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
-from git_into_gsoc.config import LATEST_ARCHIVED_YEAR, Settings, get_settings
+from git_into_gsoc.config import (
+    LATEST_ARCHIVED_YEAR,
+    Settings,
+    get_settings,
+    latest_program_year,
+)
 from git_into_gsoc.gsoc.names import core_key, resolve_name, same_org, suggest_names
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.snapshot import load_history, load_official
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.models import ContactChannel, OrgCatalog, OrgSummary, PastProject
 from git_into_gsoc.scoring.org_match import canonical, mentions, score_org_match
+from git_into_gsoc.validation import validate_year
 
 _GITHUB_RESERVED = {
     "orgs",
@@ -175,6 +181,7 @@ class GSoCClient:
 
     def catalog(self, year: int | None = None) -> tuple[OrgCatalog, list[OrgSummary]]:
         """Accepted orgs for `year`, or the most recent year that has data."""
+        year = validate_year(year, latest=latest_program_year(self.settings))
         target = int(year or self.settings.target_year)
         if target not in self._catalogs:
             self._catalogs[target] = self._build_catalog(target)
