@@ -283,3 +283,32 @@ def test_reserved_label_marks_an_issue_as_taken() -> None:
     assert suffixed.availability == Availability.CLAIMED
     unassigned = assess_issue({**issue, "labels": [{"name": "needs-assignment"}]}, [], now=NOW)
     assert unassigned.availability == Availability.AVAILABLE
+
+
+def test_closed_unmerged_pr_is_reported_as_an_earlier_attempt() -> None:
+    issue: dict[str, Any] = {"state": "open", "updated_at": NOW.isoformat()}
+    abandoned = {
+        "event": "cross-referenced",
+        "created_at": (NOW - timedelta(days=40)).isoformat(),
+        "source": {
+            "issue": {
+                "number": 12,
+                "html_url": "https://github.com/o/r/pull/12",
+                "state": "closed",
+                "user": {"login": "someone"},
+                "pull_request": {"merged_at": None},
+            }
+        },
+    }
+    assessment = assess_issue(issue, [abandoned], now=NOW)
+    assert assessment.availability == Availability.AVAILABLE
+    assert any(
+        c.startswith("#12 tried this and was closed without merging") for c in assessment.caveats
+    )
+    reopened = {
+        **abandoned,
+        "source": {"issue": {**abandoned["source"]["issue"], "number": 13, "state": "open"}},
+    }
+    still_open = assess_issue(issue, [abandoned, reopened], now=NOW)
+    assert still_open.availability == Availability.LIKELY_TAKEN
+    assert not any("closed without merging" in c for c in still_open.caveats)

@@ -177,6 +177,13 @@ def assess_issue(
 
     if any(p.state == "merged" for p in prs):
         caveats.append("A merged PR references this issue; it may already be partly fixed")
+    abandoned = [p for p in prs if p.state == "closed"]
+    if abandoned and not any(p.state in {"open", "merged"} for p in prs):
+        refs = ", ".join(f"#{p.number}" for p in abandoned[:3] if p.number) or "an earlier PR"
+        caveats.append(
+            f"{refs} tried this and was closed without merging; read its review comments "
+            "first, they show what the maintainers expect"
+        )
 
     def result(status: Availability, reason: str) -> IssueAssessment:
         return IssueAssessment(

@@ -27,6 +27,7 @@ dashes.
 4. Read [Google's AI guidance](https://developers.google.com/open-source/gsoc/resources/ai_guidance) and the organization's own AI policy before helping with anything the person will submit. Ask when a policy is unclear.
 5. The person must understand and be able to explain every change and every sentence they submit. Do not write large changes or whole proposals for them.
 6. No spam: no mass messages to maintainers, no duplicate pull requests on claimed issues, no trivial changes made only to raise a contribution count.
+7. When an organization's own rules are stricter than general advice, theirs govern. Some forbid anyone from promising help with being selected; then point to their official page instead of coaching for selection.
 
 ## Start with the person
 
