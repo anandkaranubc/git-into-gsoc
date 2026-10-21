@@ -58,3 +58,16 @@ def test_mcp_progress_raises_tool_errors_with_hints(tmp_path: Path) -> None:
         gsoc_progress(action="note", value="")
     with pytest.raises(ToolError, match="Unknown action"):
         gsoc_progress(action="dance")
+
+
+def test_old_progress_files_gain_new_phases(tmp_path: Path) -> None:
+    path = tmp_path / "progress.json"
+    path.write_text(
+        '{"version": 1, "target_year": 2027, "phases": {"learn": true, "discover": false}}',
+        encoding="utf-8",
+    )
+    store = ProgressStore(path)
+    state = store.load()
+    assert state.phases["learn"] is True
+    assert state.phases["orient"] is False and state.phases["iterate"] is False
+    assert store.summary()["completion"] == "1/10"

@@ -83,6 +83,17 @@ PHASE_GUIDES: dict[JourneyPhase, dict[str, object]] = {
         ],
         "success": "One or two repositories worth a serious first contribution",
     },
+    JourneyPhase.ORIENT: {
+        "goal": "Get your bearings in the repository before you touch code",
+        "actions": [
+            "Run `git-into-gsoc orient owner/repo` for the code map, entry points, test "
+            "command, who merges, and the rules before a pull request",
+            "Clone the project, build it, and run its test suite once before changing anything",
+            "Read the contributing guide and skim three recently merged pull requests",
+            "Find the files behind the feature you care about and read them end to end",
+        ],
+        "success": "You can say where a change would go and how you would test it",
+    },
     JourneyPhase.FIND_ISSUES: {
         "goal": "Find beginner-friendly issues that are really free",
         "actions": [
@@ -102,6 +113,16 @@ PHASE_GUIDES: dict[JourneyPhase, dict[str, object]] = {
             "Write a clear pull request that links the issue and explains your choices",
         ],
         "success": "A pull request that was merged or seriously reviewed, and that you can explain",
+    },
+    JourneyPhase.ITERATE: {
+        "goal": "See the pull request through review to a merge or a clear decision",
+        "actions": [
+            "Reply to every review comment within a day, even if only to say when you will fix it",
+            "Push the requested changes as new commits and say what changed",
+            "Ask a focused question when you are stuck instead of going quiet",
+            "If the project declines the change, thank them, note what you learned, and move on",
+        ],
+        "success": "Reviewers know they can rely on you to finish what you start",
     },
     JourneyPhase.COMMUNITY: {
         "goal": "Become a familiar, helpful name in the community before you claim work",

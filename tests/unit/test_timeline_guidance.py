@@ -110,6 +110,18 @@ def test_toolkit_survives_official_site_outage() -> None:
 
 def test_journey_overview_complete() -> None:
     overview = journey_overview()
-    assert len(overview["phases"]) == 8
+    assert len(overview["phases"]) == 10
+    assert list(overview["phases"]) == [
+        "learn",
+        "discover",
+        "evaluate",
+        "orient",
+        "community",
+        "find_issues",
+        "contribute",
+        "iterate",
+        "proposal",
+        "track",
+    ]
     assert len(ANTI_SPAM_RULES) >= 5
     assert len(proposal_checklist()) >= 5

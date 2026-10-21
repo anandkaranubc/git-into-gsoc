@@ -13,9 +13,11 @@ class JourneyPhase(StrEnum):
     LEARN = "learn"
     DISCOVER = "discover"
     EVALUATE = "evaluate"
+    ORIENT = "orient"
     COMMUNITY = "community"
     FIND_ISSUES = "find_issues"
     CONTRIBUTE = "contribute"
+    ITERATE = "iterate"
     PROPOSAL = "proposal"
     TRACK = "track"
 

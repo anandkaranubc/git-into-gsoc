@@ -31,7 +31,9 @@ class ProgressStore:
                 phases=dict(DEFAULT_PHASES),
                 updated_at=datetime.now(UTC),
             )
-        return ProgressState.model_validate_json(self.path.read_text(encoding="utf-8"))
+        state = ProgressState.model_validate_json(self.path.read_text(encoding="utf-8"))
+        state.phases = {**DEFAULT_PHASES, **state.phases}  # files saved before a phase was added
+        return state
 
     def save(self, state: ProgressState) -> ProgressState:
         state.updated_at = datetime.now(UTC)
