@@ -1022,8 +1022,18 @@ class GSoCToolkit:
     def _example_outsider_pr(
         self, owner: str, repo: str, merged: list[dict[str, Any]]
     ) -> dict[str, Any] | None:
-        """A recently merged, small PR by someone without write access (at most 2 lookups)."""
-        candidates = [p for p in merged if p.get("author_association") in OUTSIDER_ROLES][:2]
+        """A recently merged, small PR by someone without write access (at most 2 lookups).
+
+        GitHub marks anyone whose PR merged as a CONTRIBUTOR, maintainers included, so
+        people who can be assigned issues (the public sign of write access) are skipped.
+        """
+        insiders = {login.lower() for login in self.github.list_assignees(owner, repo) or ()}
+        candidates = [
+            p
+            for p in merged
+            if p.get("author_association") in OUTSIDER_ROLES
+            and str((p.get("user") or {}).get("login") or "").lower() not in insiders
+        ][:2]
         for pull in candidates:
             files = self.github.list_pull_files(owner, repo, int(pull["number"]))
             if files and len(files) <= 6:

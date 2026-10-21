@@ -126,6 +126,7 @@ def _mock_repo(router: respx.MockRouter) -> None:
             ],
         )
     )
+    router.get(f"{API}/assignees").mock(return_value=httpx.Response(200, json=[]))
     router.get(f"{API}/pulls/7/files").mock(
         return_value=httpx.Response(
             200, json=[{"filename": "src/lib/core.py"}, {"filename": "tests/test_core.py"}]
@@ -215,3 +216,25 @@ def test_cli_orient_writes_a_codetour_file(tmp_path: Path) -> None:
     assert tour["ref"] == "abc123def456"
     assert any(s.get("file") == "README.md" for s in tour["steps"])
     assert "Wrote the CodeTour file" in result.stdout
+
+
+def test_example_pr_skips_authors_who_can_be_assigned_issues(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # ArduPilot (2026-10-21): orient called a PR by @khancyr "a recently merged small PR
+    # from an outside contributor"; GitHub marks every merged author CONTRIBUTOR.
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.github, "list_assignees", lambda o, r: frozenset({"khancyr"}))
+    monkeypatch.setattr(
+        toolkit.github, "list_pull_files", lambda o, r, n: [{"filename": "src/a.py"}]
+    )
+
+    def pull(number: int, login: str) -> dict[str, object]:
+        return {
+            "number": number,
+            "html_url": f"https://github.com/a/b/pull/{number}",
+            "title": "t",
+            "user": {"login": login},
+            "author_association": "CONTRIBUTOR",
+        }
+
+    example = toolkit._example_outsider_pr("a", "b", [pull(1, "khancyr"), pull(2, "newcomer")])
+    assert example is not None and example["author"] == "newcomer"
