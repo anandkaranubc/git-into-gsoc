@@ -340,3 +340,35 @@ def test_a_long_idle_open_pr_says_how_to_ask() -> None:
     fresh = assess_issue(issue, [linked(5)], now=NOW)
     assert fresh.reason == "Open PR #30 by @someone references it"
     assert not any("ask in the issue" in c for c in fresh.caveats)
+
+
+@respx.mock
+def test_one_big_org_cannot_fill_the_whole_list() -> None:
+    def item(number: int, repo: str) -> dict[str, Any]:
+        return {
+            "id": number,
+            "number": number,
+            "title": f"Fix {number}",
+            "html_url": f"https://github.com/{repo}/issues/{number}",
+            "repository_url": f"https://api.github.com/repos/{repo}",
+            "labels": [{"name": "good first issue"}],
+            "state": "open",
+            "assignees": [],
+            "comments": 1,
+            "updated_at": datetime.now(UTC).isoformat(),
+            "body": "Expected: works. Steps to reproduce: run it.",
+        }
+
+    # On 2026-10-21 every result of a plain `issues` run came from apache/*.
+    items = [item(n, f"apache/repo{n}") for n in range(1, 7)]
+    items += [item(10, "sympy/sympy"), item(11, "zulip/zulip")]
+    respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(200, json={"items": items})
+    )
+    respx.get(url__regex=r"https://api\.github\.com/repos/.*/timeline.*").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    results = GitHubClient().find_beginner_issues(orgs=["apache", "sympy", "zulip"], max_results=6)
+    owners = [r.repo.split("/")[0] for r in results]
+    assert owners.count("apache") <= 3
+    assert {"sympy", "zulip"} <= set(owners)

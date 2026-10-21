@@ -239,3 +239,38 @@ def test_recommendation_text_matches_the_grade() -> None:
     assert "Go ahead" not in _repo_recommendation(busy.health_score, busy.warnings)
     assert "warnings" in _repo_recommendation(90, ["One person wrote most commits"])
     assert "Go ahead" in _repo_recommendation(90, [])
+
+
+def _candidate(labels: list[str], **overrides: object) -> IssueCandidate:
+    fields: dict[str, object] = {
+        "repo": "acme/lib",
+        "number": 7,
+        "title": "x",
+        "url": "https://github.com/acme/lib/issues/7",
+        "labels": labels,
+        "availability": Availability.AVAILABLE,
+        "updated_at": datetime.now(UTC) - timedelta(days=2),
+        "comments": 1,
+        "filed_by_maintainer": True,
+        "gsoc_org": "Acme",
+        "body_excerpt": "Steps to reproduce: run it. Expected: no crash. " * 3,
+    }
+    fields.update(overrides)
+    return score_issue(IssueCandidate(**fields))  # type: ignore[arg-type]
+
+
+def test_help_wanted_alone_is_not_a_beginner_issue() -> None:
+    # Shaped like apache/sedona#2993 (2026-10-21): a large tooling change that
+    # scored 100 because every label in the list counted as beginner-friendly.
+    big = _candidate(["improvement", "help wanted", "docs", "behavior change", "question"])
+    starter = _candidate(["good first issue", "help wanted"])
+    assert big.beginner_score <= 75
+    assert starter.beginner_score > big.beginner_score
+    assert any("No beginner label" in s for s in big.signals)
+    assert any("Caution" in s and "behavior change" in s for s in big.signals)
+
+
+def test_beginner_label_variants_count_once() -> None:
+    one = _candidate(["good first issue"])
+    many = _candidate(["good first issue", "beginner", "easy", "starter"])
+    assert many.beginner_score == one.beginner_score

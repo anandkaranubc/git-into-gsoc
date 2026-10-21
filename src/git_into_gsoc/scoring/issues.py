@@ -6,26 +6,31 @@ from datetime import UTC, datetime
 
 from git_into_gsoc.models import Availability, IssueCandidate
 
-POSITIVE_LABELS = {
+# Labels maintainers use to say "a newcomer can do this". One is enough.
+BEGINNER_LABELS = {
     "good first issue",
     "good-first-issue",
+    "good first bug",
+    "good first contribution",
     "beginner",
     "beginner friendly",
     "beginner-friendly",
     "easy",
+    "e-easy",
+    "difficulty: easy",
+    "level: beginner",
     "starter",
     "first-timers-only",
-    "help wanted",
-    "help-wanted",
     "newcomer",
-    "documentation",
-    "docs",
-    "bug",
-    "gsoc",
+    "newcomers",
 }
+# Useful context, but not a sign of an easy task: "help wanted" often marks work
+# the maintainers have no time for, which can be large.
+HELPFUL_LABELS = {"help wanted", "help-wanted", "documentation", "docs", "bug", "gsoc"}
 
 NEGATIVE_LABELS = {
     "breaking change",
+    "behavior change",
     "security",
     "critical",
     "epic",
@@ -34,7 +39,15 @@ NEGATIVE_LABELS = {
     "wontfix",
     "blocked",
     "needs design",
+    "needs discussion",
+    "needs triage",
+    "difficulty: hard",
+    "hard",
+    "complex",
+    "research",
 }
+# Without a beginner label an issue can still be a good start, but never a top pick.
+NO_BEGINNER_LABEL_CAP = 75.0
 
 
 def score_issue(issue: IssueCandidate) -> IssueCandidate:
@@ -42,10 +55,14 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
     signals: list[str] = []
     labels = {label.lower() for label in issue.labels}
 
-    pos = labels & POSITIVE_LABELS
-    if pos:
-        score += min(25.0, 8.0 * len(pos))
-        signals.append("Beginner-friendly labels: " + ", ".join(sorted(pos)[:4]))
+    beginner = labels & BEGINNER_LABELS
+    helpful = labels & HELPFUL_LABELS
+    if beginner:
+        score += 20.0
+        signals.append("Beginner label: " + ", ".join(sorted(beginner)[:3]))
+    if helpful:
+        score += 5.0
+        signals.append("Also labelled: " + ", ".join(sorted(helpful)[:3]))
 
     neg = labels & NEGATIVE_LABELS
     if neg:
@@ -108,6 +125,12 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
     if len(issue.body_excerpt) < 40:
         score -= 5.0
         signals.append("Very short issue body. Ask maintainers for details")
+
+    if not beginner:
+        score = min(score, NO_BEGINNER_LABEL_CAP)
+        signals.append(
+            "No beginner label: issues marked only 'help wanted' are often harder than they look"
+        )
 
     issue.beginner_score = round(max(0.0, min(score, 100.0)), 1)
     issue.signals = signals

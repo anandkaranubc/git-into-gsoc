@@ -332,10 +332,16 @@ class GSoCToolkit:
         max_results: int = 10,
         year: int | None = None,
     ) -> dict[str, Any]:
+        from_profile = False
+        if not (language or org or repo):
+            saved = list(self.progress.profile().get("technologies") or [])
+            language, from_profile = (saved[0], True) if saved else (None, False)
         owner_names, shortlist, note = self.gsoc_github_orgs(language=language, year=year)
         use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
         if not use_gsoc:
             note = "Searching " + (f"{repo}" if repo else f"org {org}" if org else "all of GitHub")
+        if from_profile:
+            note += f" Using {language} from your saved profile; pass a language to change it."
         labels_used: list[str] = [label] if label else ["good first issue", "help wanted"]
         if repo and not label:
             owner_name, repo_name = parse_repo(repo)
@@ -354,6 +360,7 @@ class GSoCToolkit:
         )
         return {
             "scope": "gsoc" if use_gsoc else "custom",
+            "language_used": language,
             "labels_used": labels_used,
             "note": note,
             "count": len(issues),

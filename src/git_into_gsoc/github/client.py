@@ -519,11 +519,19 @@ class GitHubClient:
             prelim.append(score_issue(candidate))
         prelim.sort(key=lambda c: -c.beginner_score)
 
+        # Across several owners, a big one (apache has hundreds of repos) must not fill
+        # the whole list; a single owner or repo may.
+        per_owner = 3 if len(set(owners)) > 1 or not (owners or repo) else wanted + 4
+        per_owner_count: dict[str, int] = {}
         shortlist: list[IssueCandidate] = []
         for candidate in prelim:
+            owner_key = candidate.repo.split("/")[0].lower()
             if per_repo_count.get(candidate.repo, 0) >= per_repo:
                 continue
+            if per_owner_count.get(owner_key, 0) >= per_owner:
+                continue
             per_repo_count[candidate.repo] = per_repo_count.get(candidate.repo, 0) + 1
+            per_owner_count[owner_key] = per_owner_count.get(owner_key, 0) + 1
             shortlist.append(candidate)
             if len(shortlist) >= wanted + 4:
                 break

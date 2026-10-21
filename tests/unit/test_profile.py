@@ -107,3 +107,15 @@ def test_recommend_without_anything_explains(api: respx.MockRouter) -> None:
     data = GSoCToolkit().recommend_path()
     assert data["technologies_used"] == []
     assert "profile" in data["evidence_note"].lower()
+
+
+def test_issues_without_a_language_use_the_saved_profile(api: respx.MockRouter) -> None:
+    ProgressStore().set_profile(technologies=["JS", "React"])
+    data = GSoCToolkit().find_issues(max_results=3)
+    query = api.calls.last.request.url.params["q"]
+    assert "language:" in query
+    assert data["language_used"] == "JS"
+    assert "saved profile" in data["note"]
+    explicit = GSoCToolkit().find_issues(language="python", max_results=3)
+    assert explicit["language_used"] == "python"
+    assert "saved profile" not in explicit["note"]
