@@ -7,6 +7,7 @@ from typing import Any
 
 from mcp.server.mcpserver import MCPServer
 
+from git_into_gsoc.errors import GigError
 from git_into_gsoc.guidance import journey_overview
 from git_into_gsoc.models import JourneyPhase
 from git_into_gsoc.service import GSoCToolkit
@@ -202,20 +203,25 @@ def gsoc_progress(action: str = "summary", phase: str = "", value: str = "") -> 
     """
     store = toolkit().progress
     act = action.strip().lower()
-    if act == "summary":
-        return _dump(store.summary())
-    if act == "complete_phase":
-        if not phase:
-            return _dump({"error": "phase is required", "valid": [p.value for p in JourneyPhase]})
-        return _dump(store.complete_phase(phase).model_dump(mode="json"))
-    if act == "shortlist_org":
-        return _dump(store.shortlist_org(value).model_dump(mode="json"))
-    if act == "track_repo":
-        return _dump(store.track_repo(value).model_dump(mode="json"))
-    if act == "track_issue":
-        return _dump(store.track_issue(value).model_dump(mode="json"))
-    if act == "note":
-        return _dump(store.add_note(value).model_dump(mode="json"))
+    try:
+        if act == "summary":
+            return _dump(store.summary())
+        if act == "complete_phase":
+            if not phase:
+                return _dump(
+                    {"error": "phase is required", "valid": [p.value for p in JourneyPhase]}
+                )
+            return _dump(store.complete_phase(phase).model_dump(mode="json"))
+        if act == "shortlist_org":
+            return _dump(store.shortlist_org(value).model_dump(mode="json"))
+        if act == "track_repo":
+            return _dump(store.track_repo(value).model_dump(mode="json"))
+        if act == "track_issue":
+            return _dump(store.track_issue(value).model_dump(mode="json"))
+        if act == "note":
+            return _dump(store.add_note(value).model_dump(mode="json"))
+    except GigError as exc:
+        return _dump(exc.to_dict())
     return _dump(
         {
             "error": f"Unknown action '{action}'",
