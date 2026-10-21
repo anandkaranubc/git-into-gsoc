@@ -286,3 +286,18 @@ def test_a_compound_term_counts_once() -> None:
     assert sum(r.startswith("Uses") for r in compound.reasons) == 1
     both = score_org_match(org, technologies=["C", "C++"])  # two skills still count twice
     assert both.score > single.score
+
+
+def test_a_long_open_backlog_issue_ranks_below_a_fresh_good_first_issue() -> None:
+    # ros2/rclcpp#985 (opened 2020, labelled help wanted and backlog) ranked first in
+    # a simulated run of `issues --org ros2`, above real good first issues.
+    old = _candidate(
+        ["enhancement", "help wanted", "backlog"],
+        created_at=datetime(2020, 2, 8, tzinfo=UTC),
+    )
+    fresh = _candidate(
+        ["good first issue"], created_at=datetime.now(UTC) - timedelta(days=60), comments=4
+    )
+    assert fresh.beginner_score > old.beginner_score
+    assert any("Open since 2020" in s for s in old.signals)
+    assert any("backlog" in s for s in old.signals)

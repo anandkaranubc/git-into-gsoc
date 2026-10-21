@@ -29,6 +29,11 @@ BEGINNER_LABELS = {
 HELPFUL_LABELS = {"help wanted", "help-wanted", "documentation", "docs", "bug", "gsoc"}
 
 NEGATIVE_LABELS = {
+    "backlog",
+    "icebox",
+    "someday",
+    "on hold",
+    "long-term",
     "breaking change",
     "behavior change",
     "security",
@@ -101,6 +106,15 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
     if issue.filed_by_maintainer:
         score += 6.0
         signals.append("Filed by a maintainer, so it reflects a real priority")
+
+    if issue.created_at:
+        age_days = (datetime.now(UTC) - issue.created_at.astimezone(UTC)).days
+        if age_days > 730:
+            score -= 8.0
+            signals.append(
+                f"Open since {issue.created_at.year}: long-open issues are often harder than "
+                "they look, or blocked on a decision"
+            )
 
     if issue.updated_at:
         days = (datetime.now(UTC) - issue.updated_at.astimezone(UTC)).days
