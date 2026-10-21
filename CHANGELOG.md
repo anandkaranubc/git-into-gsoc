@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.5.1...v0.6.0) (2026-10-21)
+
+
+### Features
+
+* **setup:** add --remove to delete skill copies and MCP registrations ([#64](https://github.com/anandkaranubc/git-into-gsoc/issues/64)) ([d3012fa](https://github.com/anandkaranubc/git-into-gsoc/commit/d3012fa33011a3fe0e00a0ab4478b1a4b418ed9c))
+
+
+### Bug Fixes
+
+* **issues:** count reservation words inside labels and fall back to any beginner spelling; first-hand label census and verified sources ([#63](https://github.com/anandkaranubc/git-into-gsoc/issues/63)) ([5709bb1](https://github.com/anandkaranubc/git-into-gsoc/commit/5709bb129ed14db4812058f8bc87590c1fe22ab1))
+
+
+### Documentation
+
+* **research:** census appendix with a verdict for all 292 repositories and a verification-status header on every note ([#66](https://github.com/anandkaranubc/git-into-gsoc/issues/66)) ([3bddc6b](https://github.com/anandkaranubc/git-into-gsoc/commit/3bddc6b663c7138368da4710a65a0818a5a14afa))
+
 ## [0.5.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.5.0...v0.5.1) (2026-10-21)
 
 
