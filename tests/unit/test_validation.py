@@ -66,3 +66,20 @@ def test_split_csv() -> None:
     assert split_csv("python, rust,,") == ["python", "rust"]
     assert split_csv(["a", " ", "b "]) == ["a", "b"]
     assert split_csv(None) == []
+
+
+def test_issue_refs_from_pasted_links_and_remotes() -> None:
+    assert parse_issue_ref("https://github.com/sympy/sympy/issues/28050#issuecomment-1") == (
+        "sympy",
+        "sympy",
+        28050,
+    )
+    assert parse_issue_ref("https://github.com/sympy/sympy/issues/7?foo=bar#x") == (
+        "sympy",
+        "sympy",
+        7,
+    )
+    assert parse_issue_ref("github.com/sympy/sympy/pull/9#discussion_r1") == ("sympy", "sympy", 9)
+    assert parse_issue_ref("sympy/sympy#12") == ("sympy", "sympy", 12)
+    assert parse_repo("git@github.com:sympy/sympy.git") == ("sympy", "sympy")
+    assert parse_repo("ssh://git@github.com/sympy/sympy.git") == ("sympy", "sympy")

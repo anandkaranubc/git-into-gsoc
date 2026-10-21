@@ -29,6 +29,10 @@ def validate_login(value: str, *, kind: str = "GitHub user/org") -> str:
 
 def _split_github_path(value: str) -> list[str]:
     raw = value.strip()
+    # SSH remote as printed by `git remote -v`: git@github.com:owner/repo.git
+    ssh = re.match(r"^(?:ssh://)?git@github\.com[:/](.+)$", raw, re.IGNORECASE)
+    if ssh:
+        return [p for p in ssh.group(1).split("/") if p]
     if raw.startswith(("http://", "https://")) or raw.startswith(tuple(_GITHUB_HOSTS)):
         parsed = urlparse(raw if "://" in raw else f"https://{raw}")
         if parsed.netloc.lower() not in _GITHUB_HOSTS:
@@ -55,6 +59,13 @@ def parse_repo(value: str) -> tuple[str, str]:
 def parse_issue_ref(value: str, number: int | None = None) -> tuple[str, str, int]:
     """Parse `owner/repo#123`, `owner/repo 123`, or an issue/PR URL."""
     raw = (value or "").strip()
+    # URLs first: a pasted comment link (".../issues/12#issuecomment-34") or a URL with a
+    # query string must resolve from its path, not from the text after "#".
+    if number is None and ("://" in raw or raw.lower().startswith(tuple(_GITHUB_HOSTS))):
+        parts = _split_github_path(raw)
+        if len(parts) >= 4 and parts[2] in {"issues", "pull"}:
+            owner, repo = parse_repo("/".join(parts[:2]))
+            return owner, repo, _parse_number(parts[3])
     if number is None and "#" in raw:
         repo_part, _, num = raw.partition("#")
         owner, repo = parse_repo(repo_part)
