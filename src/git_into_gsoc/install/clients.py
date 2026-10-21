@@ -64,6 +64,9 @@ class McpTarget:
     user_path_fallbacks: tuple[str, ...] = ()
     project_note: str = ""  # shown when the project file was written
     project_fmt: Literal["json-mcpServers", "json-servers", "toml-codex"] | None = None
+    # Where the assistant's own CLI stores a user-scope registration. Only `doctor`
+    # reads it; setup never writes there itself.
+    user_read_path: str | None = None
 
     def fmt_for(self, scope: Scope) -> Literal["json-mcpServers", "json-servers", "toml-codex"]:
         return (self.project_fmt or self.fmt) if scope == "project" else self.fmt
@@ -120,6 +123,7 @@ ASSISTANTS: dict[str, Assistant] = {
             ),
             cli_check=("claude", ["mcp", "get", SERVER_NAME]),
             cli_remove=("claude", ["mcp", "remove", "--scope", "user", SERVER_NAME]),
+            user_read_path=".claude.json",
             manual_hint=(
                 "claude mcp add --scope user --transport stdio git-into-gsoc -- {command}"
             ),
@@ -602,6 +606,8 @@ def registrations(
         if target.user_path:
             for rel in (target.user_path, *target.user_path_fallbacks):
                 candidates.append((resolve_home_path(home, rel), target.fmt_for("user")))
+        elif target.user_read_path:
+            candidates.append((home / target.user_read_path, target.fmt_for("user")))
         if project and target.project_path:
             candidates.append((project / target.project_path, target.fmt_for("project")))
         for path, fmt in candidates:

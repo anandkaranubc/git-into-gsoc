@@ -502,3 +502,14 @@ def test_doctor_names_a_registered_command_that_cannot_start(tmp_path: Path) -> 
     missing = _command_problem({"command": "surely-not-an-installed-program-xyz"})
     assert missing and "not installed" in missing
     assert _command_problem({}) == "no command is set"
+
+
+def test_doctor_finds_a_registration_claude_mcp_add_made(tmp_path: Path) -> None:
+    # Setup registers Claude Code through `claude mcp add`, which writes ~/.claude.json.
+    (tmp_path / ".claude.json").write_text(
+        json.dumps(
+            {"userID": "x", "mcpServers": {"git-into-gsoc": {"command": "gig", "args": ["mcp"]}}}
+        ),
+        encoding="utf-8",
+    )
+    assert ("Claude Code", tmp_path / ".claude.json") in registered_servers(tmp_path)

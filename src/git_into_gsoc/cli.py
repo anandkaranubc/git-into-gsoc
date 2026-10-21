@@ -2209,7 +2209,9 @@ def doctor_cmd() -> None:
     if plugins:
         console.print("plugin installed: " + ", ".join(plugins))
     if skills:
-        console.print("skill installed for: " + ", ".join(f"{label}" for label, _ in skills))
+        # The shared folder can hold a user copy and a project copy; name it once.
+        labels = dict.fromkeys(label for label, _ in skills)
+        console.print("skill installed for: " + ", ".join(labels))
         stale = [p for _, p in skills if source_dir and not is_current(source_dir, p)]
         if stale:
             console.print(
@@ -2222,7 +2224,8 @@ def doctor_cmd() -> None:
     if servers:
         console.print(
             "MCP registered in: "
-            + ", ".join(_short_path(path, home, project) for _, path, _ in servers)
+            + ", ".join(_short_path(path, home, project) for _, path, _ in servers),
+            soft_wrap=True,
         )
         for _, path, entry in servers:
             problem = _command_problem(entry)

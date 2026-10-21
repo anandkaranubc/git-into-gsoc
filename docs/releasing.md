@@ -55,4 +55,6 @@ git-into-gsoc setup --dry-run --assistant all
 
 For every pull request, CI runs the lint, format, and type checks on Linux, the tests on Linux, macOS, and Windows, and both installers.
 
+Unit tests never touch the network. After a release, run the **Live journeys** workflow from the Actions tab (it also runs every Monday). It installs the newest release on Linux, macOS, and Windows and runs beginner commands against live GitHub, GitLab, and GSoC data with `scripts/live_journeys.py`. A crash fails it. A step marked drift ran fine but gave a different answer, because live data changed; read it and update the step if the new answer is right. Run the same script on your own computer with `python scripts/live_journeys.py`.
+
 [Guide contents](README.md) · [Contributing](../CONTRIBUTING.md)
