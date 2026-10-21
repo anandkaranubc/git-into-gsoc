@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/readme/banner-dark.svg">
+    <img src="brand/readme/banner-light.svg" alt="git into gsoc. open source has a door. git in." width="100%">
+  </picture>
+</p>
+
 # git-into-gsoc
 
 Find your first open-source contribution and prepare for [Google Summer of Code (GSoC)](https://summerofcode.withgoogle.com), using real evidence instead of guesses.
