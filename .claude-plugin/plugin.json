@@ -24,6 +24,8 @@
     "git-into-gsoc": {
       "command": "uvx",
       "args": [
+        "--from",
+        "git+https://github.com/anandkaranubc/git-into-gsoc@main",
         "git-into-gsoc",
         "mcp"
       ]

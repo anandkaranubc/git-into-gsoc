@@ -33,7 +33,7 @@ git-into-gsoc setup
 
 On Windows, run `irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex` in PowerShell. To work from a clone instead, see [installation](docs/guide/02-install.md).
 
-Claude Code users can also install the skill and the MCP server as a plugin once the package is on PyPI: `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`.
+Claude Code users can install the skill and the MCP server together as a plugin: `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`. It needs [uv](https://docs.astral.sh/uv/) and runs the server straight from this repository.
 
 `program` shows the current GSoC phase and timeline with no GitHub token needed. If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits. `git-into-gsoc doctor` shows what is configured.
 
