@@ -136,9 +136,14 @@ def _register_via_cli(
     check: tuple[str, list[str]] | None,
     dry_run: bool,
 ) -> Change | None:
-    """Use the assistant's own CLI (e.g. `claude mcp add`) when it is installed."""
+    """Use the assistant's own CLI (e.g. `claude mcp add`) when it is installed.
+
+    The CLI always writes to the real home directory, so when setup targets a
+    different home (GIG_HOME in tests, demos, or sandboxes) it is skipped and
+    the manual command is printed instead of mutating the user's real config.
+    """
     executable = shutil.which(cli[0])
-    if not executable:
+    if not executable or plan.home.resolve() != Path.home().resolve():
         return None
     where = Path(executable)
     if check and register_via_cli(executable, check[1])[0]:

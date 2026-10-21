@@ -122,6 +122,27 @@ def test_run_setup_user_scope_end_to_end(tmp_path: Path) -> None:
     assert {c.action for c in plan.changes if c.action != "skipped"} == {"unchanged"}
 
 
+def test_cli_registration_is_skipped_for_a_redirected_home(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """GIG_HOME redirects file-based clients; `claude mcp add` would still hit the real home."""
+    import git_into_gsoc.install.plan as plan_module
+
+    calls: list[list[str]] = []
+    monkeypatch.setattr(plan_module.shutil, "which", lambda name: f"/fake/bin/{name}")
+    monkeypatch.setattr(
+        plan_module, "register_via_cli", lambda exe, argv, **kw: calls.append(argv) or (True, "")
+    )
+    home = tmp_path / "home"
+    home.mkdir()
+    plan = plan_setup(
+        scope="user", assistants=["claude-code"], home=home, project=None, command=CMD
+    )
+    run_setup(plan)
+    assert calls == []
+    assert any("claude mcp add" in step for step in plan.manual)
+
+
 def test_run_setup_project_scope_writes_into_project(tmp_path: Path) -> None:
     home, project = tmp_path / "home", tmp_path / "proj"
     home.mkdir()

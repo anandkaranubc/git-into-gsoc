@@ -117,12 +117,18 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         # predicts whether newcomers keep contributing; prefer it over merge time.
         if first <= 24:
             score += 10
-            signals.append(f"Outside PRs get a human reply within ~{first:.0f}h (median)")
+            signals.append(
+                f"Pull requests from outsiders get a human reply within ~{first:.0f}h (median)"
+            )
         elif first <= 72:
             score += 6
-            signals.append(f"Outside PRs get a human reply in ~{first / 24:.0f}d (median)")
+            signals.append(
+                f"Pull requests from outsiders get a human reply in ~{first / 24:.0f}d (median)"
+            )
         else:
-            warnings.append(f"Outside PRs wait ~{first / 24:.0f}d for a first human reply (median)")
+            warnings.append(
+                f"Pull requests from outsiders wait ~{first / 24:.0f}d for a first human reply (median)"
+            )
         if health.median_pr_hours is not None:
             signals.append(f"Merged PRs land in ~{_days_or_hours(health.median_pr_hours)} (median)")
     elif health.median_pr_hours is not None:
