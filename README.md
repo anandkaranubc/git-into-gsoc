@@ -13,14 +13,20 @@ You can use it in a terminal or let an AI assistant use it for you. It never fab
 You need Git and Python 3.11 or newer. These commands work on macOS, Linux, and Linux on Windows through WSL. For Windows PowerShell steps, see [installation](docs/guide/02-install.md).
 
 ```bash
-git clone https://github.com/anandkaranubc/git-into-gsoc.git
-cd git-into-gsoc
-./install.sh --no-user-skills
-source .venv/bin/activate
+curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
 git-into-gsoc program
 ```
 
-`program` shows the current GSoC phase and timeline with no GitHub token needed. If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits.
+The installer uses [uv](https://docs.astral.sh/uv/) or pipx when you have one, installs the tool, and runs `git-into-gsoc setup`, which copies the Agent Skill and registers the MCP server for every assistant it finds on your machine (Claude Code, Cursor, Codex, Gemini CLI, Windsurf, VS Code). Prefer explicit steps? These do the same thing:
+
+```bash
+uv tool install git+https://github.com/anandkaranubc/git-into-gsoc   # or: pipx install git+https://...
+git-into-gsoc setup
+```
+
+On Windows, run `irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex` in PowerShell. To work from a clone instead, see [installation](docs/guide/02-install.md).
+
+`program` shows the current GSoC phase and timeline with no GitHub token needed. If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits. `git-into-gsoc doctor` shows what is configured.
 
 Then explore:
 

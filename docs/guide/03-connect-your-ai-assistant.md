@@ -7,77 +7,42 @@ There are two separate parts:
 - An **Agent Skill** is a folder of written instructions that teaches an assistant how to coach you through GSoC without inventing organizations or encouraging spam contributions.
 - **Model Context Protocol (MCP)** lets an assistant call tools, such as organization search or issue availability. This project's MCP server runs on your computer and reads public data from the official GSoC site, the organization archive, and GitHub. It can also save local progress.
 
-Installing the skill does not register the MCP server. An assistant that can run terminal commands can also use the skill with the CLI directly.
+An assistant that can run terminal commands can also use the skill with the CLI directly.
 
-## Make the skill available
-
-The [installer](02-install.md) copies the skill into `.agents/skills`, `.cursor/skills`, and `.claude/skills` inside the repository. Open the repository in your assistant and restart its session.
-
-To copy the skill to your user folders as well, run this from the repository:
+## One command does both
 
 ```bash
-./install.sh --skill-only
+git-into-gsoc setup
 ```
 
-This replaces this skill's folders in `~/.agents`, `~/.cursor`, `~/.claude`, and `~/.codex`. It also copies to `~/.gemini` when that folder or the Gemini command exists. Skill discovery depends on your assistant version. If it does not find the skill, ask it to read `skills/git-into-gsoc/SKILL.md` in this repository explicitly.
-
-## Find the server command
-
-After installation, run from the repository on macOS, Linux, or WSL:
+Setup detects the assistants on your machine, copies the skill into each one's skills folder, and registers the MCP server in each one's configuration file, merging with whatever is already there and keeping a `.bak` copy. It prints a table of what it created, updated, or left unchanged. Useful variations:
 
 ```bash
-"$(pwd)/.venv/bin/git-into-gsoc" --version
+git-into-gsoc setup --dry-run                      # preview only
+git-into-gsoc setup --assistant claude-code        # one assistant (claude-code, cursor, codex, gemini, windsurf, vscode, all)
+git-into-gsoc setup --scope project                # inside the current repository instead of your home folder
+git-into-gsoc setup --no-mcp                       # skill only
+git-into-gsoc doctor                               # shows which assistants have the skill and where MCP is registered
 ```
 
-Use the full path to that executable in your assistant settings. This avoids relying on a terminal's activated environment. In Windows use the full path to `.venv\Scripts\git-into-gsoc.exe`; JSON paths need doubled backslashes or forward slashes. A WSL executable requires an assistant running in the same Linux environment.
+For Claude Code at user scope, setup runs `claude mcp add` for you when the `claude` command is installed; otherwise it prints the exact command to run. Then restart your assistant.
 
-## Choose your assistant
+Skill discovery depends on your assistant version. If it does not find the skill, ask it to read the `SKILL.md` path that `doctor` prints under "skill source".
 
-Run only the commands for the assistant you already use, from the repository folder.
+## Doing it by hand
 
-### Cursor
+You only need this section if setup could not write a file for your assistant, or you prefer to see the configuration. The server command is the path `setup` and `doctor` print, for example `/home/you/.local/bin/git-into-gsoc mcp` or, from a clone, `/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc mcp`. Use the full path, not a terminal alias. On Windows use the full path to `git-into-gsoc.exe`; JSON paths need doubled backslashes or forward slashes.
 
-Merge this entry into `~/.cursor/mcp.json`, keeping any existing servers. Replace `/absolute/path/to/git-into-gsoc` with your actual folder path. The file must contain valid JSON, without comments.
+| Assistant | What setup writes | Manual equivalent |
+|---|---|---|
+| Cursor | `~/.cursor/mcp.json` (or `.cursor/mcp.json` in the project) | Add `"git-into-gsoc": {"command": "<path>", "args": ["mcp"]}` under `mcpServers`; see [Cursor's MCP documentation](https://cursor.com/docs/mcp) |
+| Claude Code | `claude mcp add --scope user --transport stdio git-into-gsoc -- <path> mcp`, or `.mcp.json` in the project | Run that command yourself; `claude mcp list` shows the result. See [Claude Code's MCP documentation](https://code.claude.com/docs/en/mcp). Claude Desktop has its own settings; supply the same command and `mcp` argument there |
+| Codex CLI | `[mcp_servers."git-into-gsoc"]` in `~/.codex/config.toml` | `codex mcp add git-into-gsoc -- <path> mcp`; see [Codex's MCP documentation](https://developers.openai.com/codex/mcp) |
+| Gemini CLI | `~/.gemini/settings.json` (or `.gemini/settings.json` in the project) | `gemini mcp add git-into-gsoc <path> mcp`; see [Gemini CLI's MCP documentation](https://geminicli.com/docs/tools/mcp-server/) |
+| Windsurf | `~/.codeium/windsurf/mcp_config.json` | Same `mcpServers` shape as Cursor |
+| VS Code | `.vscode/mcp.json` in the project | Run "MCP: Add Server" in VS Code and enter the command |
 
-```json
-{
-  "mcpServers": {
-    "git-into-gsoc": {
-      "command": "/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc",
-      "args": ["mcp"]
-    }
-  }
-}
-```
-
-Restart Cursor and check its MCP settings. See [Cursor's MCP documentation](https://cursor.com/docs/mcp).
-
-### Claude Code
-
-```bash
-claude mcp add --transport stdio git-into-gsoc -- "$(pwd)/.venv/bin/git-into-gsoc" mcp
-claude mcp list
-```
-
-This uses Claude Code's default local scope. See [Claude Code's MCP documentation](https://code.claude.com/docs/en/mcp) for user-wide configuration and connection status. Claude Desktop uses separate configuration; follow its own MCP setup instructions and supply the same command and `mcp` argument.
-
-### Codex CLI
-
-```bash
-codex mcp add git-into-gsoc -- "$(pwd)/.venv/bin/git-into-gsoc" mcp
-codex mcp list
-```
-
-Restart the session after adding the server. See [Codex's MCP documentation](https://developers.openai.com/codex/mcp) for configuration details.
-
-### Gemini CLI
-
-```bash
-gemini mcp add git-into-gsoc "$(pwd)/.venv/bin/git-into-gsoc" mcp
-gemini mcp list
-```
-
-See [Gemini CLI's MCP documentation](https://geminicli.com/docs/tools/mcp-server/) for configuration scope and status.
+The skill goes into `~/.claude/skills`, `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.codeium/windsurf/skills`, and the portable `~/.agents/skills` (or the same folders inside the project with `--scope project`). Restart the assistant after any change.
 
 ## Verify the connection
 
@@ -95,6 +60,6 @@ The assistant normally starts and stops the server itself. If you run `git-into-
 
 ## GitHub token for the assistant
 
-The server resolves a token the same way the CLI does: `GITHUB_TOKEN` or `GH_TOKEN` in its environment, then `gh auth token` if the GitHub CLI is logged in. Because the assistant launches the server, the GitHub CLI route is the most reliable: it does not depend on which terminal exported a variable. If you must pass a token explicitly, use your assistant's environment-variable settings and never put a real token in a committed file or paste it into chat. See [configuration](../configuration.md).
+The server resolves a token the same way the CLI does: `GITHUB_TOKEN` or `GH_TOKEN` in its environment, then `gh auth token` if the GitHub CLI is logged in. Because the assistant launches the server, the GitHub CLI route is the most reliable: it does not depend on which terminal exported a variable. If you must pass a token explicitly, use your assistant's environment-variable settings and never put a real token in a committed file or paste it into chat. Project-scope files such as `.mcp.json` and `.cursor/mcp.json` contain machine-specific paths and are ignored by Git in this repository. See [configuration](../configuration.md).
 
 [Next: find organizations](04-find-organizations.md) · [Troubleshooting](../troubleshooting.md) · [MCP tool reference](../mcp.md) · [Guide contents](../README.md)

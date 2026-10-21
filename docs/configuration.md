@@ -8,7 +8,7 @@ GitHub allows 60 unauthenticated API requests per hour and 5,000 with a token. R
 
 1. `GIG_GITHUB_TOKEN` in the environment or `.env`
 2. `GITHUB_TOKEN` in the environment or `.env`
-3. `GH_TOKEN` in the environment
+3. `GH_TOKEN` in the environment or `.env`
 4. The [GitHub CLI](https://cli.github.com/): if `gh` is installed and you have run `gh auth login`, the tool runs `gh auth token` for you
 
 The GitHub CLI route is the easiest and works for the MCP server too, because it does not depend on which terminal exported a variable. Set `GIG_USE_GH_CLI=false` to disable it.
@@ -31,6 +31,7 @@ Put these in `.env` or export them in the process environment. Environment varia
 |---|---|---|
 | `GITHUB_TOKEN`, `GH_TOKEN`, `GIG_GITHUB_TOKEN` | unset | GitHub credential (see above) |
 | `GIG_USE_GH_CLI` | `true` | Ask the GitHub CLI for a token when none is set |
+| `GIG_HOME` | your home folder | Where `setup` and `doctor` look for assistant config folders, mainly for tests |
 | `GIG_TARGET_YEAR` | `2027` | Program year used when a command has no `--year` |
 | `GIG_CACHE_TTL_SECONDS` | `3600` | How long GitHub responses stay fresh before revalidation |
 | `GIG_ARCHIVE_TTL_SECONDS` | `86400` | Same for organization lists, archives, and ideas pages |

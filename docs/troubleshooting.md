@@ -4,7 +4,7 @@ Start with the symptom below. Run commands from the downloaded repository unless
 
 ## `git-into-gsoc: command not found`
 
-Activate the environment in the terminal you are using:
+If you installed with the one-line installer, open a new terminal so your PATH is refreshed; uv puts the command in `~/.local/bin` (run `uv tool update-shell` if it is still missing). If you installed from a clone, activate the environment in the terminal you are using:
 
 ```bash
 source .venv/bin/activate
@@ -20,14 +20,14 @@ Run `python3 --version` (PowerShell: `py -3 --version`) and confirm Python 3.11 
 To choose an already-installed Python on macOS or Linux:
 
 ```bash
-PYTHON=python3.12 ./install.sh --no-user-skills
+PYTHON=python3.12 ./install.sh
 ```
 
 The installer reuses an existing `.venv`. If it was created with an older Python, close assistants using it, deactivate it if active, and move it aside before reinstalling:
 
 ```bash
 mv .venv .venv.backup
-PYTHON=python3.12 ./install.sh --no-user-skills
+PYTHON=python3.12 ./install.sh
 source .venv/bin/activate
 ```
 
@@ -35,7 +35,7 @@ Keep your source files in place. This does not reset your separately stored prog
 
 ## `./install.sh`: permission denied or file not found
 
-Make sure you are inside the cloned repository. Try `bash install.sh --no-user-skills`. In PowerShell, use the manual Windows instructions; the installer is a Bash script.
+Make sure you are inside the cloned repository. Try `bash install.sh`. In PowerShell, run `.\install.ps1` instead; `install.sh` is a Bash script.
 
 ## Installation cannot download dependencies
 
@@ -75,7 +75,7 @@ Some organizations host ideas on wikis that block automated readers. `repos` the
 
 `git-into-gsoc mcp` waits for protocol input. It is not an interactive chat command. Press Ctrl+C if you started it manually, then let your assistant launch it.
 
-Check that the server setting uses the full executable path and `args: ["mcp"]`, that the path still exists, and that running that executable with `--version` succeeds. A moved repository needs an updated path. Restart the assistant and inspect its server status. Skill discovery and MCP registration are separate; use the [assistant guide](guide/03-connect-your-ai-assistant.md) to check both.
+Run `git-into-gsoc doctor`: it lists which assistants have the skill and which config files register the MCP server. If yours is missing, run `git-into-gsoc setup --assistant NAME` and restart the assistant. If you moved or reinstalled the tool, re-run setup so the registered path is updated; it reports `updated` for the files it changed. A `setup` row that says `skipped (could not parse ...)` means your existing config file is not valid JSON or TOML; fix the file (a `.bak` copy is next to it if setup wrote it earlier) and re-run. Use the [assistant guide](guide/03-connect-your-ai-assistant.md) for the manual equivalents.
 
 ## Progress will not load
 

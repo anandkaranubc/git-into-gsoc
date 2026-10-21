@@ -94,11 +94,26 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 
 | Command | Purpose |
 |---|---|
-| `doctor` | Version, Python, cache and data paths, where the GitHub token came from, remaining API requests |
+| `setup` | Copy the Agent Skill and register the MCP server with your assistants (see below) |
+| `doctor` | Version, Python, cache and data paths, GitHub token source, remaining API requests, skill source, which assistants have the skill, and where the MCP server is registered |
 | `cache` | Size of the HTTP cache; `cache --clear` deletes it |
 | `mcp` | Start the MCP server on stdio; it waits for a client until stopped |
 
-The doctor reports connection errors in its output but may still exit with code zero. See [configuration](configuration.md) for tokens and settings.
+```bash
+git-into-gsoc setup                               # detect assistants, user scope
+git-into-gsoc setup --dry-run --assistant all     # preview every assistant
+git-into-gsoc setup --scope project --assistant claude-code --assistant cursor
+```
+
+| `setup` option | Effect |
+|---|---|
+| `--assistant` / `-a NAME` | `claude-code`, `cursor`, `codex`, `gemini`, `windsurf`, `vscode`, or `all`; repeatable. Default: every assistant with a config folder or executable on this machine |
+| `--scope user` (default) | Skill into `~/.<assistant>/skills` and `~/.agents/skills`; MCP into each assistant's user config (Claude Code via `claude mcp add` when available) |
+| `--scope project` | The same inside the current repository (`.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, ...); `--project-dir` picks another folder |
+| `--no-skill`, `--no-mcp` | Do only one of the two jobs |
+| `--dry-run` | Print the plan without writing |
+
+Setup merges into existing JSON and TOML files rather than replacing them, writes a `.bak` copy first, refuses to touch a file it cannot parse, and reports `unchanged` on re-runs. Assistants it cannot configure automatically get a printed manual command. The doctor reports connection errors in its output but may still exit with code zero. See [configuration](configuration.md) for tokens and settings.
 
 ## Use output in a script
 

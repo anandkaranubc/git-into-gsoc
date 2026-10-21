@@ -22,7 +22,7 @@ git-into-gsoc progress complete_phase --phase learn
 
 The tool saves the text you provide; it does not assign the issue to you. Re-run `git-into-gsoc issue <link>` before you start work on a tracked issue, because availability changes daily during GSoC season.
 
-Valid phase names are `learn`, `discover`, `evaluate`, `find_issues`, `contribute`, `community`, `proposal`, and `track`. Mark one complete only when its goal is useful and satisfied for you. You can revisit any phase.
+Valid phase names are `learn`, `discover`, `evaluate`, `find_issues`, `contribute`, `community`, `proposal`, and `track`; the [journey map](../journey.md) shows which commands and guide page belong to each. Mark one complete only when its goal is useful and satisfied for you. You can revisit any phase.
 
 ## Keep a weekly note
 

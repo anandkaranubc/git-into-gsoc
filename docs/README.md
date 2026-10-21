@@ -22,6 +22,7 @@ Start with [installation](guide/02-install.md), then [find organizations](guide/
 ## Reference and help
 
 - [Command reference](cli.md): all commands, options, and output formats.
+- [Journey map](journey.md): each phase with its commands and guide page.
 - [Configuration and local data](configuration.md): tokens, settings, cache, and progress files.
 - [Troubleshooting](troubleshooting.md): common errors and what to try next.
 - [Sources and limitations](sources.md): where results come from and what they cannot tell you.
