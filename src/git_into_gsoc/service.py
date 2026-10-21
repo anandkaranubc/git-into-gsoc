@@ -9,7 +9,14 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse
 
-from git_into_gsoc.coach import hours_note, plan_actions, time_budget, upcoming_deadlines
+from git_into_gsoc.coach import (
+    GSOC_FAQ_URL,
+    LONGEST_CODING_WEEKS,
+    hours_note,
+    plan_actions,
+    time_budget,
+    upcoming_deadlines,
+)
 from git_into_gsoc.config import (
     DEFAULT_TARGET_YEAR,
     LATEST_ARCHIVED_YEAR,
@@ -141,6 +148,33 @@ def public_channels(channels: list[ContactChannel]) -> list[str]:
         key=lambda c: _PUBLIC_CHANNEL_ORDER.index(c.kind),
     )
     return [c.value for c in ranked]
+
+
+def _mark_ideas_too_big(ideas: list[dict[str, Any]], hours_per_week: Any) -> str | None:
+    """Mark ideas bigger than the saved hours allow, move them last, and say so.
+
+    A beginner with 5 hours a week saw a 350-hour idea ranked as their best fit.
+    """
+    try:
+        hours = int(hours_per_week or 0)
+    except (TypeError, ValueError):
+        return None
+    if hours <= 0:
+        return None
+    capacity = hours * LONGEST_CODING_WEEKS
+    too_big = 0
+    for idea in ideas:
+        idea["too_big_for_your_hours"] = bool(idea.get("hours") and idea["hours"] > capacity)
+        too_big += idea["too_big_for_your_hours"]
+    if not too_big:
+        return None
+    ideas.sort(key=lambda idea: idea["too_big_for_your_hours"])  # stable: fit order kept
+    return (
+        f"At {hours} hours a week you have about {capacity} hours in the longest coding "
+        f"period ({LONGEST_CODING_WEEKS} weeks, only if your mentor agrees). {too_big} idea(s) "
+        "here need more than that and are listed last. Ask a mentor whether a smaller version "
+        f"would work. Source: {GSOC_FAQ_URL}"
+    )
 
 
 def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) -> list[str]:
@@ -1671,6 +1705,8 @@ class GSoCToolkit:
             doc.layout = "headings"
         wanted = list(skills or []) or list(self.progress.profile().get("technologies") or [])
         ranked = rank_ideas(doc.ideas, skills=wanted or None, size=size, difficulty=difficulty)
+        idea_dicts = [i.model_dump(mode="json") for i in ranked]
+        hours_note = _mark_ideas_too_big(idea_dicts, self.progress.profile().get("hours_per_week"))
         proposals = proposal_folders(
             lambda owner, repo: list(self.github.git_tree(owner, repo, "HEAD").get("tree") or []),
             org.name,
@@ -1688,7 +1724,8 @@ class GSoCToolkit:
             "fetched_url": doc.fetched_url,
             "layout": doc.layout,
             "count": len(ranked),
-            "ideas": [i.model_dump(mode="json") for i in ranked[: max(1, limit)]],
+            "ideas": idea_dicts[: max(1, limit)],
+            "hours_note": hours_note,
             "skills_matched_on": wanted,
             "ai_policy": doc.ai_policy,
             "sub_pages": doc.sub_pages[:40] if doc.layout == "index" else [],

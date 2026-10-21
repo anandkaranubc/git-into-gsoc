@@ -723,6 +723,8 @@ def ideas_cmd(
     for sentence in data.get("ai_policy") or []:
         lines.append(f"[yellow]AI policy:[/yellow] {escape(sentence)}")
     console.print(Panel(Text.from_markup("\n".join(lines)), title=f"Ideas: {data['layout']}"))
+    if data.get("hours_note"):
+        console.print(f"[yellow]![/yellow] {escape(data['hours_note'])}")
     if data["ideas"]:
         table = Table(title="Project ideas", caption="? marks a block with no labelled fields")
         table.add_column("Fit", justify="right")
@@ -738,6 +740,8 @@ def ideas_cmd(
             if idea["confidence"] == "low":
                 title = f"? {title}"
             hours = f"{idea['hours']}h" if idea.get("hours") else (idea.get("size") or "")
+            if idea.get("too_big_for_your_hours"):
+                hours = f"[yellow]{hours} too big[/yellow]"
             table.add_row(
                 f"{idea['match_score']:.0f}" if idea["match_score"] else "",
                 title,

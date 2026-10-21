@@ -68,3 +68,21 @@ def test_saving_few_hours_explains_the_fit(tmp_path) -> None:  # type: ignore[no
     result = CliRunner().invoke(app, ["profile", "--hours", "5"])
     assert result.exit_code == 0, result.output
     assert "medium and large projects would not fit" in " ".join(result.output.split())
+
+
+def test_ideas_too_big_for_the_saved_hours_are_marked_and_listed_last() -> None:
+    # A simulated beginner with 5 hours a week saw a 350-hour idea ranked first.
+    from git_into_gsoc.service import _mark_ideas_too_big
+
+    ideas = [
+        {"title": "Theming", "hours": 350},
+        {"title": "Docs", "hours": 90},
+        {"title": "Scheduler", "hours": 175},
+        {"title": "Unknown size"},
+    ]
+    note = _mark_ideas_too_big(ideas, 5)
+    assert [i["title"] for i in ideas] == ["Docs", "Unknown size", "Theming", "Scheduler"]
+    assert [i["too_big_for_your_hours"] for i in ideas] == [False, False, True, True]
+    assert note is not None and "about 110 hours" in note and "2 idea(s)" in note
+    assert _mark_ideas_too_big([{"hours": 350}], 20) is None
+    assert _mark_ideas_too_big([{"hours": 350}], None) is None
