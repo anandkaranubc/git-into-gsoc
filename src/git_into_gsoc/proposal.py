@@ -139,8 +139,14 @@ _WEEK_RE = re.compile(
 )
 _CONCRETE_RE = re.compile(
     r"`[^`\n]+`|\b[\w./-]+\.(?:py|js|ts|tsx|rs|go|c|cc|cpp|h|java|kt|rb|md|toml|yaml|yml|json)\b"
-    r"|\b\w+\(\)|#\d{2,}"
+    r"|\b\w+\(\)|#\d{2,}|/(?:-/)?(?:issues|merge_requests|pull)/\d+"
 )
+# A GitLab merge request or issue on any host: gitlab.com, gitlab.gnome.org, invent.kde.org.
+_OTHER_HOST_LINK_RE = re.compile(
+    r"https://([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+?[\w.-]+)/-/(merge_requests|issues)/(\d+)"
+)
+_AVAILABILITY_RE = re.compile(r"\bhours?\s*(?:per|a|/)\s*week\b|\bh\s*/\s*week\b", re.I)
+MAX_MR_LOOKUPS = 5
 _WORD_RE = re.compile(r"[A-Za-z0-9'\u2019-]+")
 
 
@@ -255,6 +261,60 @@ def concrete_references(text: str) -> int:
 PullLookup = Callable[[str, int], dict[str, Any] | None]
 
 
+def other_host_links(text: str) -> list[LinkEvidence]:
+    """GitLab merge request and issue links, on gitlab.com or a project's own GitLab."""
+    seen: set[str] = set()
+    out: list[LinkEvidence] = []
+    for match in _OTHER_HOST_LINK_RE.finditer(text):
+        url = match.group(0)
+        if url.lower() in seen or match.group(1).lower() in {"github.com", "www.github.com"}:
+            continue
+        seen.add(url.lower())
+        host, path, kind, number = match.groups()
+        out.append(
+            LinkEvidence(
+                url=url,
+                kind="merge_request" if kind == "merge_requests" else "issue",
+                repo=f"{host}/{path}",
+                number=number,
+            )
+        )
+    return out
+
+
+MergeRequestLookup = Callable[[str, str, int], dict[str, Any] | None]
+
+
+def verify_merge_requests(
+    links: list[LinkEvidence], *, lookup: MergeRequestLookup, github_user: str | None
+) -> None:
+    """Fill in author and state for GitLab merge requests, via `lookup(host, path, iid)`.
+
+    A simulated contributor linked someone else's GNOME merge request as "My MR" and
+    nothing noticed. Usernames on GitLab can differ from GitHub ones, so a mismatch
+    says so instead of calling the link false.
+    """
+    checked = 0
+    for link in links:
+        if link.kind != "merge_request" or checked >= MAX_MR_LOOKUPS:
+            continue
+        checked += 1
+        host, path = link.repo.split("/", 1)
+        data = lookup(host, path, int(link.number))
+        if not data:
+            link.note = "could not fetch (private, deleted, not GitLab, or rate limited)"
+            continue
+        link.verified = True
+        link.author = (data.get("author") or {}).get("username")
+        state = str(data.get("state") or "unknown")
+        link.state = "open" if state == "opened" else state
+        if github_user and link.author and link.author.lower() != github_user.lower():
+            link.note = (
+                f"authored by @{link.author} on {host}, not @{github_user} (ignore this if "
+                "your username there is different)"
+            )
+
+
 def verify_links(
     links: list[LinkEvidence], *, lookup: PullLookup, github_user: str | None, limit: int = 8
 ) -> list[LinkEvidence]:
@@ -293,6 +353,7 @@ def check_proposal(
     github_user: str | None = None,
     lookup: PullLookup | None = None,
     ideas_text: str | None = None,
+    mr_lookup: MergeRequestLookup | None = None,
 ) -> dict[str, Any]:
     """Run every check and return findings plus the evidence behind them."""
     findings: list[Finding] = []
@@ -353,6 +414,10 @@ def check_proposal(
                     f"({PROPOSAL_GUIDE_URL})",
                 )
             )
+    if not sections["availability"]:
+        mention = _AVAILABILITY_RE.search(text)
+        if mention:
+            sections["availability"] = f"mentioned in the text ('{mention.group(0)}')"
     for section in RECOMMENDED_SECTIONS:
         heading = sections[section]
         if heading:
@@ -385,7 +450,11 @@ def check_proposal(
     links = github_links(text)
     if lookup is not None:
         verify_links(links, lookup=lookup, github_user=github_user)
-    pulls = [link for link in links if link.kind == "pull"]
+    elsewhere = other_host_links(text)
+    if mr_lookup is not None:
+        verify_merge_requests(elsewhere, lookup=mr_lookup, github_user=github_user)
+    links += elsewhere
+    pulls = [link for link in links if link.kind in {"pull", "merge_request"}]
     merged = [link for link in pulls if link.state == "merged"]
     foreign = [link for link in pulls if link.note.startswith("authored by")]
     if not links:
@@ -403,15 +472,15 @@ def check_proposal(
             Finding(
                 "links",
                 "warn",
-                f"{len(links)} GitHub link(s) but no pull requests",
+                f"{len(links)} link(s) but no pull or merge requests",
                 "A merged or reviewed PR shows you can work in the codebase; link one if you have it.",
             )
         )
     else:
-        detail = f"{len(pulls)} PR link(s)"
-        if lookup is not None:
+        detail = f"{len(pulls)} PR or MR link(s)"
+        if lookup is not None or mr_lookup is not None:
             detail += f", {len(merged)} merged"
-        findings.append(Finding("links", "pass", "Links to pull requests", detail))
+        findings.append(Finding("links", "pass", "Links to pull or merge requests", detail))
     overclaimed = [
         link for link in pulls if link.state in {"open", "closed"} and _claims_merged(text, link)
     ]
@@ -430,7 +499,7 @@ def check_proposal(
             Finding(
                 "link_authors",
                 "fail",
-                f"{len(foreign)} linked PR(s) were authored by someone else",
+                f"{len(foreign)} linked PR(s) or MR(s) were authored by someone else",
                 "; ".join(f"{link.url} ({link.note})" for link in foreign[:3]),
             )
         )

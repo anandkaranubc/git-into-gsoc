@@ -227,3 +227,36 @@ def test_a_template_heading_for_the_synopsis_counts() -> None:
     detail = _by_id(check_proposal("Hello"))["deliverables"]["detail"]
     assert "gsocguides/student/writing-a-proposal" in detail
     assert "skip proposals" not in detail
+
+
+def test_gitlab_merge_requests_are_found_and_their_authors_checked() -> None:
+    # A simulated GNOME contributor linked someone else's merged MR as "My MR"; the
+    # checker saw no links at all and said "No links to your contributions".
+    text = (
+        "## Prior contributions\n"
+        "- My MR: https://gitlab.gnome.org/GNOME/gitg/-/merge_requests/413 (merged)\n"
+        "- I commented on https://gitlab.gnome.org/GNOME/gitg/-/issues/345\n"
+        "I am available 15 hours per week.\n"
+    )
+    asked: list[tuple[str, str, int]] = []
+
+    def mr(host: str, path: str, iid: int) -> dict[str, Any] | None:
+        asked.append((host, path, iid))
+        return {"author": {"username": "someone-else"}, "state": "merged"}
+
+    report = check_proposal(text, github_user="mei-lin", mr_lookup=mr)
+    findings = _by_id(report)
+    assert asked == [("gitlab.gnome.org", "GNOME/gitg", 413)]
+    assert findings["links"]["status"] == "pass"
+    assert findings["link_authors"]["status"] == "fail"
+    assert "someone-else on gitlab.gnome.org" in findings["link_authors"]["detail"]
+    assert findings["availability"]["status"] == "pass"
+    assert {link["kind"] for link in report["links"]} == {"merge_request", "issue"}
+
+
+def test_links_verified_is_true_only_when_a_link_was_checked(monkeypatch: Any) -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    report = toolkit.check_proposal("No links here.", verify=True)
+    assert report["links"] == [] and report["links_verified"] is False

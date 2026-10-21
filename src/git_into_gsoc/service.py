@@ -7,7 +7,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from git_into_gsoc.coach import (
     GSOC_FAQ_URL,
@@ -1043,13 +1043,25 @@ class GSoCToolkit:
             owner, name = repo.split("/", 1)
             return self.github.get_pull(owner, name, number)
 
+        def mr_lookup(host: str, path: str, iid: int) -> dict[str, Any] | None:
+            # Public GitLab instances answer this without a token. The HTTP client
+            # refuses local and private addresses, so a link cannot reach them.
+            url = f"https://{host}/api/v4/projects/{quote(path, safe='')}/merge_requests/{iid}"
+            try:
+                data = self.http.get_json(url, ttl=900)
+            except GigError:
+                return None
+            return data if isinstance(data, dict) else None
+
         report = check_proposal(
             text,
             github_user=github,
             lookup=lookup if verify else None,
             ideas_text=ideas_text,
+            mr_lookup=mr_lookup if verify else None,
         )
-        report["links_verified"] = verify
+        # True only when at least one link was actually checked against its host.
+        report["links_verified"] = any(link["verified"] for link in report["links"])
         report["checklist"] = [i.model_dump() for i in proposal_checklist()]
         return report
 
