@@ -527,3 +527,51 @@ def test_policy_quotes_drop_markdown_escapes() -> None:
     text = "We typically do not assign issues, simply work on it\\* and open a PR.\n"
     quotes = [q["text"] for q in policy_quotes({"CONTRIBUTING.md": text})]
     assert quotes == ["We typically do not assign issues, simply work on it* and open a PR."]
+
+
+ARDUPILOT_WORKFLOWS = [
+    f".github/workflows/{n}.yml"
+    for n in (
+        "test_branch_conventions",
+        "test_ccache",
+        "test_chibios",
+        "test_coverage",
+        "test_location_ratchet",
+        "test_size",
+        "test_sitl_copter",
+        "test_unit_tests",
+        "workflows_lint",
+    )
+]
+
+
+def test_unit_test_workflows_rank_first_and_convention_checks_last() -> None:
+    # A simulated run: orient read test_branch_conventions.yml as "what CI runs".
+    ranked = rank_workflows(ARDUPILOT_WORKFLOWS, limit=3)
+    assert ranked[0].endswith("test_unit_tests.yml")
+    assert not any("conventions" in p or "size" in p or "ratchet" in p for p in ranked)
+
+
+def test_ci_commands_include_autotest_and_unittest_scripts() -> None:
+    workflow = (
+        "jobs:\n  t:\n    steps:\n      - run: |\n"
+        "          Tools/autotest/unittest/extract_param_defaults_unittest.py\n"
+        "          Tools/autotest/autotest.py test.CAN --debug\n"
+    )
+    commands = [c["command"] for c in ci_test_commands({"t.yml": workflow})]
+    assert "Tools/autotest/autotest.py test.CAN --debug" in commands
+    assert any(c.endswith("_unittest.py") for c in commands)
+
+
+def test_test_folders_that_ci_runs_come_first() -> None:
+    from git_into_gsoc.github.orientation import PURPOSES, ci_test_dirs_first
+
+    dirs = ["Tools/renode/tests", "libraries/AP_Math/tests", "Tools/autotest"]
+    texts = {"t.yml": "run: Tools/autotest/autotest.py test.CAN --debug"}
+    assert ci_test_dirs_first(dirs, texts) == [
+        "Tools/autotest",
+        "Tools/renode/tests",
+        "libraries/AP_Math/tests",
+    ]
+    assert ci_test_dirs_first(dirs, {}) == dirs
+    assert "autotest" in PURPOSES["tests"]

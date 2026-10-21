@@ -24,6 +24,7 @@ from git_into_gsoc.github.orientation import (
     ci_environment,
     ci_install_commands,
     ci_test_commands,
+    ci_test_dirs_first,
     code_map,
     codeowners_for,
     codetour_from_orientation,
@@ -938,6 +939,7 @@ class GSoCToolkit:
                 texts[key] = future.result() or ""
             for path, future in wf_futures.items():
                 workflow_texts[path] = future.result() or ""
+        found["test_dirs"] = ci_test_dirs_first(found.get("test_dirs") or [], workflow_texts)
 
         merged = [p for p in pulls if p.get("merged_at") and not is_bot(p.get("user"))]
         check_names: list[str] = []
