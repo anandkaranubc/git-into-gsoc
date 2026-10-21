@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>git into gsoc brand</title>
+<meta name="description" content="The git into gsoc identity: the door mark, the Gig Pixel typeface, colors, icons, stickers, and the rules for using them.">
+<meta name="theme-color" content="#7A5AF8">
+<link rel="icon" href="brand/favicon/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/favicon/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="brand/favicon/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="preload" href="brand/font/GigPixel.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="brand/tokens.css">
+<link rel="stylesheet" href="styles.css">
+<script>
+  (function () {
+    var q = new URLSearchParams(location.search).get("theme");
+    var t = q || (function () { try { return localStorage.getItem("gig-theme"); } catch (e) { return null; } })();
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+</head>
+<body>
+
+<header class="wrap">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="./" aria-label="git into gsoc, home">
+      <svg class="tile" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4.5" fill="#15121E"/><g transform="translate(1,2)"><path d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z" fill="#7A5AF8"/><path d="M18 7H21V11H18Z" fill="#C6F432"/></g></svg>
+      <span class="name pixel">git into gsoc</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md">guide</a></li>
+      <li class="optional"><a href="https://github.com/anandkaranubc/git-into-gsoc/tree/main/brand">assets</a></li>
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc">github</a></li>
+      <li><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">dark</button></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="brand-title">
+    <div class="wrap grid">
+      <div>
+        <h1 id="brand-title" class="pixel">the door, drawn.</h1>
+        <p class="lede">This is how git into gsoc looks and sounds. Every asset here is generated from one pixel grid by a script in the repository, so the identity is open source too. Use it to write about the project, build on it, or print a sticker. Just don't make it look official.</p>
+        <div class="after">
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/tree/main/brand">Download everything from brand/</a>
+          <p class="fine">SVG first. PNG, ICO, and a WOFF2 font are included for the places that need them.</p>
+        </div>
+      </div>
+      <svg class="mark" viewBox="-1 -1 23 22" role="img" aria-label="The mark: a pixel G with a cursor stepping through its doorway">
+        <path class="g" d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z"/>
+        <path class="cursor" d="M18 7H21V11H18Z"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="idea-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="idea-title" class="pixel">the idea.</h2>
+        <p>The name is a pun on "get into", and the mark takes it literally.</p>
+      </div>
+      <div class="two">
+        <div>
+          <p>The G is a doorway. Its opening, the gap every G has on the right, is the door. The small block at the threshold is a terminal cursor: the thing that blinks at you when the machine is waiting for you to type. In this identity the cursor is always the person. The G is the community they are stepping into, and it works for both Git and GSoC without borrowing either logo.</p>
+          <p>The cursor is the one thing allowed to move. On the website and in the README banner it blinks at one beat per second, the way a prompt does. Everything else stays still.</p>
+          <p>Both the mark and the typeface are drawn on a square grid with a thick stroke, so they stay sharp at 16 pixels and feel like one object at 16 feet. The grid is the retro-tech note. The lowercase voice and the violet keep it from reading as nostalgia.</p>
+        </div>
+        <figure class="construction" aria-label="Construction of the mark on its 24-unit grid">
+          <svg viewBox="-0.5 -0.5 25 25" role="img" aria-hidden="true">
+            <defs><pattern id="grid" width="1" height="1" patternUnits="userSpaceOnUse"><path d="M1 0H0V1" fill="none" stroke="currentColor" stroke-width="0.06" opacity="0.35"/></pattern></defs>
+            <rect width="24" height="24" fill="url(#grid)" style="color: var(--fg-2)"/>
+            <rect width="24" height="24" fill="none" stroke="currentColor" stroke-width="0.08" style="color: var(--fg-2)"/>
+            <g transform="translate(1,2)">
+              <path d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z" fill="var(--gig-merge)" opacity="0.9"/>
+              <path d="M18 7H21V11H18Z" fill="var(--gig-open)"/>
+              <rect x="16" y="6" width="4" height="6" fill="none" stroke="var(--gig-open)" stroke-width="0.12" stroke-dasharray="0.3 0.2"/>
+            </g>
+          </svg>
+          <figcaption>24-unit canvas. 20-unit G with a 4-unit stroke and 2-unit rounded corners. 3×4 cursor, one unit past the edge. The dashed box is the doorway.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="logo-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="logo-title" class="pixel">logo.</h2>
+        <p>Pick by background, not by taste. On light surfaces the cursor is ink; on dark surfaces it is lime. The tile works anywhere and is the avatar.</p>
+      </div>
+      <ul class="gallery">
+        <li class="light"><figure><img src="brand/logo/mark-light.svg" alt="Mark, light scheme" loading="lazy"><figcaption><a href="brand/logo/mark-light.svg">mark-light.svg</a> for light backgrounds</figcaption></figure></li>
+        <li class="dark"><figure><img src="brand/logo/mark-dark.svg" alt="Mark, dark scheme" loading="lazy"><figcaption><a href="brand/logo/mark-dark.svg">mark-dark.svg</a> for dark backgrounds</figcaption></figure></li>
+        <li class="light"><figure><img src="brand/logo/mark-tile.svg" alt="Mark on ink tile" loading="lazy"><figcaption><a href="brand/logo/mark-tile.svg">mark-tile.svg</a> universal, avatar, favicon</figcaption></figure></li>
+        <li class="violet"><figure><img src="brand/logo/mark-tile-violet.svg" alt="Mark on violet tile" loading="lazy"><figcaption><a href="brand/logo/mark-tile-violet.svg">mark-tile-violet.svg</a> merch and alt avatar</figcaption></figure></li>
+        <li class="light"><figure><img src="brand/logo/mark-mono-ink.svg" alt="Mark, single colour ink" loading="lazy"><figcaption><a href="brand/logo/mark-mono-ink.svg">mark-mono-ink.svg</a> one colour, print</figcaption></figure></li>
+        <li class="dark"><figure><img src="brand/logo/mark-mono-paper.svg" alt="Mark, single colour paper" loading="lazy"><figcaption><a href="brand/logo/mark-mono-paper.svg">mark-mono-paper.svg</a> one colour, dark print</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/logo/lockup-horizontal-light.svg" alt="Horizontal lockup, light" loading="lazy"><figcaption><a href="brand/logo/lockup-horizontal-light.svg">lockup-horizontal-light.svg</a></figcaption></figure></li>
+        <li class="dark wide"><figure><img src="brand/logo/lockup-horizontal-dark.svg" alt="Horizontal lockup, dark" loading="lazy"><figcaption><a href="brand/logo/lockup-horizontal-dark.svg">lockup-horizontal-dark.svg</a></figcaption></figure></li>
+        <li class="light"><figure><img src="brand/logo/lockup-stacked-light.svg" alt="Stacked lockup, light" loading="lazy"><figcaption><a href="brand/logo/lockup-stacked-light.svg">lockup-stacked-light.svg</a></figcaption></figure></li>
+        <li class="dark"><figure><img src="brand/logo/lockup-stacked-dark.svg" alt="Stacked lockup, dark" loading="lazy"><figcaption><a href="brand/logo/lockup-stacked-dark.svg">lockup-stacked-dark.svg</a></figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/logo/wordmark-light.svg" alt="Wordmark, light" loading="lazy"><figcaption><a href="brand/logo/wordmark-light.svg">wordmark-light.svg</a> the dots are cursors</figcaption></figure></li>
+        <li class="dark wide"><figure><img src="brand/logo/wordmark-dark.svg" alt="Wordmark, dark" loading="lazy"><figcaption><a href="brand/logo/wordmark-dark.svg">wordmark-dark.svg</a></figcaption></figure></li>
+      </ul>
+      <div class="dont" style="margin-top: 40px">
+        <div>
+          <h3>Do</h3>
+          <ul>
+            <li>Keep clear space of one cursor width (3 grid units) around the mark.</li>
+            <li>Use the tile below 48 px. Use the bare mark at 48 px and up.</li>
+            <li>Scale in whole multiples where you can; the grid stays crisp.</li>
+            <li>Let the cursor blink, and only the cursor. Respect reduced-motion settings.</li>
+            <li>Say "git into gsoc" in lowercase in running text, and <code>git-into-gsoc</code> for the command.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Don't</h3>
+          <ul>
+            <li>Recolour the G outside the three schemes, or add gradients, outlines, or shadows.</li>
+            <li>Rotate it, skew it, or set it in a circle other than GitHub's avatar crop.</li>
+            <li>Replace the cursor with an emoji, a dot, an arrow, or a Git branch icon.</li>
+            <li>Place it next to the Google or Google Summer of Code logos, or in their colours.</li>
+            <li>Rebuild the wordmark in another typeface. It is not a font setting; it is a drawing.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="color-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="color-title" class="pixel">colour.</h2>
+        <p>Violet is the colour of a merged pull request, which is the point of all this. Lime is the cursor and nothing else. Both have deeper siblings for body text so every pairing clears WCAG AA.</p>
+      </div>
+      <ul class="swatches">
+        <li class="swatch" style="background:#7A5AF8;color:#15121E"><b>merge</b><code>#7A5AF8</code><span>fills, display text</span></li>
+        <li class="swatch" style="background:#4C2FD9;color:#F4F1FA"><b>merge-deep</b><code>#4C2FD9</code><span>text and links on paper</span></li>
+        <li class="swatch" style="background:#C2B5FF;color:#15121E"><b>merge-soft</b><code>#C2B5FF</code><span>text and links on ink</span></li>
+        <li class="swatch" style="background:#C6F432;color:#15121E"><b>open</b><code>#C6F432</code><span>the cursor; accents on ink</span></li>
+        <li class="swatch" style="background:#3F6A00;color:#F4F1FA"><b>open-deep</b><code>#3F6A00</code><span>success text on paper</span></li>
+        <li class="swatch" style="background:#15121E;color:#F4F1FA"><b>ink</b><code>#15121E</code><span>dark surfaces, text on paper</span></li>
+        <li class="swatch" style="background:#211C2E;color:#F4F1FA"><b>ink-2</b><code>#211C2E</code><span>raised surfaces on ink</span></li>
+        <li class="swatch" style="background:#F4F1FA;color:#15121E"><b>paper</b><code>#F4F1FA</code><span>light surfaces, text on ink</span></li>
+        <li class="swatch" style="background:#E9E4F4;color:#15121E"><b>paper-2</b><code>#E9E4F4</code><span>raised surfaces on paper</span></li>
+        <li class="swatch" style="background:#67607A;color:#F4F1FA"><b>mute</b><code>#67607A</code><span>secondary text on paper</span></li>
+        <li class="swatch" style="background:#FFB224;color:#15121E"><b>warn</b><code>#FFB224</code><span>semantic only</span></li>
+        <li class="swatch" style="background:#FF6A4D;color:#15121E"><b>danger</b><code>#FF6A4D</code><span>semantic only</span></li>
+      </ul>
+      <p style="margin-top: 20px">Tokens ship as <a href="brand/tokens.css">tokens.css</a> (custom properties with light and dark roles) and <a href="brand/tokens.json">tokens.json</a> (values plus measured contrast ratios).</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="type-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="type-title" class="pixel">type.</h2>
+        <p>Two families. Gig Pixel is ours: a lowercase pixel face on a two-cell stroke, drawn on the same grid as the mark and built into a real font by the same script. It carries headlines and stickers. Instrument Sans carries everything you have to read for more than a line. Code is the system monospace.</p>
+      </div>
+      <p class="specimen pixel">abcdefghijklmnopqrstuvwxyz</p>
+      <p class="specimen pixel small">0123456789 .,:;!?-_/<>()[]#+="*@&%</p>
+      <p class="specimen pixel">the quick brown fox jumps over the lazy dog.</p>
+      <div class="dont" style="margin-top: 28px">
+        <div>
+          <h3>Gig Pixel rules</h3>
+          <ul>
+            <li>Lowercase only. Uppercase letters map to the lowercase drawings, so shouting is impossible.</li>
+            <li>Use it at 32, 48, 64, 80, or 96 px. A cell is one sixteenth of an em, so those sizes land on whole pixels.</li>
+            <li>Headlines, section titles, stickers, and the one-line tagline. Never body copy, never below 32 px.</li>
+            <li>Files: <a href="brand/font/GigPixel.woff2">GigPixel.woff2</a>, <a href="brand/font/GigPixel.ttf">GigPixel.ttf</a>, <a href="brand/font/specimen.svg">specimen.svg</a>. MIT licensed like the rest.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Instrument Sans rules</h3>
+          <ul>
+            <li>Body at 17 px with 1.55 line height, lines under 70 characters.</li>
+            <li>Weights 400 for text, 500 for navigation, 600 for subheadings. No 700 unless it's a button.</li>
+            <li>Sentence case. No all-caps labels, no letterspaced eyebrows.</li>
+            <li>Loaded from Google Fonts with a system-ui fallback, so the page still reads if the request fails.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="icon-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="icon-title" class="pixel">icons.</h2>
+        <p>A 12-unit grid with a 2-unit stroke, one icon per journey phase plus a few for the interface. They inherit the text colour, so they work in both themes without separate files.</p>
+      </div>
+      <ul class="icons">
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 2H1V1H5V2H7V1H11V2H12V10H11V11H1V10H0ZM2 2V9H5V3H4V2ZM7 3V9H10V2H8V3Z"/></svg>learn</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H8V1H9V2H10V6H9V7H10V8H11V9H12V11H9V10H8V9H7V8H3V7H2V6H1ZM3 2V6H8V2Z"/></svg>discover</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 7H3V10H4V4H7V10H8V1H11V11H0Z"/></svg>evaluate</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 4H1V2H2V1H4V0H8V1H10V2H11V4H12V8H11V10H10V11H8V12H4V11H2V10H1V8H0ZM2 4V8H3V9H4V10H8V9H9V8H10V4H9V3H8V2H4V3H3V4ZM4 5H5V4H7V5H8V7H7V8H5V7H4Z"/></svg>find issues</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 5H2V3H4V4H5V5H6V7H5V8H4V9H2V7H0ZM6 1H12V11H6V8H8V10H10V2H8V4H6Z"/></svg>contribute</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V8H5V9H4V10H2V9H3V8H0ZM2 2V7H10V2ZM3 4H5V5H3ZM7 4H9V5H7Z"/></svg>community</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 0H8V1H9V2H10V3H11V4H12V12H0ZM2 1V11H10V4H6V1ZM3 5H8V6H3ZM3 7H8V8H3ZM3 9H8V10H3Z"/></svg>proposal</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V11H0ZM2 2V10H10V4H9V5H8V7H7V8H6V9H5V8H4V7H3V5H5V6H6V5H7V4H8V3H10V2Z"/></svg>track</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 2H12V10H0ZM2 3V9H10V3ZM3 4H5V5H6V6H5V7H3V6H4V5H3ZM6 7H9V8H6Z"/></svg>terminal</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 5H3V6H4V7H5V6H6V5H7V4H8V3H9V2H11V4H10V5H9V6H8V7H7V8H6V9H5V10H4V9H3V8H2V7H1Z"/></svg>check</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg>copy</li>
+        <li><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1 0H11V12H1ZM3 1V11H9V1ZM7 5H8V7H7Z"/></svg>door</li>
+      </ul>
+      <p style="margin-top: 20px">Single-colour SVG files for each icon are in <a href="https://github.com/anandkaranubc/git-into-gsoc/tree/main/brand/icons">brand/icons</a>, and <a href="brand/icons/sheet-ink.svg">sheet-ink.svg</a> shows the whole set.</p>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="voice-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="voice-title" class="pixel">voice.</h2>
+        <p>Lowercase, dry, warm. The brand talks like a good mentor in a chat window: short sentences, specific nouns, no hype.</p>
+      </div>
+      <div class="dont">
+        <div>
+          <h3>Sounds like us</h3>
+          <ul>
+            <li>open source has a door. git in.</li>
+            <li>evidence &gt; vibes.</li>
+            <li>contested. pick another issue, or offer to review the open PR.</li>
+            <li>missing data is reported as missing.</li>
+            <li>one real contribution before applications open.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Doesn't</h3>
+          <ul>
+            <li>🚀 Unlock your GSoC journey today!!!</li>
+            <li>The ultimate AI-powered toolkit for 10x contributors.</li>
+            <li>Guaranteed acceptance strategies.</li>
+            <li>Anything that implies Google built or endorsed this.</li>
+            <li>Slang used because it is slang. If a mentor wouldn't say it, cut it.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="sticker-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="sticker-title" class="pixel">stickers and stamps.</h2>
+        <p>The house rules as die-cut stickers, and passport-style stamps for milestones. A print-ready sheet and tee artwork live in <a href="https://github.com/anandkaranubc/git-into-gsoc/tree/main/brand/merch">brand/merch</a>.</p>
+      </div>
+      <ul class="gallery">
+        <li class="light"><figure><img src="brand/stickers/sticker-git-in.svg" alt="Round sticker: git in." loading="lazy"><figcaption>sticker-git-in.svg</figcaption></figure></li>
+        <li class="light"><figure><img src="brand/stickers/sticker-merged.svg" alt="Square sticker: merged." loading="lazy"><figcaption>sticker-merged.svg</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/stickers/sticker-door-open.svg" alt="Sticker: the door is open." loading="lazy"><figcaption>sticker-door-open.svg</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/stickers/sticker-evidence.svg" alt="Sticker: evidence > vibes" loading="lazy"><figcaption>sticker-evidence.svg</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/stickers/sticker-no-driveby.svg" alt="Sticker: no drive-by prs" loading="lazy"><figcaption>sticker-no-driveby.svg</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/stamps/stamp-entered-merge.svg" alt="Stamp: entered, open source 2027" loading="lazy"><figcaption>stamp-entered-merge.svg</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/stamps/stamp-first-pr-merge.svg" alt="Stamp: first pr, reviewed and merged" loading="lazy"><figcaption>stamp-first-pr-merge.svg</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/stamps/stamp-proposed-merge.svg" alt="Stamp: proposed, before the deadline" loading="lazy"><figcaption>stamp-proposed-merge.svg</figcaption></figure></li>
+        <li class="light"><figure><img src="brand/merch/sticker-sheet.svg" alt="Sticker sheet" loading="lazy"><figcaption>merch/sticker-sheet.svg</figcaption></figure></li>
+        <li class="dark wide"><figure><img src="brand/merch/tee-back-dark.svg" alt="Tee back print, dark garment" loading="lazy"><figcaption>merch/tee-back-dark.svg</figcaption></figure></li>
+        <li class="dark wide"><figure><img src="brand/social/social-preview.svg" alt="Social preview card" loading="lazy"><figcaption>social/social-preview.svg</figcaption></figure></li>
+        <li class="light wide"><figure><img src="brand/readme/banner-light.svg" alt="README banner, light" loading="lazy"><figcaption>readme/banner-light.svg</figcaption></figure></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="legal-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="legal-title" class="pixel">the fine print.</h2>
+      </div>
+      <p>All assets here are original and released under the MIT license with the rest of the repository. You can use them to refer to the project, fork it, or make things for your community. You can't use them to suggest Google, the Google Summer of Code program, or GSoC organizations made, sponsor, or endorse something. Google Summer of Code and GSoC are trademarks of Google LLC; this project is independent and the name is descriptive. If you make something with the brand, we'd love to see it.</p>
+      <p>Regenerate everything with <code>python -m scripts.brand.build --raster</code>. The grid definitions are in <code>scripts/brand/glyphs.py</code>; colours and layouts are in <code>scripts/brand/build.py</code>.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap cols">
+    <div>
+      <p class="tagline pixel">git in.<span class="cursor" aria-hidden="true"></span></p>
+      <p>git into gsoc is an independent, MIT-licensed project. It is not affiliated with or endorsed by Google. Google Summer of Code and GSoC are trademarks of Google LLC.</p>
+    </div>
+    <ul>
+      <li><a href="./">Home</a></li>
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc">Source on GitHub</a></li>
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc/tree/main/brand">All brand files</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.querySelector("[data-theme-toggle]");
+    function current() {
+      var set = root.getAttribute("data-theme");
+      if (set) return set;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    function paint() {
+      var dark = current() === "dark";
+      btn.textContent = dark ? "light" : "dark";
+      btn.setAttribute("aria-pressed", String(dark));
+      btn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+    }
+    btn.addEventListener("click", function () {
+      var next = current() === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("gig-theme", next); } catch (e) {}
+      paint();
+    });
+    paint();
+  })();
+</script>
+</body>
+</html>

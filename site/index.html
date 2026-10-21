@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>git into gsoc</title>
+<meta name="description" content="Open source has a door. git into gsoc finds the organizations that fit you, the repositories where newcomers' pull requests get merged, and the beginner issues nobody has claimed.">
+<link rel="canonical" href="https://anandkaranubc.github.io/git-into-gsoc/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="git into gsoc">
+<meta property="og:description" content="Open source has a door. git in. Find the right org, the right issue, and land one real contribution before GSoC applications open.">
+<meta property="og:image" content="https://anandkaranubc.github.io/git-into-gsoc/brand/social/social-preview.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#7A5AF8">
+<link rel="icon" href="brand/favicon/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="brand/favicon/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="brand/favicon/favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="brand/favicon/apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="preload" href="brand/font/GigPixel.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="brand/tokens.css">
+<link rel="stylesheet" href="styles.css">
+<script>
+  // Theme: honour a saved choice or ?theme= before first paint. Otherwise the system decides.
+  (function () {
+    var q = new URLSearchParams(location.search).get("theme");
+    var t = q || (function () { try { return localStorage.getItem("gig-theme"); } catch (e) { return null; } })();
+    if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+  })();
+</script>
+</head>
+<body>
+
+<header class="wrap">
+  <nav class="nav" aria-label="Main">
+    <a class="brand" href="./" aria-label="git into gsoc, home">
+      <svg class="tile" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4.5" fill="#15121E"/><g transform="translate(1,2)"><path d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z" fill="#7A5AF8"/><path d="M18 7H21V11H18Z" fill="#C6F432"/></g></svg>
+      <span class="name pixel">git into gsoc</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md">guide</a></li>
+      <li class="optional"><a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/cli.md">commands</a></li>
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc">github</a></li>
+      <li><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">dark</button></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="wrap grid">
+      <div>
+        <h1 id="hero-title" class="pixel">open source has a door.</h1>
+        <p class="lede">git into gsoc finds the organizations that fit you, the repositories where a newcomer's pull request actually gets merged, and the beginner issues nobody has claimed yet. One real contribution before Google Summer of Code applications open. No spam, no guessing.</p>
+
+        <div class="term" id="install">
+          <div class="term-bar"><span>terminal</span><button class="copy" type="button" data-copy="install" aria-label="Copy install commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button></div>
+<pre><code id="install-code">curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
+git-into-gsoc program</code></pre>
+        </div>
+
+        <div class="after">
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md">Read the beginner guide</a>
+          <p class="fine">Needs Git and Python 3.11 or newer. macOS, Linux, and WSL; Windows users run <code>install.ps1</code> in PowerShell. The installer uses uv or pipx when you have one and sets up your assistants. No GitHub token needed to start. <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/02-install.md">Explicit steps and a from-clone install</a>.</p>
+        </div>
+      </div>
+
+      <svg class="mark" viewBox="-1 -1 23 22" role="img" aria-label="The git into gsoc mark: a pixel G with a cursor stepping through its doorway">
+        <path class="g" d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z"/>
+        <path class="cursor" d="M18 7H21V11H18Z"/>
+      </svg>
+    </div>
+  </section>
+
+  <section class="section fail" aria-labelledby="fail-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="fail-title" class="pixel">the usual way in doesn't work.</h2>
+        <p>Every season, thousands of first-timers pick an abandoned repository, write "can I work on this?" under an issue five people have already claimed, and send a proposal the organization has read a hundred times. Mentors notice. So does the tool.</p>
+      </div>
+      <div class="two">
+        <div>
+          <p class="lede">git into gsoc reads the official program site, the organization archive, and GitHub, then tells you what a mentor would tell you if they had the time:</p>
+          <ul>
+            <li>which organizations match your languages and interests, with their slot history and past project titles</li>
+            <li>which of their repositories mentors actually work in, and whether outside contributors' pull requests get merged there</li>
+            <li>which beginner issues are genuinely free, read from the issue timeline: claims, assignees, linked pull requests, maintainer replies</li>
+            <li>what phase the program is in right now, with official dates when they exist and labelled estimates when they don't</li>
+          </ul>
+          <p>Missing data is reported as missing. Nothing is invented to fill a table.</p>
+        </div>
+        <div class="term" aria-label="Example output">
+          <div class="term-bar"><span>example output</span></div>
+<pre><code><span class="c">$</span> git-into-gsoc issue owner/repo#123
+
+<span class="v">owner/repo#123</span>  good first issue  12 days old
+  claims      <span class="w">3 "assign me" comments</span>, newest 2d ago
+  linked PRs  1 open, 0 merged
+  maintainer  no reply yet
+  verdict     <span class="d">contested.</span> pick another issue,
+              or offer to review the open PR
+
+before you comment
+  <span class="k">+</span> read CONTRIBUTING.md, reproduce the bug
+  <span class="k">+</span> reply with findings, not "please assign me"</code></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="journey-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="journey-title" class="pixel">eight steps. one contribution.</h2>
+        <p>The beginner guide walks this path with real commands and expected output. Skip what you know. Loop when you need to.</p>
+      </div>
+      <ol class="journey">
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 2H1V1H5V2H7V1H11V2H12V10H11V11H1V10H0ZM2 2V9H5V3H4V2ZM7 3V9H10V2H8V3Z"/></svg>
+          <h3>Learn</h3>
+          <p>What GSoC is, what it isn't, and where you are in the year.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/01-understand-gsoc.md">Understand GSoC</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H8V1H9V2H10V6H9V7H10V8H11V9H12V11H9V10H8V9H7V8H3V7H2V6H1ZM3 2V6H8V2Z"/></svg>
+          <h3>Discover</h3>
+          <p>A shortlist of three to five organizations, with reasons.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/04-find-organizations.md">Find organizations</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 7H3V10H4V4H7V10H8V1H11V11H0Z"/></svg>
+          <h3>Evaluate</h3>
+          <p>One or two repositories that merge newcomers' work.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md">Pick a repository</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 4H1V2H2V1H4V0H8V1H10V2H11V4H12V8H11V10H10V11H8V12H4V11H2V10H1V8H0ZM2 4V8H3V9H4V10H8V9H9V8H10V4H9V3H8V2H4V3H3V4ZM4 5H5V4H7V5H8V7H7V8H5V7H4Z"/></svg>
+          <h3>Find an issue</h3>
+          <p>One available, well-specified issue you can reproduce.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md">Choose an issue</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 5H2V3H4V4H5V5H6V7H5V8H4V9H2V7H0ZM6 1H12V11H6V8H8V10H10V2H8V4H6Z"/></svg>
+          <h3>Contribute</h3>
+          <p>A meaningful, reviewed pull request you can explain line by line.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/06-first-contribution.md">First contribution</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V8H5V9H4V10H2V9H3V8H0ZM2 2V7H10V2ZM3 4H5V5H3ZM7 4H9V5H7Z"/></svg>
+          <h3>Community</h3>
+          <p>Mentors recognize your name from useful questions and reviews.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/06-first-contribution.md#work-with-the-community">Work with the community</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 0H8V1H9V2H10V3H11V4H12V12H0ZM2 1V11H10V4H6V1ZM3 5H8V6H3ZM3 7H8V8H3ZM3 9H8V10H3Z"/></svg>
+          <h3>Proposal</h3>
+          <p>An original draft shaped by the organization's template and feedback.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/07-prepare-a-proposal.md">Prepare a proposal</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V11H0ZM2 2V10H10V4H9V5H8V7H7V8H6V9H5V8H4V7H3V5H5V6H6V5H7V4H8V3H10V2Z"/></svg>
+          <h3>Track</h3>
+          <p>A weekly log, a shortlist, and always one manageable next step.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/08-track-progress.md">Track progress</a>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="rules-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="rules-title" class="pixel">house rules.</h2>
+        <p>These are built into the tool, the assistant skill, and the docs. They are also stickers.</p>
+      </div>
+      <ul class="rules">
+        <li class="rule">
+          <img src="brand/stickers/sticker-evidence.svg" alt="Sticker: evidence > vibes" width="440" height="64">
+          <p>Every organization, repository, issue, and date comes from the official program site, the public archive, or GitHub. Scores are explained. When data is missing, the tool says so instead of guessing.</p>
+        </li>
+        <li class="rule">
+          <img src="brand/stickers/sticker-no-driveby.svg" alt="Sticker: no drive-by prs" width="440" height="64">
+          <p>No typo farms, no mass "assign me" comments, no generated essays. One useful change you understand well enough to defend in review is worth more than twenty you don't.</p>
+        </li>
+        <li class="rule">
+          <img src="brand/stickers/sticker-door-open.svg" alt="Sticker: the door is open." width="440" height="64">
+          <p>The tool never posts, comments, or submits anything on your behalf. It opens the door and shows you the room. Walking in is yours to do.</p>
+        </li>
+        <li class="rule">
+          <img src="brand/stickers/sticker-merged.svg" alt="Sticker: merged." width="120" height="120">
+          <p>The goal is a reviewed, merged contribution and a mentor who knows your name. Not a number, not a streak, not a screenshot.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section assist" aria-labelledby="assist-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h2 id="assist-title" class="pixel">bring your assistant.</h2>
+        <p>The same tools run inside any MCP client, and a portable Agent Skill teaches the assistant how to coach without fabricating or spamming. It can look things up for you. It still can't write your proposal, and under most organizations' AI policies it shouldn't.</p>
+      </div>
+      <div class="two">
+        <div>
+          <ul class="clients" aria-label="Works with">
+            <li>Claude Code</li><li>Cursor</li><li>Codex</li><li>Gemini CLI</li><li>Windsurf</li><li>VS Code</li><li>any MCP client</li>
+          </ul>
+          <p>One command finds the assistants on your machine, copies the skill into each one, and registers the MCP server in its configuration, keeping a backup of anything it touches. The installer already ran it for you; run it again whenever you add an assistant. The <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md">assistant setup guide</a> covers manual configuration, and the <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/mcp.md">MCP reference</a> lists every tool.</p>
+        </div>
+        <div class="term">
+          <div class="term-bar"><span>terminal</span><button class="copy" type="button" data-copy="mcp" aria-label="Copy setup commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button></div>
+<pre><code id="mcp-code">git-into-gsoc setup
+git-into-gsoc doctor</code></pre>
+<pre aria-label="What setup does"><span class="c">setup    finds your assistants (claude code, cursor, codex,
+         gemini, windsurf, vs code), copies the skill, and
+         registers the mcp server. keeps .bak copies.
+doctor   shows what is configured and where</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap cols">
+    <div>
+      <p class="tagline pixel">git in.<span class="cursor" aria-hidden="true"></span></p>
+      <p>git into gsoc is an independent, MIT-licensed project. It is not affiliated with or endorsed by Google. Google Summer of Code and GSoC are trademarks of Google LLC. Verify dates, organizations, and rules on the <a href="https://summerofcode.withgoogle.com">official program site</a> and follow each organization's <a href="https://developers.google.com/open-source/gsoc/resources/ai_guidance">AI policy</a>.</p>
+    </div>
+    <ul>
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc">Source on GitHub</a></li>
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md">Beginner guide</a></li>
+      <li><a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/CONTRIBUTING.md">Contribute to the tool</a></li>
+      <li><a href="brand.html">Brand and assets</a></li>
+    </ul>
+  </div>
+</footer>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.querySelector("[data-theme-toggle]");
+    function current() {
+      var set = root.getAttribute("data-theme");
+      if (set) return set;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    }
+    function paint() {
+      var dark = current() === "dark";
+      btn.textContent = dark ? "light" : "dark";
+      btn.setAttribute("aria-pressed", String(dark));
+      btn.setAttribute("aria-label", dark ? "Switch to light theme" : "Switch to dark theme");
+    }
+    btn.addEventListener("click", function () {
+      var next = current() === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem("gig-theme", next); } catch (e) {}
+      paint();
+    });
+    paint();
+
+    document.querySelectorAll("[data-copy]").forEach(function (b) {
+      var id = b.getAttribute("data-copy") + "-code";
+      b.addEventListener("click", function () {
+        var text = document.getElementById(id).textContent;
+        var done = function () {
+          b.setAttribute("data-done", "1");
+          b.lastElementChild.textContent = "copied.";
+          setTimeout(function () { b.removeAttribute("data-done"); b.lastElementChild.textContent = "copy"; }, 1600);
+        };
+        if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
+        else { var r = document.createRange(); r.selectNodeContents(document.getElementById(id)); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done(); }
+      });
+    });
+  })();
+</script>
+</body>
+</html>
