@@ -86,6 +86,7 @@ PHASE_GUIDES: dict[JourneyPhase, dict[str, object]] = {
     JourneyPhase.FIND_ISSUES: {
         "goal": "Find beginner-friendly issues that are really free",
         "actions": [
+            "Introduce yourself in the organization's public channel before you claim anything",
             "Search issues labeled good first issue or help wanted, and check who is already "
             "working on them",
             "Prefer clearly described bugs, documentation, and tests over vague large tasks",
@@ -103,9 +104,10 @@ PHASE_GUIDES: dict[JourneyPhase, dict[str, object]] = {
         "success": "A pull request that was merged or seriously reviewed, and that you can explain",
     },
     JourneyPhase.COMMUNITY: {
-        "goal": "Become a familiar, helpful name in the community",
+        "goal": "Become a familiar, helpful name in the community before you claim work",
         "actions": [
             "Join the organization's chat or mailing list and introduce yourself briefly",
+            "Read recent conversations to learn how the project talks and decides",
             "Answer questions or review others' work when you can",
             "Keep conversations public and respectful",
         ],
