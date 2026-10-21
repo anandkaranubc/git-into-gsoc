@@ -6,7 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 from git_into_gsoc.github.repos import repo_lead_score
 from git_into_gsoc.gsoc.project_ideas import rank_ideas
-from git_into_gsoc.matching.ideas import ideas_for
+from git_into_gsoc.matching.ideas import ideas_for, required_skills
 from git_into_gsoc.matching.issues import issue_fit, personalize
 from git_into_gsoc.matching.path import learning_path
 from git_into_gsoc.matching.profile import build_profile
@@ -119,7 +119,8 @@ def test_rank_ideas_matches_concepts_not_letters() -> None:
     ranked = rank_ideas([rust, crosswords], skills=["c", "gtk", "python"])
     assert ranked[0].title == "Crosswords"
     assert ranked[0].match_reasons[0].startswith("Skills match: C")
-    assert ranked[1].match_reasons == [] and "Rust" in ranked[1].skills_to_learn
+    assert ranked[1].match_reasons == ["Requires Rust, which you did not list"]
+    assert "Rust" in ranked[1].skills_to_learn
 
 
 def test_issues_are_ordered_by_what_the_person_brings_but_free_ones_stay_first() -> None:
@@ -266,3 +267,29 @@ def test_repository_topics_are_read_one_by_one() -> None:
         person=build_profile(technologies=["react"]),
     )
     assert "Uses React, which you know" in reasons
+
+
+def test_an_idea_that_requires_a_skill_you_lack_ranks_below_one_you_can_start() -> None:
+    # GNOME's page: Pitivi "Experience with Rust and GTK4 is required" ranked above the
+    # C/GLib Crosswords idea for someone who knows C, Python, and GTK.
+    pitivi = ProjectIdea(
+        title="Pitivi effects",
+        description="Experience with Rust and GTK4 is required for this project. "
+        "Familiarity with Python, GES and GStreamer is a plus.",
+        skills=["Rust", "GTK", "Python"],
+    )
+    crosswords = ProjectIdea(
+        title="Crosswords puzzles",
+        description="Experience with C / GLib-style programming is required.",
+        skills=["C"],
+    )
+    ranked = rank_ideas([pitivi, crosswords], skills=["c", "python", "gtk"])
+    assert [i.title for i in ranked] == ["Crosswords puzzles", "Pitivi effects"]
+    assert "Requires Rust, which you did not list" in ranked[1].match_reasons
+    assert "You have the skills it says are required" in ranked[0].match_reasons
+
+
+def test_required_skills_need_the_capital_letter_for_short_names() -> None:
+    assert required_skills("You are required to go through the docs first.") == []
+    assert required_skills("Knowledge of Go is required. Python helps.") == ["go"]
+    assert set(required_skills("Required skills: C and C++")) == {"c", "c++"}

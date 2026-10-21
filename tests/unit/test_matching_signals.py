@@ -44,6 +44,16 @@ def test_failed_pages_and_listings_keep_last_runs_evidence() -> None:
     assert merged["c"] == fresh["c"]
 
 
+def test_a_page_that_suddenly_reads_empty_keeps_its_ideas_unless_it_moved() -> None:
+    # On GitHub's runners BRL-CAD's page read as 0 ideas, where it had 32 the day before.
+    url = "https://brlcad.org/wiki/Google_Summer_of_Code/Project_Ideas"
+    previous = {"brl-cad": {"ideas": {"url": url, "count": 32, "layout": "headings"}}}
+    stub = {"brl-cad": {"ideas": {"url": url, "count": 0, "layout": "unstructured"}}}
+    assert keep_previous(stub, previous)["brl-cad"] == previous["brl-cad"]
+    moved = {"brl-cad": {"ideas": {"url": url + "_2027", "count": 0, "layout": "unstructured"}}}
+    assert keep_previous(moved, previous)["brl-cad"] == moved["brl-cad"]
+
+
 @respx.mock
 def test_ideas_pages_get_no_github_token_and_listings_do(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GIG_GITHUB_TOKEN", "ghp_example")

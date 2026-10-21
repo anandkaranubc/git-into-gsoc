@@ -225,15 +225,21 @@ def keep_previous(
 ) -> dict[str, dict[str, Any]]:
     """Where a page or API failed this time, keep what the last refresh found.
 
-    One bad week must not wipe an organization's evidence from the shipped file.
+    One bad month must not wipe an organization's evidence from the shipped file.
+    A page that cannot be fetched counts as failed, and so does a page at the same
+    address that suddenly yields no ideas: some hosts serve automated readers in
+    the cloud a stub page (BRL-CAD's and cBioPortal's did on GitHub's runners). A
+    new address with no ideas yet, such as next year's page, is taken as it is.
     """
     merged: dict[str, dict[str, Any]] = {}
     for slug, entry in fresh.items():
         old = previous.get(slug) or {}
         kept = dict(entry)
         ideas = entry.get("ideas") or {}
-        if ideas.get("layout") in _FAILED_LAYOUTS and (old.get("ideas") or {}).get("count"):
-            kept["ideas"] = old["ideas"]
+        before = old.get("ideas") or {}
+        emptied = not ideas.get("count") and ideas.get("url") == before.get("url")
+        if before.get("count") and (ideas.get("layout") in _FAILED_LAYOUTS or emptied):
+            kept["ideas"] = before
         if "github" not in entry and old.get("github"):
             kept["github"] = old["github"]
         merged[slug] = kept

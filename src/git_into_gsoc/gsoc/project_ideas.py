@@ -884,7 +884,8 @@ def rank_ideas(
     Skills are matched as concepts ("reactjs" is React, "C/C++" counts once), and
     each idea says which skills it would teach.
     """
-    from git_into_gsoc.matching.ideas import fit_idea, idea_concepts
+    from git_into_gsoc.matching.concepts import label
+    from git_into_gsoc.matching.ideas import fit_idea, idea_concepts, known_skills, required_skills
     from git_into_gsoc.matching.profile import build_profile
 
     person = build_profile(
@@ -912,6 +913,17 @@ def rank_ideas(
             learn = fit.to_learn
             # Each skill to learn makes the idea a little harder to start.
             score -= 2 * len(learn)
+            # A skill the page says is required counts for more than one it mentions.
+            required = required_skills(" ".join([idea.description, *idea.skills]))
+            missing = [c for c in required if c not in known_skills(person)]
+            if missing:
+                score -= 8 * min(2, len(missing))
+                reasons.append(
+                    "Requires " + ", ".join(label(c) for c in missing) + ", which you did not list"
+                )
+            elif required:
+                score += 4
+                reasons.append("You have the skills it says are required")
         if size and idea.size == size:
             score += 6
             reasons.append(f"{idea.hours or ''}h size fits".replace(" h ", " "))

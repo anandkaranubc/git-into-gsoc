@@ -8,6 +8,7 @@ states; nothing is guessed.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -77,6 +78,30 @@ def idea_concepts(
     skill_keys = [c for c in found if kind_of(c) == SKILL and c not in _EVERYWHERE]
     domain_keys = [c for c in found if kind_of(c) == DOMAIN]
     return skill_keys, domain_keys
+
+
+_REQUIRED_RE = re.compile(
+    r"\b(?:required|requires|require|must know|must have|mandatory|prerequisites?|"
+    r"needed|is a must)\b",
+    re.I,
+)
+_SENTENCE_RE = re.compile(r"(?<=[.!?])\s+|\n+")
+# Short skill names count in a requirement only with their usual capital letter, so
+# "you are required to go through the docs" does not require Go.
+_SHORT_SKILLS = {"C": "c", "R": "r", "Go": "go", "D": "d"}
+_SHORT_RE = re.compile(r"(?<![\w+#])(C|R|Go|D)(?![\w+#])")
+
+
+def required_skills(text: str) -> list[str]:
+    """Skill concepts named in sentences that say something is required."""
+    found: dict[str, None] = {}
+    for sentence in _SENTENCE_RE.split(text or ""):
+        if not _REQUIRED_RE.search(sentence):
+            continue
+        found.update(dict.fromkeys(c for c in find_concepts(sentence) if kind_of(c) == SKILL))
+        for match in _SHORT_RE.finditer(sentence):
+            found.setdefault(_SHORT_SKILLS[match.group(1)], None)
+    return [c for c in found if c not in _EVERYWHERE]
 
 
 def fit_idea(
