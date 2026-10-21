@@ -29,6 +29,16 @@ For Claude Code at user scope, setup runs `claude mcp add` for you when the `cla
 
 Skill discovery depends on your assistant version. If it does not find the skill, ask it to read the `SKILL.md` path that `doctor` prints under "skill source".
 
+## Other ways to connect
+
+You do not have to install anything locally for some assistants:
+
+- **Claude Code plugin**: `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc` installs the skill and the MCP server together. It runs the server with [uv](https://docs.astral.sh/uv/) straight from this repository, so uv must be installed.
+- **Gemini CLI extension**: the repository ships `gemini-extension.json`; install it from the repository URL with Gemini CLI's extension command (see [Gemini CLI's extension documentation](https://geminicli.com/docs/extensions/)).
+- **MCP registry**: clients that browse the public MCP registry can find the server as `io.github.anandkaranubc/git-into-gsoc`; every release publishes an updated entry and a bundle automatically.
+
+`setup` remains the right choice when you want the skill in a specific assistant's folder or the server registered in a project.
+
 ## Doing it by hand
 
 You only need this section if setup could not write a file for your assistant, or you prefer to see the configuration. The server command is the path `setup` and `doctor` print, for example `/home/you/.local/bin/git-into-gsoc mcp` or, from a clone, `/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc mcp`. Use the full path, not a terminal alias. On Windows use the full path to `git-into-gsoc.exe`; JSON paths need doubled backslashes or forward slashes.
