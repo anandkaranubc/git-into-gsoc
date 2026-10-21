@@ -1,0 +1,124 @@
+{
+ "2024": [
+  {
+   "id": "P1",
+   "title": "Faster series",
+   "project_code_url": "https://github.com/sympy/sympy/pull/100",
+   "date_created": "2024-05-01T00:00:00Z",
+   "tech_tags": [
+    "Python, SymPy"
+   ],
+   "topic_tags": [
+    "science"
+   ],
+   "status": "passed",
+   "program_slug": "2024",
+   "contributor_display_name": "C",
+   "mentor_names": [
+    "Alice Mentor",
+    "Bob Mentor"
+   ],
+   "abstract_short": "x",
+   "abstract_html": "<p>x</p>",
+   "date_archived": "2024-11-01T00:00:00Z",
+   "organization_name": "SymPy",
+   "organization_slug": "sympy"
+  },
+  {
+   "id": "P2",
+   "title": "Better printing",
+   "project_code_url": "https://github.com/sympy/sympy_doc",
+   "date_created": "2024-05-01T00:00:00Z",
+   "tech_tags": [
+    "Python"
+   ],
+   "topic_tags": [
+    "science"
+   ],
+   "status": "passed",
+   "program_slug": "2024",
+   "contributor_display_name": "C",
+   "mentor_names": [
+    "Alice Mentor"
+   ],
+   "abstract_short": "x",
+   "abstract_html": "<p>x</p>",
+   "date_archived": "2024-11-01T00:00:00Z",
+   "organization_name": "SymPy",
+   "organization_slug": "sympy"
+  },
+  {
+   "id": "P3",
+   "title": "SDR thing",
+   "project_code_url": "https://github.com/gnuradio/gnuradio",
+   "date_created": "2024-05-01T00:00:00Z",
+   "tech_tags": [
+    "C++"
+   ],
+   "topic_tags": [
+    "science"
+   ],
+   "status": "passed",
+   "program_slug": "2024",
+   "contributor_display_name": "C",
+   "mentor_names": [
+    "Radio Person"
+   ],
+   "abstract_short": "x",
+   "abstract_html": "<p>x</p>",
+   "date_archived": "2024-11-01T00:00:00Z",
+   "organization_name": "GNU Radio",
+   "organization_slug": "gnu-radio"
+  }
+ ],
+ "2025": [
+  {
+   "id": "P4",
+   "title": "Solvers rewrite",
+   "project_code_url": "https://gist.github.com/x/abc",
+   "date_created": "2025-05-01T00:00:00Z",
+   "tech_tags": [
+    "Python"
+   ],
+   "topic_tags": [
+    "science"
+   ],
+   "status": "passed",
+   "program_slug": "2025",
+   "contributor_display_name": "C",
+   "mentor_names": [
+    "Alice Mentor",
+    "Carol Mentor"
+   ],
+   "abstract_short": "x",
+   "abstract_html": "<p>x</p>",
+   "date_archived": "2025-11-01T00:00:00Z",
+   "organization_name": "SymPy",
+   "organization_slug": "sympy"
+  },
+  {
+   "id": "P5",
+   "title": "Benchmarks",
+   "project_code_url": "https://github.com/sympy/sympy_benchmarks",
+   "date_created": "2025-05-01T00:00:00Z",
+   "tech_tags": [
+    "Python",
+    "ASV"
+   ],
+   "topic_tags": [
+    "science"
+   ],
+   "status": "passed",
+   "program_slug": "2025",
+   "contributor_display_name": "C",
+   "mentor_names": [
+    "Dave Mentor"
+   ],
+   "abstract_short": "x",
+   "abstract_html": "<p>x</p>",
+   "date_archived": "2025-11-01T00:00:00Z",
+   "organization_name": "SymPy",
+   "organization_slug": "sympy"
+  }
+ ]
+}
