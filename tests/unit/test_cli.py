@@ -232,7 +232,7 @@ def test_program_speaks_to_the_person_and_ends_with_a_next_step() -> None:
     # Rules meant for an assistant ("Never fabricate organizations") are not shown to people.
     assert "fabricate" not in result.stdout
     assert "Good habits" in result.stdout
-    assert "git-into-gsoc profile" in result.stdout  # no profile saved yet
+    assert "git-into-gsoc start" in result.stdout  # no profile saved yet
 
 
 def test_an_empty_issue_search_prints_next_steps_not_an_empty_table(monkeypatch) -> None:  # type: ignore[no-untyped-def]

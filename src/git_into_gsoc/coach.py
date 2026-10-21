@@ -216,9 +216,10 @@ def plan_actions(
     if not techs and not github:
         actions.append(
             _action(
-                "Save your profile so every recommendation fits you",
-                "git-into-gsoc profile --github YOUR_USERNAME --tech python --interests science",
-                "Recommendations, starter issues, and this command use it.",
+                "Answer four questions so every recommendation fits you",
+                "git-into-gsoc start",
+                "It saves your profile, which recommendations, starter issues, and this "
+                "command use.",
             )
         )
 

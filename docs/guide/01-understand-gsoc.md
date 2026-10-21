@@ -26,13 +26,13 @@ My time zone and upcoming exams, work, or travel:
 One thing I would like to learn:
 ```
 
-After you [install the tool](02-install.md) in the next step, save the same answers so every recommendation fits you without retyping flags:
+After you [install the tool](02-install.md) in the next step, give it the same answers so every recommendation fits you without retyping them. It asks four questions:
 
 ```bash
-git-into-gsoc profile --tech python --interests science --hours 10 --tz Asia/Kolkata
+git-into-gsoc start
 ```
 
-Add `--github YOUR_USERNAME` and it also reads your public repositories to confirm your main language; offline, it saves the username and reads the languages next time. The profile lives only on your computer.
+If you share your GitHub username, it reads your public repositories to suggest your main languages. Offline, it saves the username and reads the languages next time. To set or change single answers later, use `git-into-gsoc profile`, for example `git-into-gsoc profile --hours 10 --tz Asia/Kolkata`. The profile lives only on your computer.
 
 You can start by reading documentation or reproducing a bug. You do not need to be an expert in the whole codebase. The time you can spend preparing may differ from the time a GSoC project requires; discuss the project schedule before applying.
 

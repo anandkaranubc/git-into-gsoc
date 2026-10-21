@@ -523,8 +523,7 @@ def program_cmd(
         console.print("\n[dim]Next: git-into-gsoc next[/dim]")
     else:
         console.print(
-            "\n[dim]Next: git-into-gsoc profile --tech LANGUAGES --interests TOPICS, "
-            "then git-into-gsoc next[/dim]"
+            "\n[dim]Next: git-into-gsoc start (four quick questions), then git-into-gsoc next[/dim]"
         )
 
 
@@ -1214,8 +1213,11 @@ def profile_cmd(
     data = _markup_safe(data)
     if not data:
         console.print(
-            "No profile saved yet. Example:\n"
-            "  git-into-gsoc profile --github you --tech python --interests science --hours 10"
+            "No profile saved yet. The quickest way is four questions:\n"
+            "  git-into-gsoc start\n"
+            "Or set it directly:\n"
+            "  git-into-gsoc profile --github YOUR_USERNAME --tech python --interests science "
+            "--hours 10"
         )
         return
     lines = []

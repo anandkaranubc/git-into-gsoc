@@ -69,12 +69,12 @@ def api() -> respx.MockRouter:
         yield router
 
 
-def test_next_on_a_fresh_install_points_to_profile_and_orgs(api: respx.MockRouter) -> None:
+def test_next_on_a_fresh_install_points_to_start_and_orgs(api: respx.MockRouter) -> None:
     data = GSoCToolkit().next_steps(now=NOW)
     assert data["program"]["phase"]["id"]
     assert data["program"]["dates_are_official"] is False
     commands = " ".join(a["command"] for a in data["actions"])
-    assert "profile" in commands
+    assert "start" in commands
     assert "orgs" in commands or "recommend" in commands
     assert data["changes"] == []
     assert data["tracked_issues"] == []
