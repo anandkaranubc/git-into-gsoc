@@ -45,6 +45,13 @@ jobs:
       - name: Dependency audit
         run: pip-audit
 
+      # The other hooks in .pre-commit-config.yaml (end of file, whitespace,
+      # merge markers, private keys, large files). Ruff and mypy ran above.
+      # This also tests Dependabot's updates to those hooks.
+      - name: Pre-commit hooks
+        env:
+          SKIP: ruff,ruff-format,mypy
+        run: pre-commit run --all-files --show-diff-on-failure
 
   test:
     # Job names are required status checks in the main branch ruleset; keep
