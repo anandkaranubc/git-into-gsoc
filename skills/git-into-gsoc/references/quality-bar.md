@@ -1,50 +1,64 @@
-# Contribution quality bar
+# What a good first contribution looks like
 
-## What “good” looks like
+A good contribution solves a real problem, follows the project's process, and
+can be explained by the person who made it. Size is not the goal. A
+documentation fix that removes a real obstacle is worth more than a large
+change nobody asked for.
 
-- Fixes a real, maintainer-acknowledged problem (issue link).
-- Matches project style, tests, and CI expectations.
-- Small enough to review; large enough to matter.
-- PR description explains *why*, *what*, and *how tested*.
-- Author can walk through the change on a voice call without notes.
+## Good first contributions
 
-## Encouraged first contributions
+- A bug fix with steps to reproduce, and a test when the project uses them
+- A missing test for behavior the project relies on
+- A documentation fix verified by following the instructions
+- A clearer error message or a small accessibility improvement
+- A fix for a flaky build or test, with evidence
 
-- Well-scoped bug fixes with reproduction steps
-- Missing tests for important untested behavior
-- Documentation fixes verified against source (examples run)
-- Accessibility / error-message clarity improvements
-- Build/CI flakiness fixes with evidence
+## Avoid, and decline to help produce
 
-## Discouraged / refuse to help produce
+- Typo sweeps across many files, or reformatting-only changes
+- Dependency bumps nobody asked for
+- Changes whose only purpose is adding a name to a contributors list
+- A second pull request on an issue someone else is already working on
+- Code the person cannot explain line by line
+- Security reports filed in public instead of through the project's disclosure process
 
-- Pure typo farms across many files
-- Unsolicited dependency bumps without issue/discussion
-- Reformatting-only PRs
-- “Add my name to contributors” vanity changes
-- AI-generated code the user cannot explain
-- Duplicate PRs on already-claimed issues
-- Security “findings” without responsible disclosure norms
+## Before editing
 
-## Before opening a PR
+1. Read the README, the contributing guide, the code of conduct, and the AI policy.
+2. Read the whole issue thread. Check for assignees, linked pull requests, and rules for claiming work.
+3. Reproduce the bug, or follow the instructions that need fixing.
+4. Find the code involved and write down the planned change in two or three sentences.
+5. If the project asks people to claim issues, help the person write one specific comment: what they reproduced, what they plan to change, and a question about the approach.
 
-1. Read README + CONTRIBUTING + CoC.
-2. Reproduce the issue (or write a failing test).
-3. Run the project's lint/tests locally (or via documented commands).
-4. Rebase on the default branch; keep history clean per project norms.
-5. Self-review the diff as if you were the maintainer.
+`available` from the tool is an estimate. It reads the thread and linked pull
+requests, but it cannot see a chat conversation. Never post a claim or message
+maintainers on the person's behalf.
 
-## AI-assisted coding rules (default)
+## Before asking for review
 
-Unless the org is more permissive:
+- Read every changed line and remove unrelated edits, temporary files, and secrets.
+- Run the project's checks and record the real results.
+- Describe the problem, the change, and how it was verified. Link the issue.
+- Say what is uncertain and ask a focused question.
+- Follow the organization's AI policy, including disclosure when it asks for it.
 
-- User designs the approach first; agent helps research and draft.
-- User validates every generated hunk.
-- No merging of code nobody understands.
-- Disclose AI assistance if the org asks.
+## When reviews ask for changes
 
-## Availability etiquette
+That is normal. Help the person answer each comment, make the requested
+changes, and push to the same branch. If they disagree, help them explain why
+with an example. A declined pull request is still experience; help them choose
+the next useful step.
 
-- Prefer issues marked available / good-first-issue without assignee or open linked PR.
-- Comment once with intent + brief plan; wait for maintainer guidance when the issue says so.
-- If someone else is clearly working it, pick another issue.
+## When they are stuck
+
+Narrow it to one problem. A good question states the setup, what was tried,
+what was expected, and the exact error with private information removed. Help
+them ask in the project's preferred public channel and give volunteers time to
+reply.
+
+## AI use
+
+Unless the organization allows more: the person designs the approach, the
+assistant helps research and draft, the person checks every line, and nothing
+is submitted that they cannot explain. Disclose AI assistance whenever the
+organization asks.

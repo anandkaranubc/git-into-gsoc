@@ -1,90 +1,90 @@
-# Install & wire-up
+# Install the tool and connect an assistant
 
-## One-shot installer
+This skill works as written guidance on its own. Live searches need the Python
+package. The repository's [installation guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/02-install.md)
+has the full walkthrough, Windows steps, and troubleshooting.
 
-From the repo root:
+## Quick install (macOS, Linux, or WSL)
+
+You need Git and Python 3.11 or newer.
 
 ```bash
+git clone https://github.com/anandkaranubc/git-into-gsoc.git
+cd git-into-gsoc
 ./install.sh
+source .venv/bin/activate
+git-into-gsoc doctor
 ```
 
-Installs the Python package (CLI + MCP), copies the Agent Skill into common assistant skill directories, and prints MCP config snippets.
+The installer creates a virtual environment in `.venv`, installs the package,
+and runs the project-scoped assistant setup described below. The `source` line
+turns the tool on in the current terminal; repeat it in every new terminal.
+`doctor` prints the version, where cache and progress files live, whether a
+GitHub token was found, and which assistants have the skill and the MCP server.
 
-Options:
-
-```bash
-./install.sh --skill-only      # only install the skill files
-./install.sh --mcp-only       # package + MCP hints, skip skill copy
-./install.sh --user-skills    # force user-level skill install
-```
-
-## Manual Python install
+Package only, with no assistant setup:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
-git-into-gsoc doctor
+python -m pip install -e .
 ```
 
-Set a GitHub token for better rate limits:
+On Windows PowerShell, create the environment with `py -3 -m venv .venv` and
+run `.\.venv\Scripts\git-into-gsoc.exe` wherever these notes say
+`git-into-gsoc`.
+
+## GitHub token (optional)
+
+Without a token, GitHub allows 60 requests per hour, enough to try the tool.
+With one, 5,000. The tool looks for a token in this order: `GIG_GITHUB_TOKEN`,
+`GITHUB_TOKEN`, or `GH_TOKEN` in the environment or in a `.env` file in the
+current folder, then the GitHub CLI (`gh auth token`) when `gh` is installed
+and logged in. `doctor` reports which source it used without printing the
+token. Never paste a token into chat.
+
+## Connect an assistant
+
+MCP (Model Context Protocol) lets an assistant call the tool directly. The
+server runs on the person's computer and reads public data; it never posts to
+GitHub.
+
+`git-into-gsoc setup` copies this skill and registers the MCP server for every
+assistant it detects: Claude Code, Cursor, Codex, Gemini CLI, Windsurf, and
+VS Code.
 
 ```bash
-export GITHUB_TOKEN=ghp_...   # or GH_TOKEN
+git-into-gsoc setup                       # every detected assistant, user-wide
+git-into-gsoc setup --assistant cursor    # one assistant
+git-into-gsoc setup --scope project       # only inside the current project folder
+git-into-gsoc setup --dry-run             # show what would change
 ```
 
-## Skill locations (portable Agent Skills)
+Existing configuration files are merged, never replaced, and a `.bak` copy is
+written first. Running it again reports "unchanged". `--no-skill` and
+`--no-mcp` limit it to one half of the job. From a clone, `./install.sh`
+runs the project-scoped setup and `./install.sh --user-skills` runs the
+user-wide one.
 
-The installer copies `skills/git-into-gsoc/` to:
+If the installed version has no `setup` command, register the server by hand.
+The command is the full path to the executable
+(`/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc`, or
+`.venv\Scripts\git-into-gsoc.exe` on Windows) with the single argument `mcp`.
+[mcp.example.json](../assets/mcp.example.json) shows the shape for clients
+that read a JSON file, such as Cursor. The repository's
+[assistant setup guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md)
+has the commands for each client.
 
-| Assistant | Path |
-|-----------|------|
-| Cursor | `~/.cursor/skills/git-into-gsoc/` and `~/.agents/skills/git-into-gsoc/` |
-| Claude Code | `~/.claude/skills/git-into-gsoc/` |
-| Codex | `~/.codex/skills/git-into-gsoc/` |
-| Gemini CLI | `~/.gemini/skills/git-into-gsoc/` (if present) |
+Running `git-into-gsoc mcp` by hand shows nothing: the server waits for an
+assistant to talk to it. Press Ctrl+C to stop it. Normally the assistant
+starts and stops it.
 
-Project-local alternative: copy into `.agents/skills/git-into-gsoc/` or `.cursor/skills/git-into-gsoc/`.
+## Check the connection
 
-## MCP server config
+Ask the assistant to call `gsoc_journey_guide` with `phase="learn"` (works
+offline), then `gsoc_search_orgs` with `technologies="python"` and `limit=3`
+(needs the network). Look for real tool output in the response. A confident
+answer without a tool call is not a connection.
 
-Stdio command after install:
-
-```bash
-git-into-gsoc mcp
-# equivalent: python -m git_into_gsoc.mcp_server
-```
-
-### Cursor (`~/.cursor/mcp.json` or project `.cursor/mcp.json`)
-
-```json
-{
-  "mcpServers": {
-    "git-into-gsoc": {
-      "command": "git-into-gsoc",
-      "args": ["mcp"],
-      "env": {
-        "GITHUB_TOKEN": "${env:GITHUB_TOKEN}"
-      }
-    }
-  }
-}
-```
-
-### Claude Code / Claude Desktop
-
-Add an MCP server entry with command `git-into-gsoc` and args `["mcp"]`.
-
-### Codex
-
-Register the same stdio server in your Codex MCP settings.
-
-## Verify
-
-```bash
-git-into-gsoc program --year 2027
-git-into-gsoc orgs --tech python -n 5
-git-into-gsoc progress summary
-```
-
-In your coding assistant, ask: “Using git-into-gsoc, help me shortlist GSoC orgs for Python scientific computing.”
+For settings, cache behavior, and where progress is saved, see the
+repository's [configuration guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/configuration.md).

@@ -1,50 +1,60 @@
-# Proposal guidance
+# Reviewing a proposal
 
-## Hard rules
+A proposal is a plan for a specific project: the problem, the approach, what
+will be delivered, and how the weeks will be used. Start from the
+organization's template, required questions, and AI policy. The tool's
+checklist is a reminder, not a substitute:
 
-1. Follow the **organization's template** and prerequisites exactly.
-2. Write in **your voice**. Mentors screen for generic AI wording.
-3. Link **prior contributions** to that org (PRs, issues, reviews, docs).
-4. Show **community interaction** before submission.
-5. Submit **only** via https://summerofcode.withgoogle.com — emailing mentors is not the formal application.
-6. Include an **AI usage statement** aligned with the org's policy.
+```bash
+git-into-gsoc proposal
+```
 
-## Recommended structure
+It prints a checklist and a suggested structure. It does not save or submit
+anything.
 
-1. **Synopsis** — problem, users affected, proposed outcome (one short paragraph).
-2. **Benefits** — why the community should care.
-3. **Deliverables & non-goals** — what ships / what is explicitly out of scope.
-4. **Design / approach** — enough technical depth to prove understanding.
-5. **Milestones** — phased deliverables with acceptance criteria.
-6. **Weekly timeline** — include buffer and stretch goals.
-7. **Related work** — prior art inside and outside the project.
-8. **About you** — skills, relevant experience, links to your contributions.
-9. **Communication plan** — how often you sync, timezone, backup mentor plan if org asks.
-10. **AI usage** — tools you will use, what you will not automate, how you validate.
+## Ground the proposal in evidence
 
-## Quality bar checklist
+Before drafting, collect the project idea, the person's real contributions and
+discussions (with links), relevant code they have read, and the organization's
+requested project size. `git-into-gsoc org "<name>"` lists recent accepted
+project titles for a sense of scope, and `git-into-gsoc projects "<keywords>"`
+searches past projects. Use them to calibrate, never to copy.
 
-- [ ] Org template sections complete
-- [ ] Links to 1–3 meaningful prior contributions
-- [ ] Mentions real discussions with mentors/community
-- [ ] Scope fits ~medium project size (or org-stated size)
-- [ ] Risks and mitigations listed
-- [ ] Timeline has slack
-- [ ] No unverifiable claims
-- [ ] Passes the “could I implement this without AI?” test
+## Questions to ask about a draft
 
-## Red flags (often auto-filtered)
+- Is the problem clear, and does the person understand how things work today?
+- Does the approach explain tradeoffs, not just intentions?
+- Can each milestone be demonstrated and tested?
+- Does the schedule match the project size and the person's real availability, with time for learning, reviews, tests, and surprises?
+- What would be cut first if time runs short?
+- Are experience, contributions, and community conversations backed by links?
+- Are all required sections present, including any AI disclosure the organization asks for?
 
-- Generic praise with no repo-specific detail
-- Identical structure/phrasing across many orgs
-- No prior interaction or contribution links
-- Unrealistic 12-week rewrites of core subsystems
-- Missing required org questions
-- AI-generated walls of prose without design tradeoffs
+Point out specific gaps. Help the person revise in their own words. Do not
+invent experience, mentor conversations, or contribution links, and do not
+make the proposal sound more impressive than the work behind it.
 
-## Feedback loop
+## Common reasons proposals fail
 
-1. Draft privately using the org template.
-2. Share a draft in the org's preferred channel if they allow it.
-3. Revise from mentor feedback.
-4. Final submit on the official site before the deadline.
+- Generic praise with no detail specific to this project
+- The same text sent to several organizations
+- No prior interaction with the community or links to real work
+- An unrealistic rewrite of a core system in a few weeks
+- Missing required questions or sections
+- Long prose with no design decisions
+
+A writing style alone is not proof that AI wrote something. Judge the content:
+specifics, evidence, and a realistic plan.
+
+## Feedback and submission
+
+1. Share a draft through the organization's requested channel when it accepts drafts.
+2. Ask focused questions about the approach and the schedule.
+3. Revise, then check every required section once more.
+4. Submit on the [official GSoC site](https://summerofcode.withgoogle.com) before the deadline on the [official timeline](https://developers.google.com/open-source/gsoc/timeline), and confirm the submission is recorded.
+
+Sending a document to a mentor is not an application. Only the official site
+counts.
+
+See [Google's proposal advice](https://google.github.io/gsocguides/student/writing-a-proposal.html)
+and [official sources](official-sources.md).
