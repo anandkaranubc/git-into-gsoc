@@ -179,3 +179,19 @@ def test_find_beginner_issues_verifies_top_candidates_in_parallel() -> None:
     assert sum(1 for r in results if r.repo == "acme/lib") <= 2
     assert results[0].availability == Availability.AVAILABLE
     assert all(r.gsoc_org == "Acme Org" for r in results)
+
+
+@respx.mock
+def test_assess_reports_unknown_when_the_timeline_cannot_be_read() -> None:
+    respx.get("https://api.github.com/repos/acme/lib/issues/7").mock(
+        return_value=httpx.Response(
+            200,
+            json={**_issue(), "number": 7, "html_url": "https://github.com/acme/lib/issues/7"},
+        )
+    )
+    respx.get(url__regex=r"https://api\.github\.com/repos/acme/lib/issues/7/timeline.*").mock(
+        return_value=httpx.Response(500, json={"message": "boom"})
+    )
+    _, assessment = GitHubClient().assess("acme/lib", 7)
+    assert assessment.availability == Availability.UNKNOWN
+    assert "timeline" in assessment.reason

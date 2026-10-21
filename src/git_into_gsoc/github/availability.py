@@ -180,6 +180,18 @@ def assess_issue(
     return result(Availability.AVAILABLE, "Open, unassigned, no open PR or recent claim")
 
 
+def unverified_assessment() -> IssueAssessment:
+    """Assessment to use when the issue timeline could not be fetched."""
+    return IssueAssessment(
+        availability=Availability.UNKNOWN,
+        reason=(
+            "Could not read the issue timeline; open the issue and check for claims "
+            "and linked PRs yourself"
+        ),
+        caveats=["The timeline request failed, so claims and linked PRs were not checked"],
+    )
+
+
 def _grant(claims: dict[str, IssueClaim], body: str) -> None:
     mentioned = set(re.findall(r"@([A-Za-z0-9-]+)", body))
     targets = [c for login, c in claims.items() if login in mentioned]

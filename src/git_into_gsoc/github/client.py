@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
-from git_into_gsoc.github.availability import assess_issue
+from git_into_gsoc.github.availability import assess_issue, unverified_assessment
 from git_into_gsoc.github.repos import (
     channels_in,
     contributing_path,
@@ -178,7 +178,8 @@ class GitHubClient:
         data = self._api(f"repos/{owner}/{repo}/issues/{int(number)}", ttl=300)
         return data if isinstance(data, dict) else {}
 
-    def get_issue_timeline(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+    def get_issue_timeline(self, owner: str, repo: str, number: int) -> list[dict[str, Any]] | None:
+        """Timeline events for an issue, or None when GitHub could not be reached."""
         owner, repo = parse_repo(f"{owner}/{repo}")
         try:
             data = self._api(
@@ -187,7 +188,7 @@ class GitHubClient:
                 ttl=300,
             )
         except HttpError:
-            return []
+            return None
         return data if isinstance(data, list) else []
 
     def list_pulls(
@@ -390,7 +391,11 @@ class GitHubClient:
             }
             for key, future in futures.items():
                 candidate = raw_by_key[key]
-                assessment = assess_issue(issues_by_key.get(key, {}), future.result())
+                timeline = future.result()
+                if timeline is None:
+                    assessment = unverified_assessment()
+                else:
+                    assessment = assess_issue(issues_by_key.get(key, {}), timeline)
                 candidate.assessment = assessment
                 candidate.availability = assessment.availability
                 candidate.availability_reason = assessment.reason
@@ -408,16 +413,9 @@ class GitHubClient:
                 hint="Pass the issue number the PR addresses.",
             )
         timeline = self.get_issue_timeline(owner, repo, number)
+        if timeline is None:
+            return issue, unverified_assessment()
         return issue, assess_issue(issue, timeline)
-
-    def check_issue_availability(self, full_name: str, number: int) -> tuple[Availability, str]:
-        try:
-            _, assessment = self.assess(full_name, number)
-        except NotFoundError:
-            return Availability.UNKNOWN, "Issue not found"
-        except HttpError as exc:
-            return Availability.UNKNOWN, f"Could not fetch issue: {exc}"
-        return assessment.availability, assessment.reason
 
     def contribution_guide(self, full_name: str) -> ContributionGuide:
         owner, repo = parse_repo(full_name)
