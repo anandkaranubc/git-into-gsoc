@@ -100,17 +100,20 @@ def test_cli_proposal_check_reads_file(tmp_path: Path) -> None:
 
 
 def test_mcp_proposal_check_tool_and_resources() -> None:
-    import asyncio
     import json
 
     from git_into_gsoc.mcp_server import gsoc_proposal_check, mcp
 
     report = json.loads(gsoc_proposal_check(WEAK, verify_links=False))
     assert report["summary"]["fail"] >= 5
-    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    # Use the sync managers: asyncio.run() opens a socketpair on Windows, which the
+    # hermetic test environment blocks.
+    tools = {t.name: t for t in mcp._tool_manager.list_tools()}
+    assert tools["gsoc_proposal_check"].annotations is not None
     assert tools["gsoc_proposal_check"].annotations.read_only_hint is True
+    assert tools["gsoc_progress"].annotations is not None
     assert tools["gsoc_progress"].annotations.read_only_hint is False
-    uris = {str(r.uri) for r in asyncio.run(mcp.list_resources())}
+    uris = {str(r.uri) for r in mcp._resource_manager.list_resources()}
     assert {"gsoc://journey", "gsoc://official-sources", "gsoc://anti-spam-rules"} <= uris
 
 
