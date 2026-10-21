@@ -9,14 +9,16 @@ from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
+from git_into_gsoc.http_client import CachedHttpClient
 from git_into_gsoc.progress.store import ProgressStore
 
 
 class GSoCToolkit:
     def __init__(self) -> None:
         self.settings = get_settings()
-        self.github = GitHubClient(self.settings)
-        self.gsoc = GSoCClient(self.settings)
+        self.http = CachedHttpClient(self.settings)
+        self.github = GitHubClient(self.settings, self.http)
+        self.gsoc = GSoCClient(self.settings, self.http)
         self.progress = ProgressStore()
 
     def program_info(self, year: int | None = None) -> dict[str, Any]:

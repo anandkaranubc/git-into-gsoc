@@ -74,7 +74,7 @@ class GSoCClient:
     def list_all_organizations(self) -> list[dict[str, Any]]:
         if self._orgs_cache is not None:
             return self._orgs_cache
-        data = self.http.get_json(self._orgs_url())
+        data = self.http.get_json(self._orgs_url(), ttl=self.settings.archive_ttl_seconds)
         if isinstance(data, list):
             self._orgs_cache = data
         elif isinstance(data, dict) and "organizations" in data:
@@ -85,7 +85,7 @@ class GSoCClient:
 
     def list_year_organizations(self, year: int | None = None) -> list[dict[str, Any]]:
         year = year or LATEST_ARCHIVED_YEAR
-        data = self.http.get_json(self._year_url(year))
+        data = self.http.get_json(self._year_url(year), ttl=self.settings.archive_ttl_seconds)
         if isinstance(data, dict):
             orgs = data.get("organizations")
             if isinstance(orgs, list):
