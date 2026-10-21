@@ -1,0 +1,14 @@
+{
+  "name": "git-into-gsoc",
+  "owner": {
+    "name": "git-into-gsoc contributors",
+    "url": "https://github.com/anandkaranubc/git-into-gsoc"
+  },
+  "plugins": [
+    {
+      "name": "git-into-gsoc",
+      "source": "./",
+      "description": "Evidence-based preparation for Google Summer of Code: an Agent Skill plus an MCP server for organizations, repositories, issues, orientation, and proposals."
+    }
+  ]
+}

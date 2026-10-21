@@ -33,6 +33,8 @@ git-into-gsoc setup
 
 On Windows, run `irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex` in PowerShell. To work from a clone instead, see [installation](docs/guide/02-install.md).
 
+Claude Code users can also install the skill and the MCP server as a plugin once the package is on PyPI: `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`.
+
 `program` shows the current GSoC phase and timeline with no GitHub token needed. If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits. `git-into-gsoc doctor` shows what is configured.
 
 Then explore:
@@ -94,3 +96,5 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for Conventional Commits, squash-merge PR
 MIT, see [LICENSE](LICENSE).
 
 This independent project is not affiliated with or endorsed by Google. Google Summer of Code and GSoC are trademarks of Google LLC. Always verify dates, organizations, and rules on the [official program site](https://summerofcode.withgoogle.com), and follow each organization's [AI policy](https://developers.google.com/open-source/gsoc/resources/ai_guidance).
+
+<!-- mcp-name: io.github.anandkaranubc/git-into-gsoc -->

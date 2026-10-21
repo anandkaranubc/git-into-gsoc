@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.anandkaranubc/git-into-gsoc",
+  "title": "git-into-gsoc",
+  "description": "Evidence-based Google Summer of Code preparation: organizations, repositories, free beginner issues, orientation, proposals.",
+  "repository": {
+    "url": "https://github.com/anandkaranubc/git-into-gsoc",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/anandkaranubc/git-into-gsoc",
+  "version": "0.1.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "git-into-gsoc",
+      "version": "0.1.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp",
+          "valueHint": "mcp",
+          "description": "Start the MCP server on standard input and output",
+          "isRequired": true
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "GITHUB_TOKEN",
+          "description": "Optional GitHub token for higher API limits (public data only; no scopes needed)",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

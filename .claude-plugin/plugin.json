@@ -1,0 +1,32 @@
+{
+  "name": "git-into-gsoc",
+  "version": "0.1.0",
+  "description": "Evidence-based preparation for Google Summer of Code: find organizations, repositories and free beginner issues, get oriented in a codebase, and prepare a proposal, with an Agent Skill and an MCP server.",
+  "author": {
+    "name": "git-into-gsoc contributors",
+    "url": "https://github.com/anandkaranubc/git-into-gsoc"
+  },
+  "homepage": "https://github.com/anandkaranubc/git-into-gsoc",
+  "repository": "https://github.com/anandkaranubc/git-into-gsoc",
+  "license": "MIT",
+  "keywords": [
+    "gsoc",
+    "google-summer-of-code",
+    "open-source",
+    "onboarding",
+    "github",
+    "mcp"
+  ],
+  "skills": [
+    "./skills/git-into-gsoc"
+  ],
+  "mcpServers": {
+    "git-into-gsoc": {
+      "command": "uvx",
+      "args": [
+        "git-into-gsoc",
+        "mcp"
+      ]
+    }
+  }
+}
