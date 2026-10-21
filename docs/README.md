@@ -28,6 +28,6 @@ Start with [installation](guide/02-install.md), then [find organizations](guide/
 - [Sources and limitations](sources.md): where results come from and what they cannot tell you.
 - [MCP reference](mcp.md): tools available to assistants.
 - [Examples](../examples/README.md): terminal session and assistant prompts.
-- [Contributing to this tool](../CONTRIBUTING.md) and [architecture](architecture.md): for people improving git-into-gsoc itself.
+- [Contributing to this tool](../CONTRIBUTING.md), [architecture](architecture.md), and [releasing](releasing.md): for people improving git-into-gsoc itself.
 
 [Back to the project README](../README.md)
