@@ -115,3 +115,25 @@ def test_org_details_survive_a_failed_post_search(monkeypatch) -> None:  # type:
     monkeypatch.setattr(toolkit.github, "search_issues", down)
     found = toolkit.gsoc_posts_for(["wagtail"], year=2027)
     assert found["posts"] == [] and "503" in found["error"]["error"]
+
+
+def test_a_hand_typed_shortlist_name_is_still_moved_aside(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.progress.store import ProgressStore
+    from git_into_gsoc.service import GSoCToolkit
+
+    ProgressStore().set_profile(technologies=["python"])
+    ProgressStore().shortlist_org("wagtail")  # typed by hand, not the official name
+    ProgressStore().shortlist_org("SymPy")
+    toolkit = GSoCToolkit()
+    orgs = {
+        "wagtail": OrgSummary(name="Wagtail", github_orgs=["wagtail"]),
+        "SymPy": OrgSummary(name="SymPy", github_orgs=["sympy"]),
+    }
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, **k: orgs[name])
+    monkeypatch.setattr(toolkit.github, "search_issues", lambda *a, **k: [WAGTAIL])
+    monkeypatch.setattr(toolkit.official, "program", lambda *a, **k: None)
+    monkeypatch.setattr(toolkit, "_new_beginner_issues", lambda *a, **k: [])
+    data = toolkit.next_steps(year=2027)
+    repo_step = next(a for a in data["actions"] if a["title"].startswith("Pick the repository"))
+    assert repo_step["title"].endswith("SymPy")

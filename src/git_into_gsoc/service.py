@@ -1418,8 +1418,9 @@ class GSoCToolkit:
                 org = self.gsoc.get_organization(name)
             except GigError:
                 continue
+            # Keep the name as saved on the shortlist, so planning can match it.
             for owner in (org.github_orgs if org else [])[:2]:
-                owners.setdefault(owner.lower(), org.name if org else name)
+                owners.setdefault(owner.lower(), name)
         if not owners:
             return []
         found = self.gsoc_posts_for(list(owners), year=year)["posts"]
