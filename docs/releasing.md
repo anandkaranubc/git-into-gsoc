@@ -28,11 +28,13 @@ To set it up once:
 2. On GitHub, create an environment named `release` under **Settings > Environments** (no secrets needed; optionally require a reviewer).
 3. Merge the next release pull request. The `Publish to PyPI` job runs under that environment and uploads the wheel.
 
-After the first publish, users can install with `uv tool install git-into-gsoc` or `pipx install git-into-gsoc` instead of the Git URL; the installer scripts try the package name first once it exists.
+After the first publish, users can install with `uv tool install git-into-gsoc` or `pipx install git-into-gsoc` instead of the Git URL; the installer scripts try the package name first once it exists. Until then, every release carries the wheel and the source archive as release assets, so anyone can install a pinned version by URL (see the [install guide](guide/02-install.md)).
 
-## 4. MCP registry (automatic)
+## 4. Release assets and the MCP registry (automatic)
 
-Publishing the release creates the GitHub release, which triggers `Publish to MCP Registry`. The workflow builds `dist/git-into-gsoc.mcpb` with `scripts/build_mcpb.py`, uploads it as a release asset, rewrites `server.json` to point at it, and publishes with `mcp-publisher login github-oidc`. Nothing to configure; to republish a tag by hand, run the workflow from the Actions tab with the tag name.
+Merging the release pull request also starts `Release assets and MCP registry` (`.github/workflows/mcp-registry.yml`). The release workflow dispatches it with the new tag, because a release created with the built-in Actions token does not fire the `release` event. The workflow checks out the tagged source, builds the wheel and source archive with `python -m build` and the MCPB bundle with `scripts/build_mcpb.py`, and uploads all three as release assets. A **wheel** is Python's ready-to-install package file, so `uv tool install <wheel URL>` or `pipx install <wheel URL>` installs that exact release without PyPI. The workflow then rewrites `server.json` to point at the bundle and publishes with `mcp-publisher login github-oidc`. Nothing to configure.
+
+To rebuild the assets for a tag, run the workflow from the Actions tab with the tag name, or `gh workflow run mcp-registry.yml -f tag=v0.2.1`. When that version is already in the registry, the run refreshes the assets and skips the publish step.
 
 ## Checks before merging a release
 

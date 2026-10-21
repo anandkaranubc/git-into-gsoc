@@ -34,6 +34,14 @@ uv tool install git+https://github.com/anandkaranubc/git-into-gsoc    # or: pipx
 git-into-gsoc setup                                                     # add --dry-run to preview
 ```
 
+To install one particular release instead of the latest code, use the wheel attached to that release on the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases). A **wheel** is Python's ready-to-install package file, and its name carries the version:
+
+```bash
+uv tool install https://github.com/anandkaranubc/git-into-gsoc/releases/download/v0.2.1/git_into_gsoc-0.2.1-py3-none-any.whl
+```
+
+`pipx install` accepts the same address. Swap both version numbers for the release you want. Once the package is on PyPI, `uv tool install git-into-gsoc` is the shorter way.
+
 ## From a clone (contributors, or no uv/pipx)
 
 You also need [Git](https://git-scm.com/downloads). Check both tools:

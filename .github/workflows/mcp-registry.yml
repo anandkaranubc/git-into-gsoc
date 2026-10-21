@@ -1,9 +1,16 @@
-name: Publish to MCP Registry
+name: Release assets and MCP registry
 
-# Publishes this server to the public MCP registry (registry.modelcontextprotocol.io)
-# as an MCPB bundle attached to the GitHub release. Authentication uses GitHub's
-# OIDC token, so no secret is stored; the namespace io.github.anandkaranubc/* is
-# granted to this repository's owner.
+# Builds the release assets from the tagged source and attaches them to the
+# GitHub release: the Python wheel and source archive (installable by URL until
+# the package is on PyPI) and the MCPB bundle. Then publishes this server to the
+# public MCP registry (registry.modelcontextprotocol.io). Authentication uses
+# GitHub's OIDC token, so no secret is stored; the namespace
+# io.github.anandkaranubc/* is granted to this repository's owner.
+#
+# The release workflow dispatches this one after Release Please creates a
+# release, because a release created with the built-in Actions token does not
+# fire the `release` event. Running it again for a tag refreshes the assets and
+# skips the registry when that version is already published.
 
 on:
   release:
@@ -18,17 +25,25 @@ permissions:
   contents: write
   id-token: write
 
+concurrency:
+  group: release-assets-${{ github.event.release.tag_name || inputs.tag }}
+  cancel-in-progress: false
+
 jobs:
   publish:
-    name: Build bundle and publish
+    name: Build assets and publish
     runs-on: ubuntu-latest
     steps:
       - name: Resolve tag
         id: tag
-        run: echo "tag=${{ github.event.release.tag_name || inputs.tag }}" >> "$GITHUB_OUTPUT"
+        run: |
+          TAG="${{ github.event.release.tag_name || inputs.tag }}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
 
-      # The workflow's own ref supplies server.json and the build script; the bundle
-      # is built from the tagged source so its contents match the release exactly.
+      # The workflow's own ref supplies server.json and the build script; the
+      # assets are built from the tagged source so their contents match the
+      # release exactly.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -40,18 +55,43 @@ jobs:
       - name: Check out the tagged source
         run: git worktree add /tmp/tagged-source "${{ steps.tag.outputs.tag }}"
 
+      - name: Build the wheel and source archive from the tag
+        run: |
+          python -m pip install -U pip build
+          python -m build --outdir dist /tmp/tagged-source
+
       - name: Build the MCPB bundle from the tag
         run: python scripts/build_mcpb.py --root /tmp/tagged-source --out dist/git-into-gsoc.mcpb
 
-      - name: Attach the bundle to the release
+      - name: Check that the built version matches the tag
+        run: |
+          ls -l dist
+          test -f "dist/git_into_gsoc-${{ steps.tag.outputs.version }}-py3-none-any.whl"
+          test -f "dist/git_into_gsoc-${{ steps.tag.outputs.version }}.tar.gz"
+
+      - name: Attach the assets to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/git-into-gsoc.mcpb --clobber
+        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/*.whl dist/*.tar.gz dist/git-into-gsoc.mcpb --clobber
+
+      - name: Skip the registry when this version is already published
+        id: registry
+        run: |
+          NAME="$(jq -r .name server.json)"
+          VERSION="${{ steps.tag.outputs.version }}"
+          PUBLISHED="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers/${NAME//\//%2F}/versions" | jq -r '.servers[].server.version' || true)"
+          if printf '%s\n' "$PUBLISHED" | grep -qx "$VERSION"; then
+            echo "Version $VERSION is already in the registry; refreshed the release assets only."
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Point server.json at the release asset
+        if: steps.registry.outputs.publish == 'true'
         run: |
           TAG="${{ steps.tag.outputs.tag }}"
-          VERSION="${TAG#v}"
+          VERSION="${{ steps.tag.outputs.version }}"
           SHA=$(openssl dgst -sha256 dist/git-into-gsoc.mcpb | awk '{print $NF}')
           URL="https://github.com/${{ github.repository }}/releases/download/${TAG}/git-into-gsoc.mcpb"
           jq --arg v "$VERSION" --arg url "$URL" --arg sha "$SHA" \
@@ -60,11 +100,14 @@ jobs:
           cat server.json
 
       - name: Install mcp-publisher
+        if: steps.registry.outputs.publish == 'true'
         run: |
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/').tar.gz" | tar xz mcp-publisher
 
       - name: Authenticate to the MCP registry with GitHub OIDC
+        if: steps.registry.outputs.publish == 'true'
         run: ./mcp-publisher login github-oidc
 
       - name: Publish
+        if: steps.registry.outputs.publish == 'true'
         run: ./mcp-publisher publish
