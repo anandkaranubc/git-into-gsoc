@@ -180,7 +180,7 @@ def plan_actions(
         actions.append(
             _action(
                 "Shortlist 3 organizations that fit your skills",
-                command + '   # then: git-into-gsoc progress shortlist_org --value "NAME"',
+                command + '   # then, for each: git-into-gsoc org "NAME" --shortlist',
                 "Everything downstream (repos, issues, proposal) hangs off a shortlist.",
             )
         )

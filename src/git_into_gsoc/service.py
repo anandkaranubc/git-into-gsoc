@@ -125,6 +125,8 @@ class GSoCToolkit:
             "default_target_year": DEFAULT_TARGET_YEAR,
             "official_sources": overview["official_sources"],
             "anti_spam_rules": overview["anti_spam_rules"],
+            "contributor_habits": overview["contributor_habits"],
+            "profile_saved": bool(self.progress.profile().get("technologies")),
         }
 
     def match_orgs(

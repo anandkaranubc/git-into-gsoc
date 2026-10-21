@@ -20,7 +20,7 @@ from typer.core import TyperGroup
 
 from git_into_gsoc import __version__
 from git_into_gsoc.errors import GigError, InputError
-from git_into_gsoc.guidance import ANTI_SPAM_RULES, journey_overview
+from git_into_gsoc.guidance import journey_overview
 from git_into_gsoc.models import LogEntry
 from git_into_gsoc.service import GSoCToolkit
 from git_into_gsoc.text import strip_hidden, strip_hidden_all
@@ -222,9 +222,16 @@ def program_cmd(
         style = "dim" if event["status"] == "past" else ""
         table.add_row(date, event["label"], _relative(event["days_until"]), style=style)
     console.print(table)
-    console.print("\n[bold]Anti-spam rules[/bold]")
-    for rule in ANTI_SPAM_RULES:
-        console.print(f"• {rule}")
+    console.print("\n[bold]Good habits[/bold]")
+    for habit in data.get("contributor_habits") or []:
+        console.print(f"• {habit}")
+    if data.get("profile_saved"):
+        console.print("\n[dim]Next: git-into-gsoc next[/dim]")
+    else:
+        console.print(
+            "\n[dim]Next: git-into-gsoc profile --tech LANGUAGES --interests TOPICS, "
+            "then git-into-gsoc next[/dim]"
+        )
 
 
 _FIT_PREFIXES = (

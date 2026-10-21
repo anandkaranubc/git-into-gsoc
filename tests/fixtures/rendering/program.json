@@ -275,5 +275,13 @@
     "Talk with the organization in its public channels before you propose a project.",
     "Back every recommendation with evidence: issue links, pull request links, or docs.",
     "If something is missing or uncertain, say so. Do not guess."
-  ]
+  ],
+  "contributor_habits": [
+    "Read the project's contributing guide before you open a pull request.",
+    "Talk with the organization in its public channel before you propose a project. Never message many maintainers at once.",
+    "Check the organization's AI policy. Many reject AI-written proposals and pull requests.",
+    "Only submit work you understand and can explain line by line.",
+    "A real fix, test, or documentation improvement counts. A typo change does not."
+  ],
+  "profile_saved": false
 }

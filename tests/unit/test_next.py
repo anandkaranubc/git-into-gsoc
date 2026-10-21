@@ -217,3 +217,14 @@ def test_next_asks_for_public_intro_before_issues(api: respx.MockRouter) -> None
     store.complete_phase(JourneyPhase.COMMUNITY)
     data = GSoCToolkit().next_steps(now=NOW)
     assert any("Find a beginner issue" in a["title"] for a in data["actions"])
+
+
+def test_shortlist_step_uses_the_org_command() -> None:
+    from git_into_gsoc.coach import plan_actions
+    from git_into_gsoc.models import ProgressState
+
+    state = ProgressState(profile={"technologies": ["python"]})
+    actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
+    shortlist = next(a for a in actions if a["title"].startswith("Shortlist"))
+    assert "--shortlist" in shortlist["command"]
+    assert "shortlist_org" not in shortlist["command"]

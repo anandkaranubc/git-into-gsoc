@@ -220,3 +220,16 @@ def test_unknown_org_for_past_projects_is_an_error(monkeypatch) -> None:  # type
     result = runner.invoke(app, ["projects", "--org", "zz"])
     assert result.exit_code == 1
     assert "No GSoC organization is named 'zz'" in result.output
+
+
+@respx.mock
+def test_program_speaks_to_the_person_and_ends_with_a_next_step() -> None:
+    respx.get("https://summerofcode.withgoogle.com/api/program/2027/").mock(
+        return_value=httpx.Response(404, json={})
+    )
+    result = runner.invoke(app, ["program", "--year", "2027"])
+    assert result.exit_code == 0, result.output
+    # Rules meant for an assistant ("Never fabricate organizations") are not shown to people.
+    assert "fabricate" not in result.stdout
+    assert "Good habits" in result.stdout
+    assert "git-into-gsoc profile" in result.stdout  # no profile saved yet

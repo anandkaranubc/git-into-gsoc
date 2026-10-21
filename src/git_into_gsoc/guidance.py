@@ -53,6 +53,16 @@ ANTI_SPAM_RULES: list[str] = [
     "If something is missing or uncertain, say so. Do not guess.",
 ]
 
+# The same rules, written for the person rather than for an assistant.
+CONTRIBUTOR_HABITS: list[str] = [
+    "Read the project's contributing guide before you open a pull request.",
+    "Talk with the organization in its public channel before you propose a project. "
+    "Never message many maintainers at once.",
+    "Check the organization's AI policy. Many reject AI-written proposals and pull requests.",
+    "Only submit work you understand and can explain line by line.",
+    "A real fix, test, or documentation improvement counts. A typo change does not.",
+]
+
 PHASE_GUIDES: dict[JourneyPhase, dict[str, object]] = {
     JourneyPhase.LEARN: {
         "goal": "Understand how GSoC works, who can apply, and what is expected of you",
@@ -199,6 +209,7 @@ def proposal_checklist() -> list[ProposalChecklistItem]:
 def journey_overview() -> dict[str, Any]:
     return {
         "anti_spam_rules": ANTI_SPAM_RULES,
+        "contributor_habits": CONTRIBUTOR_HABITS,
         "official_sources": [s.model_dump() for s in OFFICIAL_SOURCES],
         "phases": {phase.value: PHASE_GUIDES[phase] for phase in JourneyPhase},
         "proposal_checklist": [i.model_dump() for i in proposal_checklist()],
