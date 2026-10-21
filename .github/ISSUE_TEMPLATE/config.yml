@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Official Google Summer of Code
+    url: https://summerofcode.withgoogle.com
+    about: Canonical program site for dates, orgs, and proposal submission
+  - name: GSoC AI guidance
+    url: https://developers.google.com/open-source/gsoc/resources/ai_guidance
+    about: Official guidance on AI tooling for contributors

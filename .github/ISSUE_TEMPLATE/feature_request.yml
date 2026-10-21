@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest an improvement to git-into-gsoc
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What contributor pain does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How should it work? CLI, MCP tool, and/or skill guidance?
+    validations:
+      required: true
+  - type: checkboxes
+    id: ethics
+    attributes:
+      label: Ethics check
+      options:
+        - label: This does not encourage spammy or fabricated contributions
+          required: true

@@ -1,0 +1,8 @@
+# Default owners for everything in the repo.
+# See https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @anandkaranubc
+
+/.github/ @anandkaranubc
+/src/ @anandkaranubc
+/skills/ @anandkaranubc
