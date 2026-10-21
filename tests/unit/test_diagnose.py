@@ -114,3 +114,13 @@ def test_service_reads_ci_and_cli_reads_stdin() -> None:
     result = runner.invoke(app, ["diagnose", "-"], input="bash: tox: command not found\n")
     assert result.exit_code == 0, result.output
     assert "command not found" in result.output and "Install the tool" in result.output
+
+
+def test_cli_reads_a_utf16_log_from_windows_powershell(tmp_path) -> None:
+    log = tmp_path / "log.txt"
+    log.write_text("ModuleNotFoundError: No module named 'numpy'\r\n", encoding="utf-16")
+    result = runner.invoke(app, ["diagnose", str(log)])
+    assert result.exit_code == 0, result.output
+    assert "missing module" in result.output and "numpy" in result.output
+    missing = runner.invoke(app, ["diagnose", str(tmp_path / "nope.txt")])
+    assert missing.exit_code != 0 and "Cannot read" in missing.output

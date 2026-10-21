@@ -960,16 +960,9 @@ def diagnose_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Name the likely cause of a failed setup or test run, and what to try next."""
-    if file == "-":
-        text = sys.stdin.read()
-    else:
-        try:
-            text = Path(file).read_text(encoding="utf-8", errors="replace")
-        except OSError as exc:
-            raise InputError(
-                f"Cannot read {file}: {exc.strerror or exc}",
-                hint="Save the output to a file first, or pipe it in with -.",
-            ) from exc
+    # A file goes through the same reader as proposals: Windows PowerShell 5.1
+    # writes `pytest > log.txt` as UTF-16, which plain UTF-8 reading turns to noise.
+    text = sys.stdin.read() if file == "-" else _read_document(Path(file))
     data = _toolkit().diagnose(text, repo=repo)
     if output == Output.json:
         _emit(data, output)
