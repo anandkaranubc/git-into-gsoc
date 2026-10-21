@@ -118,3 +118,67 @@ def test_profile_rejects_a_user_that_does_not_exist() -> None:
         )
         with pytest.raises(NotFoundError):
             GSoCToolkit().save_profile(github="no-such-user-xyz")
+
+
+def test_damaged_progress_file_is_kept_and_replaced(tmp_path: Path, caplog) -> None:  # type: ignore[no-untyped-def]
+    path = tmp_path / "progress.json"
+    path.write_text('{"phases": {"learn": tr', encoding="utf-8")
+    store = ProgressStore(path)
+    with caplog.at_level("WARNING"):
+        state = store.load()
+    assert state.phases["learn"] is False
+    kept = list(tmp_path.glob("progress.damaged-*.json"))
+    assert len(kept) == 1 and kept[0].read_text(encoding="utf-8").startswith('{"phases"')
+    assert "could not be read" in caplog.text
+    store.add_note("fresh start")
+    assert store.load().notes == ["fresh start"]
+
+
+def test_wrong_shape_progress_file_is_recovered(tmp_path: Path) -> None:
+    path = tmp_path / "progress.json"
+    path.write_text('{"phases": "not-a-dict"}', encoding="utf-8")
+    assert ProgressStore(path).summary()["completion"].startswith("0/")
+
+
+def test_save_is_atomic_and_leaves_no_temp_files(tmp_path: Path) -> None:
+    store = ProgressStore(tmp_path / "progress.json")
+    for i in range(5):
+        store.add_note(f"note {i}")
+    assert [p.name for p in tmp_path.iterdir()] == ["progress.json"]
+
+
+def _add_notes(path: str, worker: int, count: int) -> None:
+    from git_into_gsoc.progress.store import ProgressStore as Store
+
+    store = Store(Path(path))
+    for i in range(count):
+        store.add_note(f"w{worker}-{i}")
+
+
+def test_concurrent_writers_never_lose_or_corrupt_notes(tmp_path: Path) -> None:
+    import multiprocessing
+
+    path = tmp_path / "progress.json"
+    ctx = multiprocessing.get_context("spawn")
+    workers = [ctx.Process(target=_add_notes, args=(str(path), w, 10)) for w in range(8)]
+    for proc in workers:
+        proc.start()
+    for proc in workers:
+        proc.join(60)
+        assert proc.exitcode == 0
+    notes = ProgressStore(path).load().notes
+    assert len(notes) == 80 and len(set(notes)) == 80
+    assert not list(tmp_path.glob("*.lock")) and not list(tmp_path.glob(".progress-*"))
+
+
+def test_stale_lock_from_a_crashed_process_is_broken(tmp_path: Path) -> None:
+    import os
+    import time
+
+    path = tmp_path / "progress.json"
+    lock = tmp_path / "progress.json.lock"
+    lock.write_text("", encoding="utf-8")
+    old = time.time() - 3600
+    os.utime(lock, (old, old))
+    ProgressStore(path).add_note("after a crash")
+    assert ProgressStore(path).load().notes == ["after a crash"]
