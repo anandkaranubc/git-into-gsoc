@@ -202,7 +202,8 @@ def _intro(ctx: dict[str, Any]) -> str:
     year = ctx.get("year") or "<year>"
     return (
         f"In {channel}, once:\n\n"
-        f"Hi, I'm <name> (GitHub: <handle>). I'm new to {org} and preparing for GSoC {year}.\n"
+        f"Hi, I'm <name> ({ctx.get('code_host') or 'GitHub'}: <handle>). I'm new to {org} "
+        f"and preparing for GSoC {year}.\n"
         f"I read <CONTRIBUTING or the developer guide> and got <component> running on <OS>.\n"
         f"I'm interested in <area> because <one concrete reason tied to the ideas page or your own use>.\n"
         f"I'm looking at <issue URL>; before I start, <one specific question>."

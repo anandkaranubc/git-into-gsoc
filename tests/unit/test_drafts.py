@@ -409,3 +409,16 @@ def test_pr_and_claim_drafts_follow_the_repositorys_own_rules(monkeypatch) -> No
     assert any("assigned to the author" in gate for gate in context["gates"])  # type: ignore[attr-defined]
     claim = toolkit.draft("claim", issue="learning-unlimited/ESP-Website#2455")["template"]
     assert "wait until a maintainer assigns you" in claim
+
+
+def test_intro_names_the_code_host_the_org_uses(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    gnome = OrgSummary(name="GNOME Foundation", source_code="https://gitlab.gnome.org/")
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name: gnome)
+    assert "(GitLab: <handle>)" in toolkit.draft("intro", org="GNOME Foundation")["template"]
+    sympy = OrgSummary(name="SymPy", github_orgs=["sympy"])
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name: sympy)
+    assert "(GitHub: <handle>)" in toolkit.draft("intro", org="SymPy")["template"]

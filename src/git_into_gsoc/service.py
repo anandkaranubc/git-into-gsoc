@@ -1596,6 +1596,10 @@ class GSoCToolkit:
             found = self.gsoc.get_organization(org)
             if found:
                 context["org"] = found.name
+                if not found.github_orgs and found.source_code:
+                    # "GitLab: <handle>" for GNOME, not a GitHub handle it never uses.
+                    host = urlparse(found.source_code).netloc.removeprefix("www.")
+                    context["code_host"] = "GitLab" if "gitlab" in host else host or None
                 context["channels"], closed = self._open_channels(public_channels(found.channels))
                 if closed:
                     context["closed_channels"] = closed
