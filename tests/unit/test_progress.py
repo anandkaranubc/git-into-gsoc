@@ -276,3 +276,68 @@ def test_log_links_must_be_web_links(tmp_path: Path) -> None:
         )
     )
     assert store.load().weekly_log[-1].links == ["https://github.com/sympy/sympy/pull/1"]
+
+
+def _as_if_on_windows(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Treat PermissionError as a Windows sharing violation, on any system."""
+    from git_into_gsoc.progress import store as store_module
+
+    monkeypatch.setattr(store_module, "_busy", lambda exc: isinstance(exc, PermissionError))
+    monkeypatch.setattr(store_module, "BUSY_WAIT_SECONDS", 0)
+
+
+def test_a_briefly_busy_file_is_retried(monkeypatch: pytest.MonkeyPatch) -> None:
+    from git_into_gsoc.progress import store as store_module
+
+    _as_if_on_windows(monkeypatch)
+    calls: list[int] = []
+
+    def busy_twice() -> str:
+        calls.append(1)
+        if len(calls) < 3:
+            raise PermissionError(13, "The process cannot access the file")
+        return "read"
+
+    assert store_module._retry_busy(busy_twice) == "read" and len(calls) == 3
+
+
+def test_a_busy_lock_file_means_wait_not_crash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import os
+
+    from git_into_gsoc.progress import store as store_module
+
+    _as_if_on_windows(monkeypatch)
+    real_open = os.open
+    refused: list[str] = []
+
+    def lock_busy_once(path, flags, *args):  # type: ignore[no-untyped-def]
+        if str(path).endswith(".lock") and not refused:
+            refused.append(str(path))
+            raise PermissionError(13, "delete pending")
+        return real_open(path, flags, *args)
+
+    monkeypatch.setattr(store_module.os, "open", lock_busy_once)
+    ProgressStore(tmp_path / "progress.json").add_note("after a busy lock")
+    assert refused and ProgressStore(tmp_path / "progress.json").load().notes == [
+        "after a busy lock"
+    ]
+
+
+def test_off_windows_a_permission_error_fails_at_once(tmp_path: Path) -> None:
+    import os
+
+    if os.name == "nt":
+        pytest.skip("on Windows a PermissionError may be a sharing violation")
+    from git_into_gsoc.progress import store as store_module
+
+    calls: list[int] = []
+
+    def denied() -> None:
+        calls.append(1)
+        raise PermissionError(13, "Permission denied")
+
+    with pytest.raises(PermissionError):
+        store_module._retry_busy(denied)
+    assert calls == [1]
