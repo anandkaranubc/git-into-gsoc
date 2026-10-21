@@ -21,7 +21,7 @@ Every tool returns JSON as text. A parameter shown with a default is optional. R
 | Tool | Parameters | Returns |
 |---|---|---|
 | `gsoc_program_info` | `year=2027` | Timeline, current phase and advice, whether dates are official, official links, and ground rules |
-| `gsoc_journey_guide` | `phase=None` | All eight phases with goals and actions, or one phase; an unknown name returns the valid list |
+| `gsoc_journey_guide` | `phase=None` | All ten phases with goals and actions, or one phase; an unknown name returns the valid list |
 | `gsoc_search_orgs` | `query=""`, `technologies=""`, `topics=""`, `category=""`, `year=0`, `limit=10` | Ranked organizations with fit reasons, years active, projects per year, ideas page, contributor guide, GitHub organizations, and contact channels, plus a `catalog` note saying which year's list was used |
 | `gsoc_org_details` | `name`, `year=0` | One organization's full profile and recent accepted project titles; `found` is false when nothing matches |
 | `gsoc_past_projects` | `query=""`, `org=""`, `since=0`, `limit=15` | Accepted projects from past years that match the keywords or organization |
@@ -92,7 +92,7 @@ The repository ships the manifests assistants look for: `.claude-plugin/plugin.j
 
 ## Resources and tool hints
 
-The server also publishes three read-only resources an assistant can load into context without a tool call: `gsoc://journey` (the eight phases with goals and actions), `gsoc://official-sources` (the Google pages for rules, dates, AI guidance, and proposal quality), and `gsoc://anti-spam-rules`. Every tool except `gsoc_progress` and `gsoc_recommend_path` is annotated read-only and idempotent, so clients that ask before side effects can call them freely; those two write only to the local progress file.
+The server also publishes three read-only resources an assistant can load into context without a tool call: `gsoc://journey` (the ten phases with goals and actions), `gsoc://official-sources` (the Google pages for rules, dates, AI guidance, and proposal quality), and `gsoc://anti-spam-rules`. Every tool except `gsoc_progress` and `gsoc_recommend_path` is annotated read-only and idempotent, so clients that ask before side effects can call them freely; those two write only to the local progress file.
 
 A server can connect successfully and still return an error for a call that needs the network. A GitHub token is optional; see [configuration](configuration.md) for how the tool finds one and [troubleshooting](troubleshooting.md) for connection problems.
 

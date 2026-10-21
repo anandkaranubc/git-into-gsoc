@@ -44,7 +44,7 @@ LOCAL_WRITE = ToolAnnotations(read_only_hint=False, destructive_hint=False, idem
 
 @mcp.resource("gsoc://journey", title="GSoC contributor journey", mime_type="application/json")
 def journey_resource() -> str:
-    """The eight journey phases with goals, actions, and the anti-spam rules."""
+    """The ten journey phases with goals, actions, and the anti-spam rules."""
     return json.dumps(journey_overview(), indent=2)
 
 

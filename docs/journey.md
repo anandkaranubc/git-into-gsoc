@@ -11,7 +11,7 @@ You can loop (for example more issues after the first PR). Order is a default, n
 | Phase | Useful outcome | Commands | Guide |
 |---|---|---|---|
 | `learn` | You can explain GSoC and your constraints | `program`, `journey` | [Understand GSoC](guide/01-understand-gsoc.md) |
-| `discover` | A shortlist of 3 to 5 organizations with reasons | `orgs`, `org`, `projects`, `recommend` | [Find organizations](guide/04-find-organizations.md) |
+| `discover` | A shortlist of two or three organizations with reasons | `orgs`, `org`, `projects`, `recommend` | [Find organizations](guide/04-find-organizations.md) |
 | `evaluate` | 1 or 2 repositories that merge newcomers' work | `repos`, `repo` | [Pick a repository and an issue](guide/05-choose-an-issue.md) |
 | `orient` | You know where a change would go and how you would test it | `orient` | [Get your bearings](guide/05-choose-an-issue.md#get-your-bearings-in-the-repository) |
 | `community` | You have introduced yourself in the org's public channel and read how it works | `org` (channels) | [Work with the community](guide/06-first-contribution.md#work-with-the-community) |

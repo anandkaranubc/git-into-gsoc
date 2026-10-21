@@ -19,7 +19,7 @@ Repositories can be written as `owner/name` or as any GitHub URL. Issues can be 
 |---|---|---|
 | `program` | `--year` (default 2027), `--size small\|medium\|large` | Current phase and advice, timeline with official or estimated dates, anti-spam rules |
 | `next` | `--year`, `--no-check` | What to do right now: phase and deadlines, a time budget when your profile has hours per week (hours until the next milestone, split by what the phase needs), your tracked issues re-checked live with any status changes, new beginner issues in places you follow, and up to six actions with the exact command for each |
-| `journey` | none | All eight phases with goals and actions |
+| `journey` | none | All ten phases with goals and actions |
 | `proposal [FILE]` | `--github`, `--verify/--no-verify`, `--ideas-file` | Without a file: the checklist and suggested structure. With a draft: pass/warn/fail findings on sections, contribution links, timeline detail, specificity, generic phrasing, placeholders, and length |
 
 ```bash
@@ -36,6 +36,8 @@ The check never rewrites your draft. It verifies linked pull requests on GitHub 
 git-into-gsoc orgs --tech python,javascript --topics education -n 5
 git-into-gsoc orgs --query "symbolic math"
 git-into-gsoc org "SymPy"
+git-into-gsoc ideas "SymPy" --skills python
+git-into-gsoc mentors "SymPy"
 git-into-gsoc projects "graph neural networks" --since 2024
 ```
 
@@ -43,6 +45,8 @@ git-into-gsoc projects "graph neural networks" --since 2024
 |---|---|
 | `orgs` | `--query` / `-q`, `--tech` / `-t`, `--topics`, `--category` / `-c`, `--year`, `--limit` / `-n` (default 10) |
 | `org NAME` | Full or partial organization name (quote names with spaces); `--year`; `--shortlist` saves it to your progress |
+| `ideas ORG` | `--skills` / `-s` (default: your profile), `--size small\|medium\|large`, `--difficulty easy\|medium\|hard`, `--limit` / `-n` (default 20), `--no-follow` |
+| `mentors ORG` | `--years` (default 3), `--limit` / `-n` (default 25) |
 | `projects [KEYWORDS]` | `--org`, `--since` (earliest year), `--limit` / `-n` (default 15) |
 
 `--tech` and `--topics` take comma-separated lists and understand aliases (`js`, `golang`, `ml`, `k8s`). They decide whether an organization matches; continuity, slot counts, and trend decide the order. Without filters, all organizations are listed by continuity.
