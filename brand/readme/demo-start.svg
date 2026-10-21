@@ -239,9 +239,9 @@
             <circle cx="22" cy="0" r="7" fill="#febc2e"/>
             <circle cx="44" cy="0" r="7" fill="#28c840"/>
             </g>
-        
+
     <g transform="translate(9, 41)" clip-path="url(#terminal-1281617182-clip-terminal)">
-    
+
     <g class="terminal-1281617182-matrix">
     <text class="terminal-1281617182-r1" x="0" y="20" textLength="12.2" clip-path="url(#terminal-1281617182-line-0)">$</text><text class="terminal-1281617182-r2" x="12.2" y="20" textLength="244" clip-path="url(#terminal-1281617182-line-0)">&#160;git-into-gsoc&#160;start</text><text class="terminal-1281617182-r2" x="1024.8" y="20" textLength="12.2" clip-path="url(#terminal-1281617182-line-0)">
 </text><text class="terminal-1281617182-r2" x="0" y="44.4" textLength="951.6" clip-path="url(#terminal-1281617182-line-1)">╭───────────────────────────&#160;git&#160;into&#160;gsoc:&#160;start&#160;───────────────────────────╮</text><text class="terminal-1281617182-r2" x="1024.8" y="44.4" textLength="12.2" clip-path="url(#terminal-1281617182-line-1)">
