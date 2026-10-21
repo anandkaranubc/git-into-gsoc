@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.2.1...v0.3.0) (2026-10-21)
+
+
+### Features
+
+* **cli:** group the help by journey step and probe each data source in doctor ([#45](https://github.com/anandkaranubc/git-into-gsoc/issues/45)) ([b8178f0](https://github.com/anandkaranubc/git-into-gsoc/commit/b8178f05f80a69b861742497f4c8598abdf69e44))
+
 ## [0.2.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.2.0...v0.2.1) (2026-10-21)
 
 
