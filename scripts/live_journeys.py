@@ -83,10 +83,17 @@ def run(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run beginner journeys against live data.")
-    parser.add_argument("--command", default=f"{shlex.quote(sys.executable)} -m git_into_gsoc")
+    parser.add_argument(
+        "--command", help="How to start the tool (default: this Python with -m git_into_gsoc)"
+    )
     parser.add_argument("--summary", help="Append a Markdown table to this file")
     options = parser.parse_args()
-    command = shlex.split(options.command, posix=os.name != "nt")
+    # A list, not a string: on Windows a quoted interpreter path does not split back.
+    command = (
+        shlex.split(options.command, posix=os.name != "nt")
+        if options.command
+        else [sys.executable, "-m", "git_into_gsoc"]
+    )
     rows: list[tuple[str, str, float, str]] = []
     with tempfile.TemporaryDirectory() as home:
         env = {
