@@ -631,7 +631,11 @@ class GitHubClient:
         path = contributing_path(profile)
         text = (self.get_raw_file(owner, repo, path) if path else None) or ""
         coc = files.get("code_of_conduct_file") or files.get("code_of_conduct") or {}
-        toolchain, devcontainer = detect_toolchain(root)
+        try:
+            language = self.get_repo(owner, repo).get("language")
+        except HttpError:
+            language = None
+        toolchain, devcontainer = detect_toolchain(root, language=language)
         hints = list(toolchain)
         if devcontainer:
             hints.insert(0, "Dev container available: open in Codespaces/VS Code for a ready env")

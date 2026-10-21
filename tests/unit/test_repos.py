@@ -422,3 +422,16 @@ def test_pull_stats_counts_outside_work_that_landed_elsewhere() -> None:
     assert landed.outsider_merge_rate == 1.0
     assert landed.outside_authors_merged == 2 and landed.outside_landed_elsewhere == 1
     assert landed.merge_rate == 0.5
+
+
+def test_toolchain_follows_the_main_language_and_knows_more_build_systems() -> None:
+    # ArduPilot (2026-10-21) is 58% C++ with a pyproject.toml for its Python tools;
+    # `repo` called it a "Python project" and missed waf and BUILD.md.
+    root = [{"name": n} for n in ("pyproject.toml", "waf", "wscript", "BUILD.md", "Dockerfile")]
+    hints, _ = detect_toolchain(root, language="C++")
+    assert "Python project (pyproject.toml)" not in hints
+    assert "Python tooling (pyproject.toml)" in hints
+    assert hints[0] == "Build instructions in BUILD.md"
+    assert "waf build (./waf)" in hints
+    python_hints, _ = detect_toolchain(root, language="Python")
+    assert "Python project (pyproject.toml)" in python_hints
