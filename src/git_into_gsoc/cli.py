@@ -984,9 +984,37 @@ def draft_cmd(
     org: str | None = typer.Option(None, "--org", help="GSoC org name, for channels"),
     repo: str | None = typer.Option(None, "--repo", help="owner/repo, for its claim and PR rules"),
     issue: str | None = typer.Option(None, "--issue", help="owner/repo#N, for a claim or PR draft"),
+    check: Path | None = typer.Option(
+        None,
+        "--check",
+        help="Check a message you wrote (a text file) against this kind's rules instead",
+    ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """A skeleton for an intro, question, claim comment, PR description, review reply, or report."""
+    if check is not None:
+        try:
+            text = check.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            raise InputError(f"Cannot read {check}: {exc.strerror or exc}") from exc
+        report = _toolkit().check_message(kind, text)
+        if output == Output.json:
+            _emit(report, output)
+            return
+        report = _markup_safe(report)
+        table = Table(title=f"Message check: {kind} ({report['words']} words)")
+        table.add_column("")
+        table.add_column("Check")
+        table.add_column("Detail", overflow="fold")
+        for finding in report["findings"]:
+            detail = finding["detail"] + (
+                f"\n[dim]{finding['source']}[/dim]" if finding["source"] else ""
+            )
+            table.add_row(_FINDING_MARK[finding["status"]], finding["title"], detail)
+        if report["findings"]:
+            console.print(table)
+        console.print(f"[bold]{report['verdict']}[/bold]")
+        return
     data = _toolkit().draft(kind, org=org, repo=repo, issue=issue)
     if output == Output.json:
         _emit(data, output)

@@ -1234,6 +1234,16 @@ class GSoCToolkit:
             ),
         }
 
+    def check_message(self, kind: str, text: str) -> dict[str, Any]:
+        """Check a message the contributor wrote against the rules for its kind."""
+        from git_into_gsoc.drafts import check_message
+
+        if kind not in DRAFT_KINDS:
+            raise InputError(
+                f"Unknown draft kind: {kind!r}", hint="Choose one of: " + ", ".join(DRAFT_KINDS)
+            )
+        return check_message(kind, text)
+
     def open_pull_requests(
         self, username: str, *, now: datetime | None = None, limit: int = 5
     ) -> list[dict[str, Any]]:

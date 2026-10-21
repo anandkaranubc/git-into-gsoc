@@ -353,3 +353,234 @@ def render_draft(kind: str, *, context: dict[str, Any]) -> dict[str, Any]:
             "back up; reviewers read the same public history you do."
         ),
     }
+
+
+# ---------------------------------------------------------------- checking a message
+
+# The angle-bracket placeholders the templates above use, plus the proposal
+# checker's patterns. Links and email addresses in angle brackets are not placeholders.
+_ANGLE_PLACEHOLDER_RE = re.compile(r"<(?!https?:|/|!--)[A-Za-z][^<>\n@]{1,80}>")
+_ASSISTANT_TELLS = (
+    "certainly!",
+    "great question",
+    "i hope this message finds you",
+    "i hope this email finds you",
+    "i hope you are doing well",
+    "feel free to reach out",
+    "let me know if you have any questions",
+    "i'd be happy to help",
+    "here's a revised version",
+    "as requested, here is",
+)
+_GREETING_ONLY_RE = re.compile(r"^\s*(?:hi|hello|hey|greetings|good (?:morning|evening))\b", re.I)
+_BARE_CLAIM_RE = re.compile(
+    r"\b(?:can|could|may) i (?:work on|take|pick up)\b|\bassign (?:it|this|me)\b|\bi want to work on\b",
+    re.I,
+)
+_PLAN_RE = re.compile(
+    r"\b(?:plan|approach|i(?:'ll| will|'d| would) (?:change|add|fix|update|start)|the cause|reproduced)\b",
+    re.I,
+)
+_TRIED_RE = re.compile(r"\b(?:tried|attempted|searched|checked|looked at|ran|read)\b", re.I)
+_ASK_TO_ASK_RE = re.compile(r"\b(?:can i ask|may i ask|anyone (?:here|around|online))\b", re.I)
+_PRIVATE_RE = re.compile(r"\b(?:dm me|direct message|message me privately|private message)\b", re.I)
+_ISSUE_REF_RE = re.compile(r"#\d+|/issues/\d+")
+_VALIDATION_RE = re.compile(r"\b(?:test(?:s|ed)?|pytest|ran|verified|reproduc\w*)\b", re.I)
+_FINAL_SECTIONS = ("goal", "what i did", "current state", "what is left", "learn")
+
+
+def _finding(fid: str, status: str, title: str, detail: str, source: str = "") -> dict[str, str]:
+    return {"id": fid, "status": status, "title": title, "detail": detail, "source": source}
+
+
+def check_message(kind: str, text: str) -> dict[str, Any]:
+    """Check a message the contributor wrote against the rules `draft` gives for its kind.
+
+    Never rewrites anything. Each finding names the rule and its source, so the
+    person fixes the message in their own words. Idea from ContribOS's `tone`.
+    """
+    from git_into_gsoc.proposal import buzzwords, generic_phrases, placeholders, word_count
+
+    if kind not in _RENDERERS:
+        raise ValueError(f"Unknown draft kind: {kind}. Choose one of {', '.join(DRAFT_KINDS)}.")
+    body = text or ""
+    lower = body.lower()
+    words = word_count(body)
+    findings: list[dict[str, str]] = []
+
+    leftovers = list(dict.fromkeys([*placeholders(body), *_ANGLE_PLACEHOLDER_RE.findall(body)]))
+    if leftovers:
+        findings.append(
+            _finding(
+                "placeholders",
+                "fail",
+                f"{len(leftovers)} placeholder(s) still in the text",
+                ", ".join(leftovers[:3])
+                + ". Replace each with your own observation, or delete it.",
+            )
+        )
+    tells = [t for t in _ASSISTANT_TELLS if t in lower] + generic_phrases(body) + buzzwords(body)
+    if tells:
+        findings.append(
+            _finding(
+                "machine_tone",
+                "warn",
+                "Phrases that read as machine-written",
+                ", ".join(dict.fromkeys(tells[:5]))
+                + ". Say it plainly, the way you would to a person.",
+                "https://developers.google.com/open-source/gsoc/resources/ai_guidance",
+            )
+        )
+
+    if kind == "intro":
+        if words < 12 and _GREETING_ONLY_RE.match(body):
+            findings.append(
+                _finding(
+                    "greeting_only",
+                    "fail",
+                    "Only a greeting",
+                    "Say who you are, what you read or ran, and your question in the same message.",
+                    NOHELLO,
+                )
+            )
+        if "?" not in body:
+            findings.append(
+                _finding(
+                    "question",
+                    "warn",
+                    "No question",
+                    "End with one specific question; it gives people a reason to reply.",
+                    GUIDE_FIRST_CONTACT,
+                )
+            )
+        if words > 150:
+            findings.append(
+                _finding(
+                    "length",
+                    "warn",
+                    f"Long for a first message ({words} words)",
+                    "Keep it to a few sentences; details can follow when someone replies.",
+                    GUIDE_FIRST_CONTACT,
+                )
+            )
+        if _PRIVATE_RE.search(body):
+            findings.append(
+                _finding(
+                    "public",
+                    "warn",
+                    "Asks to move to private messages",
+                    "Keep the conversation in the public channel.",
+                    GUIDE_COMMUNICATION,
+                )
+            )
+    elif kind == "question":
+        if "?" not in body:
+            findings.append(
+                _finding(
+                    "question",
+                    "fail",
+                    "No question in the message",
+                    "State the question itself, in one sentence.",
+                    DONT_ASK_TO_ASK,
+                )
+            )
+        if _ASK_TO_ASK_RE.search(body):
+            findings.append(
+                _finding(
+                    "ask_to_ask",
+                    "warn",
+                    "Asks whether you may ask",
+                    "Ask the question directly.",
+                    DONT_ASK_TO_ASK,
+                )
+            )
+        if not _TRIED_RE.search(body):
+            findings.append(
+                _finding(
+                    "tried",
+                    "warn",
+                    "Does not say what you tried",
+                    "List what you tried and where you looked.",
+                    SMART_QUESTIONS,
+                )
+            )
+    elif kind == "claim":
+        if _BARE_CLAIM_RE.search(body) and words < 25:
+            findings.append(
+                _finding(
+                    "bare_claim",
+                    "fail",
+                    "A bare request to work on it",
+                    "Add how you reproduced it and a one or two line plan.",
+                    PANDAS_CONTRIBUTING,
+                )
+            )
+        elif not _PLAN_RE.search(body):
+            findings.append(
+                _finding(
+                    "plan",
+                    "warn",
+                    "No plan",
+                    "Say where the cause looks to be and what you would change.",
+                    PANDAS_CONTRIBUTING,
+                )
+            )
+    elif kind == "pr":
+        if not _ISSUE_REF_RE.search(body):
+            findings.append(
+                _finding(
+                    "issue_link",
+                    "warn",
+                    "No linked issue",
+                    "Add 'Fixes #N' so reviewers have the context.",
+                    GOOGLE_CL_DESCRIPTIONS,
+                )
+            )
+        if not _VALIDATION_RE.search(body):
+            findings.append(
+                _finding(
+                    "validation",
+                    "warn",
+                    "Does not say how you tested it",
+                    "Name the commands you ran and what they showed.",
+                    K8S_FIRST_CONTRIBUTION,
+                )
+            )
+    elif kind == "status":
+        for label, pattern in (
+            ("what you did", r"\b(?:did|done|finished|merged|opened)\b"),
+            ("what is next", r"\bnext\b"),
+            ("where you are stuck", r"\b(?:stuck|blocked|blocker|none)\b"),
+        ):
+            if not re.search(pattern, lower):
+                findings.append(
+                    _finding(
+                        "three_questions",
+                        "warn",
+                        f"Does not say {label}",
+                        "Weekly updates answer what you did, what is next, and where you are stuck.",
+                        PYTHON_GSOC_BLOGS,
+                    )
+                )
+    elif kind == "final":
+        missing = [s for s in _FINAL_SECTIONS if s not in lower]
+        if missing:
+            findings.append(
+                _finding(
+                    "sections",
+                    "warn",
+                    "Missing parts of the final report",
+                    ", ".join(missing) + ".",
+                    GUIDE_WORK_PRODUCT,
+                )
+            )
+
+    fails = sum(1 for f in findings if f["status"] == "fail")
+    warns = sum(1 for f in findings if f["status"] == "warn")
+    if fails:
+        verdict = f"Fix {fails} problem(s) before sending."
+    elif warns:
+        verdict = "No blockers. Read the warnings before sending."
+    else:
+        verdict = "No problems found by these checks. Read it once more as the person receiving it."
+    return {"kind": kind, "words": words, "findings": findings, "verdict": verdict}

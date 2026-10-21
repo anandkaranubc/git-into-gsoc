@@ -377,6 +377,20 @@ def gsoc_pr_check(ref: str) -> str:
     return _call(toolkit().pr_check, ref)
 
 
+@mcp.tool(title="Check a message before sending", annotations=READ_ONLY, structured_output=False)
+def gsoc_check_message(kind: str, text: str) -> str:
+    """Check a message the contributor wrote, before they post it, against the rules for its kind.
+
+    kind: intro, question, claim, pr, review-reply, status, or final (the same kinds as
+    gsoc_draft). Reports leftover placeholders, phrases that read as machine-written, and
+    kind-specific problems: a greeting with nothing else, no question, asking to ask, not
+    saying what was tried, a bare "can I work on this", no plan, no linked issue or testing
+    note in a PR description, missing weekly-update questions, missing final-report parts.
+    Each finding cites its source. Never rewrite the message for them; point to the finding.
+    """
+    return _call(toolkit().check_message, kind, text)
+
+
 @mcp.tool(title="Message draft", annotations=READ_ONLY, structured_output=False)
 def gsoc_draft(kind: str, org: str = "", repo: str = "", issue: str = "") -> str:
     """Skeleton for a message the contributor must write themselves: kind is intro, question,

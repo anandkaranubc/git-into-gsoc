@@ -63,7 +63,7 @@ git-into-gsoc progress complete_phase --phase iterate
 
 ## Work with the community
 
-`git-into-gsoc draft intro --org "SymPy"` and `draft question` give you a short, specific structure for a first message. When stuck, ask in the project's preferred channel (the `org` command lists them) with what you tried, the exact error without private data, and the relevant versions. Avoid sending the same request to several maintainers. Allow time for volunteers to reply, and follow up according to the community's expectations.
+`git-into-gsoc draft intro --org "SymPy"` and `draft question` give you a short, specific structure for a first message. When stuck, ask in the project's preferred channel (the `org` command lists them) with what you tried, the exact error without private data, and the relevant versions. Avoid sending the same request to several maintainers. Allow time for volunteers to reply, and follow up according to the community's expectations. When you have written your message, `git-into-gsoc draft intro --check my-message.md` checks it before you post: placeholders you forgot to replace, phrases that read as machine-written, or a first message that is only a greeting.
 
 A PR can be declined because of timing, scope, or a different approach. Ask what you can learn from the decision and choose a useful next step. Your learning does not depend on an immediate merge.
 

@@ -107,3 +107,65 @@ def test_pr_draft_lists_branch_rule_gates() -> None:
     assert "This repository's branch rules also require:" in text
     assert "  - Needs 2 approving reviews including a code owner" in text
     assert "branch rules" not in render_draft("pr", context={})["template"]
+
+
+def _ids(report: dict, status: str) -> set[str]:
+    return {f["id"] for f in report["findings"] if f["status"] == status}
+
+
+def test_check_message_catches_placeholders_and_machine_tone() -> None:
+    from git_into_gsoc.drafts import check_message
+
+    text = (
+        "I hope this message finds you well! I am passionate about delving into this "
+        "cutting-edge project. I read <CONTRIBUTING or the developer guide>. Can you point me "
+        "to the parser tests? Contact me at <me@example.org> or <https://example.org>."
+    )
+    report = check_message("intro", text)
+    placeholders = next(f for f in report["findings"] if f["id"] == "placeholders")
+    assert placeholders["status"] == "fail"
+    assert "<CONTRIBUTING or the developer guide>" in placeholders["detail"]
+    assert "example.org" not in placeholders["detail"]
+    assert "machine_tone" in _ids(report, "warn")
+    assert report["verdict"] == "Fix 1 problem(s) before sending."
+
+
+def test_check_message_kind_rules() -> None:
+    from git_into_gsoc.drafts import check_message
+
+    assert "greeting_only" in _ids(check_message("intro", "Hi everyone!"), "fail")
+    assert "bare_claim" in _ids(
+        check_message("claim", "Can I work on this? Please assign it to me."), "fail"
+    )
+    planned = check_message(
+        "claim",
+        "I'd like to work on this. I reproduced it on main with an empty CSV file; the cause "
+        "looks to be in reader.py. Plan: return an empty list early. PR by Friday.",
+    )
+    assert _ids(planned, "fail") == set() and _ids(planned, "warn") == set()
+    question = check_message("question", "Can I ask something about the build. It fails for me.")
+    assert "question" in _ids(question, "fail")
+    assert {"ask_to_ask", "tried"} <= _ids(question, "warn")
+    pr = check_message("pr", "Small cleanup of the reader.")
+    assert {"issue_link", "validation"} <= _ids(pr, "warn")
+    status = check_message("status", "This week I finished the parser fix.")
+    assert len([f for f in status["findings"] if f["id"] == "three_questions"]) == 2
+
+
+def test_check_message_rejects_unknown_kinds_through_the_service() -> None:
+    import pytest
+
+    from git_into_gsoc.errors import InputError
+    from git_into_gsoc.service import GSoCToolkit
+
+    with pytest.raises(InputError):
+        GSoCToolkit().check_message("poem", "hello")
+
+
+def test_cli_draft_check_reads_a_file(tmp_path) -> None:
+    message = tmp_path / "claim.md"
+    message.write_text("Can I work on this?", encoding="utf-8")
+    result = runner.invoke(app, ["draft", "claim", "--check", str(message)])
+    assert result.exit_code == 0, result.output
+    assert "A bare request to work on it" in result.output
+    assert "Fix 1 problem(s) before sending." in result.output
