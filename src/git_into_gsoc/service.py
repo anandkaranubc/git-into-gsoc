@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
@@ -962,7 +963,10 @@ class GSoCToolkit:
             self.open_pull_requests(github_login, now=now) if recheck and github_login else []
         )
         if recheck:
-            self.progress.mark_checked(statuses, now)
+            # Where the progress folder cannot be written (a sandboxed assistant), the
+            # results still count; the next run just reports the same changes again.
+            with contextlib.suppress(InputError):
+                self.progress.mark_checked(statuses, now)
 
         # Plan around orgs that are taking part; one that says it is sitting out goes last.
         sitting_out = {p["org"] for p in org_posts if p["status"] == "not_taking_part"}

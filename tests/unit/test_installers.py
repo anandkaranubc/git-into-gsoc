@@ -127,12 +127,16 @@ def test_no_installer_installs_the_bare_package_name(name: str) -> None:
 
 
 def _offer_uv(
-    tmp_path: Path, *, flag: bool, have_uv: bool = False
+    tmp_path: Path,
+    *,
+    flag: bool,
+    have_uv: bool = False,
+    python: str = "python-that-does-not-exist",
 ) -> subprocess.CompletedProcess[str]:
     """Run install.sh's offer_uv on a PATH with no uv, pipx, or Python (unless asked)."""
     text = (ROOT / "install.sh").read_text()
     functions = []
-    for name in ("python_ok", "ask_yes", "offer_uv"):
+    for name in ("python_ok", "python_version", "venv_ok", "python_hint", "ask_yes", "offer_uv"):
         found = re.search(rf"^{name}\(\) \{{\n.*?^\}}\n", text, re.M | re.S)
         assert found, f"{name} not found in install.sh"
         functions.append(found.group(0))
@@ -159,7 +163,8 @@ def _offer_uv(
         (bin_dir / "uv").chmod(0o755)
     script = (
         "set -euo pipefail\n"
-        f"INSTALL_UV={1 if flag else 0}\nPYTHON=python-that-does-not-exist\n"
+        f'OWN_REPO="{OURS}"\n'
+        f"INSTALL_UV={1 if flag else 0}\nPYTHON={python}\n"
         'log() { :; }\ndie() { echo "died: $*" >&2; exit 1; }\n'
         + "".join(functions)
         + "offer_uv\necho uv-ready\n"
@@ -181,8 +186,10 @@ def test_without_python_or_uv_and_no_terminal_the_installer_explains_and_stops(
 ) -> None:
     result = _offer_uv(tmp_path, flag=False)
     assert result.returncode == 1
-    assert "--install-uv" in result.stderr
-    assert "Install Python 3.11 or newer" in result.stderr
+    # The flag is shown in the form that works through a pipe.
+    assert "| bash -s -- --install-uv" in result.stderr
+    assert "no uv, no pipx, and no Python" in result.stderr
+    assert "Python 3.11 or newer" in result.stderr
     assert not (tmp_path / "calls").exists()
 
 
@@ -199,3 +206,126 @@ def test_an_existing_uv_is_used_without_offering_anything(tmp_path: Path) -> Non
     result = _offer_uv(tmp_path, flag=False, have_uv=True)
     assert result.returncode == 0 and result.stdout.strip() == "uv-ready"
     assert not (tmp_path / "calls").exists()
+
+
+def _fake_python(bin_dir: Path, *, version: str = "3.12.3", has_venv: bool = True) -> str:
+    """A python3 that reports a version and can or cannot import venv and ensurepip."""
+    major, minor = (int(part) for part in version.split(".")[:2])
+    script = bin_dir / "python3"
+    script.write_text(
+        "#!/bin/sh\n"
+        'case "$*" in\n'
+        f'  *"import ensurepip, venv"*) exit {0 if has_venv else 1} ;;\n'
+        f'  *platform.python_version*) echo "{version}" ;;\n'
+        f"  *version_info*) exit {0 if (major, minor) >= (3, 11) else 1} ;;\n"
+        "esac\n"
+    )
+    script.chmod(0o755)
+    return str(script)
+
+
+@posix_only
+def test_a_python_without_venv_counts_as_missing_and_says_why(tmp_path: Path) -> None:
+    # Ubuntu, Debian, and WSL ship python3 without venv; offering uv is the way through.
+    bin_dir = tmp_path / "pybin"
+    bin_dir.mkdir()
+    python = _fake_python(bin_dir, has_venv=False)
+    result = _offer_uv(tmp_path, flag=False, python=python)
+    assert result.returncode == 1
+    assert "Python 3.12.3, but without its venv module" in result.stderr
+
+
+@posix_only
+def test_install_uv_works_when_python_has_no_venv(tmp_path: Path) -> None:
+    bin_dir = tmp_path / "pybin"
+    bin_dir.mkdir()
+    result = _offer_uv(tmp_path, flag=True, python=_fake_python(bin_dir, has_venv=False))
+    assert result.returncode == 0, result.stderr
+    assert "https://astral.sh/uv/install.sh" in (tmp_path / "calls").read_text()
+
+
+@posix_only
+def test_an_old_python_is_named(tmp_path: Path) -> None:
+    bin_dir = tmp_path / "pybin"
+    bin_dir.mkdir()
+    result = _offer_uv(tmp_path, flag=False, python=_fake_python(bin_dir, version="3.10.12"))
+    assert result.returncode == 1
+    assert "Python 3.10.12, which is older than 3.11" in result.stderr
+    assert "too old to update in place" in result.stderr
+
+
+def _function(name: str) -> str:
+    found = re.search(
+        rf"^{name}\(\) \{{\n.*?^\}}\n", (ROOT / "install.sh").read_text(), re.M | re.S
+    )
+    assert found, f"{name} not found in install.sh"
+    return found.group(0)
+
+
+@posix_only
+def test_release_version_comes_from_the_release_page_when_the_api_is_blocked(
+    tmp_path: Path,
+) -> None:
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    curl = bin_dir / "curl"
+    curl.write_text(
+        "#!/usr/bin/env bash\n"
+        'url="${@: -1}"\n'
+        'case "$url" in\n'
+        "  https://api.github.com/*) exit 22 ;;\n"
+        "  https://github.com/*/releases/latest)\n"
+        f'    printf "%s" "https://github.com/{OURS}/releases/tag/v1.2.3" ;;\n'
+        "  *) exit 22 ;;\nesac\n"
+    )
+    curl.chmod(0o755)
+    script = (
+        f'set -euo pipefail\nOWN_REPO="{OURS}"\n'
+        + _function("latest_release_version")
+        + "latest_release_version\n"
+    )
+    result = subprocess.run(
+        ["bash", "-c", script],
+        capture_output=True,
+        text=True,
+        env={**os.environ, "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}"},
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "1.2.3"
+
+
+def _path_advice(bin_dir: str, *, path: str, shell: str) -> str:
+    script = (
+        "set -euo pipefail\n"
+        + _function("shell_rc")
+        + _function("on_path")
+        + _function("path_advice")
+        + f'GIG_BIN="{bin_dir}/git-into-gsoc"\npath_advice "{bin_dir}"\n'
+    )
+    result = subprocess.run(
+        [shutil.which("bash") or "bash", "-c", script],
+        capture_output=True,
+        text=True,
+        env={"PATH": path, "HOME": "/home/newbie", "SHELL": shell},
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stderr
+    return result.stdout
+
+
+@posix_only
+def test_a_folder_missing_from_path_gets_the_exact_line_to_add() -> None:
+    out = _path_advice("/home/newbie/.local/bin", path="/usr/bin:/bin", shell="/bin/zsh")
+    assert "echo 'export PATH=\"$HOME/.local/bin:$PATH\"' >> ~/.zshrc" in out
+    assert "/home/newbie/.local/bin/git-into-gsoc" in out
+    fish = _path_advice("/home/newbie/.local/bin", path="/usr/bin:/bin", shell="/usr/bin/fish")
+    assert "fish_add_path $HOME/.local/bin" in fish
+
+
+@posix_only
+def test_a_folder_already_on_path_needs_no_advice() -> None:
+    out = _path_advice(
+        "/home/newbie/.local/bin", path="/usr/bin:/home/newbie/.local/bin", shell="/bin/bash"
+    )
+    assert out == ""

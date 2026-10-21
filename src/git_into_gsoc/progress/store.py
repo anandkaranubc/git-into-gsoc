@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 
 from pydantic import ValidationError
 
-from git_into_gsoc.config import DEFAULT_TARGET_YEAR, progress_path
+from git_into_gsoc.config import DEFAULT_TARGET_YEAR, _private_dir, data_location
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
 from git_into_gsoc.validation import parse_issue_ref, parse_repo
@@ -53,8 +53,15 @@ def _mutating(method: Callable[..., _T]) -> Callable[..., _T]:
 
     @functools.wraps(method)
     def wrapper(self: ProgressStore, *args: Any, **kwargs: Any) -> _T:
-        with self._lock():
-            return method(self, *args, **kwargs)
+        try:
+            with self._lock():
+                return method(self, *args, **kwargs)
+        except OSError as exc:
+            raise InputError(
+                f"Cannot save your progress in {self.path.parent}: {exc.strerror or exc}",
+                hint="If an AI assistant ran this in a sandbox, let it write to that folder, "
+                "or set GIG_DATA_DIR to a folder it may write to.",
+            ) from exc
 
     return wrapper
 
@@ -134,12 +141,13 @@ def _repo_key(full_name: str) -> str:
 
 class ProgressStore:
     def __init__(self, path: Path | None = None) -> None:
-        self.path = path or progress_path()
+        # Created on the first save, so reading works where writing is not allowed.
+        self.path = path or (data_location() / "progress.json")
 
     @contextlib.contextmanager
     def _lock(self) -> Iterator[None]:
         """Cross-platform exclusive lock: a lock file created with O_EXCL."""
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        _private_dir(self.path.parent)
         lock = self.path.with_name(self.path.name + ".lock")
         deadline = time.monotonic() + LOCK_TIMEOUT_SECONDS
         while True:
@@ -213,7 +221,7 @@ class ProgressStore:
         phases = dict(DEFAULT_PHASES)
         phases.update(state.phases)
         state.phases = phases
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        _private_dir(self.path.parent)
         # Write a sibling temp file, then rename over the old one: a crash or a
         # concurrent reader never sees a half-written progress.json.
         fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".progress-", suffix=".tmp")

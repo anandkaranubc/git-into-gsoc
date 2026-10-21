@@ -4,7 +4,13 @@ Start with the symptom below. If you installed from a clone, run these commands 
 
 ## `git-into-gsoc: command not found`
 
-If you installed with the one-line installer, open a new terminal so your PATH is refreshed; uv and pipx put the command in `~/.local/bin`. If it is still missing, run `uv tool update-shell` or `pipx ensurepath`, or add `~/.local/bin` to your PATH (the list of folders your shell searches for commands), then open a new terminal. If you installed from a clone, activate the environment in the terminal you are using:
+If you installed with the one-line installer, open a new terminal so your PATH (the list of folders your shell searches for commands) is refreshed. The command lives in `~/.local/bin` on macOS and Linux. If it is still missing, add that folder to your PATH once, then open a new terminal:
+
+```bash
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc    # macOS; on Linux use ~/.bashrc
+```
+
+`uv tool update-shell` or `pipx ensurepath` do the same for those tools. On Windows, the installer adds its folder to your user PATH itself; open a new PowerShell window. If you installed from a clone, activate the environment in the terminal you are using:
 
 ```bash
 source .venv/bin/activate
@@ -36,6 +42,20 @@ Keep your source files in place. This does not reset your separately stored prog
 ## `./install.sh`: permission denied or file not found
 
 Make sure you are inside the cloned repository. Try `bash install.sh`. In PowerShell, run `.\install.ps1` instead; `install.sh` is a Bash script.
+
+## PowerShell: "running scripts is disabled on this system"
+
+Windows blocks script files by default. Run the installer with a one-time exception, which changes no settings:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+The one-line `irm ... | iex` install is not affected. To activate a `.venv` in your own PowerShell window, run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.
+
+## "Cannot save your progress" or a permission error inside an AI assistant
+
+Some assistants run commands in a sandbox that may not write outside your project folder. Reading still works: the tool runs without its cache, and only saving progress fails. Allow the assistant to write to the folder the error names, or point the tool at a folder inside your project, for example `GIG_DATA_DIR=.gsoc-data GIG_CACHE_DIR=.gsoc-cache`. `git-into-gsoc doctor` shows which folder cannot be written.
 
 ## Installation cannot download dependencies
 

@@ -65,6 +65,18 @@ function Get-LatestReleaseVersion {
     $version = "$($release.tag_name)".TrimStart("v")
     if ($version) { return $version }
   } catch { }
+  # The API allows 60 requests an hour per address, which a classroom can use up. The
+  # release page redirects to the newest tag without counting against that limit.
+  try {
+    $request = [System.Net.WebRequest]::Create("https://github.com/$OwnRepo/releases/latest")
+    $request.Method = "HEAD"
+    $request.AllowAutoRedirect = $false
+    $request.Timeout = 10000
+    $response = $request.GetResponse()
+    $location = $response.Headers["Location"]
+    $response.Close()
+    if ($location -match "/releases/tag/v?([0-9][0-9A-Za-z.+-]*)$") { return $Matches[1] }
+  } catch { }
   return $null
 }
 
@@ -104,9 +116,10 @@ function Get-InstallSpec {
       return $spec
     }
   }
+  if (-not $env:GIG_REPO_URL) { Log "Could not look up the newest release (no network, or GitHub is busy)" }
   Log "Using the source on GitHub ($RepoUrl)"
   if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    throw "Installing from the source needs Git, which was not found. Install it from https://git-scm.com/downloads and run this script again."
+    throw "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
   }
   return "git+$RepoUrl"
 }
@@ -128,7 +141,7 @@ function Request-Uv {
     $yes = ($answer -eq "" -or $answer -match "^[Yy]")
   }
   if (-not $yes) {
-    throw "Install Python 3.11 or newer (https://www.python.org/downloads/) or uv (https://docs.astral.sh/uv/), then run this script again. To let this script install uv for you, add -InstallUv."
+    throw "To let this installer get uv for you, run it again with -InstallUv:`n  & ([scriptblock]::Create((irm https://raw.githubusercontent.com/$OwnRepo/main/install.ps1))) -InstallUv`nOr install Python 3.11 or newer from https://www.python.org/downloads/ (tick 'Add python.exe to PATH') and run this installer again."
   }
   Log "Installing uv from https://astral.sh/uv/install.ps1"
   powershell -ExecutionPolicy ByPass -NoProfile -Command "irm https://astral.sh/uv/install.ps1 | iex"
@@ -139,6 +152,18 @@ function Request-Uv {
 }
 
 $GigBin = $null
+
+# New terminals read the user PATH from the registry, so a folder added here is found by
+# every terminal opened afterwards. The current one is updated too.
+function Add-ToUserPath([string]$Dir) {
+  $current = [Environment]::GetEnvironmentVariable("Path", "User")
+  $parts = @("$current".Split(";") | Where-Object { $_ })
+  if ($parts -notcontains $Dir) {
+    [Environment]::SetEnvironmentVariable("Path", (@($parts) + $Dir) -join ";", "User")
+    Log "Added $Dir to your PATH, so new terminals find git-into-gsoc"
+  }
+  if (@($env:Path.Split(";")) -notcontains $Dir) { $env:Path = "$env:Path;$Dir" }
+}
 
 if (-not $SkillOnly) {
   if ($Mode -ne "checkout") { Request-Uv }
@@ -171,7 +196,7 @@ if (-not $SkillOnly) {
     & $venvPy -m pip install -q -U pip
     & $venvPy -m pip install -q (Get-InstallSpec)
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
-    Write-Host "Add $(Join-Path $venv 'Scripts') to your PATH to run git-into-gsoc from any folder."
+    Add-ToUserPath (Join-Path $venv "Scripts")
   }
   & $GigBin --version | Out-Null
 } else {
@@ -198,12 +223,15 @@ if (-not $DryRun) {
   Write-Host "All set. Next steps:"
   if ($Mode -eq "checkout") {
     Write-Host "  1. Run the tool with its full path, or activate the environment first:"
-    Write-Host "       $GigBin program"
+    Write-Host "       $GigBin start"
     Write-Host "       .\.venv\Scripts\Activate.ps1"
   } else {
-    Write-Host "  1. Open a new terminal, then try:"
-    Write-Host "       git-into-gsoc program"
+    Write-Host "  1. Open a new terminal, then answer four quick questions and see"
+    Write-Host "     organizations that fit you:"
+    Write-Host "       git-into-gsoc start"
   }
-  Write-Host "  2. Check your setup any time:  git-into-gsoc doctor"
-  Write-Host "  3. Beginner guide:  $DocsUrl/README.md"
+  Write-Host "  2. Any time you are unsure what to do next:  git-into-gsoc next"
+  Write-Host "  3. If something does not work:  git-into-gsoc doctor"
+  Write-Host ""
+  Write-Host "  The beginner guide walks through every step: $DocsUrl/README.md"
 }

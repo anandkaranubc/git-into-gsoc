@@ -33,6 +33,7 @@ Inside a Claude Code session you can type the same thing as `/plugin install git
 
 - **Update:** `claude plugin update git-into-gsoc@git-into-gsoc`. To update automatically, open `/plugin`, go to Marketplaces, and turn on auto-update for `git-into-gsoc`.
 - **Remove:** `claude plugin uninstall git-into-gsoc@git-into-gsoc`, then `claude plugin marketplace remove git-into-gsoc`.
+- **Permission questions:** Claude Code asks before it first uses each tool. Pick the answer that stops asking for that tool, and each question comes up only once. The tools read public data, and four of them save to your progress file on your computer and nowhere else.
 - **For a team:** commit this as `.claude/settings.json` in your project, and Claude Code offers the plugin to everyone who opens it:
 
   ```json

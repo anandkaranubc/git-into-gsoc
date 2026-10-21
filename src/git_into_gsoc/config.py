@@ -197,14 +197,24 @@ def _private_dir(path: Path) -> Path:
     return path
 
 
-def cache_dir(settings: Settings | None = None) -> Path:
+def cache_location(settings: Settings | None = None) -> Path:
+    """Where the cache lives, without creating it."""
     settings = settings or get_settings()
-    return _private_dir(settings.cache_dir or Path(user_cache_dir(_APP_NAME, _APP_NAME)))
+    return settings.cache_dir or Path(user_cache_dir(_APP_NAME, _APP_NAME))
+
+
+def data_location(settings: Settings | None = None) -> Path:
+    """Where the progress file lives, without creating it."""
+    settings = settings or get_settings()
+    return settings.data_dir or Path(user_data_dir(_APP_NAME, _APP_NAME))
+
+
+def cache_dir(settings: Settings | None = None) -> Path:
+    return _private_dir(cache_location(settings))
 
 
 def data_dir(settings: Settings | None = None) -> Path:
-    settings = settings or get_settings()
-    return _private_dir(settings.data_dir or Path(user_data_dir(_APP_NAME, _APP_NAME)))
+    return _private_dir(data_location(settings))
 
 
 def progress_path() -> Path:

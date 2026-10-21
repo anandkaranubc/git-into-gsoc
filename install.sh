@@ -75,16 +75,49 @@ if [[ -z "$SCOPE" ]]; then
 fi
 
 check_python() {
-  command -v "$PYTHON" >/dev/null 2>&1 || die "Python 3.11 or newer is required, but '$PYTHON' was not found. Install it from https://www.python.org/downloads/ and run this script again."
+  command -v "$PYTHON" >/dev/null 2>&1 || die "Python 3.11 or newer is required, but '$PYTHON' was not found. $(python_hint)"
   "$PYTHON" - <<'PY' || exit 1
 import sys
 if sys.version_info < (3, 11):
     raise SystemExit(
-        f"Python 3.11 or newer is required, but this is Python {sys.version.split()[0]}.\n"
+        f"error: Python 3.11 or newer is required, but this is Python {sys.version.split()[0]}.\n"
         "Install a newer Python, then run: PYTHON=python3.12 ./install.sh"
     )
 print(f"Using {sys.executable}")
 PY
+  venv_ok || die "Python $(python_version) is installed, but its venv module is missing, so it cannot make a private environment. $(python_hint)"
+}
+
+# The Python found, as "3.12.3", or "none".
+python_version() {
+  "$PYTHON" -c 'import platform; print(platform.python_version())' 2>/dev/null || echo "none"
+}
+
+# Ubuntu, Debian, and WSL split venv and ensurepip into a separate package.
+venv_ok() {
+  "$PYTHON" -c 'import ensurepip, venv' >/dev/null 2>&1
+}
+
+# Another way to a usable Python on this system, in one line, for what is wrong.
+python_hint() {
+  if command -v "$PYTHON" >/dev/null 2>&1 \
+    && "$PYTHON" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' 2>/dev/null; then
+    if command -v apt-get >/dev/null 2>&1; then
+      echo "Or run: sudo apt install python3-venv, then run this installer again."
+    else
+      echo "Or install the venv package for your Python, then run this installer again."
+    fi
+  elif command -v "$PYTHON" >/dev/null 2>&1; then
+    echo "Your system's Python is too old to update in place, so --install-uv is the easiest way."
+  elif command -v brew >/dev/null 2>&1; then
+    echo "Or run: brew install python, then run this installer again."
+  elif command -v dnf >/dev/null 2>&1; then
+    echo "Or run: sudo dnf install python3, then run this installer again."
+  elif command -v apt-get >/dev/null 2>&1; then
+    echo "Or run: sudo apt install python3 python3-venv, then run this installer again."
+  else
+    echo "Or install Python 3.11 or newer from https://www.python.org/downloads/, then run this installer again."
+  fi
 }
 
 # ----------------------------------------------------------- install package
@@ -116,7 +149,14 @@ latest_release_version() {
   [[ -z "${GIG_REPO_URL:-}" ]] && command -v curl >/dev/null 2>&1 || return 1
   local version
   version="$(curl -fsSL --max-time 10 "https://api.github.com/repos/${OWN_REPO}/releases/latest" 2>/dev/null \
-    | sed -n 's/^ *"tag_name": *"v\{0,1\}\([0-9][0-9A-Za-z.+-]*\)".*/\1/p')" || return 1
+    | sed -n 's/^ *"tag_name": *"v\{0,1\}\([0-9][0-9A-Za-z.+-]*\)".*/\1/p')" || version=""
+  if [[ -z "$version" ]]; then
+    # The API allows 60 requests an hour per address, which a classroom can use up. The
+    # release page redirects to the newest tag without counting against that limit.
+    version="$(curl -fsSIL -o /dev/null -w '%{url_effective}' --max-time 10 \
+      "https://github.com/${OWN_REPO}/releases/latest" 2>/dev/null \
+      | sed -n 's|.*/releases/tag/v\{0,1\}\([0-9][0-9A-Za-z.+-]*\)$|\1|p')" || return 1
+  fi
   [[ -n "$version" ]] || return 1
   printf '%s\n' "$version"
 }
@@ -153,8 +193,9 @@ choose_spec() {
     fi
   fi
   SPEC="$GIT_SPEC"
+  [[ -n "${GIG_REPO_URL:-}" ]] || log "Could not look up the newest release (no network, or GitHub is busy)"
   log "Using the source on GitHub (${REPO_URL})"
-  command -v git >/dev/null 2>&1 || die "Installing from the source needs Git, which was not found. Install it from https://git-scm.com/downloads and run this script again."
+  command -v git >/dev/null 2>&1 || die "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
 }
 
 # --------------------------------------------------- uv, when nothing else fits
@@ -162,7 +203,8 @@ choose_spec() {
 # the tool. It is only offered when there is no uv, no pipx, and no usable Python.
 python_ok() {
   command -v "$PYTHON" >/dev/null 2>&1 \
-    && "$PYTHON" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' 2>/dev/null
+    && "$PYTHON" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' 2>/dev/null \
+    && venv_ok
 }
 
 # Asks on the terminal, which still works when this script is piped into bash.
@@ -177,9 +219,17 @@ ask_yes() {
 
 offer_uv() {
   command -v uv >/dev/null 2>&1 || command -v pipx >/dev/null 2>&1 || python_ok && return 0
-  echo "This computer has no uv, no pipx, and no Python 3.11 or newer."
-  echo "uv is a free tool from Astral (https://docs.astral.sh/uv/) that installs Python"
-  echo "programs and the Python they need, into your home folder only."
+  {
+    if ! command -v "$PYTHON" >/dev/null 2>&1; then
+      echo "This computer has no uv, no pipx, and no Python."
+    elif "$PYTHON" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' 2>/dev/null; then
+      echo "This computer has Python $(python_version), but without its venv module, and no uv or pipx."
+    else
+      echo "This computer has Python $(python_version), which is older than 3.11, and no uv or pipx."
+    fi
+    echo "uv is a free tool from Astral (https://docs.astral.sh/uv/) that installs Python"
+    echo "programs and the Python they need, into your home folder only."
+  } >&2
   if [[ "$INSTALL_UV" -eq 1 ]] || ask_yes "Install uv now?"; then
     command -v curl >/dev/null 2>&1 || die "curl is needed to install uv."
     log "Installing uv from https://astral.sh/uv/install.sh"
@@ -187,7 +237,9 @@ offer_uv() {
     export PATH="${XDG_BIN_HOME:-${HOME}/.local/bin}:${HOME}/.cargo/bin:${PATH}"
     command -v uv >/dev/null 2>&1 || die "uv was installed but is not on PATH yet. Open a new terminal and run this script again."
   else
-    die "Install Python 3.11 or newer (https://www.python.org/downloads/) or uv (https://docs.astral.sh/uv/), then run this script again. To let this script install uv for you, add --install-uv."
+    die "To let this installer get uv for you, run it again with --install-uv:
+  curl -fsSL https://raw.githubusercontent.com/${OWN_REPO}/main/install.sh | bash -s -- --install-uv
+$(python_hint)"
   fi
 }
 
@@ -208,10 +260,14 @@ install_remote() {
     local base="${XDG_DATA_HOME:-${HOME}/.local/share}/git-into-gsoc"
     log "Installing git-into-gsoc into ${base}/venv (install uv or pipx for a lighter setup)"
     mkdir -p "$base" "${HOME}/.local/bin"
-    [[ -d "${base}/venv" ]] || "$PYTHON" -m venv "${base}/venv"
+    # A venv left half-made by an earlier run without python3-venv has no pip; rebuild it.
+    if ! "${base}/venv/bin/python" -m pip --version >/dev/null 2>&1; then
+      "$PYTHON" -m venv --clear "${base}/venv"
+    fi
     "${base}/venv/bin/python" -m pip install -q -U pip
     "${base}/venv/bin/python" -m pip install -q "$spec"
     ln -sf "${base}/venv/bin/git-into-gsoc" "${HOME}/.local/bin/git-into-gsoc"
+    ln -sf "${base}/venv/bin/gsoc" "${HOME}/.local/bin/gsoc"
     GIG_BIN="${HOME}/.local/bin/git-into-gsoc"
   fi
 }
@@ -238,37 +294,67 @@ run_setup() {
   "$GIG_BIN" "${args[@]}"
 }
 
+# The file a PATH line belongs in, for the shell this person uses. Printed for the
+# person to read, so the tilde stays literal.
+# shellcheck disable=SC2088
+shell_rc() {
+  case "$(basename "${SHELL:-}")" in
+    zsh) echo "~/.zshrc" ;;
+    bash) if [[ "$(uname -s)" == Darwin ]]; then echo "~/.bash_profile"; else echo "~/.bashrc"; fi ;;
+    *) echo "~/.profile" ;;
+  esac
+}
+
+on_path() {
+  case ":${PATH}:" in *":$1:"*) return 0 ;; esac
+  return 1
+}
+
+# How to make a new terminal find the command, or nothing when it already will.
+path_advice() {
+  local bin="$1" shown
+  on_path "$bin" && return 0
+  shown="${bin/#${HOME}/\$HOME}"
+  echo "  The command is in ${bin}, which your terminal does not search yet."
+  echo "  Run this once so every new terminal finds it:"
+  if [[ "$(basename "${SHELL:-}")" == fish ]]; then
+    echo "       fish_add_path ${shown}"
+  else
+    echo "       echo 'export PATH=\"${shown}:\$PATH\"' >> $(shell_rc)"
+  fi
+  echo "  Until then, run it with its full path: ${GIG_BIN}"
+  echo
+}
+
 print_next_steps() {
   echo
   echo "All set. Next steps:"
+  echo
   if [[ "$MODE" == "checkout" ]]; then
     cat <<NEXT
-
   1. Turn on the tool in this terminal. Do this again in every new terminal:
        source "${ROOT}/.venv/bin/activate"
 
-  2. Try your first command:
-       git-into-gsoc program
+  2. Answer four quick questions and see organizations that fit you:
+       git-into-gsoc start
 NEXT
   else
+    path_advice "$(dirname "${GIG_BIN}")"
     cat <<NEXT
+  1. Open a new terminal, then answer four quick questions and see
+     organizations that fit you:
+       git-into-gsoc start
 
-  1. Open a new terminal and check that the command is found:
-       git-into-gsoc --version
-     If it says "command not found", add $(dirname "${GIG_BIN}") to your PATH,
-     then open a new terminal.
-
-  2. Try your first command:
-       git-into-gsoc program
+  2. Any time you are unsure what to do next:
+       git-into-gsoc next
 NEXT
   fi
   cat <<NEXT
 
-  3. Check your setup any time:
+  3. If something does not work:
        git-into-gsoc doctor
 
-  4. Follow the beginner guide, one step at a time:
-       ${DOCS_URL}/README.md
+  The beginner guide walks through every step: ${DOCS_URL}/README.md
 NEXT
 }
 

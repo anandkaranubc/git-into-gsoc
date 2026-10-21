@@ -1,6 +1,6 @@
 # 2. Install the tool
 
-You will download this repository and install its Python package. A **repository** is a project's files and change history. A **terminal** is the application where you type the commands below. Copy the commands without adding a `$` prompt.
+You will install one command, `git-into-gsoc`, and connect it to any AI assistant you use. A **terminal** is the application where you type the commands below. Copy the commands without adding a `$` prompt.
 
 ## The quick way: one command
 
@@ -10,15 +10,27 @@ You need an internet connection. Open Terminal on macOS, a terminal on Linux, or
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
 ```
 
+No `curl`? `wget -qO- https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash` does the same.
+
 On Windows PowerShell:
 
 ```powershell
 irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
 ```
 
-The script downloads the newest release from GitHub and installs the `git-into-gsoc` command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with [Python 3.11 or newer](https://www.python.org/downloads/) into a private folder under your home directory. If you have none of the three, it asks whether to install uv, a free tool that installs Python programs together with the Python they need, all inside your home folder. Answer yes, or add `--install-uv` (PowerShell: `-InstallUv`) to skip the question. Then it runs `git-into-gsoc setup`. Setup copies the **Agent Skill**, a folder of instructions for AI assistants, into the folders your assistants read. It also registers the tool's **MCP server**, a small program your assistant starts so it can run these same commands, with each assistant it finds: Claude Code, Codex, Cursor, VS Code and Copilot CLI, Gemini CLI, Antigravity, and Windsurf. It prints a table of exactly what it created or left unchanged, keeps a `.bak` copy of any file it edited, and can be re-run safely. If you have no assistant, that is fine; the command-line tool works on its own.
+The script downloads the newest release from GitHub and installs the `git-into-gsoc` command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with [Python 3.11 or newer](https://www.python.org/downloads/) into a private folder under your home directory. If you have none of the three, it asks whether to install uv, a free tool that installs Python programs together with the Python they need, all inside your home folder. Answer yes. To skip the question, pass the option through the pipe like this:
 
-Then open a new terminal and check:
+```bash
+curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash -s -- --install-uv
+```
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1))) -InstallUv
+```
+
+On Ubuntu, Debian, and WSL, Python often comes without its `venv` part. The installer notices and offers uv instead, or you can run `sudo apt install python3-venv` first. Then it runs `git-into-gsoc setup`. Setup copies the **Agent Skill**, a folder of instructions for AI assistants, into the folders your assistants read. It also registers the tool's **MCP server**, a small program your assistant starts so it can run these same commands, with each assistant it finds: Claude Code, Codex, Cursor, VS Code and Copilot CLI, Gemini CLI, Antigravity, and Windsurf. It prints a table of exactly what it created or left unchanged, keeps a `.bak` copy of any file it edited, and can be re-run safely. If you have no assistant, that is fine; the command-line tool works on its own.
+
+At the end, the installer prints your next steps. If the folder with the new command is not on your **PATH** (the list of folders your terminal searches for commands), it prints the exact line to add, and the full path you can use right away. Then open a new terminal and check:
 
 ```bash
 git-into-gsoc --version
@@ -74,10 +86,12 @@ You can leave the environment with `deactivate`, or run `.venv/bin/git-into-gsoc
 
 ## Windows PowerShell from a clone
 
+Windows blocks downloaded scripts by default ("running scripts is disabled on this system"), so start the installer through PowerShell with a one-time exception:
+
 ```powershell
 git clone https://github.com/anandkaranubc/git-into-gsoc.git
 cd git-into-gsoc
-.\install.ps1
+powershell -ExecutionPolicy Bypass -File .\install.ps1
 .\.venv\Scripts\git-into-gsoc.exe --version
 .\.venv\Scripts\git-into-gsoc.exe program
 ```

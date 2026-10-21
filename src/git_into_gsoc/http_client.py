@@ -28,7 +28,7 @@ from typing import Any
 
 import httpx
 
-from git_into_gsoc.config import Settings, cache_dir, get_settings
+from git_into_gsoc.config import Settings, cache_dir, cache_location, get_settings
 from git_into_gsoc.errors import HttpError, NotFoundError, RateLimitError
 
 __all__ = ["CachedHttpClient", "HttpError", "NotFoundError", "RateLimitError"]
@@ -59,8 +59,14 @@ class CachedHttpClient:
         sleep: Callable[[float], None] = time.sleep,
     ) -> None:
         self.settings = settings or get_settings()
-        self._cache_root = cache_root or (cache_dir(self.settings) / "http")
-        self._cache_root.mkdir(parents=True, exist_ok=True)
+        try:
+            self._cache_root = cache_root or (cache_dir(self.settings) / "http")
+            self._cache_root.mkdir(parents=True, exist_ok=True)
+        except OSError as exc:
+            # A sandboxed assistant may forbid writing outside the project. Reading and
+            # writing the cache are best-effort already, so run without one.
+            log.warning("Running without a response cache: %s", exc)
+            self._cache_root = cache_root or (cache_location(self.settings) / "http")
         self._sleep = sleep
         self._prune_if_due()
         # Service addresses the user configured may be local (a mirror, a test server).

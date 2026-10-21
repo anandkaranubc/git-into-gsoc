@@ -1951,19 +1951,53 @@ def setup_cmd(
         console.print(f"  [yellow]manual:[/yellow] {step}")
     if dry_run or remove or not plan.changes:
         return
-    if any(c.action in {"created", "updated", "unchanged"} for c in plan.changes):
+    ready = {"created", "updated", "unchanged"}
+    mcp_ready = any(
+        c.kind == "mcp" and c.action in ready and c.note != "no MCP support" for c in plan.changes
+    )
+    skill_ready = any(c.kind == "skill" and c.action in ready for c in plan.changes)
+    if not plan.assistants:
         console.print(
-            "\nRestart your assistant, then ask it: "
-            '"Use the git-into-gsoc skill and call gsoc_program_info."'
+            "\nNo AI assistant was found, so only the skill was copied. That is fine: every "
+            "feature works in the terminal. Try [cyan]git-into-gsoc start[/cyan]. After you "
+            "install an assistant, run [cyan]git-into-gsoc setup[/cyan] again."
+        )
+    elif mcp_ready:
+        console.print(
+            "\nRestart your assistant, then ask it in your own words, for example: "
+            '"I want to do Google Summer of Code. I know Python and like science. '
+            'Where do I start?"'
+        )
+    elif skill_ready:
+        console.print(
+            "\nThe skill is ready, but the MCP server still needs the manual step above. "
+            "Until then your assistant can run git-into-gsoc commands in a terminal."
         )
     else:
         console.print("\nNothing was set up. Follow the manual steps above, then run `doctor`.")
 
 
+def _writable(create: Any, location: Any) -> str:
+    """A folder the tool writes to, or why it cannot, without stopping `doctor`."""
+    try:
+        return str(create())
+    except OSError as exc:
+        return (
+            f"{location()} [red]cannot be written[/red] ({exc.strerror or exc}). "
+            "Set GIG_CACHE_DIR and GIG_DATA_DIR to folders you can write to."
+        )
+
+
 @app.command("doctor", rich_help_panel="Maintenance")
 def doctor_cmd() -> None:
     """Check your setup: version, GitHub token, data locations, API access, skill, and MCP."""
-    from git_into_gsoc.config import cache_dir, data_dir, get_settings
+    from git_into_gsoc.config import (
+        cache_dir,
+        cache_location,
+        data_dir,
+        data_location,
+        get_settings,
+    )
     from git_into_gsoc.install.clients import (
         ASSISTANTS,
         env_home,
@@ -1976,8 +2010,8 @@ def doctor_cmd() -> None:
     settings = get_settings()
     source = settings.github_token_source()
     console.print(f"git-into-gsoc {__version__}  (Python {sys.version.split()[0]})")
-    console.print(f"cache: {cache_dir()}")
-    console.print(f"data:  {data_dir()}")
+    console.print(f"cache: {_writable(cache_dir, cache_location)}")
+    console.print(f"data:  {_writable(data_dir, data_location)}")
     if source:
         console.print(f"GitHub token: [green]found[/green] via {source}")
     else:
