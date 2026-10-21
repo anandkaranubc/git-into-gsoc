@@ -49,7 +49,12 @@ def test_guarded_tools_turn_input_errors_into_tool_errors() -> None:
         gsoc_issue_status("not-a-repo")
     with pytest.raises(ToolError, match="Valid phases"):
         gsoc_journey_guide("nope")
-    tools = {t.name: t for t in tool_manager.list_tools()} if tool_manager is not None else {}
+
+
+def test_new_tools_carry_the_expected_annotations() -> None:
+    from git_into_gsoc.mcp_server import mcp
+
+    tools = {t.name: t for t in mcp._tool_manager.list_tools()}
     for name in ("gsoc_orient_repo", "gsoc_issue_pointers", "gsoc_org_ideas", "gsoc_draft"):
         assert tools[name].annotations is not None and tools[name].annotations.read_only_hint
     for name in ("gsoc_next", "gsoc_log"):

@@ -88,7 +88,6 @@ def _call(fn: Any, *args: Any, **kwargs: Any) -> str:
     return _dump(data)
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
 _F = TypeVar("_F", bound=Callable[..., str])
 
 
@@ -220,7 +219,6 @@ def gsoc_org_ideas(
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="Repository health for newcomers", annotations=READ_ONLY, structured_output=False)
 @guarded
 def gsoc_evaluate_repo(full_name: str) -> str:
@@ -331,7 +329,6 @@ def gsoc_draft(kind: str, org: str = "", repo: str = "", issue: str = "") -> str
     return _call(toolkit().draft, kind, org=org or None, repo=repo or None, issue=issue or None)
 
 
-@mcp.tool(annotations=LOCAL_WRITE, structured_output=False)
 @mcp.tool(title="Personalized starting path", annotations=LOCAL_WRITE, structured_output=False)
 @guarded
 def gsoc_recommend_path(
@@ -364,7 +361,6 @@ def gsoc_contribution_evidence(github_username: str, org: str = "", repo: str = 
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="Proposal checklist", annotations=READ_ONLY, structured_output=False)
 @guarded
 def gsoc_proposal_checklist() -> str:
@@ -474,7 +470,6 @@ def gsoc_log(
     )
 
 
-@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="GitHub API budget", annotations=READ_ONLY, structured_output=False)
 @guarded
 def gsoc_rate_limit() -> str:
