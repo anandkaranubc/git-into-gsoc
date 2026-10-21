@@ -199,6 +199,15 @@ def test_rank_workflows_prefers_test_pipelines() -> None:
     ]
 
 
+def test_rank_workflows_reads_quality_gates_before_builds() -> None:
+    # OWASP/threat-dragon (2026-10-21): the tests run in *-quality-gates.yaml, and
+    # reading desktop-build.yaml instead left `orient` with no test command.
+    names = ["desktop-build", "desktop-quality-gates", "docker-build", "housekeeping"]
+    names += ["release", "server-quality-gates", "sboms", "vulnerability-scan"]
+    paths = [f".github/workflows/{n}.yaml" for n in names]
+    assert all("quality-gates" in p for p in rank_workflows(paths))
+
+
 def test_policy_quotes_skip_markdown_headings_and_checklists() -> None:
     quotes = policy_quotes(
         {
@@ -464,3 +473,50 @@ def test_a_matrix_toolchain_that_is_not_rust_is_not_reported_as_rust() -> None:
     env = ci_environment({"a.yml": ardupilot, "r.yml": rust})
     runtimes = {r["name"]: r["versions"] for r in env["runtimes"]}
     assert runtimes == {"Rust": ["nightly", "stable"]}
+
+
+# Excerpt of OWASP/threat-dragon's contributing.md (2026-10-21): hard-wrapped
+# sentences, list items with indented continuations, and markdown links.
+THREAT_DRAGON = """\
+* ensure that [unit tests][unit] have been extended or created for any code changes
+* the use of generative AI is not prohibited but must be declared in the [pull request](#use-of-ai-for-coding)
+* the main repository only accepts [signed commits][signed-commits], otherwise the contribution will be rejected
+
+7. if coding using [generative AI](#use-of-ai-for-coding);
+  you must understand fully the changes and keep sprawl to a minimum
+8. ensure the GitHub Actions are passing; a [local script][pr-script] is available
+  to help debug if you need it.
+
+Threat Dragon is a project that is used globally by many organizations;
+therefore the code base has to be coherent and functional.
+Avoid using generative AI for any issues, pull requests, comments and discussions.
+
+If it is genuinely helpful to use generative AI
+then it **must** be declared for pull requests or when creating / commenting on issues.
+
+* **Do not submit an AI-generated PR you haven't personally understood and tested**, as this
+  wastes maintainers' time.
+Note that you should _not_ claim an issue while you are iterating; snake_case_names stay.
+"""
+
+
+def test_policy_quotes_join_wrapped_lines_and_drop_markdown() -> None:
+    texts = [q["text"] for q in policy_quotes({"contributing.md": THREAT_DRAGON})]
+    assert (
+        "If it is genuinely helpful to use generative AI then it must be declared for pull "
+        "requests or when creating / commenting on issues."
+    ) in texts
+    assert (
+        "if coding using generative AI; you must understand fully the changes and keep "
+        "sprawl to a minimum"
+    ) in texts
+    assert (
+        "the use of generative AI is not prohibited but must be declared in the pull request"
+        in texts
+    )
+    assert "If it is genuinely helpful to use generative AI" not in texts
+    assert not any("](" in t or "*" in t or "][" in t for t in texts)
+    assert (
+        "Note that you should not claim an issue while you are iterating; snake_case_names stay."
+        in texts
+    )

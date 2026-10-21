@@ -573,17 +573,54 @@ def conventions(
     }
 
 
+_ITEM_START = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
+_MD_LINK = re.compile(r"!?\[([^\]]*)\](?:\([^)]*\)|\[[^\]]*\])")
+_MD_EMPHASIS = re.compile(r"(\*\*|__)(.+?)\1")
+_MD_SINGLE_EMPHASIS = re.compile(r"(?<![\w*])([*_])(?=\S)(.+?)(?<=\S)\1(?![\w*])")
+
+
+def _logical_lines(text: str) -> list[str]:
+    """Join hard-wrapped lines, so a sentence or list item split across lines stays whole."""
+    lines: list[str] = []
+    in_code = in_item = False
+    for raw in text.splitlines():
+        stripped = raw.strip()
+        if stripped.startswith(("```", "~~~")):
+            in_code = not in_code
+            lines.append("")
+            continue
+        is_item = _ITEM_START.match(raw) is not None
+        starts_block = not stripped or stripped.startswith(("#", "|", ">")) or is_item
+        # A list item continues only on an indented line; a paragraph on any line.
+        continues = bool(lines and lines[-1]) and (not in_item or raw[:1].isspace())
+        if in_code or starts_block or not continues:
+            lines.append("" if in_code else stripped)
+            in_item = is_item
+        else:
+            lines[-1] = f"{lines[-1]} {stripped}"
+    return lines
+
+
+def _plain(markdown: str) -> str:
+    text = _MD_EMPHASIS.sub(r"\2", _MD_LINK.sub(r"\1", markdown))
+    return _MD_SINGLE_EMPHASIS.sub(r"\2", text).replace("`", "")
+
+
 def policy_quotes(texts: dict[str, str], *, limit: int = 8) -> list[dict[str, str]]:
-    """Verbatim sentences about assignment, AI use, PR limits, and newcomers, with sources."""
+    """Sentences about assignment, AI use, PR limits, and newcomers, with sources.
+
+    Words are the project's own; wrapped lines are joined and markdown links and
+    emphasis are reduced to their text.
+    """
     quotes: list[dict[str, str]] = []
     seen: set[str] = set()
     for source, text in texts.items():
         cleaned = re.sub(r"<!--.*?-->", " ", text or "", flags=re.S)
-        for line in cleaned.splitlines():
+        for line in _logical_lines(cleaned):
             stripped = line.strip()
             if not stripped or stripped.startswith("#") or re.match(r"^[-*]\s*\[[ xX]\]", stripped):
                 continue
-            stripped = re.sub(r"^[-*>\d.)\s]+", "", stripped)
+            stripped = re.sub(r"^[-*>\d.)\s]+", "", _plain(stripped))
             for sentence in _SENTENCE_SPLIT.split(re.sub(r"\s+", " ", stripped)):
                 clean = clean_untrusted(sentence.strip(" -*#>"), limit=300)
                 if not 20 <= len(clean) <= 300 or len(clean.split()) < 4 or clean in seen:
@@ -714,11 +751,18 @@ def rank_workflows(paths: list[str], *, limit: int = 2) -> list[str]:
         name = path.rsplit("/", 1)[-1].lower()
         if re.search(r"test|pytest|tox|nox", name):
             return (0, name)
-        if re.search(r"^ci\b|[._-]ci\b|\bci[._-]|main|build|check", name):
+        # Quality gates and pull-request workflows run the tests more often than builds do.
+        if re.search(
+            r"^ci\b|[._-]ci\b|\bci[._-]|check|quality|gate|unit|verify|validate|"
+            r"pull[_-]?request|^pr[._-]",
+            name,
+        ):
             return (1, name)
+        if re.search(r"main|build", name):
+            return (2, name)
         if re.search(r"release|publish|deploy|docs|label|stale|close|comment|lint|welcome", name):
-            return (3, name)
-        return (2, name)
+            return (4, name)
+        return (3, name)
 
     return sorted(paths, key=priority)[:limit]
 
