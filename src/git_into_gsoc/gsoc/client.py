@@ -353,7 +353,10 @@ class GSoCClient:
                 return None
             years = sorted(int(y) for y in (hist.get("years") or {}))
             org = self._from_archive(hist, years[-1] if years else LATEST_ARCHIVED_YEAR)
-        projects = self.search_projects(org=org.name, limit=10)
+        try:
+            projects = self.search_projects(org=org.name, limit=10)
+        except HttpError:
+            projects = []  # the archive is optional detail; the profile itself still shows
         return org.model_copy(update={"recent_projects": projects})
 
     def search_projects(
