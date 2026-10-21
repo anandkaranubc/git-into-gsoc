@@ -53,7 +53,9 @@ _WEIGHTS = {"blob_url": 5.0, "stack_frame": 3.0, "path": 1.5, "backtick": 2.0, "
 _IGNORED_DIRS = ("node_modules/", "vendor/", "third_party/", "extern/", "dist/", "build/")
 _DOCS_RE = re.compile(r"(?:^|/)(?:docs?|changelog|whats_new|news|release|readme)[^/]*", re.I)
 _TESTS_RE = re.compile(
-    r"(?:^|/)(?:tests?|spec|__tests__)(?:/|$)|(?:^|/)test_[^/]+$|_test\.[a-z]+$", re.I
+    r"(?:^|/)(?:tests?|specs?|__tests__|testing|testsuite|autotests?|unittests?|e2e)(?:/|$)"
+    r"|(?:^|/)test_[^/]+$|_test\.[a-z]+$|\.(?:test|spec)\.[a-z]+$|_spec\.rb$",
+    re.I,
 )
 CLOSING_WINDOW_SECONDS = 5
 

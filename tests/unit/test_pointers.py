@@ -127,3 +127,14 @@ def test_fix_norm_summarises_files_tests_and_docs() -> None:
     assert norm["touches_tests_pct"] == 67
     assert norm["touches_docs_pct"] == 67
     assert fix_norm([]) == {"sample": 0}
+
+
+def test_fix_norm_counts_common_test_folders() -> None:
+    # ArduPilot keeps its tests in Tools/autotest; pointers said "0% touch tests".
+    fixes = [
+        {"files": ["ArduSub/mode.cpp", "Tools/autotest/ardusub.py"]},
+        {"files": ["web/src/app.ts", "web/src/app.spec.ts"]},
+        {"files": ["src/latest/notes.md"]},
+    ]
+    norm = fix_norm(fixes)
+    assert norm["touches_tests_pct"] == 67  # autotest and .spec.ts count; "latest" does not
