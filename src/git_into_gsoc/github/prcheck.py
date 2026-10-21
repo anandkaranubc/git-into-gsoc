@@ -42,6 +42,7 @@ _TEST_PATH_RE = re.compile(
     r"\.(?:test|spec)\.[a-z]+$|Test\.java$",
     re.I,
 )
+_PROSE_FILE_RE = re.compile(r"\.(?:md|rst|txt|adoc)$", re.I)
 _DOC_PATH_RE = re.compile(
     r"(?:^|/)(?:docs?|documentation)(?:/|$)|\.(?:md|rst|txt|adoc)$|(?:^|/)(?:readme|changelog)",
     re.I,
@@ -210,7 +211,7 @@ def check_pull_request(
             )
         )
     elif unchecked:
-        shown = "; ".join(_short(item) for item in unchecked[:3])
+        shown = "; ".join(_short(item).rstrip(".") for item in unchecked[:3])
         findings.append(
             Finding(
                 "checklist",
@@ -274,7 +275,8 @@ def check_pull_request(
             )
 
     code = [p for p in paths if _is_code(p)]
-    tests = [p for p in paths if _TEST_PATH_RE.search(p)]
+    # docs/testing/manual-testing.md is a page about testing, not a test.
+    tests = [p for p in paths if _TEST_PATH_RE.search(p) and not _PROSE_FILE_RE.search(p)]
     if code and not tests:
         where = f" (tests here live in {', '.join((test_dirs or [])[:2])}/)" if test_dirs else ""
         findings.append(

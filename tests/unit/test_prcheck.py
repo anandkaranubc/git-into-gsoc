@@ -178,3 +178,19 @@ def test_long_unticked_items_are_cut_at_a_word() -> None:
     found = _checklist(f"- [ ] {item}\n")
     assert found is not None
     assert "functional tests, the desktop build, and\u2026. Tick them" in found["detail"]
+
+
+def test_a_page_about_testing_is_not_a_test_change() -> None:
+    # zulip/zulip#40416 (2026-10-21) changes only docs/testing/manual-testing.md, and
+    # pr-check said "Includes test changes".
+    report = check_pull_request(
+        _pull(body="Fixes #3. Update the manual testing page.\n- [ ] Tests added\n- [ ] Docs."),
+        [{"filename": "docs/testing/manual-testing.md"}],
+        [_commit("docs: update menu references")],
+        [],
+        rules=_rules(),
+        pr_template=TEMPLATE,
+    )
+    findings = {f["id"]: f for f in report["findings"]}
+    assert "tests" not in findings
+    assert ".." not in findings["checklist"]["detail"]
