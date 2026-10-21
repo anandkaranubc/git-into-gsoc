@@ -1,0 +1,56 @@
+name: Tell us how it went
+description: What worked, what confused you, and where you got stuck. Short answers are fine.
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. This is the most useful thing you can send us. Every answer below is optional except the first, and nothing you write here is shared anywhere else.
+  - type: dropdown
+    id: goal
+    attributes:
+      label: What were you trying to do?
+      options:
+        - Install it or connect my AI assistant
+        - Find organizations that fit me
+        - Pick a repository or an issue
+        - Make my first contribution
+        - Prepare a proposal
+        - Keep track of my progress
+        - Something else
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How did you use it?
+      options:
+        - In a terminal
+        - Through an AI assistant
+        - Both
+  - type: textarea
+    id: stuck
+    attributes:
+      label: Where did you get stuck or confused?
+      description: A command, a message, a page of the guide, or a step you could not find. Quote the exact words if you can.
+  - type: textarea
+    id: helped
+    attributes:
+      label: What helped?
+      description: Anything that worked better than you expected.
+  - type: textarea
+    id: wish
+    attributes:
+      label: What do you wish it did?
+  - type: input
+    id: setup
+    attributes:
+      label: Your setup
+      description: "`git-into-gsoc feedback` fills this in: the tool version, Python version, and operating system."
+      placeholder: git-into-gsoc 0.11.0, Python 3.12.4, Windows 11
+  - type: checkboxes
+    id: quote
+    attributes:
+      label: Sharing
+      options:
+        - label: You may quote my answers, without my name, in the project's docs or release notes.

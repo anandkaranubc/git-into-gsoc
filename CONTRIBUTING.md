@@ -2,6 +2,21 @@
 
 Thank you for helping people make a good start in open source. This guide walks you through your first change, from setup to merged pull request. You do not need previous open-source experience. If anything here is unclear, open an issue and say so; that is a useful contribution too.
 
+## Quick start
+
+You need [Git](https://git-scm.com/downloads), [Python 3.11 or newer](https://www.python.org/downloads/), and a GitHub account. Fork the repository on GitHub (the **Fork** button at the top right), then:
+
+```bash
+git clone https://github.com/YOUR_USERNAME/git-into-gsoc.git
+cd git-into-gsoc
+python3 -m venv .venv
+source .venv/bin/activate              # Windows PowerShell: .\.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+pytest -q
+```
+
+`YOUR_USERNAME` is your GitHub username. When the tests pass, you are ready to change something. The sections below explain each step and what happens after you open a pull request.
+
 ## What we value
 
 - **Real data over guesses.** Features read official GSoC pages, the community archive, and GitHub. Nothing invents organizations, issues, or deadlines.
@@ -11,10 +26,11 @@ Thank you for helping people make a good start in open source. This guide walks 
 
 ## Ways to contribute
 
-- Report a bug or confusing behavior with a [bug report](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=bug_report.yml).
+- Tell us how your own preparation went: run `git-into-gsoc feedback`, or fill in the [feedback form](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=feedback.yml). Knowing where people get stuck is how this project decides what to fix next.
+- Report a bug or confusing behavior with a [bug report](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=bug_report.yml). `git-into-gsoc feedback --bug` fills in your versions.
 - Suggest an improvement with a [feature request](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=feature_request.yml).
 - Fix documentation. If an instruction did not work for you, that is a bug in the docs.
-- Pick an issue labeled [good first issue](https://github.com/anandkaranubc/git-into-gsoc/labels/good%20first%20issue) or [help wanted](https://github.com/anandkaranubc/git-into-gsoc/labels/help%20wanted). Comment with what you plan to do so nobody duplicates the work.
+- Pick an issue labeled [good first issue](https://github.com/anandkaranubc/git-into-gsoc/labels/good%20first%20issue) or [help wanted](https://github.com/anandkaranubc/git-into-gsoc/labels/help%20wanted). Comment with what you plan to do so nobody duplicates the work. Practise the habit this tool teaches: run `git-into-gsoc issue anandkaranubc/git-into-gsoc#NUMBER` first to see whether someone already claimed it.
 - Improve the Agent Skill in `skills/git-into-gsoc/` or add an MCP tool.
 
 For larger changes, open an issue first so we can agree on the approach before you spend time on it.
@@ -114,6 +130,7 @@ You are welcome to use AI assistants while contributing. You are responsible for
 | `src/git_into_gsoc/cli.py` | Command-line interface, built with Typer |
 | `src/git_into_gsoc/mcp_server.py` | MCP server that exposes the same features to assistants |
 | `src/git_into_gsoc/service.py` | Shared layer used by both |
+| `src/git_into_gsoc/onboarding.py` | First-run guidance: the home screen and `start` |
 | `src/git_into_gsoc/github/` | GitHub client, repository ranking, issue availability |
 | `src/git_into_gsoc/gsoc/` | Official GSoC data, community archive, timelines, ideas pages |
 | `src/git_into_gsoc/scoring/` | Transparent scoring rules for organizations, repositories, and issues |

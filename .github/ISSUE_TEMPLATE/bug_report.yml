@@ -31,7 +31,7 @@ body:
     id: env
     attributes:
       label: Your setup
-      description: Paste the first lines of `git-into-gsoc doctor`, plus your operating system and assistant if relevant.
+      description: "`git-into-gsoc feedback --bug` fills in your versions. Add the first lines of `git-into-gsoc doctor` and your AI assistant if one was involved."
       placeholder: |
-        git-into-gsoc 0.1.0 (Python 3.12.4)
-        macOS 15, Cursor
+        git-into-gsoc 0.11.0, Python 3.12.4, Darwin 25.0
+        Cursor

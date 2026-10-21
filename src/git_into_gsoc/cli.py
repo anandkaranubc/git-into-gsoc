@@ -234,7 +234,10 @@ def _render_home(data: dict[str, Any]) -> None:
     _say("\n[bold]Commands to start with[/bold]")
     for name, what in _HOME_COMMANDS:
         _say(f"  [cyan]{name:<8}[/cyan] {what}")
-    _say(f"\n[dim]Every command: git-into-gsoc --help. Step-by-step guide: {GUIDE_URL}[/dim]")
+    _say(
+        f"\n[dim]Every command: git-into-gsoc --help. Step-by-step guide: {GUIDE_URL}\n"
+        "Something confusing or broken? git-into-gsoc feedback[/dim]"
+    )
 
 
 class ProjectSize(StrEnum):
@@ -2138,6 +2141,32 @@ def _command_problem(entry: dict[str, object]) -> str | None:
     if not find_program(command):
         return f"`{command}` is not installed or not on PATH"
     return None
+
+
+@app.command("feedback", rich_help_panel="Maintenance")
+def feedback_cmd(
+    bug: bool = typer.Option(
+        False, "--bug", help="Report something that did not work, instead of general feedback"
+    ),
+    open_browser: bool = typer.Option(
+        True, "--open/--no-open", help="Open the form in your browser, or only print its link"
+    ),
+) -> None:
+    """Tell us how it went, or report a problem. Opens a GitHub form; nothing is sent for you."""
+    import webbrowser
+
+    from git_into_gsoc.feedback import form_url, system_summary
+
+    url = form_url("bug" if bug else "feedback")
+    _say(
+        "This opens a GitHub form with your versions filled in, so you can tell us what "
+        "worked and what did not. Nothing is sent until you read it and press Submit. "
+        "Submitting needs a GitHub account."
+    )
+    _say(f"[dim]Filled in: {escape(system_summary())}[/dim]")
+    console.print(url, markup=False, highlight=False, soft_wrap=True)
+    if open_browser and sys.stdout.isatty() and not webbrowser.open(url):
+        _say("[dim]No browser opened. Copy the link above into one.[/dim]")
 
 
 @app.command("cache", rich_help_panel="Maintenance")

@@ -1,5 +1,8 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Beginner guide
+    url: https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md
+    about: The path from your first search to a proposal, one step at a time
   - name: Troubleshooting guide
     url: https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/troubleshooting.md
     about: Common setup and connection problems, with fixes to try first

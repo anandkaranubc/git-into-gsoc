@@ -153,6 +153,7 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 | `doctor` | Version, Python, cache and data paths, GitHub token source, remaining API requests, whether each data source (official site, organization archive, commit statistics) answers, skill source, which assistants have the skill, and where the MCP server is registered |
 | `cache` | Size of the HTTP cache and its limits; `cache --prune` deletes old entries now, `cache --clear` deletes it all |
 | `mcp` | Start the MCP server on stdio; it waits for a client until stopped |
+| `feedback` | Open a GitHub form to tell the maintainers how it went (`--bug` for the bug report form), with the tool version, Python version, and operating system filled in. Nothing is sent until you press Submit; `--no-open` only prints the link |
 
 ```bash
 git-into-gsoc setup                               # detect assistants, user scope

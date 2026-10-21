@@ -1,6 +1,6 @@
 # Privacy
 
-git-into-gsoc runs on your own computer. It has no server and no account system, it collects no analytics, and the project never receives anything about you. This page applies to every way of running it: the command line, the MCP server that your AI assistant starts, the plugins and extensions, and the Agent Skill.
+git-into-gsoc runs on your own computer. It has no online service of its own and no account system, it collects no analytics, and the project never receives anything about you unless you choose to send it. This page applies to every way of running it: the command line, the MCP server that your AI assistant starts, the plugins and extensions, and the Agent Skill.
 
 ## What it reads from the internet
 
@@ -26,6 +26,10 @@ A token is optional. If you have one (in `GITHUB_TOKEN`, `GH_TOKEN`, `GIG_GITHUB
 - **Your progress file**, only when you or your assistant save something: your profile (for example the technologies you know, your interests, hours per week, and your GitHub username if you add it), the organizations and issues you track, and notes you write.
 
 `git-into-gsoc doctor` prints where both folders are. Delete them at any time. Nothing in them is uploaded.
+
+## Feedback you choose to send
+
+`git-into-gsoc feedback` opens a GitHub issue form in your browser with three facts filled in: the tool version, the Python version, and your operating system's name. Nothing else is added, and nothing is sent until you read the form and press Submit on GitHub, where it becomes a public issue under your account.
 
 ## Your AI assistant
 
