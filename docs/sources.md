@@ -45,7 +45,7 @@ Where these features came from, and which ideas from other tools were adopted or
 
 `contributions` uses four GitHub searches scoped to the organization's GitHub owners or one repository: pull requests you authored, issues you opened, threads you commented in, and pull requests you reviewed. Counts cover public activity only and the search index can lag by minutes.
 
-Text written by other people (issue and pull request titles, idea descriptions, policy sentences, repository descriptions) is cleaned before it is shown: hidden Unicode characters, HTML comments and risky tags are removed and length is capped. It is still data written by strangers; read it as such.
+Text written by other people is cleaned before it is shown. That covers issue and pull request titles, issue text, idea descriptions, policy sentences, repository descriptions, profile bios, and commit author names. Hidden Unicode characters, HTML comments, and risky tags are removed, and length is capped. Every line the tool prints or returns to an assistant also loses invisible characters and terminal control codes. It is still data written by strangers; read it as such.
 
 Pages link to other pages, and `ideas` follows some links on umbrella pages. The tool never fetches an address on your computer or your local network, such as `localhost`, `127.0.0.1`, `192.168.x.x`, or the cloud metadata address `169.254.169.254`. This also holds when a public page redirects there. Service addresses you set yourself, such as `GIG_GITHUB_API_URL`, are exempt.
 
