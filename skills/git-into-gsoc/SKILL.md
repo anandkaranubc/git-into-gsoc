@@ -40,9 +40,11 @@ phase. Community participation and note-taking fit anywhere.
 | `learn` | Understand how GSoC works, check eligibility, write down interests and time | They can explain the program in their own words and know where the rules are |
 | `discover` | Search organizations, read ideas pages, make a short list | Two or three organizations with a reason for each |
 | `evaluate` | Pick a repository, check its health, read its contribution guide | One repository they want to set up |
+| `orient` | Get their bearings in the repository: run `orient`, run the tests once, read the contributing guide and a few merged pull requests | They can say where a change would go and how they would test it |
 | `community` | Introduce themselves and ask informed questions in the project's public channel, before claiming any work | Maintainers recognize their name from useful conversations |
 | `find_issues` | Find an open beginner issue and check whether it is free | One issue they can reproduce and explain |
 | `contribute` | Set up the project, make a small correct change, open a pull request | A pull request they can defend in review |
+| `iterate` | See the pull request through review: reply within a day, push fixes as new commits, ask one focused question instead of going quiet, close out gracefully if declined | Reviewers know they finish what they start |
 | `proposal` | Draft from the organization's template, grounded in their own work, and check the draft before sharing it | A draft reviewed by mentors and ready for the official site |
 | `track` | Keep a short weekly log of goals, links, and blockers | A clear next step every week |
 
@@ -69,13 +71,14 @@ the person to run the installer. Never invent a result in its place.
 | community | `git-into-gsoc mentors "SymPy"` | `gsoc_org_mentors` |
 | evaluate | `git-into-gsoc repos "SymPy"` | `gsoc_discover_repos` |
 | evaluate | `git-into-gsoc repo sympy/sympy` | `gsoc_evaluate_repo` |
-| evaluate | `git-into-gsoc orient sympy/sympy` | `gsoc_orient_repo` |
+| orient | `git-into-gsoc orient sympy/sympy` | `gsoc_orient_repo` |
 | community | `git-into-gsoc draft intro --org "SymPy"` | `gsoc_draft` |
 | find_issues | `git-into-gsoc issues --language python -n 5` | `gsoc_find_issues` |
 | find_issues | `git-into-gsoc issue sympy/sympy#23161` | `gsoc_issue_status` |
 | find_issues | `git-into-gsoc pointers sympy/sympy#23161` | `gsoc_issue_pointers` |
 | contribute | `git-into-gsoc draft claim --issue sympy/sympy#23161` | `gsoc_draft` |
 | contribute | `git-into-gsoc draft pr --repo sympy/sympy --issue sympy/sympy#23161` | `gsoc_draft` |
+| iterate | `git-into-gsoc draft review-reply --repo sympy/sympy --issue sympy/sympy#23161` | `gsoc_draft` |
 | proposal | `git-into-gsoc ideas "SymPy" --skills python` | `gsoc_org_ideas` |
 | proposal | `git-into-gsoc contributions --github octocat --org "SymPy"` | `gsoc_contribution_evidence` |
 | proposal | `git-into-gsoc proposal` | `gsoc_proposal_checklist` |
