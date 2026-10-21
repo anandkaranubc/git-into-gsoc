@@ -10,6 +10,8 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from git_into_gsoc.scoring.org_match import canonical
+
 KNOWN_BOTS = {
     "dependabot",
     "renovate",
@@ -411,7 +413,7 @@ def repo_lead_score(
             reasons.append(f"Pushed {days}d ago")
     stars = int(repo.get("stargazers_count") or 0)
     score += min(12.0, 1.5 * math.log2(1 + stars))
-    if language and str(repo.get("language") or "").lower() == language.lower():
+    if language and canonical(str(repo.get("language") or "")) == canonical(language):
         score += 10
         reasons.append(f"Written in {repo.get('language')}")
     return round(score, 1), reasons

@@ -435,3 +435,15 @@ def test_toolchain_follows_the_main_language_and_knows_more_build_systems() -> N
     assert "waf build (./waf)" in hints
     python_hints, _ = detect_toolchain(root, language="Python")
     assert "Python project (pyproject.toml)" in python_hints
+
+
+def test_repo_language_matches_common_short_forms() -> None:
+    from git_into_gsoc.github.repos import repo_lead_score
+
+    # `repos ... --language cpp` used to add nothing for a C++ repository.
+    repo = {"language": "C++", "pushed_at": None, "stargazers_count": 1}
+    for spelling in ("cpp", "C++", "c++"):
+        _, reasons = repo_lead_score(
+            repo, beginner_issues=0, ideas_mention=False, language=spelling
+        )
+        assert "Written in C++" in reasons
