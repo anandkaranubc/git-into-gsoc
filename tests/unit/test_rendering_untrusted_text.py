@@ -104,6 +104,7 @@ def test_command_renders_untrusted_text_literally(
     )
     assert result.exit_code == 0, result.output[-800:]
     assert "[/]x[bold]y[/bold]" in result.output, "untrusted text was not printed literally"
+    assert "\\[" not in result.output, "escaped text was printed with its backslashes"
 
 
 def test_proposal_check_renders_untrusted_text_literally(
@@ -116,6 +117,15 @@ def test_proposal_check_renders_untrusted_text_literally(
     result = CliRunner().invoke(cli.app, ["proposal", str(draft), "--no-verify"])
     assert result.exit_code == 0, result.output[-800:]
     assert "[/]x[bold]y[/bold]" in result.output
+    assert "\\[" not in result.output
+
+
+def test_profile_renders_literally(wide_console: None) -> None:
+    ProgressStore().set_profile(technologies=["c[x]", "[/]rust"], timezone="UTC[/]")
+    result = CliRunner().invoke(cli.app, ["profile"])
+    assert result.exit_code == 0, result.output
+    assert "c[x]" in result.output and "[/]rust" in result.output
+    assert "\\[" not in result.output
 
 
 def test_user_notes_render_literally(wide_console: None) -> None:
@@ -127,3 +137,4 @@ def test_user_notes_render_literally(wide_console: None) -> None:
     assert "[x]" in logged.output and "[/]" in logged.output
     listed = runner.invoke(cli.app, ["log"])
     assert listed.exit_code == 0 and "[x]" in listed.output
+    assert "\\[" not in logged.output + listed.output

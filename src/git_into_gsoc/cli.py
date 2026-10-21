@@ -821,7 +821,7 @@ def profile_cmd(
         value = data.get(key)
         if value:
             lines.append(f"{label}: {', '.join(value) if isinstance(value, list) else value}")
-    console.print(Panel(Text("\n".join(lines)), title="Your profile"))
+    console.print(Panel(Text.from_markup("\n".join(lines)), title="Your profile"))
 
 
 @app.command("pointers", rich_help_panel="Pick a repository and an issue")
@@ -919,7 +919,7 @@ def draft_cmd(
         _emit(data, output)
         return
     data = _markup_safe(data)
-    console.print(Panel(Text(data["template"]), title=f"Draft: {data['kind']}"))
+    console.print(Panel(Text.from_markup(data["template"]), title=f"Draft: {data['kind']}"))
     if data.get("warning"):
         console.print(f"[yellow]![/yellow] {escape(data['warning'])}")
     console.print("[bold]Fill these with real observations before sending[/bold]")
