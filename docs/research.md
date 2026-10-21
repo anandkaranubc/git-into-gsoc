@@ -35,6 +35,22 @@ In October 2026 we surveyed the tools, data sources, and research around open so
 - **Counting pull requests as progress.** Hacktoberfest stopped counting them in 2026 because low-effort submissions became trivial to produce. Nothing here rewards volume.
 - **Cloning repositories for symbol analysis.** The tree, timeline, and files endpoints already answer a beginner's questions; a local mode can come later if people ask.
 
+## Findings by stream, checked
+
+Each stream's report was long; these are the facts that shaped decisions, with the ones re-checked directly by the maintainer session marked "re-checked".
+
+**GSoC tools and data.** The official site's own JSON covers programs, organizations and an archive of completed projects with mentor names, code URLs and tags (re-checked: 1,191 completed projects for 2025). The community archive mirrors it by hand with a lag of days to weeks and without mentors. Of 183 GSoC 2026 ideas pages, 168 fetched; a heading-plus-label parser extracts clean blocks from about a third (re-checked live on MDAnalysis, KDE, CNCF, PSF, Dart, OpenStreetMap). 75 pages carry an AI-use policy sentence. No GSoC-specific command-line tool, bot, MCP server or Agent Skill exists on GitHub: searches for "gsoc mcp", "summer of code mcp server" and "gsoc skill" on 2026-10-21 return only this project and one unrelated application repository (re-checked).
+
+**Beginner-issue finders.** Every shipping finder is a cron-fed label crawl with no availability check; several are dead or pivoted (goodfirstissues.com, contribute.dev, Quine, gfibot.io). Claims in large organizations are bot commands with expiry (`@zulipbot claim`, `/assign`, `.take`, pandas `/take` with a seven-day release). GitHub's advanced issue search treats repeated qualifiers as AND (re-checked: repeated `org:` returns 0, `(org:a OR org:b)` returns 120). 48 organization repositories use 38 spellings of "good first issue" plus difficulty, effort and size ladders.
+
+**Repository health.** `author_association` is evaluated at query time, so a merged author becomes CONTRIBUTOR and "first-time contributors merged" was zero by construction (re-checked on sympy: 23 CONTRIBUTOR plus 8 MEMBER among merged, zero first-timers). Time to first human response explains most of a pull request's lifetime; stars reduce acceptance odds. CLA and DCO requirements are detectable from check names (`cla/google`, `EasyCLA`, `DCO`) and commit trailers. ecosyste.ms offers a generous zero-token data source but no response-time data.
+
+**Codebase onboarding.** No existing tool addresses "I picked a repository, now what?"; packers dump everything and generated wikis draw public complaints from maintainers. One recursive tree call, one timeline call and one pull-request-files call are enough to find what a fix touched (re-checked on matplotlib: five of six similar closed issues had a traceable fix pull request, all touching tests). Full paths beat trees for avoiding invented files.
+
+**MCP and Agent Skills.** The server spoke the current protocol but used none of it: no annotations or titles, every response sent twice through a wrapped output schema, errors as result JSON. Clients skip confirmation for read-only tools. Local stdio servers are distributed as plugins; the skill format allows `license`, `compatibility` and `metadata` fields. Untrusted text should be cleaned of hidden Unicode and structurally separated from server output. (All re-checked over stdio after the changes: 22 tools with titles and annotations, four prompts, four resources, errors flagged.)
+
+**Onboarding science.** Prior engagement is what organizations score; about one proposal in twenty succeeds. First patches land when they are small bug fixes with tests and the author answers review promptly. "Unclear how to start" and "no response" are the top newcomer barriers. Community contact belongs before claiming an issue, which is now the order of the journey. Weekly notes with no streak mechanics match what organizations ask for.
+
 ## Evidence worth reading
 
 - Turzo, Sultana, Bosu, "From First Patch to Long-Term Contributor" (2025): https://arxiv.org/pdf/2407.04159
@@ -73,9 +89,10 @@ Checked on 2026-10-20 and 2026-10-21 by reading source, documentation, issues, o
 | [cncf/mentoring](https://github.com/cncf/mentoring) | Apache-2.0 | GSoC and LFX ideas in one template | Idea template vocabulary | Verified |
 | [OWASP/Nest](https://github.com/OWASP/Nest) | MIT | Organization-side contributor platform | Assignment-before-PR enforcement exists; availability checks matter | Verified from source |
 | GSoC proposal archives ([SammanSarkar/GSoC_archive_2025](https://github.com/SammanSarkar/GSoC_archive_2025) and others) | MIT (repositories) | Accepted proposals as PDFs | Section census only; never bundled (personal data) | Verified; 43 PDFs read |
-| Sourcegraph Cody | n/a | Context engine | Nothing | Repository returns 404 as of 2026-10-21; product retired |
-| ossrank.com | n/a | Ranking site | Nothing | Unreachable on 2026-10-21 |
-| grep.app API | n/a | Code search | Nothing | Bot-gated (HTTP 429) on 2026-10-21 |
-| r/GSoC | n/a | Community forum | Nothing | Blocked for automated reads (HTTP 403); advice came from blogs, mailing lists, and org retrospectives instead |
+| Smaller label crawlers ([cutenode/good-first-issue](https://github.com/cutenode/good-first-issue), [EddieHubCommunity/good-first-issue-finder](https://github.com/EddieHubCommunity/good-first-issue-finder), [arshadkazmi42/first-issues](https://github.com/arshadkazmi42/first-issues), [ohbarye/goofi](https://github.com/ohbarye/goofi), [yankeexe/good-first-issues](https://github.com/yankeexe/good-first-issues), [youzi-forge/good-first-issue-autoUpdate](https://github.com/youzi-forge/good-first-issue-autoUpdate)) | MIT and similar | Command-line and web label searches | Rolling date windows to beat the 1,000-result cap; showing license and code of conduct next to each issue | Verified from GitHub search on 2026-10-21; none checks availability |
+| Sourcegraph Cody | Apache-2.0 (snapshot) | Context engine | Nothing | Verified on 2026-10-21: the code now lives in the archived `sourcegraph/cody-public-snapshot`; the product is retired |
+| ossrank.com | n/a | Ranking site | Nothing | Domain resolves but the site refused connections over HTTP and HTTPS on 2026-10-21; treated as offline |
+| grep.app API | n/a | Code search | Nothing | Bot-gated (HTTP 429 with and without browser headers) on 2026-10-21 |
+| r/GSoC | n/a | Community forum | Nothing | The default feed is readable (two newest posts), but the top and search feeds are rate-limited for automated readers; advice came from blogs, mailing lists, and organization retrospectives instead |
 
 [Guide contents](README.md) · [Sources and limitations](sources.md)

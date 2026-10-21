@@ -26,7 +26,10 @@ def test_manifests_start_the_same_server() -> None:
         assert entry["command"] == "uvx"
         assert entry["args"][-2:] == ["git-into-gsoc", "mcp"]
         # Runs from the repository today; switch to the PyPI package at the first release.
-        assert entry["args"][:2] == ["--from", "git+https://github.com/anandkaranubc/git-into-gsoc@main"]
+        assert entry["args"][:2] == [
+            "--from",
+            "git+https://github.com/anandkaranubc/git-into-gsoc@main",
+        ]
     plugin = _load(".claude-plugin/plugin.json")
     assert plugin["skills"] == ["./skills/git-into-gsoc"]
     assert (ROOT / "skills" / "git-into-gsoc" / "SKILL.md").is_file()
