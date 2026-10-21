@@ -124,7 +124,10 @@ def main() -> int:
     console.print(Text.from_markup("[bold #C6F432]$[/] git-into-gsoc start"))
     console.print(Text.from_ansi(tidy(raw)))
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    console.save_svg(str(args.out), title="git-into-gsoc start", theme=THEME)
+    svg = console.export_svg(title="git-into-gsoc start", theme=THEME)
+    # Trailing spaces would be stripped by the repository's pre-commit hooks anyway.
+    lines = [line.rstrip() for line in svg.splitlines()]
+    args.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"wrote {args.out.relative_to(ROOT)}")
     return 0
 
