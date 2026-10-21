@@ -143,6 +143,25 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
                 f"Merged PRs take ~{health.median_pr_hours / 24:.0f}d (median); "
                 "unmerged ones are not counted"
             )
+    newcomers = health.newcomer_committers_last_year
+    if newcomers is not None and health.committers_last_year:
+        if newcomers >= 10:
+            score += 6
+            signals.append(
+                f"{newcomers} people landed their first and only commit in the last year "
+                f"({health.committers_last_year} committers in total)"
+            )
+        elif newcomers >= 3:
+            score += 3
+            signals.append(
+                f"{newcomers} people landed a single commit in the last year "
+                f"({health.committers_last_year} committers in total)"
+            )
+        else:
+            signals.append(f"{health.committers_last_year} people committed in the last year")
+    if health.bus_factor == 1:
+        warnings.append("One person wrote more than half of last year's commits")
+
     if health.median_outsider_pr_size is not None:
         signals.append(
             f"Merged outside PRs change ~{health.median_outsider_pr_size} lines (median); "

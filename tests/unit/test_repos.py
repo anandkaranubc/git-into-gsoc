@@ -185,6 +185,9 @@ def test_repo_health_end_to_end() -> None:
     respx.get(f"{api}/labels").mock(
         return_value=httpx.Response(200, json=[{"name": "good first issue"}])
     )
+    respx.get(url__startswith="https://commits.ecosyste.ms").mock(
+        return_value=httpx.Response(404, json={})
+    )
     respx.get(f"{api}/issues").mock(
         return_value=httpx.Response(200, json=[{"number": 1}, {"number": 2, "pull_request": {}}])
     )

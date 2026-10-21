@@ -11,6 +11,7 @@ from urllib.parse import quote
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.github.availability import assess_issue, unverified_assessment
+from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
 from git_into_gsoc.github.repos import (
@@ -312,8 +313,17 @@ class GitHubClient:
             workflows_f = pool.submit(self.workflow_count, owner, repo)
             analysis_f = pool.submit(self.pull_analysis, owner, repo)
             labels_f = pool.submit(self.list_labels, owner, repo)
+            commits_f = pool.submit(
+                fetch_commit_stats,
+                self.http,
+                api_url=self.settings.ecosystems_commits_api_url,
+                owner=owner,
+                repo=repo,
+                ttl=self.settings.archive_ttl_seconds,
+            )
             profile, workflows = profile_f.result(), workflows_f.result()
             analysis, labels = analysis_f.result(), labels_f.result()
+            commits = commits_f.result()
         if analysis is not None:
             stats = pull_stats(analysis.pulls, insiders=analysis.insiders)
             pr_source = "graphql"
@@ -356,6 +366,11 @@ class GitHubClient:
             median_outsider_pr_size=stats.median_outsider_size,
             insiders_known=stats.insiders_known,
             pr_source=pr_source,
+            committers_last_year=commits.committers_last_year if commits else None,
+            newcomer_committers_last_year=(
+                commits.newcomer_committers_last_year if commits else None
+            ),
+            bus_factor=commits.bus_factor if commits else None,
             beginner_label=label,
             open_beginner_issues=open_beginner,
         )

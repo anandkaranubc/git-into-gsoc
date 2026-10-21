@@ -132,6 +132,9 @@ class RepoHealth(BaseModel):
     median_outsider_pr_size: int | None = None
     insiders_known: bool = False
     pr_source: str = "rest"
+    committers_last_year: int | None = None
+    newcomer_committers_last_year: int | None = None
+    bus_factor: int | None = None
     beginner_label: str | None = None
     open_beginner_issues: int | None = None
     health_score: float = 0.0

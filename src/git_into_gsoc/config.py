@@ -19,6 +19,7 @@ LATEST_ARCHIVED_YEAR = 2026
 GSOC_ORGS_API = "https://api.gsocorganizations.dev"
 GSOC_OFFICIAL_API = "https://summerofcode.withgoogle.com/api"
 GITHUB_API = "https://api.github.com"
+ECOSYSTEMS_COMMITS_API = "https://commits.ecosyste.ms/api/v1"
 OFFICIAL_GSOC_HOME = "https://summerofcode.withgoogle.com"
 OFFICIAL_RESOURCES = "https://developers.google.com/open-source/gsoc/resources"
 OFFICIAL_TIMELINE = "https://developers.google.com/open-source/gsoc/timeline"
@@ -49,6 +50,7 @@ class Settings(BaseSettings):
     github_api_url: str = GITHUB_API
     gsoc_orgs_api_url: str = GSOC_ORGS_API
     gsoc_official_api_url: str = GSOC_OFFICIAL_API
+    ecosystems_commits_api_url: str = ECOSYSTEMS_COMMITS_API
     target_year: int = DEFAULT_TARGET_YEAR
     cache_ttl_seconds: int = 3600
     archive_ttl_seconds: int = 86400
