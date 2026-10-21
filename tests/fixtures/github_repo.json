@@ -1,0 +1,13 @@
+{
+  "full_name": "sympy/sympy",
+  "html_url": "https://github.com/sympy/sympy",
+  "description": "A computer algebra system written in pure Python",
+  "language": "Python",
+  "stargazers_count": 13000,
+  "forks_count": 4500,
+  "open_issues_count": 800,
+  "archived": false,
+  "disabled": false,
+  "pushed_at": "2026-10-01T12:00:00Z",
+  "license": {"spdx_id": "BSD-3-Clause"}
+}
