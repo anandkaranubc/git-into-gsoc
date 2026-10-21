@@ -129,6 +129,12 @@ def test_start_with_options_saves_profile_and_matches(api: respx.MockRouter) -> 
     assert data["next_steps"][0]["command"] == f'git-into-gsoc org "{first}"'
 
 
+def test_start_says_when_the_hours_are_too_few_for_some_projects(api: respx.MockRouter) -> None:
+    result = runner.invoke(app, ["start", "--tech", "python", "--interests", "1", "--hours", "3"])
+    assert result.exit_code == 0, result.output
+    assert "even a small project (about 90 hours)" in " ".join(result.stdout.split())
+
+
 def test_start_asks_questions_and_shortlists(
     api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
 ) -> None:

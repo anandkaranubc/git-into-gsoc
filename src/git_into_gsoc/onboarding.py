@@ -33,7 +33,7 @@ TOPIC_CHOICES: tuple[tuple[str, str], ...] = (
     ("games", "games"),
 )
 
-TECH_EXAMPLES = "python, javascript, c++, java, rust, go"
+TECH_EXAMPLES = "python, javascript, java, c++"
 
 # What "making progress" looks like before a proposal, in the order people get there.
 # Each step names the command that completes it, so the next one is always concrete.

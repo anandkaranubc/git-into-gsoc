@@ -13,6 +13,7 @@ from typing import Any
 
 import typer
 from rich.console import Console
+from rich.padding import Padding
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -195,44 +196,45 @@ def _when(milestone: dict[str, Any]) -> str:
     return f"{milestone['label']}, {milestone['at'][:10]} ({when}{mark})"
 
 
+def _say(*objects: Any) -> None:
+    """Print without Rich's number and quote colouring, which is noise in sentences."""
+    console.print(*objects, highlight=False)
+
+
 def _render_program_line(program: dict[str, Any] | None) -> None:
     if program:
-        console.print(f"\n[bold]GSoC {program['year']}[/bold]: {program['phase']}")
+        _say(f"\n[bold]GSoC {program['year']}[/bold]: {program['phase']}")
         if program["next_milestone"]:
-            console.print(f"[dim]Next date: {_when(program['next_milestone'])}[/dim]")
+            _say(f"[dim]Next date: {_when(program['next_milestone'])}[/dim]")
 
 
 def _render_home(data: dict[str, Any]) -> None:
     """What a bare `git-into-gsoc` shows: a short, personal starting point."""
     data = _markup_safe(data)
-    console.print(
+    _say(
         f"[bold]git into gsoc[/bold] [dim]{data['version']}[/dim]\n"
         "Find your first open-source contribution and prepare for Google Summer of Code."
     )
     _render_program_line(data["program"])
     if data["new_user"]:
-        console.print(
+        _say(
             "\n[bold]New here?[/bold] Answer four questions and get organizations that fit "
             "you. It takes about two minutes.\n  [cyan]git-into-gsoc start[/cyan]"
         )
     else:
         who = f", @{data['github']}" if data["github"] else ""
-        console.print(
-            f"\n[bold]Welcome back{who}.[/bold] Your progress: {data['done']} of {data['total']}"
-        )
+        _say(f"\n[bold]Welcome back{who}.[/bold] Your progress: {data['done']} of {data['total']}")
         for step in data["milestones"]:
             if step["done"]:
                 count = f" ({step['count']})" if step["count"] > 1 else ""
-                console.print(f"  [green]✓[/green] {step['label']}{count}")
+                _say(f"  [green]✓[/green] {step['label']}{count}")
             else:
-                console.print(f"  [dim]○ {step['label']}[/dim]")
-        console.print(f"What to do now, with live checks:\n  [cyan]{data['next_command']}[/cyan]")
-    console.print("\n[bold]Commands to start with[/bold]")
+                _say(f"  [dim]○ {step['label']}[/dim]")
+        _say(f"What to do now, with live checks:\n  [cyan]{data['next_command']}[/cyan]")
+    _say("\n[bold]Commands to start with[/bold]")
     for name, what in _HOME_COMMANDS:
-        console.print(f"  [cyan]{name:<8}[/cyan] {what}")
-    console.print(
-        f"\n[dim]Every command: git-into-gsoc --help. Step-by-step guide: {GUIDE_URL}[/dim]"
-    )
+        _say(f"  [cyan]{name:<8}[/cyan] {what}")
+    _say(f"\n[dim]Every command: git-into-gsoc --help. Step-by-step guide: {GUIDE_URL}[/dim]")
 
 
 class ProjectSize(StrEnum):
@@ -272,8 +274,8 @@ def _ask_github(toolkit: GSoCToolkit, default: str) -> tuple[str | None, list[st
             profile = toolkit.save_profile(github=login)
         except GigError as exc:
             reason = str(exc).rstrip(".")
-            console.print(f"  [yellow]![/yellow] {escape(reason)}.")
-            console.print("  Check the spelling and try again, or press Enter to skip.")
+            _say(f"  [yellow]![/yellow] {escape(reason)}.")
+            _say("  Check the spelling and try again, or press Enter to skip.")
             default = ""
             continue
         languages = [str(lang["name"]) for lang in profile.get("languages") or []][:4]
@@ -308,33 +310,45 @@ def _render_topic_menu() -> None:
         console.print(f"  [dim]{left:<40}{right}[/dim]", highlight=False)
 
 
+def _numbered(rows: list[str]) -> None:
+    """A numbered list whose long lines wrap under their own text, not under the number."""
+    grid = Table.grid(padding=(0, 1))
+    grid.add_column(justify="right")
+    grid.add_column()
+    for index, row in enumerate(rows, 1):
+        grid.add_row(f"{index}.", Text.from_markup(row))
+    _say(Padding(grid, (0, 0, 0, 2)))
+
+
 def _render_matches(data: dict[str, Any]) -> None:
     orgs = data["organizations"]
     if not orgs:
-        console.print(
-            "\nNo organizations matched those answers yet. Try broader words, or browse by topic."
-        )
+        _say("\nNo organizations matched those answers yet. Try broader words, or browse by topic.")
         return
-    console.print("\n[bold]Organizations that fit you[/bold]")
+    _say("\n[bold]Organizations that fit you[/bold]")
     if data["catalog"].get("note"):
-        console.print(f"[dim]{data['catalog']['note']}[/dim]")
-    for index, org in enumerate(orgs, 1):
+        _say(f"[dim]{data['catalog']['note']}[/dim]")
+    rows = []
+    for org in orgs:
         reasons = [r for r in org["match_reasons"] if not r.startswith("Accepted in")][:3]
-        console.print(f"  [bold]{index}. {org['name']}[/bold]  [dim]{'; '.join(reasons)}[/dim]")
+        row = f"[bold]{org['name']}[/bold]"
         if org.get("description"):
-            console.print(f"     {org['description']}")
+            row += f"\n{org['description']}"
+        rows.append(row + f"\n[dim]Why: {'; '.join(reasons)}[/dim]")
+    _numbered(rows)
+    if data["profile"].get("hours_note"):
+        _say(f"[yellow]![/yellow] {data['profile']['hours_note']}")
 
 
 def _render_next_steps(data: dict[str, Any]) -> None:
     if data["shortlisted"]:
-        console.print(f"\n[green]✓[/green] Your shortlist: {', '.join(data['shortlisted'])}")
-    console.print("\n[bold]Your next steps[/bold]")
-    for index, step in enumerate(data["next_steps"], 1):
-        console.print(f"  {index}. {step['title']}\n     [cyan]{step['command']}[/cyan]")
-    console.print(
+        _say(f"\n[green]✓[/green] Your shortlist: {', '.join(data['shortlisted'])}")
+    _say("\n[bold]Your next steps[/bold]")
+    _numbered([f"{step['title']}\n[cyan]{step['command']}[/cyan]" for step in data["next_steps"]])
+    _say(
         "\n[dim]Change your answers any time: run start again, or git-into-gsoc profile.\n"
-        'Using an AI assistant? Ask it: "Help me get started with Google Summer of Code '
-        'using git-into-gsoc."[/dim]'
+        "Prefer an AI assistant? After `git-into-gsoc setup`, ask it in your own words, "
+        'such as "Which GSoC issue should I try first?"[/dim]'
     )
 
 
@@ -358,15 +372,14 @@ def _interview(
     program = onboarding.program_now(toolkit)
     if program:
         _render_program_line(_markup_safe(program))
-        console.print(f"[dim]{escape(program['advice'])}[/dim]\n")
+        _say(f"[dim]{escape(program['advice'])}[/dim]\n")
     known: list[str] = []
     if ask_github:
         default = str(saved.get("github") or onboarding.signed_in_login(toolkit) or "")
         known = [lang.lower() for lang in _ask_github(toolkit, default)[1]]
     if technologies is None:
         answer = _ask(
-            "2 of 4  Which languages and tools do you know? For example: "
-            + onboarding.TECH_EXAMPLES,
+            "2 of 4  Languages and tools you know? For example: " + onboarding.TECH_EXAMPLES,
             ", ".join(saved.get("technologies") or known),
         )
         technologies = split_csv(answer) or None

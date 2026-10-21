@@ -29,7 +29,7 @@ Both the mark and the typeface sit on a square grid with a thick stroke, so they
 | `favicon/` | `favicon.svg`, `favicon-16.svg` (hand-tuned 1x), `favicon.ico`, `favicon-16/32/48.png`, `apple-touch-icon.png`, `icon-192/512.png`, `app-icon.svg` |
 | `avatar/` | `avatar.svg`, `avatar-512.png`, `avatar-1024.png`, `avatar-violet.svg` for a GitHub organization, Discord, Matrix, or any profile picture |
 | `social/` | `social-preview.svg` and `.png` at 1280×640 for GitHub's social preview and Open Graph |
-| `readme/` | `banner-light.svg`, `banner-dark.svg` (animated cursor) and compact `header-*.svg` for docs |
+| `readme/` | `banner-light.svg`, `banner-dark.svg` (animated cursor) and compact `header-*.svg` for docs. `demo-start.svg` is the README's terminal demo, rendered by `python scripts/demo.py` from a real `git-into-gsoc start` run |
 | `icons/` | 17 pixel icons (one per journey phase, plus interface icons) in ink, paper, and violet, plus `sheet-ink.svg` |
 | `stickers/` | die-cut stickers: `git in.`, `merged.`, `the door is open.`, `evidence > vibes`, `no drive-by prs`, a blinking cursor |
 | `stamps/` | passport-style milestone stamps: entered, discovered, evaluated, first pr, merged, proposed |
