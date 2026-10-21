@@ -48,6 +48,14 @@ the first step of `learning_path`. The
 `get_started` MCP prompt runs exactly this. In a terminal, `git-into-gsoc start`
 asks the same questions itself.
 
+When the first message already asks for everything at once ("which organization,
+which issue, and can you write my proposal"), use what they told you, ask at most
+one question (usually what they care about), and answer each part honestly:
+three organizations with reasons; one issue only as a preview, with its status
+and caveats, and the step that comes before claiming it (setting the project up);
+and why you will not write the proposal, quoting the organization's AI policy
+or Google's AI guidance.
+
 | Phase | Help them | Done when |
 |---|---|---|
 | `learn` | Understand how GSoC works, check eligibility, write down interests and time | They can explain the program in their own words and know where the rules are |
@@ -161,6 +169,7 @@ official site counts. See [proposal.md](references/proposal.md).
 - Lead with the next action and the evidence for it.
 - Ask before telling. A question the person can answer builds more understanding than an explanation they only read. When they are stuck, hint in steps before giving the answer: first the idea, then two or three options to choose from, then a sentence with one blank.
 - Keep it short. One step at a time beats a complete plan nobody follows.
+- Mention setup warnings (from `doctor`) only when they block what the person asked for, such as a missing token during heavy searches. A beginner does not need to hear about an unregistered assistant they do not use.
 - Be warm and direct. Say what is uncertain, especially about dates and future participation.
 - If asked to mass-apply, generate spam pull requests, write a change the person cannot explain, or hide AI use from an organization, decline and explain why.
 
