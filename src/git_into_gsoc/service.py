@@ -38,6 +38,7 @@ from git_into_gsoc.github.pointers import (
     fix_norm,
     resolve_paths,
 )
+from git_into_gsoc.github.prcheck import check_pull_request
 from git_into_gsoc.github.pulls import pull_request_status
 from git_into_gsoc.github.repos import (
     OUTSIDER_ROLES,
@@ -1165,6 +1166,73 @@ class GSoCToolkit:
         except GigError as exc:
             return "unknown", str(exc)
         return assessment.availability.value, assessment.reason
+
+    def pr_check(self, ref: str, number: int | None = None) -> dict[str, Any]:
+        """Check one pull request against the repository's own rules before review.
+
+        Reuses what `orient` reads (contributing guide, pull request template,
+        branch rules, gate workflows, recent commit style) and applies it to the
+        pull request's description, commits, files, and checks. About ten calls.
+        """
+        owner, repo, num = parse_issue_ref(ref, number)
+        pull = self.github.get_pull(owner, repo, num)
+        if not pull:
+            raise InputError(
+                f"{owner}/{repo}#{num} is not a pull request GitHub can show",
+                hint="Pass a pull request reference such as owner/repo#123 or its URL.",
+            )
+        base = str((pull.get("base") or {}).get("ref") or "HEAD")
+        sha = str((pull.get("head") or {}).get("sha") or "")
+        workers = self.settings.max_concurrency
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            files_f = pool.submit(self.github.list_pull_files, owner, repo, num)
+            commits_f = pool.submit(self.github.pull_commits, owner, repo, num)
+            checks_f = pool.submit(self.github.check_runs, owner, repo, sha) if sha else None
+            tree_f = pool.submit(self.github.git_tree, owner, repo, base)
+            rules_f = pool.submit(self.github.branch_rules, owner, repo, base)
+            history_f = pool.submit(self.github.list_commits, owner, repo, since=since_iso(90))
+            files, commits = files_f.result(), commits_f.result()
+            checks = checks_f.result() if checks_f else []
+            tree, branch_rules, history = tree_f.result(), rules_f.result(), history_f.result()
+        found = find_paths(list(tree.get("tree") or []))
+        wanted = {k: found[k] for k in ("contributing", "pr_template") if found.get(k)}
+        gate_paths = rank_gate_workflows(found.get("workflows") or [], skip=[])
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            text_f = {
+                k: pool.submit(self.github.get_raw_file, owner, repo, p) for k, p in wanted.items()
+            }
+            gate_f = {p: pool.submit(self.github.get_raw_file, owner, repo, p) for p in gate_paths}
+            texts = {k: f.result() or "" for k, f in text_f.items()}
+            gate_texts = {p: f.result() or "" for p, f in gate_f.items()}
+        rules = conventions(
+            history,
+            contributing=texts.get("contributing", ""),
+            pr_template=texts.get("pr_template", ""),
+            check_names=[str(c.get("name")) for c in checks if c.get("name")],
+            found=found,
+        )
+        rules["gates"] = branch_gates(branch_rules, branch=base) + workflow_gates(gate_texts)
+        report = check_pull_request(
+            pull,
+            files,
+            commits,
+            checks,
+            rules=rules,
+            pr_template=texts.get("pr_template", ""),
+            test_dirs=found.get("test_dirs") or [],
+            news_dir=found.get("news_fragments"),
+        )
+        return {
+            "ref": f"{owner}/{repo}#{num}",
+            "url": pull.get("html_url"),
+            "title": clean_untrusted(pull.get("title"), limit=160),
+            "author": (pull.get("user") or {}).get("login"),
+            **report,
+            "note": (
+                "Checks what the repository's own files and settings ask for. It cannot judge "
+                "whether the change is right; only reviewers can."
+            ),
+        }
 
     def open_pull_requests(
         self, username: str, *, now: datetime | None = None, limit: int = 5

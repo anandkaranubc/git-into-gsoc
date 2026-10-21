@@ -105,6 +105,7 @@ git-into-gsoc log --goal "Reproduce #12345" --done "Reproduced on main" --stuck 
 | Command | Arguments and options | Result |
 |---|---|---|
 | `contributions` | `--github` / `-g` (defaults to the username saved with `profile --github`); `--org` (GSoC org name or GitHub org) or `--repo OWNER/REPO` | Your merged, open, and closed PRs, issues opened, threads joined, and reviews given in that scope; paste-ready markdown lines for a proposal; a standing from `none` to `strong`; honest gaps to close |
+| `pr-check OWNER/REPO#N` | A pull request reference or URL | Your pull request checked against the repository's own rules before a reviewer sees it: merge conflict, failing checks, a linked issue (a failure when a workflow closes pull requests without one), description, the template checklist, AI disclosure when the template asks, commit sign-off when the project requires it, commit style, tests changed alongside code, a changelog entry when one is expected, and size; then the branch rules still ahead, such as required approvals |
 | `draft KIND` | `intro`, `question`, `claim`, `pr`, `review-reply`, `status`, or `final`; `--org`, `--repo`, `--issue` | A skeleton with placeholders, the fields that must hold your own observations, and the rules maintainers and the official guide state, each with its source |
 | `log` | `--goal`, `--done`, `--links` (comma-separated), `--learned`, `--stuck`, `--next`; `--limit` / `-n` when listing | Saves a weekly note, or lists recent notes when you give no fields |
 

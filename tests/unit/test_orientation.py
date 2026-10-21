@@ -383,7 +383,7 @@ def test_changelog_requirement_from_fragments_or_contributing() -> None:
     )
     assert text_only["changelog"]["expected"]
     assert text_only["changelog"]["evidence"] == [
-        "CONTRIBUTING or the PR template mentions 'CHANGES.rst'"
+        "CONTRIBUTING asks contributors to update 'CHANGES.rst'"
     ]
     none = conventions([], contributing="", pr_template="", check_names=[], found=find_paths([]))
     assert none["changelog"] == {"expected": False, "evidence": []}
@@ -421,6 +421,20 @@ def test_release_notes_in_the_pr_template_count() -> None:
         found=find_paths([]),
     )
     assert rules["changelog"]["expected"]
-    assert rules["changelog"]["evidence"] == [
-        "CONTRIBUTING or the PR template mentions 'Release Notes'"
-    ]
+    assert rules["changelog"]["evidence"] == ["The PR template has a 'Release Notes' section"]
+
+
+def test_generated_changelogs_are_not_a_request() -> None:
+    from git_into_gsoc.github.orientation import changelog_request
+
+    stdlib_like = (
+        "When writing commit messages, follow the style guide. Adherence to project commit "
+        "conventions is necessary for project automation (e.g., automatic changelog and "
+        "release notes generation)."
+    )
+    assert changelog_request(stdlib_like, "") is None
+    assert changelog_request("The changelog is maintained by the release team.", "") is None
+    assert (
+        changelog_request("Please add a news entry for every user-facing change.", "")
+        == "CONTRIBUTING asks contributors to update 'news entry'"
+    )

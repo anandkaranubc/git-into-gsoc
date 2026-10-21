@@ -913,6 +913,33 @@ def pointers_cmd(
     console.print(f"\n[dim]{escape(data['next_step'])}[/dim]")
 
 
+@app.command("pr-check", rich_help_panel="Contribute and apply")
+def pr_check_cmd(
+    ref: str = typer.Argument(..., help="owner/repo#123, a pull request URL, or owner/repo"),
+    number: int | None = typer.Argument(None, help="Pull request number if REF is owner/repo"),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Check your pull request against the repository's own rules before a reviewer does."""
+    data = _toolkit().pr_check(ref, number)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    data = _markup_safe(data)
+    table = Table(title=f"Pull request check: {data['ref']} ({data['lines_changed']} lines)")
+    table.add_column("")
+    table.add_column("Check")
+    table.add_column("Detail", overflow="fold")
+    for finding in data["findings"]:
+        table.add_row(_FINDING_MARK[finding["status"]], finding["title"], finding["detail"])
+    console.print(table)
+    console.print(f"\n[bold]{data['verdict']}[/bold]")
+    if data["what_happens_next"]:
+        console.print("\n[bold]Before it can merge[/bold]")
+        for gate in data["what_happens_next"]:
+            console.print(f"  - {gate}")
+    console.print(f"\n[dim]{data['note']}[/dim]")
+
+
 @app.command("draft", rich_help_panel="Contribute and apply")
 def draft_cmd(
     kind: str = typer.Argument(

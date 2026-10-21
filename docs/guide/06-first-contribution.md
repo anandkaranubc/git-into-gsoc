@@ -53,6 +53,8 @@ The project's **continuous integration (CI)** checks are automated tests that ru
 
 ## See it through review
 
+Before you ask for review, run `git-into-gsoc pr-check owner/repo#N` on your pull request. It checks your pull request against what the repository itself asks for: a linked issue, the template's checklist, a sign-off on every commit if the project requires one, tests next to code changes, a changelog entry if the project keeps one, and failing checks or merge conflicts. Each finding says where the rule came from, so you can confirm it. It cannot tell whether your change is right; only reviewers can.
+
 Reviews often ask for changes. That is a normal part of collaboration, and how you respond is the strongest predictor of whether your pull request lands. Reply to every review comment within a day, even if only to say when you will get to it. Make the requested updates, push them as new commits to the same branch, and say what changed. If you disagree, explain your reasoning with an example. If you are stuck, ask one focused question instead of going quiet; a pull request that falls silent is usually closed. `git-into-gsoc draft review-reply --repo sympy/sympy --issue sympy/sympy#12345` gives you a respectful structure for answering a review. If the project declines the change, thank them, note what you learned, and choose the next thing. When reviewers know you finish what you start, mark the phase done: `git-into-gsoc next` checks your open pull requests for you once your profile has your GitHub username: it says which ones have a merge conflict, a failing check, requested changes, or a comment you have not answered, and which are simply waiting.
 
 ```bash

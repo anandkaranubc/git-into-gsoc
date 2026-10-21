@@ -423,6 +423,37 @@ def _run_blocks(text: str) -> list[str]:
     return blocks
 
 
+_CHANGELOG_TERM_RE = re.compile(
+    r"(changelog|CHANGES\.(?:rst|md)|news (?:fragment|entry)|towncrier|changeset|whats_?new|release notes?)",
+    re.I,
+)
+_ASK_RE = re.compile(
+    r"\b(add|include|update|write|create|provide|need|needs|must|should|required|please|remember)\b",
+    re.I,
+)
+_GENERATED_RE = re.compile(r"\b(automatic\w*|generated|generate[sd]?)\b", re.I)
+
+
+def changelog_request(contributing: str, pr_template: str) -> str | None:
+    """Evidence that contributors must write a changelog or release-notes entry.
+
+    A heading in the pull request template counts (SymPy's "Release Notes").
+    Elsewhere the sentence must ask the contributor to act and must not describe
+    notes generated automatically from commits (stdlib's guide does).
+    """
+    for line in pr_template.splitlines():
+        heading = re.match(r"^\s*#{1,6}\s+(.+)$", line)
+        if heading and _CHANGELOG_TERM_RE.search(heading.group(1)):
+            return f"The PR template has a '{heading.group(1).strip()}' section"
+    for source, text in (("CONTRIBUTING", contributing), ("the PR template", pr_template)):
+        flat = re.sub(r"\s+", " ", re.sub(r"<!--.*?-->", " ", text, flags=re.S))
+        for sentence in re.split(r"(?<=[.!?])\s+", flat):
+            term = _CHANGELOG_TERM_RE.search(sentence)
+            if term and _ASK_RE.search(sentence) and not _GENERATED_RE.search(sentence):
+                return f"{source} asks contributors to update '{term.group(1)}'"
+    return None
+
+
 def conventions(
     commits: list[dict[str, Any]],
     *,
@@ -474,15 +505,9 @@ def conventions(
     changelog_evidence: list[str] = []
     if found.get("news_fragments"):
         changelog_evidence.append(f"{found['news_fragments']}/ holds one entry per change")
-    mention = re.search(
-        r"(changelog|CHANGES\.(?:rst|md)|news (?:fragment|entry)|towncrier|changeset|whats_?new|release notes?)",
-        text,
-        re.I,
-    )
+    mention = changelog_request(contributing, pr_template)
     if mention:
-        changelog_evidence.insert(
-            0, f"CONTRIBUTING or the PR template mentions '{mention.group(1)}'"
-        )
+        changelog_evidence.insert(0, mention)
 
     checklist_items = len(re.findall(r"^\s*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
     return {

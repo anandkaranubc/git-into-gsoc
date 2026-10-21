@@ -714,6 +714,18 @@ class GitHubClient:
             return []
         return data if isinstance(data, list) else []
 
+    def pull_commits(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+        """Commits on a pull request (first 100), short cache because they change."""
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/pulls/{int(number)}/commits",
+                params={"per_page": 100},
+                ttl=300,
+            )
+        except HttpError:
+            return []
+        return data if isinstance(data, list) else []
+
     def list_pull_files(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
         try:
             data = self._api(

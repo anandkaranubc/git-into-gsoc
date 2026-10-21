@@ -362,6 +362,21 @@ def gsoc_issue_pointers(
     )
 
 
+@mcp.tool(title="Check a pull request", annotations=READ_ONLY, structured_output=False)
+def gsoc_pr_check(ref: str) -> str:
+    """Check one pull request against the repository's own rules before review.
+
+    ref: owner/repo#123 or a pull request URL. Returns pass/warn/fail findings with the
+    evidence for each: merge conflict, failing checks, linked issue (a fail when a workflow
+    closes pull requests without one), description length, the template checklist, AI
+    disclosure when the template asks, commit sign-off when the repository requires DCO,
+    commit style, tests changed alongside code, a changelog entry when one is expected, size,
+    and draft state; plus the branch-rule gates still ahead. Coach the author to fix their own
+    branch; never push or comment for them.
+    """
+    return _call(toolkit().pr_check, ref)
+
+
 @mcp.tool(title="Message draft", annotations=READ_ONLY, structured_output=False)
 def gsoc_draft(kind: str, org: str = "", repo: str = "", issue: str = "") -> str:
     """Skeleton for a message the contributor must write themselves: kind is intro, question,
