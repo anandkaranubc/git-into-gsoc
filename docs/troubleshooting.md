@@ -79,7 +79,7 @@ Run `git-into-gsoc doctor`: it lists which assistants have the skill and which c
 
 ## Progress will not load
 
-If `progress.json` is damaged (for example by a manual edit), the tool keeps it as `progress.damaged-<date>.json` next to the original, prints a one-line warning, and starts a fresh file, so every command keeps working. Copy any entries you need back from the kept file. `doctor` shows the data directory. Saves are atomic and locked, so a crash or an assistant and the CLI saving at the same moment cannot damage the file; if a save reports that another process is saving and none is running, delete the `progress.json.lock` file it names. See [local data](configuration.md).
+If `progress.json` is damaged (for example by a manual edit), the tool keeps it as `progress.damaged-<date>.json` next to the original, prints a one-line warning, and starts a fresh file, so every command keeps working. Copy any entries you need back from the kept file. A file that cannot be read at all, because of its permissions or another program holding it, is different: the command stops with `Cannot read` and leaves the file where it is. `doctor` shows the data directory. Saves are atomic and locked, so a crash or an assistant and the CLI saving at the same moment cannot damage the file; if a save reports that another process is saving and none is running, delete the `progress.json.lock` file it names. See [local data](configuration.md).
 
 ## Ask for help
 

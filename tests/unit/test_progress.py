@@ -155,20 +155,44 @@ def _add_notes(path: str, worker: int, count: int) -> None:
         store.add_note(f"w{worker}-{i}")
 
 
+def _read_summaries(path: str, count: int) -> None:
+    from git_into_gsoc.progress.store import ProgressStore as Store
+
+    store = Store(Path(path))
+    for _ in range(count):
+        store.summary()
+
+
 def test_concurrent_writers_never_lose_or_corrupt_notes(tmp_path: Path) -> None:
+    """Eight writers and two readers at once, like the CLI next to an assistant's server.
+
+    On Windows a file being replaced or deleted is briefly locked; that must mean
+    "wait", never a crash, and never a good file set aside as damaged.
+    """
     import multiprocessing
 
     path = tmp_path / "progress.json"
+    ProgressStore(path).add_note("seed")
     ctx = multiprocessing.get_context("spawn")
     workers = [ctx.Process(target=_add_notes, args=(str(path), w, 10)) for w in range(8)]
+    workers += [ctx.Process(target=_read_summaries, args=(str(path), 40)) for _ in range(2)]
     for proc in workers:
         proc.start()
     for proc in workers:
-        proc.join(60)
+        proc.join(90)
         assert proc.exitcode == 0
     notes = ProgressStore(path).load().notes
-    assert len(notes) == 80 and len(set(notes)) == 80
+    assert len(notes) == 81 and len(set(notes)) == 81
     assert not list(tmp_path.glob("*.lock")) and not list(tmp_path.glob(".progress-*"))
+    assert not list(tmp_path.glob("progress.damaged-*")), "a good file was set aside"
+
+
+def test_an_unreadable_progress_file_is_an_error_not_a_reset(tmp_path: Path) -> None:
+    path = tmp_path / "progress.json"
+    path.mkdir()  # reading a folder fails the way a locked or unreadable file does
+    with pytest.raises(InputError, match="Cannot read"):
+        ProgressStore(path).load()
+    assert path.is_dir() and not list(tmp_path.glob("progress.damaged-*"))
 
 
 def test_stale_lock_from_a_crashed_process_is_broken(tmp_path: Path) -> None:

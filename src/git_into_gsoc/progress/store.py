@@ -25,6 +25,10 @@ from git_into_gsoc.validation import parse_issue_ref, parse_repo
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
 LOCK_TIMEOUT_SECONDS = 10.0
 STALE_LOCK_SECONDS = 60.0
+# Windows briefly denies access to a file another process is replacing or deleting
+# (a sharing violation, raised as PermissionError). A replace takes milliseconds.
+BUSY_RETRIES = 40
+BUSY_WAIT_SECONDS = 0.025
 # Notes are re-read by every `log` listing and by assistants, so each text stays
 # short enough to scan. Limits apply when saving; older, longer notes still load.
 MAX_TEXT_CHARS = 2000
@@ -53,6 +57,22 @@ def _mutating(method: Callable[..., _T]) -> Callable[..., _T]:
             return method(self, *args, **kwargs)
 
     return wrapper
+
+
+def _busy(exc: OSError) -> bool:
+    """A Windows sharing violation: the file is mid-replace or mid-delete elsewhere."""
+    return os.name == "nt" and isinstance(exc, PermissionError)
+
+
+def _retry_busy(action: Callable[[], _T]) -> _T:
+    for attempt in range(BUSY_RETRIES):
+        try:
+            return action()
+        except PermissionError as exc:
+            if not _busy(exc) or attempt == BUSY_RETRIES - 1:
+                raise
+            time.sleep(BUSY_WAIT_SECONDS)
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 def _require(value: str, what: str) -> str:
@@ -127,7 +147,9 @@ class ProgressStore:
                 fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 os.close(fd)
                 break
-            except FileExistsError:
+            except (FileExistsError, PermissionError) as exc:
+                if isinstance(exc, PermissionError) and not _busy(exc):
+                    raise  # a folder we may not write to; waiting will not help
                 with contextlib.suppress(OSError):
                     if time.time() - lock.stat().st_mtime > STALE_LOCK_SECONDS:
                         lock.unlink()  # left behind by a process that crashed
@@ -149,8 +171,17 @@ class ProgressStore:
         if not self.path.exists():
             return self._fresh()
         try:
-            state = ProgressState.model_validate_json(self.path.read_text(encoding="utf-8"))
-        except (ValidationError, ValueError, OSError) as exc:
+            text = _retry_busy(lambda: self.path.read_text(encoding="utf-8"))
+        except OSError as exc:
+            # Unreadable is not damaged: moving the file aside would hide the person's
+            # progress behind a fresh, empty one.
+            raise InputError(
+                f"Cannot read {self.path}: {exc.strerror or exc}",
+                hint="Check the file's permissions, or close other programs using it.",
+            ) from exc
+        try:
+            state = ProgressState.model_validate_json(text)
+        except (ValidationError, ValueError) as exc:
             return self._recover(exc)
         state.phases = {**DEFAULT_PHASES, **state.phases}  # files saved before a phase was added
         return state
@@ -191,7 +222,7 @@ class ProgressStore:
                 handle.write(state.model_dump_json(indent=2))
             if os.name == "posix":
                 os.chmod(tmp, 0o600)
-            os.replace(tmp, self.path)
+            _retry_busy(lambda: os.replace(tmp, self.path))
         except BaseException:
             with contextlib.suppress(OSError):
                 os.unlink(tmp)
