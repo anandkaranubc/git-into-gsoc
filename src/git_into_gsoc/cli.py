@@ -993,11 +993,7 @@ def draft_cmd(
 ) -> None:
     """A skeleton for an intro, question, claim comment, PR description, review reply, or report."""
     if check is not None:
-        try:
-            text = check.read_text(encoding="utf-8", errors="replace")
-        except OSError as exc:
-            raise InputError(f"Cannot read {check}: {exc.strerror or exc}") from exc
-        report = _toolkit().check_message(kind, text)
+        report = _toolkit().check_message(kind, _read_document(check))
         if output == Output.json:
             _emit(report, output)
             return

@@ -157,3 +157,18 @@ def test_proposal_reads_drafts_saved_by_any_common_editor(tmp_path: Path, encodi
     assert result.exit_code == 0, result.output[-600:]
     findings = {f["id"]: f["status"] for f in json.loads(result.output)["findings"]}
     assert findings["about"] == "pass"
+
+
+@pytest.mark.parametrize("encoding", ["utf-8-sig", "utf-16", "cp1252"])
+def test_draft_check_reads_messages_saved_by_any_common_editor(
+    tmp_path: Path, encoding: str
+) -> None:
+    from git_into_gsoc.cli import app
+
+    message = tmp_path / "message.txt"
+    message.write_text("Café question — where is the parser?\n", encoding=encoding)
+    result = CliRunner().invoke(
+        app, ["draft", "question", "--check", str(message), "--output", "json"]
+    )
+    assert result.exit_code == 0, result.output[-600:]
+    assert json.loads(result.output)["words"] == 6
