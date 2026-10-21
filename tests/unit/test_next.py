@@ -102,21 +102,74 @@ def test_next_rechecks_tracked_issues_and_reports_changes(api: respx.MockRouter)
     api.get(url__regex=rf"{GH}/repos/sympy/sympy/issues/5/timeline.*").mock(
         return_value=httpx.Response(200, json=[])
     )
-    search = api.get(f"{GH}/search/issues").mock(
-        return_value=httpx.Response(
+
+    def search_response(request: httpx.Request) -> httpx.Response:
+        if "is:pr" in request.url.params["q"]:
+            pr_item = {
+                **_search_item(9, "sympy/sympy"),
+                "pull_request": {"url": f"{GH}/repos/sympy/sympy/pulls/9"},
+            }
+            return httpx.Response(200, json={"items": [pr_item]})
+        return httpx.Response(
             200, json={"items": [_search_item(7, "sympy/sympy"), _search_item(8, "sympy/live")]}
+        )
+
+    search = api.get(f"{GH}/search/issues").mock(side_effect=search_response)
+    api.get(f"{GH}/repos/sympy/sympy/pulls/9").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "number": 9,
+                "title": "Fix docs typo",
+                "html_url": "https://github.com/sympy/sympy/pull/9",
+                "user": {"login": "alice", "type": "User"},
+                "draft": False,
+                "mergeable_state": "clean",
+                "created_at": _iso(10),
+                "base": {"ref": "master", "repo": {"full_name": "sympy/sympy"}},
+                "head": {"sha": "abc123"},
+            },
+        )
+    )
+    api.get(url__regex=rf"{GH}/repos/sympy/sympy/issues/9/timeline.*").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"event": "committed", "author": {"date": _iso(10)}},
+                {
+                    "event": "commented",
+                    "user": {"login": "bob", "type": "User"},
+                    "created_at": _iso(3),
+                    "body": "Could you add a test?",
+                },
+            ],
+        )
+    )
+    api.get(url__regex=rf"{GH}/repos/sympy/sympy/commits/abc123/check-runs.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "check_runs": [{"name": "tests", "status": "completed", "conclusion": "success"}]
+            },
         )
     )
 
     data = GSoCToolkit().next_steps(now=NOW)
+    prs = data["open_pull_requests"]
+    assert [p["ref"] for p in prs] == ["sympy/sympy#9"]
+    assert prs[0]["status"] == "needs_you"
+    assert prs[0]["summary"].startswith("@bob commented 3 days ago with no reply from you")
+    assert data["actions"][0]["title"].startswith("Your pull request sympy/sympy#9 needs you")
+    assert "draft review-reply --repo sympy/sympy" in data["actions"][0]["command"]
     tracked = data["tracked_issues"][0]
     assert tracked["ref"] == "sympy/sympy#5"
     assert tracked["availability"] == "assigned"
     assert tracked["previous"] == "available"
     assert any("sympy/sympy#5" in c and "assigned" in c for c in data["changes"])
     assert {i["repo"] for i in data["new_issues"]} == {"sympy/sympy", "sympy/live"}
-    query = search.calls[0].request.url.params["q"]
-    assert "repo:sympy/sympy" in query and "created:>" in query
+    queries = [c.request.url.params["q"] for c in search.calls]
+    assert any("repo:sympy/sympy" in q and "created:>" in q for q in queries)
+    assert any(q.startswith("is:pr is:open author:alice -user:alice") for q in queries)
     assert ProgressStore().load().issue_status["sympy/sympy#5"] == "assigned"
     assert ProgressStore().load().last_checked_at is not None
     commands = " ".join(a["command"] for a in data["actions"])

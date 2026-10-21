@@ -18,7 +18,7 @@ Repositories can be written as `owner/name`, as any GitHub URL, or as the `git@g
 | Command | Options | Result |
 |---|---|---|
 | `program` | `--year` (default 2027), `--size small\|medium\|large` | Current phase and advice, timeline with official or estimated dates, anti-spam rules |
-| `next` | `--year`, `--no-check` | What to do right now: phase and deadlines, a time budget when your profile has hours per week (hours until the next milestone, split by what the phase needs), your tracked issues re-checked live with any status changes, new beginner issues in places you follow, and up to six actions with the exact command for each |
+| `next` | `--year`, `--no-check` | What to do right now: phase and deadlines, a time budget when your profile has hours per week (hours until the next milestone, split by what the phase needs), your tracked issues re-checked live with any status changes, your open pull requests in other people's repositories sorted into "needs you" (a merge conflict, a failing check, requested changes with no commit since, a comment with no reply, a draft) and "waiting" (with a nudge to follow up once after five quiet days) when your profile has a GitHub username, new beginner issues in places you follow, and up to six actions with the exact command for each |
 | `journey` | none | All ten phases with goals and actions |
 | `proposal [FILE]` | `--github`, `--verify/--no-verify`, `--ideas-file` | Without a file: the checklist and suggested structure. With a draft: pass/warn/fail findings on sections, contribution links, timeline detail, specificity, generic phrasing, placeholders, and length |
 

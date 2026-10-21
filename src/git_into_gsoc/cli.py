@@ -1213,6 +1213,17 @@ def next_cmd(
             console.print(
                 f"  [{style}]{item['availability']:<12}[/] {item['ref']}  [dim]{escape(item['reason'])}[/dim]"
             )
+    if data.get("open_pull_requests"):
+        console.print("\n[bold]Your open pull requests[/bold]")
+        for pr in data["open_pull_requests"]:
+            mark = (
+                "[yellow]needs you[/yellow]"
+                if pr["status"] == "needs_you"
+                else "[dim]waiting[/dim]  "
+            )
+            console.print(f"  {mark} {pr['ref']}  {escape(pr['summary'])}")
+            for extra in pr.get("reasons", [])[1:]:
+                console.print(f"           [dim]also: {escape(extra)}[/dim]")
     if data["new_issues"]:
         console.print("\n[bold]New beginner issues in places you follow[/bold]")
         for issue in data["new_issues"][:5]:

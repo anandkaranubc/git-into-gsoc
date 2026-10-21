@@ -112,6 +112,7 @@ def plan_actions(
     *,
     tracked_issues: list[dict[str, Any]],
     new_issues: list[dict[str, Any]],
+    open_pull_requests: list[dict[str, Any]] | None = None,
     now: datetime | None = None,
 ) -> list[dict[str, str]]:
     """A short, ordered ladder of concrete next actions."""
@@ -138,6 +139,28 @@ def plan_actions(
                     f"{label} {when}{estimate}",
                     "git-into-gsoc program",
                     "Plan around it now; the official timeline is the only source of truth.",
+                )
+            )
+
+    # An open pull request that needs its author outranks everything but a deadline:
+    # reviewers move on when a pull request goes quiet.
+    for pr in (open_pull_requests or [])[:2]:
+        if pr.get("status") == "needs_you":
+            actions.append(
+                _action(
+                    f"Your pull request {pr['ref']} needs you: {pr['summary']}",
+                    f"git-into-gsoc draft review-reply --repo {pr.get('repo') or 'owner/repo'}",
+                    "Answering within a day keeps a review moving; the GSoC guide asks "
+                    "contributors to finish what they start.",
+                )
+            )
+        elif pr.get("follow_up"):
+            actions.append(
+                _action(
+                    f"Follow up once on {pr['ref']}: {pr.get('quiet_days')} days without a reply",
+                    f"git-into-gsoc draft question --repo {pr.get('repo') or 'owner/repo'}",
+                    "One short, specific follow-up after about five days is expected; "
+                    "more than one reads as pressure.",
                 )
             )
 

@@ -709,6 +709,23 @@ class GitHubClient:
             return []
         return data if isinstance(data, list) else []
 
+    def check_runs(self, owner: str, repo: str, ref: str) -> list[dict[str, Any]]:
+        """Check runs on a commit with their status and conclusion (short cache)."""
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/commits/{quote(ref, safe='')}/check-runs",
+                params={"per_page": 50},
+                ttl=300,
+            )
+        except HttpError:
+            return []
+        runs = data.get("check_runs") if isinstance(data, dict) else None
+        return [
+            {"name": r.get("name"), "status": r.get("status"), "conclusion": r.get("conclusion")}
+            for r in runs or []
+            if isinstance(r, dict)
+        ]
+
     def branch_rules(self, owner: str, repo: str, branch: str) -> list[dict[str, Any]]:
         """Active ruleset rules on a branch (readable without a token for public repos).
 

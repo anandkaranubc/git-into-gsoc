@@ -479,7 +479,9 @@ def gsoc_next(year: int = 0, recheck: bool = True) -> str:
     """What should the contributor do right now? One call that combines the program phase and
     upcoming deadlines, their saved progress, a live re-check of every tracked issue (reporting
     status changes such as available -> claimed), beginner issues created in tracked repos and
-    shortlisted orgs since the last check, and an ordered list of concrete next actions, each
+    shortlisted orgs since the last check, the contributor's open pull requests sorted into
+    "needs_you" (conflict, failing check, requested changes, unanswered comment, draft) and
+    "waiting" (when a saved profile has a GitHub username), and an ordered list of concrete next actions, each
     with the exact command. Use this first when a user asks "what now?" or returns after a break.
     recheck=False skips the live GitHub checks.
     """

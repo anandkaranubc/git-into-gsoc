@@ -45,7 +45,7 @@ phase. Community participation and note-taking fit anywhere.
 | `community` | Introduce themselves and ask informed questions in the project's public channel, before claiming any work | Maintainers recognize their name from useful conversations |
 | `find_issues` | Find an open beginner issue and check whether it is free | One issue they can reproduce and explain |
 | `contribute` | Set up the project, make a small correct change, open a pull request | A pull request they can defend in review |
-| `iterate` | See the pull request through review: reply within a day, push fixes as new commits, ask one focused question instead of going quiet, close out gracefully if declined | Reviewers know they finish what they start |
+| `iterate` | See the pull request through review (`next` shows which open pull requests need them and why): reply within a day, push fixes as new commits, ask one focused question instead of going quiet, close out gracefully if declined | Reviewers know they finish what they start |
 | `proposal` | Draft from the organization's template, grounded in their own work, and check the draft before sharing it | A draft reviewed by mentors and ready for the official site |
 | `track` | Keep a short weekly log of goals, links, and blockers | A clear next step every week |
 

@@ -38,6 +38,7 @@ from git_into_gsoc.github.pointers import (
     fix_norm,
     resolve_paths,
 )
+from git_into_gsoc.github.pulls import pull_request_status
 from git_into_gsoc.github.repos import (
     OUTSIDER_ROLES,
     channels_in,
@@ -582,11 +583,20 @@ class GSoCToolkit:
                         changes.append(f"{key} went from {previous} to {status}: {reason}")
 
         new_issues = self._new_beginner_issues(state, now=now) if recheck else []
+        github_login = str((state.profile or {}).get("github") or "").strip()
+        open_prs = (
+            self.open_pull_requests(github_login, now=now) if recheck and github_login else []
+        )
         if recheck:
             self.progress.mark_checked(statuses, now)
 
         actions = plan_actions(
-            state, program, tracked_issues=tracked, new_issues=new_issues, now=now
+            state,
+            program,
+            tracked_issues=tracked,
+            new_issues=new_issues,
+            open_pull_requests=open_prs,
+            now=now,
         )
         return {
             "checked_at": now.isoformat(),
@@ -601,6 +611,7 @@ class GSoCToolkit:
             "time_budget": time_budget(state, program, now=now),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
+            "open_pull_requests": open_prs,
             "changes": changes,
             "new_issues": new_issues,
             "actions": actions,
@@ -1154,6 +1165,44 @@ class GSoCToolkit:
         except GigError as exc:
             return "unknown", str(exc)
         return assessment.availability.value, assessment.reason
+
+    def open_pull_requests(
+        self, username: str, *, now: datetime | None = None, limit: int = 5
+    ) -> list[dict[str, Any]]:
+        """The contributor's open pull requests, sorted into "needs you" and "waiting".
+
+        One search plus three calls per pull request (details, timeline, checks),
+        for the most recently updated few. Pull requests in the person's own
+        repositories are left out: nobody else is there to review them.
+        Failures leave that pull request out.
+        """
+        login = validate_login(username, kind="GitHub username")
+        try:
+            items = self.github.search_issues(
+                f"is:pr is:open author:{login} -user:{login} archived:false", per_page=limit
+            )
+        except GigError:
+            return []
+
+        def one(item: dict[str, Any]) -> dict[str, Any] | None:
+            parts = str(item.get("repository_url") or "").rstrip("/").split("/")
+            if len(parts) < 2 or not item.get("number"):
+                return None
+            owner, repo, number = parts[-2], parts[-1], int(item["number"])
+            pull = self.github.get_pull(owner, repo, number)
+            if not pull:
+                return None
+            timeline = self.github.get_issue_timeline(owner, repo, number) or []
+            sha = str((pull.get("head") or {}).get("sha") or "")
+            checks = self.github.check_runs(owner, repo, sha) if sha else []
+            status = pull_request_status(pull, timeline, checks, now=now)
+            status["title"] = clean_untrusted(status.get("title"), limit=160)
+            return status
+
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            found = [r for r in pool.map(one, items[:limit]) if r]
+        found.sort(key=lambda r: (r["status"] != "needs_you", -(r.get("quiet_days") or 0)))
+        return found
 
     def _new_beginner_issues(self, state: ProgressState, *, now: datetime) -> list[dict[str, Any]]:
         """Beginner issues created in tracked repos / shortlisted orgs since the last check."""
