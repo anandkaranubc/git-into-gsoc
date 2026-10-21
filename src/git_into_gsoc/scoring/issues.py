@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime
 
 from git_into_gsoc.models import Availability, IssueCandidate
@@ -53,6 +54,13 @@ NEGATIVE_LABELS = {
 }
 # Without a beginner label an issue can still be a good start, but never a top pick.
 NO_BEGINNER_LABEL_CAP = 75.0
+# An epic or tracking issue groups many tasks. Even with "good first issue" on it,
+# the first task is one of its sub-issues, never the whole thing.
+UMBRELLA_LABELS = {"epic", "tracking", "tracking issue", "umbrella", "meta", "roadmap"}
+_UMBRELLA_TITLE_RE = re.compile(
+    r"^\W*(?:epic|tracking issue|tracker|umbrella|roadmap)\b", re.IGNORECASE
+)
+UMBRELLA_CAP = 35.0
 
 
 def score_issue(issue: IssueCandidate) -> IssueCandidate:
@@ -140,6 +148,10 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
     if len(issue.body_excerpt) < 40:
         score -= 5.0
         signals.append("Very short issue body. Ask maintainers for details")
+
+    if labels & UMBRELLA_LABELS or _UMBRELLA_TITLE_RE.match(issue.title or ""):
+        score = min(score, UMBRELLA_CAP)
+        signals.append("An epic or tracking issue: pick one of its smaller sub-issues instead")
 
     if not beginner:
         score = min(score, NO_BEGINNER_LABEL_CAP)

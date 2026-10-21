@@ -301,3 +301,25 @@ def test_a_long_open_backlog_issue_ranks_below_a_fresh_good_first_issue() -> Non
     assert fresh.beginner_score > old.beginner_score
     assert any("Open since 2020" in s for s in old.signals)
     assert any("backlog" in s for s in old.signals)
+
+
+def test_an_epic_is_never_a_top_beginner_pick() -> None:
+    # JdeRobot/RoboticsAcademy-Desktop#11 (2026-10-21), "EPIC Feature Request: ...",
+    # labelled good first issue and epic, scored 66 as an available beginner task.
+    epic = IssueCandidate(
+        repo="JdeRobot/RoboticsAcademy-Desktop",
+        number=11,
+        title="EPIC Feature Request: Progress Tracking and Engagement Features",
+        url="https://github.com/JdeRobot/RoboticsAcademy-Desktop/issues/11",
+        labels=["enhancement", "good first issue", "help wanted", "epic"],
+        availability=Availability.AVAILABLE,
+        comments=1,
+        updated_at=datetime.now(UTC) - timedelta(days=3),
+    )
+    scored = score_issue(epic)
+    assert scored.beginner_score <= 35
+    assert any("sub-issues" in s for s in scored.signals)
+    by_title = score_issue(
+        epic.model_copy(update={"labels": ["good first issue"], "title": "[Tracking issue] Docs"})
+    )
+    assert by_title.beginner_score <= 35
