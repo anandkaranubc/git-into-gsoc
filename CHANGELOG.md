@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.3.1...v0.4.0) (2026-10-21)
+
+
+### Features
+
+* **ideas:** follow link-only umbrella pages, ignore links when reading AI policy, and link year-sorted proposal archives ([#50](https://github.com/anandkaranubc/git-into-gsoc/issues/50)) ([b19947d](https://github.com/anandkaranubc/git-into-gsoc/commit/b19947d899093d6b7e2a5c338e061c0d9947f5e4))
+
+
+### Documentation
+
+* **guide:** list the plugin, extension, and registry ways to connect an assistant ([#51](https://github.com/anandkaranubc/git-into-gsoc/issues/51)) ([b24c844](https://github.com/anandkaranubc/git-into-gsoc/commit/b24c8441cf94b0cb73d064133f783eb0412efe80))
+
 ## [0.3.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.3.0...v0.3.1) (2026-10-21)
 
 
