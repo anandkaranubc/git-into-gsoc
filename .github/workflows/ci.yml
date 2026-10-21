@@ -112,7 +112,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/remote" "$RUNNER_TEMP/home2"
           cp install.sh "$RUNNER_TEMP/remote/install.sh"
           cd "$RUNNER_TEMP/remote"
-          GIG_REPO_URL="file://$GITHUB_WORKSPACE" GIG_HOME="$RUNNER_TEMP/home2" bash install.sh --assistant gemini
+          # CI checks out a detached merge commit; pin it so the Git clone needs no default branch.
+          GIG_REPO_URL="file://$GITHUB_WORKSPACE@$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" \
+            GIG_HOME="$RUNNER_TEMP/home2" bash install.sh --assistant gemini
           "$(uv tool dir --bin)/git-into-gsoc" --version
           test -f "$RUNNER_TEMP/home2/.gemini/skills/git-into-gsoc/SKILL.md"
 
