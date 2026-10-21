@@ -1302,7 +1302,7 @@ class GSoCToolkit:
                     pass
             guide = self.github.contribution_guide(repo)
             context["channels"] = context.get("channels") or guide.communication_channels
-            text = guide.contributing_excerpt
+            text = guide.contributing_text or guide.contributing_excerpt
             context["claim_convention"] = claim_convention(text)
             context["dco"] = bool(
                 re.search(r"Signed-off-by|git commit -s|Developer Certificate", text)

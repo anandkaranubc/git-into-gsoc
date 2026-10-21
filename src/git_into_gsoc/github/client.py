@@ -647,6 +647,7 @@ class GitHubClient:
             repo=full_name,
             contributing_url=(files.get("contributing") or {}).get("html_url"),
             contributing_excerpt=_excerpt(text, 1500),
+            contributing_text=text,
             code_of_conduct_url=coc.get("html_url"),
             toolchain=toolchain,
             devcontainer=devcontainer,

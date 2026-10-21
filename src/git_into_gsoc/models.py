@@ -191,6 +191,8 @@ class ContributionGuide(BaseModel):
     repo: str
     contributing_url: str | None = None
     contributing_excerpt: str = ""
+    # The whole guide, for reading rules past the excerpt; never printed or returned.
+    contributing_text: str = Field(default="", exclude=True, repr=False)
     code_of_conduct_url: str | None = None
     toolchain: list[str] = Field(default_factory=list)
     devcontainer: bool = False

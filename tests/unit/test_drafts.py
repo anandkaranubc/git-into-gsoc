@@ -169,3 +169,26 @@ def test_cli_draft_check_reads_a_file(tmp_path) -> None:
     assert result.exit_code == 0, result.output
     assert "A bare request to work on it" in result.output
     assert "Fix 1 problem(s) before sending." in result.output
+
+
+def test_claim_draft_reads_the_whole_contributing_guide(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import ContributionGuide
+    from git_into_gsoc.service import GSoCToolkit
+
+    # zulip/zulip explains `@zulipbot claim` around line 400 of CONTRIBUTING.md; only
+    # the first 1,500 characters were read, so the draft said nothing about it.
+    intro = "Welcome to Zulip. " * 120
+    full = intro + "\nTo claim a help wanted issue, post a comment that says `@zulipbot claim`.\n"
+    full += "Sign your commits with git commit -s.\n"
+    guide = ContributionGuide(
+        repo="zulip/zulip", contributing_excerpt=intro[:1500], contributing_text=full
+    )
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.github, "contribution_guide", lambda repo: guide)
+    monkeypatch.setattr(
+        toolkit, "issue_status", lambda ref: {"title": "x", "availability": "available"}
+    )
+    draft = toolkit.draft("claim", issue="zulip/zulip#36000")
+    assert draft["context"]["claim_convention"] == {"kind": "command", "text": "@zulipbot claim"}
+    assert "@zulipbot claim" in draft["template"]
+    assert "contributing_text" not in guide.model_dump()  # never printed or sent to assistants
