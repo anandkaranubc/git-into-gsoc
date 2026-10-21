@@ -352,6 +352,10 @@ def ideas_cmd(
             )
         console.print(table)
         console.print(f"[dim]{escape(data['next_step'])}[/dim]")
+    if data.get("past_proposals"):
+        console.print("[bold]Shared past proposals (read to calibrate; never copy)[/bold]")
+        for folder in data["past_proposals"][:4]:
+            console.print(f"  {folder['files']} file(s): {folder['url']}")
     if data.get("sub_pages") and not data["ideas"]:
         console.print("[bold]Sub-project pages[/bold]")
         for page in data["sub_pages"][:20]:
@@ -487,12 +491,23 @@ def repo_cmd(
 
 
 @app.command("orient")
-def orient_cmd(full_name: str, output: Output = OUTPUT_OPTION) -> None:
+def orient_cmd(
+    full_name: str,
+    codetour: Path | None = typer.Option(
+        None, "--codetour", help="Also write a CodeTour file (VS Code) for the reading plan here"
+    ),
+    output: Output = OUTPUT_OPTION,
+) -> None:
     """Get your bearings in a repository: code map, entry points, test command, who merges, rules."""
-    data = _toolkit().orient_repo(full_name)
+    data = _toolkit().orient_repo(full_name, codetour=codetour is not None)
+    if codetour is not None:
+        codetour.parent.mkdir(parents=True, exist_ok=True)
+        codetour.write_text(json.dumps(data["codetour"], indent=2) + "\n", encoding="utf-8")
     if output == Output.json:
         _emit(data, output)
         return
+    if codetour is not None:
+        console.print(f"Wrote the CodeTour file to {codetour}", soft_wrap=True)
     langs = ", ".join(f"{x['name']} {x['share']}%" for x in data["languages"]) or "unknown"
     head = (data.get("as_of_commit") or "")[:10]
     lines = [

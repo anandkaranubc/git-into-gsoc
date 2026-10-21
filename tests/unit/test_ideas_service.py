@@ -46,6 +46,9 @@ def api() -> respx.MockRouter:
         router.get(f"{ARCHIVE}/2026.json").mock(
             return_value=httpx.Response(200, json=_archive_year(2026))
         )
+        router.get(url__regex=r"https://api\.github\.com/repos/.*/git/trees/HEAD.*").mock(
+            return_value=httpx.Response(404)
+        )
         yield router
 
 
@@ -124,3 +127,45 @@ def test_cli_ideas_table(api: respx.MockRouter) -> None:
     assert "trajectory" in result.stdout
     assert "350" in result.stdout
     assert "AI" in result.stdout or "disclose" in result.stdout
+
+
+def test_past_proposal_folders_match_org_names() -> None:
+    from git_into_gsoc.gsoc.archive import proposal_folders
+
+    trees = {
+        "SammanSarkar/GSoC_archive_2025": [
+            {"path": "SymPy", "type": "tree"},
+            {"path": "SymPy/proposal-a.pdf", "type": "blob"},
+            {"path": "SymPy/proposal-b.pdf", "type": "blob"},
+            {"path": "Sugar Labs", "type": "tree"},
+            {"path": "Sugar Labs/x.pdf", "type": "blob"},
+        ],
+        "pavanjoshi914/GSoC_archive": [
+            {"path": "2024", "type": "tree"},
+            {"path": "2024/sympy", "type": "tree"},
+            {"path": "2024/sympy/one.pdf", "type": "blob"},
+        ],
+    }
+    found = proposal_folders(lambda owner, repo: trees.get(f"{owner}/{repo}", []), "SymPy")
+    assert [(f["repo"], f["path"], f["files"]) for f in found] == [
+        ("SammanSarkar/GSoC_archive_2025", "SymPy", 2),
+        ("pavanjoshi914/GSoC_archive", "2024/sympy", 1),
+    ]
+    assert found[0]["url"].endswith("/tree/HEAD/SymPy")
+    assert proposal_folders(lambda o, r: [], "SymPy") == []
+
+
+def test_org_ideas_links_past_proposals(api: respx.MockRouter) -> None:
+    api.get(SYMPY_RAW).mock(return_value=httpx.Response(200, text=_read("wiki_headings.md")))
+    api.get(url__regex=r"https://api\.github\.com/repos/.*/git/trees/HEAD.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "tree": [{"path": "SymPy", "type": "tree"}, {"path": "SymPy/p.pdf", "type": "blob"}]
+            },
+        )
+    )
+    data = GSoCToolkit().org_ideas("SymPy")
+    assert data["past_proposals"]
+    assert data["past_proposals"][0]["files"] == 1
+    assert "never copy" in data["past_proposals_note"].lower()

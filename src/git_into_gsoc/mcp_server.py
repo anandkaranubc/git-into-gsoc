@@ -243,7 +243,7 @@ def gsoc_evaluate_repo(full_name: str) -> str:
 
 
 @mcp.tool(title="Repository orientation", annotations=READ_ONLY, structured_output=False)
-def gsoc_orient_repo(full_name: str) -> str:
+def gsoc_orient_repo(full_name: str, codetour: bool = False) -> str:
     """Orientation sheet for a repository the contributor has chosen, built from about 16
     cached GitHub calls and containing facts and paths only: top-level code map with file
     counts and purpose guesses, entry points, the test command CI really runs, README /
@@ -253,9 +253,10 @@ def gsoc_orient_repo(full_name: str) -> str:
     chat channels, one recently merged small outsider PR as a worked example, and an ordered
     reading plan. Use after gsoc_evaluate_repo, before the contributor reads code. Any
     narrative you write about the code must cite paths from this result.
-    full_name: owner/repo or a GitHub URL.
+    full_name: owner/repo or a GitHub URL. codetour=True adds a CodeTour (VS Code) file as JSON
+    under "codetour" that walks the reading plan, pinned to the inspected commit.
     """
-    return _call(toolkit().orient_repo, full_name)
+    return _call(toolkit().orient_repo, full_name, codetour=codetour)
 
 
 @mcp.tool(

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import urlparse
 
@@ -117,6 +118,48 @@ def summarize_mentors(
         "repos_touched": [{"repo": r, "projects": n} for r, n in repos.most_common(10)],
         "top_tech_tags": [{"tag": t, "projects": n} for t, n in tags.most_common(10)],
     }
+
+
+PROPOSAL_ARCHIVES = (
+    "SammanSarkar/GSoC_archive_2025",
+    "satwiksps/GSoC_archive_2026",
+    "pavanjoshi914/GSoC_archive",
+    "Google-Summer-of-Code-Archive/gsoc-proposals-archive",
+)
+
+
+def proposal_folders(
+    tree_of: Callable[[str, str], list[dict[str, Any]]], org_name: str, *, limit: int = 6
+) -> list[dict[str, Any]]:
+    """Folders in community proposal archives whose name matches the organization.
+
+    `tree_of(owner, repo)` returns a recursive tree listing. Results link to the
+    folder on GitHub; nothing is downloaded, because the files hold personal data.
+    """
+    wanted = normalize_name(org_name)
+    if len(wanted) < 4:
+        return []
+    found: list[dict[str, Any]] = []
+    for full in PROPOSAL_ARCHIVES:
+        owner, repo = full.split("/", 1)
+        entries = tree_of(owner, repo)
+        folders = [str(e["path"]) for e in entries if e.get("type") == "tree" and e.get("path")]
+        blobs = [str(e["path"]) for e in entries if e.get("type") == "blob" and e.get("path")]
+        for folder in folders:
+            name = normalize_name(folder.rsplit("/", 1)[-1])
+            if name == wanted or (len(name) >= 4 and (name in wanted or wanted in name)):
+                files = sum(1 for b in blobs if b.startswith(folder + "/"))
+                if files:
+                    found.append(
+                        {
+                            "repo": full,
+                            "path": folder,
+                            "files": files,
+                            "url": f"https://github.com/{full}/tree/HEAD/{folder}",
+                        }
+                    )
+    found.sort(key=lambda f: (-f["files"], f["repo"]))
+    return found[:limit]
 
 
 class ArchiveClient:

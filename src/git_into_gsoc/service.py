@@ -17,6 +17,7 @@ from git_into_gsoc.github.orientation import (
     ci_test_commands,
     code_map,
     codeowners_for,
+    codetour_from_orientation,
     conventions,
     days_since,
     entry_points,
@@ -42,7 +43,7 @@ from git_into_gsoc.github.repos import (
     repo_lead_score,
 )
 from git_into_gsoc.github.search import build_issue_query, or_group
-from git_into_gsoc.gsoc.archive import ArchiveClient, summarize_mentors
+from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
@@ -269,17 +270,25 @@ class GSoCToolkit:
         use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
         if not use_gsoc:
             note = "Searching " + (f"{repo}" if repo else f"org {org}" if org else "all of GitHub")
+        labels_used: list[str] = [label] if label else ["good first issue", "help wanted"]
+        if repo and not label:
+            owner_name, repo_name = parse_repo(repo)
+            own = pick_beginner_label(self.github.list_labels(owner_name, repo_name))
+            if own and own.lower() not in {x.lower() for x in labels_used}:
+                labels_used = [own, *labels_used]
+                note += f" Using this repository's own beginner label '{own}' first."
         issues = self.github.find_beginner_issues(
             language=language,
             org=org,
             orgs=shortlist if use_gsoc else None,
             repo=repo,
-            label=label,
+            labels=labels_used,
             max_results=max_results,
             org_names=owner_names,
         )
         return {
             "scope": "gsoc" if use_gsoc else "custom",
+            "labels_used": labels_used,
             "note": note,
             "count": len(issues),
             "issues": [
@@ -562,7 +571,7 @@ class GSoCToolkit:
 
     # ---------------------------------------------------------- orientation
 
-    def orient_repo(self, full_name: str) -> dict[str, Any]:
+    def orient_repo(self, full_name: str, *, codetour: bool = False) -> dict[str, Any]:
         """A one-screen orientation sheet: facts and paths only, about 16 API calls."""
         owner, repo = parse_repo(full_name)
         raw = self.github.get_repo(owner, repo)
@@ -634,13 +643,14 @@ class GSoCToolkit:
             for name, size in sorted(langs.items(), key=lambda kv: -kv[1])[:4]
         ]
         tests = ci_test_commands(workflow_texts)
+        result: dict[str, Any]
         fallback_hints = [
             f"{found['makefile']} lists local targets" if found.get("makefile") else "",
             "Dev container present: open in Codespaces or VS Code for a ready environment"
             if found.get("devcontainer")
             else "",
         ]
-        return {
+        result = {
             "repo": f"{owner}/{repo}",
             "url": raw.get("html_url") or f"https://github.com/{owner}/{repo}",
             "description": clean_untrusted(raw.get("description"), limit=300),
@@ -678,6 +688,9 @@ class GSoCToolkit:
                 "else names a real file, commit, or check. Read the files; do not rely on a summary."
             ),
         }
+        if codetour:
+            result["codetour"] = codetour_from_orientation(result)
+        return result
 
     def _example_outsider_pr(
         self, owner: str, repo: str, merged: list[dict[str, Any]]
@@ -1012,8 +1025,20 @@ class GSoCToolkit:
                 followed.append(page)
         wanted = list(skills or []) or list(self.progress.profile().get("technologies") or [])
         ranked = rank_ideas(doc.ideas, skills=wanted or None, size=size, difficulty=difficulty)
+        proposals = proposal_folders(
+            lambda owner, repo: list(self.github.git_tree(owner, repo, "HEAD").get("tree") or []),
+            org.name,
+        )
         return {
             **base,
+            "past_proposals": proposals,
+            "past_proposals_note": (
+                "Accepted proposals other people chose to share, in community archives. Read "
+                "them to calibrate scope and structure; never copy text, and remember they "
+                "contain personal details."
+                if proposals
+                else "No shared past proposals found for this organization in the known archives."
+            ),
             "fetched_url": doc.fetched_url,
             "layout": doc.layout,
             "count": len(ranked),

@@ -219,3 +219,34 @@ def test_code_map_names_the_main_package_and_test_dirs_rank_by_test_files() -> N
     rows = {r["path"]: r for r in code_map(tree, repo_name="sympy")}
     assert rows["sympy"]["purpose"] == "source (main package)"
     assert find_paths(tree)["test_dirs"][0] == "sympy/tests"
+
+
+def test_codetour_from_orientation_pins_commit_and_orders_steps() -> None:
+    from git_into_gsoc.github.orientation import codetour_from_orientation
+
+    data = {
+        "repo": "acme/lib",
+        "as_of_commit": "abc123",
+        "default_branch": "main",
+        "code_map": [
+            {"path": "lib", "files": 10, "purpose": "source", "purpose_is_guess": True},
+            {"path": ".", "files": 3, "purpose": "project root", "purpose_is_guess": False},
+        ],
+        "test_commands": [{"command": "pytest -q", "source": ".github/workflows/ci.yml"}],
+        "reading_plan": [
+            {"path": "README.md", "why": "What the project is"},
+            {"path": "tests", "why": "How behaviour is tested"},
+            {"path": "https://github.com/acme/lib/pull/7", "why": "A small merged PR"},
+        ],
+        "docs": {"test_dirs": ["tests"]},
+    }
+    tour = codetour_from_orientation(data)
+    assert tour["$schema"] == "https://aka.ms/codetour-schema"
+    assert tour["title"].startswith("#1 - ")
+    assert tour["ref"] == "abc123"
+    kinds = [("file" in s, "directory" in s) for s in tour["steps"]]
+    assert (tour["steps"][1]["file"], tour["steps"][1]["line"]) == ("README.md", 1)
+    assert any(s.get("directory") == "tests" for s in tour["steps"])
+    assert any(">> pytest -q" in s["description"] for s in tour["steps"])
+    assert any("pull/7" in s["description"] for s in tour["steps"] if "file" not in s)
+    assert kinds[0] == (False, False)  # the intro step is description only

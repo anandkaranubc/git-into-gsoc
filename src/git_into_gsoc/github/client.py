@@ -384,6 +384,7 @@ class GitHubClient:
         orgs: list[str] | None = None,
         repo: str | None = None,
         label: str | None = None,
+        labels: list[str] | None = None,
         max_results: int = 10,
         per_repo: int = 2,
         org_names: dict[str, str] | None = None,
@@ -406,7 +407,7 @@ class GitHubClient:
         base.append(f"updated:>={since}")
 
         wanted = max(1, min(max_results, 30))
-        labels = [label] if label else ["good first issue", "help wanted"]
+        labels = list(labels or ([label] if label else ["good first issue", "help wanted"]))
         # One request: the label group is OR-ed, repeated orgs are OR-ed, so GitHub's
         # advanced search cannot AND them away. Results keep the preferred label first.
         query = build_issue_query(base=base, labels=labels, orgs=list(dict.fromkeys(owners)))

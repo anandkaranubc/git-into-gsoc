@@ -32,3 +32,10 @@ def test_build_issue_query_without_groups() -> None:
         build_issue_query(base=["is:issue"], labels=["bug"], orgs=["acme"])
         == "is:issue label:bug org:acme"
     )
+
+
+def test_label_values_keep_colons_and_emoji() -> None:
+    assert or_group("label", ["Difficulty: Easy"]) == 'label:"Difficulty: Easy"'
+    assert or_group("label", ["🌱 Good first issue"]) == 'label:"🌱 Good first issue"'
+    assert or_group("label", ["E-easy"]) == "label:E-easy"
+    assert or_group("label", ['bad"quote']) == "label:badquote"

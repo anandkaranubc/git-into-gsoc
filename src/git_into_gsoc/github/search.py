@@ -8,6 +8,8 @@ the union under both the legacy and the advanced engine (checked live on
 
 from __future__ import annotations
 
+import re
+
 from git_into_gsoc.validation import search_term
 
 MAX_QUERY_CHARS = 256
@@ -16,13 +18,28 @@ MAX_QUERY_CHARS = 256
 _IDENTIFIER_QUALIFIERS = {"repo", "org", "user", "author", "commenter", "reviewed-by", "assignee"}
 
 
+def _identifier(value: str) -> str:
+    return value.strip()
+
+
+def _label_value(value: str) -> str:
+    """Labels keep colons, slashes and emoji; quotes and backslashes cannot be part of one."""
+    cleaned = re.sub(r"\s+", " ", value.replace('"', "").replace("\\", "")).strip()
+    return f'"{cleaned}"' if re.search(r"[^\w-]", cleaned) else cleaned
+
+
 def or_group(qualifier: str, values: list[str]) -> str:
     """`qualifier:v` for one value, `(qualifier:a OR qualifier:b)` for several.
 
     Logins and owner/repo names are validated upstream and passed through as is;
     free-text values such as labels are cleaned and quoted when they contain spaces.
     """
-    clean = (lambda v: v.strip()) if qualifier in _IDENTIFIER_QUALIFIERS else search_term
+    if qualifier in _IDENTIFIER_QUALIFIERS:
+        clean = _identifier
+    elif qualifier == "label":
+        clean = _label_value
+    else:
+        clean = search_term
     terms = [f"{qualifier}:{clean(value)}" for value in values if value and value.strip()]
     if not terms:
         return ""

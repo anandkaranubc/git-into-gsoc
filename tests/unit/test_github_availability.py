@@ -242,3 +242,25 @@ def test_unassigned_event_clears_claim() -> None:
     result = assess_issue(_issue(), timeline, now=NOW)
     assert result.availability == Availability.AVAILABLE
     assert result.claims == []
+
+
+@respx.mock
+def test_find_issues_for_one_repo_uses_its_own_beginner_label() -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.get(url__startswith="https://summerofcode.withgoogle.com/").mock(
+        return_value=httpx.Response(503)
+    )
+    respx.get(url__startswith="https://api.gsocorganizations.dev/").mock(
+        return_value=httpx.Response(503)
+    )
+    respx.get("https://api.github.com/repos/acme/lib/labels").mock(
+        return_value=httpx.Response(200, json=[{"name": "Difficulty: Easy"}, {"name": "bug"}])
+    )
+    search = respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(200, json={"items": []})
+    )
+    data = GSoCToolkit().find_issues(repo="acme/lib", max_results=3)
+    query = search.calls[0].request.url.params["q"]
+    assert 'label:"Difficulty: Easy"' in query and 'label:"good first issue"' in query
+    assert data["labels_used"][0] == "Difficulty: Easy"

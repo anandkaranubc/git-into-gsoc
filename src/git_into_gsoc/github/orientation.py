@@ -472,3 +472,53 @@ def days_since(value: str | None, now: datetime | None = None) -> int | None:
 def since_iso(days: int, now: datetime | None = None) -> str:
     now = now or datetime.now(UTC)
     return (now - timedelta(days=days)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def codetour_from_orientation(data: dict[str, Any]) -> dict[str, Any]:
+    """A CodeTour file (VS Code) that walks the reading plan, pinned to the inspected commit."""
+    steps: list[dict[str, Any]] = [
+        {
+            "description": (
+                f"Welcome to {data.get('repo')}. This tour follows the reading plan from "
+                "git-into-gsoc orient: what the project is, how it wants changes made, where the "
+                "code and tests live, and how CI runs the tests. Read; do not skim."
+            )
+        }
+    ]
+    for step in data.get("reading_plan") or []:
+        path = str(step.get("path") or "")
+        why = str(step.get("why") or "")
+        if path.startswith("http"):
+            steps.append({"description": f"{why}\n\n[{path}]({path})"})
+        elif path in set(data.get("docs", {}).get("test_dirs") or []) or path in {
+            row["path"] for row in data.get("code_map") or []
+        }:
+            steps.append({"directory": path, "description": why})
+        else:
+            steps.append({"file": path, "line": 1, "description": why})
+    for row in (data.get("code_map") or [])[:6]:
+        if row.get("path") in {".", ""}:
+            continue
+        guess = " (a guess from the name)" if row.get("purpose_is_guess") else ""
+        steps.append(
+            {
+                "directory": row["path"],
+                "description": f"{row['files']} files; purpose: {row['purpose']}{guess}.",
+            }
+        )
+    for command in (data.get("test_commands") or [])[:1]:
+        steps.append(
+            {
+                "description": (
+                    f"Run the tests the way CI does ({command.get('source')}):\n\n"
+                    f">> {command.get('command')}"
+                )
+            }
+        )
+    return {
+        "$schema": "https://aka.ms/codetour-schema",
+        "title": "#1 - GSoC orientation",
+        "description": f"Orientation for {data.get('repo')} as of commit {data.get('as_of_commit')}",
+        "ref": data.get("as_of_commit") or data.get("default_branch") or "HEAD",
+        "steps": steps,
+    }

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -157,3 +159,15 @@ def test_cli_orient_renders_sections() -> None:
         "Read in this order",
     ):
         assert needle in result.stdout
+
+
+@respx.mock
+def test_cli_orient_writes_a_codetour_file(tmp_path: Path) -> None:
+    _mock_repo(respx)
+    target = tmp_path / "gsoc.tour"
+    result = runner.invoke(app, ["orient", "acme/lib", "--codetour", str(target)])
+    assert result.exit_code == 0, result.output
+    tour = json.loads(target.read_text())
+    assert tour["ref"] == "abc123def456"
+    assert any(s.get("file") == "README.md" for s in tour["steps"])
+    assert "Wrote the CodeTour file" in result.stdout
