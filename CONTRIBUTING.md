@@ -137,7 +137,7 @@ You are welcome to use AI assistants while contributing. You are responsible for
 
 ## Editing the Agent Skill
 
-The skill is written for AI assistants that read `skills/git-into-gsoc/SKILL.md`. Keep `SKILL.md` short and move depth into `references/`. The description in the front matter (the `---` block at the top of `SKILL.md`) should say what the skill does and when to use it. Tests in `tests/unit/test_skill_package.py` check the structure. The copies under `.agents/`, `.claude/`, `.cursor/`, `.codex/`, `.gemini/`, and `.github/skills/` are written by `git-into-gsoc setup` (which the installers run) and are not tracked.
+The skill is written for AI assistants that read `skills/git-into-gsoc/SKILL.md`. Keep `SKILL.md` short and move depth into `references/`. The description in the front matter (the `---` block at the top of `SKILL.md`) should say what the skill does and when to use it. Tests in `tests/unit/test_skill_package.py` check the structure. The copies under `.agents/skills/` and `.claude/skills/` are written by `git-into-gsoc setup` (which the installers run) and are not tracked.
 
 ## Community and security
 

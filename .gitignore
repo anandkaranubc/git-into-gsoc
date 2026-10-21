@@ -51,4 +51,6 @@ coverage.xml
 .gemini/
 .codex/
 .github/skills/
+.agents/mcp_config.json
+.devin/
 *.bak

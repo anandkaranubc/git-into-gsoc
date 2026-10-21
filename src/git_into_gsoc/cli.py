@@ -1488,9 +1488,9 @@ def _reachable(url: str, user_agent: str) -> str:
 
 
 def _short_path(path: Path, home: Path, project: Path | None = None) -> str:
-    for root, prefix in ((project, "./"), (home, "~/")):
-        if root is None:
-            continue
+    # The closest root wins, so a home folder inside the current folder still reads ~/.
+    roots = [(r, p) for r, p in ((project, "./"), (home, "~/")) if r is not None]
+    for root, prefix in sorted(roots, key=lambda rp: len(rp[0].parts), reverse=True):
         try:
             return prefix + path.relative_to(root).as_posix()
         except ValueError:
@@ -1511,7 +1511,8 @@ def setup_cmd(
         "-a",
         help=(
             "Assistant to configure (repeatable): claude-code, cursor, codex, gemini, "
-            "windsurf, vscode, or all. Default: every assistant detected on this machine."
+            "antigravity, windsurf, vscode (also Copilot CLI), or all. "
+            "Default: every assistant detected on this machine."
         ),
     ),
     scope: SetupScope = typer.Option(
@@ -1621,8 +1622,14 @@ def setup_cmd(
 def doctor_cmd() -> None:
     """Check your setup: version, GitHub token, data locations, API access, skill, and MCP."""
     from git_into_gsoc.config import cache_dir, data_dir, get_settings
-    from git_into_gsoc.install.clients import env_home, installed_skills, registered_servers
-    from git_into_gsoc.install.skill import InstallError, skill_source
+    from git_into_gsoc.install.clients import (
+        ASSISTANTS,
+        env_home,
+        installed_plugin,
+        installed_skills,
+        registrations,
+    )
+    from git_into_gsoc.install.skill import InstallError, is_current, skill_source
 
     settings = get_settings()
     source = settings.github_token_source()
@@ -1650,23 +1657,57 @@ def doctor_cmd() -> None:
         ),
     ):
         console.print(f"{label}: {_reachable(url, settings.user_agent)}")
+    source_dir: Path | None = None
     try:
-        console.print(f"skill source: {skill_source()}")
+        source_dir = skill_source()
+        console.print(f"skill source: {source_dir}")
     except InstallError as exc:
         console.print(f"[red]skill source:[/red] {exc}")
     home, project = env_home(), Path.cwd()
     skills = installed_skills(home, project)
-    servers = registered_servers(home, project)
+    servers = registrations(home, project)
+    plugins = [p for a in ASSISTANTS.values() if (p := installed_plugin(a, home))]
+    if plugins:
+        console.print("plugin installed: " + ", ".join(plugins))
     if skills:
         console.print("skill installed for: " + ", ".join(f"{label}" for label, _ in skills))
-    else:
+        stale = [p for _, p in skills if source_dir and not is_current(source_dir, p)]
+        if stale:
+            console.print(
+                "[yellow]older skill copies:[/yellow] "
+                + ", ".join(_short_path(p, home, project) for p in stale)
+                + " (run `git-into-gsoc setup` to refresh them)"
+            )
+    elif not plugins:
         console.print("skill installed for: [yellow]none[/yellow] (run `git-into-gsoc setup`)")
     if servers:
         console.print(
-            "MCP registered in: " + ", ".join(_short_path(path, home) for _, path in servers)
+            "MCP registered in: "
+            + ", ".join(_short_path(path, home, project) for _, path, _ in servers)
         )
-    else:
+        for _, path, entry in servers:
+            problem = _command_problem(entry)
+            if problem:
+                console.print(
+                    f"[red]{_short_path(path, home, project)}:[/red] {problem} "
+                    "(run `git-into-gsoc setup` to point it at this installation)"
+                )
+    elif not plugins:
         console.print("MCP registered in: [yellow]nowhere yet[/yellow] (run `git-into-gsoc setup`)")
+
+
+def _command_problem(entry: dict[str, object]) -> str | None:
+    """Why a registered server would fail to start, when that can be seen without running it."""
+    from git_into_gsoc.programs import find_program
+
+    command = entry.get("command")
+    if not isinstance(command, str) or not command:
+        return "no command is set"
+    if Path(command).is_absolute():
+        return None if Path(command).exists() else f"the command {command} no longer exists"
+    if not find_program(command):
+        return f"`{command}` is not installed or not on PATH"
+    return None
 
 
 @app.command("cache", rich_help_panel="Maintenance")

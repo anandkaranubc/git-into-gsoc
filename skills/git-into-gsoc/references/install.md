@@ -51,10 +51,11 @@ server runs on the person's computer and reads public data; it never posts to
 GitHub.
 
 `git-into-gsoc setup` copies this skill and registers the MCP server for every
-assistant it detects: Claude Code, Cursor, Codex, Gemini CLI, Windsurf, and
-VS Code. Some assistants can only be set up in one scope (VS Code inside a
-project, Windsurf in the home folder, Codex's MCP entry in the home folder);
-for those, setup prints a command to run by hand.
+assistant it detects: Claude Code, Codex, Cursor, VS Code and Copilot CLI,
+Gemini CLI, Antigravity, and Windsurf (Devin Desktop). Most of them read one
+shared copy in `~/.agents/skills`. When Claude Code's `claude` command is not
+installed, setup prints the command to register the server by hand. An
+assistant that already has the git-into-gsoc plugin is left to the plugin.
 
 ```bash
 git-into-gsoc setup                       # every detected assistant, user-wide

@@ -8,18 +8,23 @@ from pathlib import Path
 
 from git_into_gsoc.install.clients import (
     ASSISTANTS,
+    PLUGIN_REMOVAL,
     SERVER_NAME,
     Assistant,
     Change,
     Scope,
     detect_assistants,
+    installed_plugin,
+    is_our_skill,
     register_codex_toml,
     register_json,
     register_via_cli,
     server_command,
     server_entry,
+    skill_locations,
     unregister_codex_toml,
     unregister_json,
+    user_config_path,
 )
 from git_into_gsoc.install.skill import InstallError, copy_skill, remove_skill, skill_source
 from git_into_gsoc.programs import find_program
@@ -83,28 +88,68 @@ def plan_setup(
     )
 
 
+def _plugin_for(plan: SetupPlan, assistant: Assistant) -> str | None:
+    # Plugins are installed per person, so they only matter for the home-folder setup.
+    return installed_plugin(assistant, plan.home) if plan.scope == "user" else None
+
+
 def run_setup(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
     """Apply (or preview) the plan. Every outcome is recorded in ``plan.changes``."""
     plan.changes = []
     plan.manual = []
+    plugins = {a.key: p for a in plan.assistants if (p := _plugin_for(plan, a))}
     if plan.install_skill:
         source = skill_source()
-        targets = [ASSISTANTS["agents"], *plan.assistants]
-        for assistant in targets:
+        written: dict[Path, int] = {}  # skill folder -> index of its row in plan.changes
+        for assistant in [ASSISTANTS["agents"], *plan.assistants]:
             allowed = (
                 assistant.project_scope_skill
                 if plan.scope == "project"
                 else assistant.user_scope_skill
             )
+            dest, legacy = skill_locations(assistant, plan.scope, plan.root)
+            for old in legacy:
+                if old != dest and old.is_dir() and is_our_skill(old):
+                    action = remove_skill(old, dry_run=dry_run)
+                    note = f"old location; {assistant.label} reads {_rel(dest, plan)}"
+                    plan.changes.append(Change(assistant.label, "skill", old, action, note))
             if not allowed:
                 continue
-            dest = plan.root / assistant.skill_dir / SERVER_NAME
+            if assistant.key in plugins:
+                plan.changes.append(
+                    Change(
+                        assistant.label,
+                        "skill",
+                        dest,
+                        "skipped",
+                        f"{plugins[assistant.key]} has it",
+                    )
+                )
+                continue
+            if dest in written:
+                continue  # one shared copy serves every assistant that reads this folder
             action = copy_skill(source, dest, dry_run=dry_run)
+            written[dest] = len(plan.changes)
             plan.changes.append(Change(assistant.label, "skill", dest, action))
     if plan.install_mcp:
         for assistant in plan.assistants:
+            if assistant.key in plugins:
+                note = f"{plugins[assistant.key]} brings its own server"
+                plan.changes.append(Change(assistant.label, "mcp", plan.root, "skipped", note))
+                continue
             plan.changes.append(_register(plan, assistant, dry_run=dry_run))
     return plan
+
+
+def _rel(path: Path, plan: SetupPlan) -> str:
+    for root, prefix in ((plan.project, "./"), (plan.home, "~/")):
+        if root is None:
+            continue
+        try:
+            return prefix + path.relative_to(root).as_posix()
+        except ValueError:
+            continue
+    return str(path)
 
 
 def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
@@ -112,23 +157,44 @@ def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
     plan.changes = []
     plan.manual = []
     if plan.install_skill:
+        removed: set[Path] = set()
         for assistant in [ASSISTANTS["agents"], *plan.assistants]:
-            dest = plan.root / assistant.skill_dir / SERVER_NAME
-            plan.changes.append(
-                Change(assistant.label, "skill", dest, remove_skill(dest, dry_run=dry_run))
-            )
+            dest, legacy = skill_locations(assistant, plan.scope, plan.root)
+            for path in (dest, *legacy):
+                if path in removed or (path != dest and not path.exists()):
+                    continue
+                removed.add(path)
+                plan.changes.append(
+                    Change(assistant.label, "skill", path, remove_skill(path, dry_run=dry_run))
+                )
     if plan.install_mcp:
         for assistant in plan.assistants:
             plan.changes.append(_unregister(plan, assistant, dry_run=dry_run))
+    for assistant in plan.assistants:
+        plugin = _plugin_for(plan, assistant)
+        if plugin and assistant.key in PLUGIN_REMOVAL:
+            plan.manual.append(
+                f"{assistant.label}: {plugin} is installed; remove it with "
+                f"`{PLUGIN_REMOVAL[assistant.key]}`"
+            )
     return plan
+
+
+def _config_path(plan: SetupPlan, assistant: Assistant) -> Path | None:
+    target = assistant.mcp
+    if target is None:
+        return None
+    if plan.scope == "project":
+        return plan.root / target.project_path if target.project_path else None
+    return user_config_path(target, plan.home)
 
 
 def _unregister(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change:
     target = assistant.mcp
     if target is None:
         return Change(assistant.label, "mcp", plan.root, "unchanged", "no MCP support")
-    rel = target.project_path if plan.scope == "project" else target.user_path
-    if rel is None:
+    path = _config_path(plan, assistant)
+    if path is None:
         if plan.scope == "user" and target.cli_remove and plan.use_cli:
             executable = find_program(target.cli_remove[0])
             if executable and plan.home.resolve() == Path.home().resolve():
@@ -141,11 +207,11 @@ def _unregister(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Chan
                 )
         plan.manual.append(f"{assistant.label}: remove the server named {SERVER_NAME} by hand")
         return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
-    path = plan.root / rel
-    if target.fmt == "toml-codex":
+    fmt = target.fmt_for(plan.scope)
+    if fmt == "toml-codex":
         action, note = unregister_codex_toml(path, dry_run=dry_run)
     else:
-        key = "servers" if target.fmt == "json-servers" else "mcpServers"
+        key = "servers" if fmt == "json-servers" else "mcpServers"
         action, note = unregister_json(path, key, dry_run=dry_run)
     return Change(assistant.label, "mcp", path, action, note)
 
@@ -154,8 +220,8 @@ def _register(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change
     target = assistant.mcp
     if target is None:
         return Change(assistant.label, "mcp", plan.root, "skipped", "no MCP support")
-    rel = target.project_path if plan.scope == "project" else target.user_path
-    if rel is None:
+    path = _config_path(plan, assistant)
+    if path is None:
         if plan.scope == "user" and target.cli and plan.use_cli:
             change = _register_via_cli(plan, assistant, target.cli, target.cli_check, dry_run)
             if change is not None:
@@ -164,21 +230,23 @@ def _register(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change
         if hint:
             plan.manual.append(f"{assistant.label}: {hint}")
         return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
-    path = plan.root / rel
-    if target.fmt == "toml-codex":
+    fmt = target.fmt_for(plan.scope)
+    if fmt == "toml-codex":
         action, note = register_codex_toml(path, plan.command, dry_run=dry_run)
         by_hand = (
             f'[mcp_servers."{SERVER_NAME}"] with command = {json.dumps(plan.command[0])} '
             f"and args = {json.dumps(plan.command[1:])}"
         )
     else:
-        key = "servers" if target.fmt == "json-servers" else "mcpServers"
-        entry = server_entry(plan.command, target.fmt)
+        key = "servers" if fmt == "json-servers" else "mcpServers"
+        entry = server_entry(plan.command, fmt, target.style_for(plan.scope))
         action, note = register_json(path, key, entry, dry_run=dry_run)
         by_hand = f'inside "{key}": "{SERVER_NAME}": {json.dumps(entry)}'
     if action == "skipped":
         # The file was left alone (comments, invalid syntax); say exactly what to add.
         plan.manual.append(f"{assistant.label}: add this to {path}, {by_hand}")
+    elif plan.scope == "project" and target.project_note:
+        note = note or target.project_note
     return Change(assistant.label, "mcp", path, action, note)
 
 

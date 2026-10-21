@@ -62,6 +62,11 @@ def remove_skill(dest: Path, *, dry_run: bool = False) -> str:
     return "removed"
 
 
+def is_current(source: Path, dest: Path) -> bool:
+    """True when ``dest`` holds exactly the skill files in ``source``."""
+    return dest.exists() and _same_tree(source, dest)
+
+
 def _same_tree(source: Path, dest: Path) -> bool:
     expected = {p.relative_to(source): p for p in skill_files(source)}
     try:

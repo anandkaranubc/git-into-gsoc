@@ -110,7 +110,7 @@ jobs:
           pip install -q uv
           uv tool install --force .
           GIG_HOME="$RUNNER_TEMP/home" "$(uv tool dir --bin)/git-into-gsoc" setup --assistant gemini --output json | grep -q '"created"'
-          test -f "$RUNNER_TEMP/home/.gemini/skills/git-into-gsoc/SKILL.md"
+          test -f "$RUNNER_TEMP/home/.agents/skills/git-into-gsoc/SKILL.md"
 
       - name: One-line installer (curl path, no clone)
         run: |
@@ -123,7 +123,7 @@ jobs:
           GIG_REPO_URL="file://$GITHUB_WORKSPACE@$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" \
             GIG_HOME="$RUNNER_TEMP/home2" bash install.sh --assistant gemini
           "$(uv tool dir --bin)/git-into-gsoc" --version
-          test -f "$RUNNER_TEMP/home2/.gemini/skills/git-into-gsoc/SKILL.md"
+          test -f "$RUNNER_TEMP/home2/.agents/skills/git-into-gsoc/SKILL.md"
 
   smoke-windows:
     name: Installer smoke (Windows)

@@ -147,9 +147,9 @@ git-into-gsoc setup --scope project --assistant claude-code --assistant cursor
 
 | `setup` option | Effect |
 |---|---|
-| `--assistant` / `-a NAME` | `claude-code`, `cursor`, `codex`, `gemini`, `windsurf`, `vscode`, or `all`; repeatable. Default: every assistant with a config folder or executable on this machine |
-| `--scope user` (default) | Skill into each assistant's skills folder (`~/.claude/skills`, `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.codeium/windsurf/skills`) and `~/.agents/skills`; MCP into each assistant's user config (Claude Code via `claude mcp add` when available) |
-| `--scope project` | The same inside the current repository (`.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, ...); `--project-dir` picks another folder |
+| `--assistant` / `-a NAME` | `claude-code`, `cursor`, `codex`, `gemini`, `antigravity`, `windsurf` (Devin Desktop), `vscode` (VS Code and Copilot CLI), or `all`; repeatable. Default: every assistant with a config folder or executable on this machine |
+| `--scope user` (default) | One shared skill copy in `~/.agents/skills`, which Codex, Cursor, Gemini CLI, Devin Desktop, VS Code, and Copilot CLI all read, plus `~/.claude/skills` for Claude Code and `~/.gemini/config/skills` for Antigravity. MCP into each assistant's user config (Claude Code via `claude mcp add` when available). Copies older versions left in `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, or `~/.codeium/windsurf/skills` are removed so the skill is listed once. An assistant that already has the git-into-gsoc plugin or extension is left to it |
+| `--scope project` | The same inside the current repository (`.agents/skills`, `.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `.codex/config.toml`, ...); `--project-dir` picks another folder |
 | `--no-skill`, `--no-mcp` | Do only one of the two jobs |
 | `--dry-run` | Print the plan without writing |
 | `--remove` | Undo: delete the skill copies and remove the MCP registrations for the same scope and assistants, keeping every other entry in those files |

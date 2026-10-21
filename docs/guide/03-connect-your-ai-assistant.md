@@ -19,7 +19,7 @@ Setup detects the assistants on your machine, copies the skill into each one's s
 
 ```bash
 git-into-gsoc setup --dry-run                      # preview only
-git-into-gsoc setup --assistant claude-code        # one assistant (claude-code, cursor, codex, gemini, windsurf, vscode, all)
+git-into-gsoc setup --assistant claude-code        # one assistant (claude-code, cursor, codex, gemini, antigravity, windsurf, vscode, all)
 git-into-gsoc setup --scope project                # inside the current repository instead of your home folder
 git-into-gsoc setup --no-mcp                       # skill only
 git-into-gsoc doctor                               # shows which assistants have the skill and where MCP is registered
@@ -47,12 +47,13 @@ You only need this section if setup could not write a file for your assistant, o
 |---|---|---|
 | Cursor | `~/.cursor/mcp.json` (or `.cursor/mcp.json` in the project) | Add `"git-into-gsoc": {"command": "<path>", "args": ["mcp"]}` under `mcpServers`; see [Cursor's MCP documentation](https://cursor.com/docs/mcp) |
 | Claude Code | `claude mcp add --scope user --transport stdio git-into-gsoc -- <path> mcp`, or `.mcp.json` in the project | Run that command yourself; `claude mcp list` shows the result. See [Claude Code's MCP documentation](https://code.claude.com/docs/en/mcp). Claude Desktop has its own settings; supply the same command and `mcp` argument there |
-| Codex CLI | `[mcp_servers."git-into-gsoc"]` in `~/.codex/config.toml` | `codex mcp add git-into-gsoc -- <path> mcp`; see [Codex's MCP documentation](https://developers.openai.com/codex/mcp) |
-| Gemini CLI | `~/.gemini/settings.json` (or `.gemini/settings.json` in the project) | `gemini mcp add git-into-gsoc <path> mcp`; see [Gemini CLI's MCP documentation](https://geminicli.com/docs/tools/mcp-server/) |
-| Windsurf | `~/.codeium/windsurf/mcp_config.json` | Same `mcpServers` shape as Cursor |
-| VS Code | `.vscode/mcp.json` in the project | Run "MCP: Add Server" in VS Code and enter the command |
+| Codex | `[mcp_servers."git-into-gsoc"]` in `~/.codex/config.toml` (or `.codex/config.toml` in a project you trust), with `env_vars` so your token reaches the server and a 60-second start timeout | `codex mcp add git-into-gsoc -- <path> mcp`; see [Codex's MCP documentation](https://learn.chatgpt.com/docs/extend/mcp). Running `codex mcp add` again drops the extra lines |
+| Gemini CLI | `~/.gemini/settings.json` (or `.gemini/settings.json` in the project), with token variables named in `env` because Gemini CLI hides them otherwise | `gemini mcp add -s user git-into-gsoc <path> mcp` (no `--` before the path); see [Gemini CLI's MCP documentation](https://geminicli.com/docs/tools/mcp-server/) |
+| Antigravity | `~/.gemini/config/mcp_config.json` (or `.agents/mcp_config.json` in the project) | `agy mcp add git-into-gsoc -- <path> mcp`; see [Antigravity's MCP documentation](https://antigravity.google/docs/mcp) |
+| Windsurf (Devin Desktop) | `~/.config/devin/mcp_config.json`, or `~/.codeium/windsurf/mcp_config.json` for Windsurf before it was renamed (or `.devin/mcp_config.json` in the project) | Same `mcpServers` shape as Cursor; see [Devin's MCP documentation](https://docs.devin.ai/cli/extensibility/mcp/configuration) |
+| VS Code and Copilot CLI | `~/.copilot/mcp-config.json`, which VS Code's Copilot sessions and Copilot CLI both read (or `.vscode/mcp.json` in the project) | `copilot mcp add git-into-gsoc -- <path> mcp`, or `code --add-mcp '{"name":"git-into-gsoc","command":"<path>","args":["mcp"]}'` |
 
-The skill goes into `~/.claude/skills`, `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.codeium/windsurf/skills`, and the portable `~/.agents/skills` (or the same folders inside the project with `--scope project`). VS Code is set up only inside a project, where its skill goes into `.github/skills`; Windsurf is set up only in your home folder. Restart the assistant after any change.
+The skill goes into one shared folder, `~/.agents/skills`, which Codex, Cursor, Gemini CLI, Devin Desktop, VS Code, Copilot CLI, and many other tools read, plus `~/.claude/skills` for Claude Code and `~/.gemini/config/skills` for Antigravity (with `--scope project`, `.agents/skills` and `.claude/skills` inside the project). One copy per folder means each assistant lists the skill once. If older versions of setup left copies in an assistant's own folder, setup removes them. Restart the assistant after any change.
 
 ## Verify the connection
 

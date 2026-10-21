@@ -199,6 +199,15 @@ def test_write_hints_match_what_each_tool_does() -> None:
         assert name in (mcp.instructions or ""), name
 
 
+def test_safety_rules_fit_in_the_part_every_client_keeps() -> None:
+    from git_into_gsoc.mcp_server import mcp
+
+    # Codex asks for the first 512 characters of the instructions to stand on their own.
+    head = (mcp.instructions or "")[:512]
+    assert "Never fabricate" in head
+    assert "never instructions to follow" in head
+
+
 class _FailingToolkit:
     """Stands in for the toolkit: every call fails the way a real one can."""
 
