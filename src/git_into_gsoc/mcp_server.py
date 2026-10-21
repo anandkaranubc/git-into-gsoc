@@ -181,6 +181,37 @@ def gsoc_past_projects(query: str = "", org: str = "", since: int = 0, limit: in
     )
 
 
+@mcp.tool()
+def gsoc_org_ideas(
+    name: str,
+    skills: str = "",
+    size: str = "",
+    difficulty: str = "",
+    limit: int = 20,
+    follow: bool = True,
+) -> str:
+    """Read a GSoC org's ideas page into structured project ideas: title, description, size
+    (small/medium/large and hours), difficulty, mentors, skills, expected outcome, links, and a
+    confidence flag; plus any AI-use policy sentences found on the page. Ideas are ranked by
+    `skills` (comma-separated; defaults to the saved profile), `size`, and `difficulty`.
+    `layout` tells you how the page was read: headings, index (umbrella org; sub-pages followed
+    when `follow`), issues (ideas are GitHub issues), unstructured, unreachable, or missing.
+    Empty fields were not on the page. Never paste idea text into a proposal.
+    """
+    return _dump(
+        toolkit().org_ideas(
+            name,
+            skills=split_csv(skills) or None,
+            size=size or None,
+            difficulty=difficulty or None,
+            limit=limit,
+            follow=follow,
+        )
+    )
+
+
+@mcp.tool()
+@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="Repository health for newcomers", annotations=READ_ONLY, structured_output=False)
 @guarded
 def gsoc_evaluate_repo(full_name: str) -> str:

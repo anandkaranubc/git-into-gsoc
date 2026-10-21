@@ -196,6 +196,37 @@ class RepoLead(BaseModel):
     reasons: list[str] = Field(default_factory=list)
 
 
+class ProjectIdea(BaseModel):
+    """One project idea parsed from an org's ideas page. Empty fields were not on the page."""
+
+    title: str
+    section: str | None = None
+    description: str = ""
+    difficulty: str | None = None  # easy | medium | hard
+    difficulty_raw: str = ""
+    size: str | None = None  # small | medium | large
+    hours: int | None = None
+    size_raw: str = ""
+    mentors: list[str] = Field(default_factory=list)
+    skills: list[str] = Field(default_factory=list)
+    expected_outcome: str = ""
+    links: list[str] = Field(default_factory=list)
+    confidence: str = "low"  # high | medium | low
+    source_url: str = ""
+    match_score: float = 0.0
+    match_reasons: list[str] = Field(default_factory=list)
+
+
+class IdeasDocument(BaseModel):
+    source_url: str
+    fetched_url: str
+    layout: str = "unstructured"  # headings | index | unstructured | issues
+    ideas: list[ProjectIdea] = Field(default_factory=list)
+    sub_pages: list[dict[str, str]] = Field(default_factory=list)
+    headings: list[str] = Field(default_factory=list)
+    ai_policy: list[str] = Field(default_factory=list)
+
+
 class ProposalChecklistItem(BaseModel):
     id: str
     title: str

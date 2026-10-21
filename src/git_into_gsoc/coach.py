@@ -100,6 +100,16 @@ def plan_actions(
                 "Mentors work in a few repos; the ideas page and beginner issues show which.",
             )
         )
+    elif not state.phases.get("community") and not tracked_issues:
+        first = orgs[0]
+        actions.append(
+            _action(
+                f"Introduce yourself once, publicly, in {first}'s channel before claiming anything",
+                f'git-into-gsoc org "{first}"   # channels; then: git-into-gsoc draft intro',
+                "Every org admin guide says: talk to the org first. Mentors rank people "
+                "they have spoken with. Mark it done with: progress complete_phase --phase community",
+            )
+        )
     elif not tracked_issues:
         repo = repos[0]
         actions.append(

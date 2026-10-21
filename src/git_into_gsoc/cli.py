@@ -294,6 +294,74 @@ def projects_cmd(
     console.print(table)
 
 
+@app.command("ideas")
+def ideas_cmd(
+    org: str = typer.Argument(..., help="GSoC organization name, full or partial"),
+    skills: str | None = typer.Option(
+        None, "--skills", "-s", help="Skills to match, comma-separated (default: your profile)"
+    ),
+    size: str | None = typer.Option(None, "--size", help="small, medium, or large"),
+    difficulty: str | None = typer.Option(None, "--difficulty", help="easy, medium, or hard"),
+    limit: int = typer.Option(20, "--limit", "-n", help="How many ideas to show"),
+    no_follow: bool = typer.Option(
+        False, "--no-follow", help="Do not open linked sub-project pages on umbrella orgs"
+    ),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Read an org's ideas page into a table: size, difficulty, mentors, skills, links."""
+    data = _toolkit().org_ideas(
+        org,
+        skills=split_csv(skills) or None,
+        size=size,
+        difficulty=difficulty,
+        limit=limit,
+        follow=not no_follow,
+    )
+    if output == Output.json or not data.get("found"):
+        _emit(data, Output.json)
+        return
+    lines = [f"[bold]{escape(data['org'])}[/bold]", f"Ideas page: {data['ideas_url']}"]
+    if data.get("fetched_url") and data["fetched_url"] != data["ideas_url"]:
+        lines.append(f"[dim]Read as: {data['fetched_url']}[/dim]")
+    lines.append(escape(data["note"]))
+    for sentence in data.get("ai_policy") or []:
+        lines.append(f"[yellow]AI policy:[/yellow] {escape(sentence)}")
+    console.print(Panel(Text.from_markup("\n".join(lines)), title=f"Ideas: {data['layout']}"))
+    if data["ideas"]:
+        table = Table(title="Project ideas", caption="? marks a block with no labelled fields")
+        table.add_column("Fit", justify="right")
+        table.add_column("Idea", overflow="fold")
+        table.add_column("Size", justify="right")
+        table.add_column("Level")
+        table.add_column("Mentors", overflow="fold", max_width=22)
+        table.add_column("Skills", overflow="fold", max_width=26)
+        for idea in data["ideas"]:
+            title = escape(idea["title"])
+            if idea.get("section"):
+                title = f"[dim]{escape(idea['section'])} /[/dim] {title}"
+            if idea["confidence"] == "low":
+                title = f"? {title}"
+            hours = f"{idea['hours']}h" if idea.get("hours") else (idea.get("size") or "")
+            table.add_row(
+                f"{idea['match_score']:.0f}" if idea["match_score"] else "",
+                title,
+                hours,
+                idea.get("difficulty") or "",
+                ", ".join(idea.get("mentors") or [])[:60],
+                ", ".join(idea.get("skills") or [])[:60],
+            )
+        console.print(table)
+        console.print(f"[dim]{escape(data['next_step'])}[/dim]")
+    if data.get("sub_pages") and not data["ideas"]:
+        console.print("[bold]Sub-project pages[/bold]")
+        for page in data["sub_pages"][:20]:
+            console.print(f"  {escape(page['title'])}: {page['url']}")
+    if data.get("headings"):
+        console.print(
+            "[bold]Page sections[/bold]: " + "; ".join(escape(h) for h in data["headings"][:15])
+        )
+
+
 @app.command("repos")
 def repos_cmd(
     org: str = typer.Argument(

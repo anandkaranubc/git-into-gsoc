@@ -14,10 +14,15 @@ from git_into_gsoc.github.repos import mentioned_repos, repo_lead_score
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
+from git_into_gsoc.gsoc.project_ideas import (
+    fetch_ideas_document,
+    issues_page_target,
+    rank_ideas,
+)
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
-from git_into_gsoc.models import ProgressState, RepoLead
+from git_into_gsoc.models import IdeasDocument, ProgressState, ProjectIdea, RepoLead
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_login
 
@@ -529,6 +534,104 @@ class GSoCToolkit:
             ),
         }
 
+    # ------------------------------------------------------------ project ideas
+
+    def org_ideas(
+        self,
+        name: str,
+        *,
+        year: int | None = None,
+        skills: list[str] | None = None,
+        size: str | None = None,
+        difficulty: str | None = None,
+        limit: int = 20,
+        follow: bool = True,
+    ) -> dict[str, Any]:
+        """Structured project ideas from an org's ideas page, ranked for the contributor."""
+        org = self.gsoc.get_organization(name, year=year)
+        if org is None:
+            return {
+                "found": False,
+                "error": f"No organization matched '{name}'",
+                "hint": "Try a partial name, or search with `orgs --query`.",
+            }
+        base = {"found": True, "org": org.name, "ideas_url": org.ideas_url}
+        if not org.ideas_url:
+            return {
+                **base,
+                "layout": "missing",
+                "ideas": [],
+                "note": "This organization lists no ideas page. Check its contributor guide "
+                + (f"at {org.guide_url}." if org.guide_url else "and website."),
+            }
+        ttl = self.settings.archive_ttl_seconds
+        issues_target = issues_page_target(org.ideas_url)
+        if issues_target:
+            doc = self._ideas_from_issues(org.ideas_url, *issues_target)
+        else:
+            doc = fetch_ideas_document(self.http, org.ideas_url, ttl)
+        if doc is None:
+            return {
+                **base,
+                "layout": "unreachable",
+                "ideas": [],
+                "note": "The ideas page could not be fetched or read automatically. Open it in "
+                "a browser; some wikis block automated readers.",
+            }
+        followed: list[dict[str, str]] = []
+        if follow and doc.layout == "index" and doc.sub_pages:
+            for page in [p for p in doc.sub_pages if _looks_like_ideas_page(p)][:8]:
+                child = fetch_ideas_document(self.http, page["url"], ttl)
+                if child is None or not child.ideas:
+                    continue
+                for idea in child.ideas:
+                    idea.section = page["title"]
+                doc.ideas.extend(child.ideas)
+                doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
+                followed.append(page)
+        wanted = list(skills or []) or list(self.progress.profile().get("technologies") or [])
+        ranked = rank_ideas(doc.ideas, skills=wanted or None, size=size, difficulty=difficulty)
+        return {
+            **base,
+            "fetched_url": doc.fetched_url,
+            "layout": doc.layout,
+            "count": len(ranked),
+            "ideas": [i.model_dump(mode="json") for i in ranked[: max(1, limit)]],
+            "skills_matched_on": wanted,
+            "ai_policy": doc.ai_policy,
+            "sub_pages": doc.sub_pages[:40] if doc.layout == "index" else [],
+            "followed": followed,
+            "headings": doc.headings[:30] if not doc.ideas else [],
+            "note": _ideas_note(doc, followed),
+            "next_step": (
+                "Read the full idea on the page before contacting a mentor. Never copy its text "
+                "into a proposal; reviewers compare proposals with the ideas page."
+            ),
+        }
+
+    def _ideas_from_issues(self, url: str, full_name: str, label: str) -> IdeasDocument | None:
+        query = f"repo:{full_name} is:issue is:open label:{_quote_label(label)}"
+        try:
+            items = self.github.search_issues(query, per_page=50, sort="updated")
+        except HttpError:
+            return None
+        doc = IdeasDocument(source_url=url, fetched_url=url, layout="issues")
+        for item in items:
+            if "pull_request" in item:
+                continue
+            body = str(item.get("body") or "")
+            doc.ideas.append(
+                ProjectIdea(
+                    title=str(item.get("title") or f"#{item.get('number')}"),
+                    description=" ".join(body.split())[:500],
+                    links=[str(item.get("html_url") or "")],
+                    skills=[],
+                    confidence="medium",
+                    source_url=str(item.get("html_url") or url),
+                )
+            )
+        return doc
+
     def _new_beginner_issues(self, state: ProgressState, *, now: datetime) -> list[dict[str, Any]]:
         """Beginner issues created in tracked repos / shortlisted orgs since the last check."""
         since = state.last_checked_at or (now - timedelta(days=14))
@@ -583,6 +686,39 @@ class GSoCToolkit:
                 }
             )
         return out[:10]
+
+
+def _quote_label(label: str) -> str:
+    return f'"{label}"' if " " in label else label
+
+
+def _looks_like_ideas_page(page: dict[str, str]) -> bool:
+    text = f"{page.get('title', '')} {page.get('url', '')}".lower()
+    return any(word in text for word in ("idea", "gsoc", "summer", "project", "mentor"))
+
+
+def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:
+    if doc.layout == "issues":
+        return "This org lists ideas as GitHub issues; each idea links to its issue."
+    if doc.layout == "index" and doc.ideas:
+        return (
+            f"Umbrella page: ideas were read from {len(followed)} linked sub-project page(s). "
+            "Other sub-projects may list ideas elsewhere."
+        )
+    if doc.layout == "index":
+        return "This is an index page that links to sub-project pages; open them for ideas."
+    if doc.layout == "unstructured":
+        return (
+            "The page has no recognisable idea blocks (tables or prose). Headings are listed "
+            "so you know what it covers; read it directly."
+        )
+    low = sum(1 for i in doc.ideas if i.confidence == "low")
+    return (
+        f"Parsed {len(doc.ideas)} idea block(s); {low} had no labelled fields and may be "
+        "section headings rather than ideas. Empty fields were not on the page."
+        if low
+        else f"Parsed {len(doc.ideas)} idea block(s). Empty fields were not on the page."
+    )
 
 
 def _repo_recommendation(score: float, warnings: list[str]) -> str:

@@ -149,3 +149,18 @@ def test_next_survives_a_tracked_pull_request_link(api: respx.MockRouter) -> Non
     tracked = data["tracked_issues"][0]
     assert tracked["availability"] == "unknown"
     assert "pull request" in tracked["reason"]
+
+
+def test_next_asks_for_public_intro_before_issues(api: respx.MockRouter) -> None:
+    store = ProgressStore()
+    store.set_profile(technologies=["python"])
+    store.shortlist_org("SymPy")
+    store.track_repo("sympy/sympy")
+    api.get(f"{GH}/search/issues").mock(return_value=httpx.Response(200, json={"items": []}))
+    data = GSoCToolkit().next_steps(now=NOW)
+    titles = [a["title"] for a in data["actions"]]
+    assert any("Introduce yourself" in t for t in titles)
+    assert not any("Find a beginner issue" in t for t in titles)
+    store.complete_phase(JourneyPhase.COMMUNITY)
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert any("Find a beginner issue" in a["title"] for a in data["actions"])
