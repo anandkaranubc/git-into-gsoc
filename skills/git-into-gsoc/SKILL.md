@@ -89,6 +89,8 @@ the person to run the installer. Never invent a result in its place.
 | track | `git-into-gsoc log --goal "Reproduce #23161" --done "..." --stuck "..." --next "..."` | `gsoc_log` |
 | track | `git-into-gsoc progress summary` | `gsoc_progress` |
 | any | `git-into-gsoc journey` | `gsoc_journey_guide` |
+| any | `git-into-gsoc setup` (skill and MCP registration for every assistant found) | none; run it in a terminal |
+| any | `git-into-gsoc doctor` | `gsoc_rate_limit` (GitHub budget only) |
 
 Add `--output json` when you need every field. SymPy only shows the input
 format. Use organizations and issues from the person's own research, and real
