@@ -70,7 +70,7 @@ git-into-gsoc recommend --tech python --interests science
 git-into-gsoc recommend --github YOUR_USERNAME
 ```
 
-With `--github`, this reads your recent public repositories to infer your main language and saves the profile locally. It then ranks organizations and lists starter issues from GSoC organizations that use that language.
+Short forms are `-g` for `--github`, `-t` for `--tech`, and `-i` for `--interests`. With `--github`, this reads your recent public repositories to infer your main language and saves the profile locally. It then ranks organizations and lists starter issues from GSoC organizations that use that language.
 
 ## Save local progress
 

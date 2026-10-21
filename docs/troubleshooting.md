@@ -65,7 +65,7 @@ An empty issue search does not mean the project has no useful work. Try `--label
 
 ## Results are old or an issue is already taken
 
-GitHub responses are cached for an hour and revalidated after that. For a fresh check, use `GIG_CACHE_TTL_SECONDS=0` for one command or `git-into-gsoc cache --clear`. Restart an MCP server to clear its in-memory organization data. Even fresh results cannot prove availability: the tool reads up to 100 timeline events and maintainers may coordinate elsewhere. Read the live issue discussion before starting.
+Most GitHub responses are cached for an hour and revalidated after that; issue checks refresh after 5 minutes. For a fresh check, run `git-into-gsoc cache --clear` first (`GIG_CACHE_TTL_SECONDS` changes only the one-hour default and does not affect issue checks). Restart an MCP server to clear its in-memory organization data. Even fresh results cannot prove availability: the tool reads up to 100 timeline events and maintainers may coordinate elsewhere. Read the live issue discussion before starting.
 
 ## "Ideas page not readable"
 

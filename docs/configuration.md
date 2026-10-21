@@ -4,12 +4,11 @@ You can use the tool without changing any settings. Run `git-into-gsoc doctor` t
 
 ## GitHub token
 
-GitHub allows 60 unauthenticated API requests per hour and 5,000 with a token. Repository and issue checks make several requests each, so you will hit the limit quickly without one. The tool looks for a token in this order and the doctor tells you which one it found:
+GitHub allows 60 unauthenticated API requests per hour and 5,000 with a token. Repository and issue checks make several requests each, so you will hit the limit quickly without one. The tool looks for a token in this order, and `doctor` says whether it came from the environment or the GitHub CLI:
 
-1. `GIG_GITHUB_TOKEN` in the environment or `.env`
-2. `GITHUB_TOKEN` in the environment or `.env`
-3. `GH_TOKEN` in the environment or `.env`
-4. The [GitHub CLI](https://cli.github.com/): if `gh` is installed and you have run `gh auth login`, the tool runs `gh auth token` for you
+1. `GIG_GITHUB_TOKEN`, `GITHUB_TOKEN`, or `GH_TOKEN` in the process environment (checked in that order when more than one is set)
+2. The same three names in a `.env` file in the current folder
+3. The [GitHub CLI](https://cli.github.com/): if `gh` is installed and you have run `gh auth login`, the tool runs `gh auth token` for you
 
 The GitHub CLI route is the easiest and works for the MCP server too, because it does not depend on which terminal exported a variable. Set `GIG_USE_GH_CLI=false` to disable it.
 
@@ -37,10 +36,12 @@ Put these in `.env` or export them in the process environment. Environment varia
 | `GIG_ARCHIVE_TTL_SECONDS` | `86400` | Same for organization lists, archives, and ideas pages |
 | `GIG_HTTP_TIMEOUT_SECONDS` | `30` | Maximum wait for one HTTP request |
 | `GIG_HTTP_MAX_RETRIES` | `2` | Retries for network errors and 5xx responses |
+| `GIG_HTTP_MAX_RETRY_WAIT_SECONDS` | `20` | Longest pause accepted when GitHub asks the tool to retry later |
 | `GIG_MAX_CONCURRENCY` | `6` | Parallel GitHub requests when verifying issues or grading a repository |
 | `GIG_SEARCH_MIN_INTERVAL_SECONDS` | `2` | Minimum spacing between GitHub search calls, which have a separate, lower limit |
 | `GIG_CACHE_DIR`, `GIG_DATA_DIR` | platform defaults | Override where the cache and `progress.json` live |
 | `GIG_GITHUB_API_URL`, `GIG_GSOC_ORGS_API_URL`, `GIG_GSOC_OFFICIAL_API_URL` | public endpoints | Alternate endpoints, mainly for development and tests |
+| `GIG_USER_AGENT` | package name and version | How the tool identifies itself to the APIs; usually left unchanged |
 
 ## What is saved locally?
 
@@ -53,6 +54,6 @@ The tool does not sync progress to GitHub or another computer. Queries go to Git
 
 To back up progress, copy `progress.json` somewhere you control. To correct entries, stop any assistant connection using the tool, back up the file, and edit the JSON carefully. To start over, rename the file; the next save creates a new one.
 
-For a fresh result when something changed in the last hour, use `GIG_CACHE_TTL_SECONDS=0 git-into-gsoc issue owner/repo#123` (PowerShell: set `$env:GIG_CACHE_TTL_SECONDS = "0"` first).
+Most GitHub responses stay fresh for an hour, but issue checks refresh after 5 minutes and official program dates after 6 hours. `GIG_CACHE_TTL_SECONDS` changes only the one-hour default, so for a guaranteed fresh look run `git-into-gsoc cache --clear` first.
 
 [Guide contents](README.md) · [Troubleshooting](troubleshooting.md)

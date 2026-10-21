@@ -25,7 +25,7 @@ contributor guide before helping with anything the person will submit.
 | Program timeline | The official site's program data, cached for six hours; an embedded snapshot when offline | Years Google has not published are estimates projected from the previous year |
 | Accepted organizations | The official site's accepted-organization list for the latest announced year | Includes ideas page, contributor guide, source code link, and contact channels |
 | Organization history and past projects | The community [GSoC Organizations archive](https://api.gsocorganizations.dev/), not a Google service | Years active, projects per year, and accepted project titles since 2016 |
-| Repositories and issues | The public GitHub API | Cached for an hour, then revalidated |
+| Repositories and issues | The public GitHub API | Cached for an hour (issue checks for 5 minutes), then revalidated |
 
 If the official site is unreachable, organization results fall back to the
 archive copy and the result says so.

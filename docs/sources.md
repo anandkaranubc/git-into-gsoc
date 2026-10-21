@@ -25,13 +25,13 @@ Rankings require a technology or topic match when filters are given, then order 
 
 Repository grades read the repository's metadata, community profile (CONTRIBUTING, Code of Conduct, templates), workflow count, labels, up to 100 open issues under its beginner label, and the 60 most recently updated closed pull requests. Merge rates exclude bots and are split by `author_association`, so "outside contributors" means authors without write access. Review time is the median from opening to merging among human PRs in that sample, not the time until a newcomer gets a first reply. Missing files can reflect a different project layout or an API failure.
 
-Issue searches ask GitHub for open, unassigned issues without linked PRs in non-archived repositories, updated in the last year, with the chosen label. The top candidates' timelines are read (up to 100 events each) for linked PRs, claims matching common phrasings ("can I work on this", "assign me"), maintainer approvals, and engagement. Claims phrased unusually, coordination in chat, and very long threads are not visible to the tool. Read the discussion yourself.
+Issue searches ask GitHub for open, unassigned issues without linked PRs in non-archived repositories, updated in the last year, with the chosen label. A search returns at most 30 issues and keeps at most two per repository. With `--scope gsoc`, it covers the first GitHub organization of up to 12 top-ranked GSoC organizations for the language, fewer when the search query would get too long. The top candidates' timelines are read (up to 100 events each) for linked PRs, claims matching common phrasings ("can I work on this", "assign me"), maintainer approvals, and engagement. Claims phrased unusually, coordination in chat, and very long threads are not visible to the tool. Read the discussion yourself.
 
-Organization scoping uses the GitHub organizations linked from each GSoC organization's official listing. Organizations whose code lives outside GitHub, or under a personal account, are not covered by `issues --scope gsoc`.
+Organization scoping uses the GitHub organizations linked from each GSoC organization's official listing. Organizations whose code lives outside GitHub, or under a personal account, are not covered by `issues --scope gsoc`. `repos` reads up to 100 repositories from each of the first three GitHub owners linked to an organization and skips forks, archived repositories, repositories with issues disabled, and anything not pushed in the last year.
 
 ## Caching
 
-GitHub responses are cached for an hour and revalidated with the server afterwards. Organization lists, archives, and ideas pages are cached for a day. When a source fails, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.
+Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source fails, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.
 
 ## If a source is unavailable
 
