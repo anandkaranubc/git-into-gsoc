@@ -1364,6 +1364,16 @@ class GSoCToolkit:
         if org is None:
             return self._org_not_found(name, year=year)
         base = {"found": True, "org": org.name, "ideas_url": org.ideas_url}
+        catalog, _ = self.gsoc.catalog(year)
+        target = year or self.settings.target_year
+        stale = (
+            f"This is the ideas page from GSoC {catalog.year}. Organizations publish their "
+            f"{target} ideas when they apply, usually in January or February. Until then, use "
+            f"it to learn what the organization works on, not to choose a {target} project. "
+            if catalog.year < target
+            else ""
+        )
+        base["page_year"] = catalog.year
         if not org.ideas_url:
             return {
                 **base,
@@ -1426,7 +1436,7 @@ class GSoCToolkit:
             "sub_pages": doc.sub_pages[:40] if doc.layout == "index" else [],
             "followed": followed,
             "headings": doc.headings[:30] if not doc.ideas else [],
-            "note": _ideas_note(doc, followed),
+            "note": stale + _ideas_note(doc, followed),
             "next_step": (
                 "Read the full idea on the page before contacting a mentor. Never copy its text "
                 "into a proposal; reviewers compare proposals with the ideas page."

@@ -476,6 +476,68 @@ def _split_people(value: str) -> list[str]:
     return [p.strip(" .") for p in parts if p.strip(" .")]
 
 
+# Words in a "Mentors" field that are job titles, links, or instructions, not names.
+_ROLE_WORDS = frozenset(
+    [
+        *("advisor", "advisory", "ambassador", "analyst", "architect", "author", "board"),
+        *("ceo", "chief", "consultant", "contact", "contributor", "creator", "cto"),
+        *("developer", "director", "discord", "engineer", "enthusiast", "founder", "github"),
+        *("head", "ideas", "infrastructure", "intern", "lead", "leader", "linkedin"),
+        *("maintainer", "manager", "member", "mentors", "officer", "principal", "professor"),
+        *("project", "projects", "researcher", "scientist", "security", "senior", "slack"),
+        *("speaker", "staff", "student", "systems", "team", "twitter"),
+    ]
+)
+_NAME_PARTICLES = frozenset(
+    [
+        *("van", "der", "de", "da", "del", "della", "di", "du", "dos", "das", "von", "ten"),
+        *("ter", "la", "le", "bin", "al"),
+    ]
+)
+_LINKING_WORDS = frozenset(
+    [
+        *("a", "an", "and", "at", "for", "if", "in", "of", "on", "or", "our", "the", "to"),
+        *("us", "we", "with", "you"),
+    ]
+)
+_HANDLE_RE = re.compile(r"^@?[a-z0-9][a-z0-9_-]{2,38}$")
+
+
+def _person(part: str) -> str | None:
+    """A person's name or handle from one piece of a mentors field, or None.
+
+    Contact details in parentheses stay ("Alice (@alice)"); a title after " - ",
+    "|", or a bullet is dropped.
+    """
+    if "http" in part or re.search(r"[:!?]\s*$", part):
+        return None
+    text = re.split(r"\s*[|\u2022]\s*", part, maxsplit=1)[0]
+    text = re.split(r"\s+[-\u2013]\s+", text, maxsplit=1)[0].strip(" .,")
+    bare = re.sub(r"\s*\([^)]*\)", "", text).strip(" .,")
+    words = bare.split()
+    if len(words) == 1 and _HANDLE_RE.match(bare):
+        return text
+    if not 1 <= len(words) <= 5:
+        return None
+    for word in words:
+        lower = word.lower().strip(".")
+        if lower in _NAME_PARTICLES:
+            continue
+        if lower in _ROLE_WORDS or lower in _LINKING_WORDS:
+            return None
+        if not word[0].isalpha() or word[0].islower():
+            return None
+        if len(word) >= 2 and word.isupper():  # "AI", "CCSP": titles, not names
+            return None
+    return text
+
+
+def mentor_names(parts: list[str]) -> list[str]:
+    """Names and handles from a split mentors field, dropping titles and instructions."""
+    names = [_person(part) for part in parts]
+    return list(dict.fromkeys(n for n in names if n))
+
+
 def normalize_size(value: str) -> tuple[str | None, int | None]:
     hours = _HOURS_RE.search(value or "")
     if hours:
@@ -658,7 +720,7 @@ def _assign(idea: ProjectIdea, field: str, value: str) -> None:
         size, hours = normalize_size(idea.size_raw)
         idea.size, idea.hours = size or idea.size, hours or idea.hours
     elif field == "mentors":
-        idea.mentors.extend(p for p in _split_people(value) if p not in idea.mentors)
+        idea.mentors.extend(p for p in mentor_names(_split_people(value)) if p not in idea.mentors)
     elif field == "skills":
         idea.skills.extend(p for p in _split_list(value) if p not in idea.skills)
     elif field == "outcome":

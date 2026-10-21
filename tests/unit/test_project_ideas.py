@@ -324,3 +324,41 @@ def test_values_drop_markdown_links_html_and_inline_template_notes() -> None:
     idea = doc.ideas[0]
     assert idea.mentors == ["@alice"]
     assert idea.skills == ["Python", "Type Systems"]
+
+
+def test_mentor_lists_keep_names_and_drop_titles_and_instructions() -> None:
+    from git_into_gsoc.gsoc.project_ideas import mentor_names
+
+    # Mentor fields from OWASP's 2026 ideas page, as the splitter returned them.
+    raw = [
+        "For OpenCRE Scraper",
+        "Indexer (Project OIE) Module Projects (A, B, C, D):",
+        "Spyros Gasteratos",
+        "Rob Van Der Veer",
+        "Confirmed Mentors (we\u2019re all on the OWASP Slack in the #project-blt channel):",
+        "Reach out to us on Slack to discuss these",
+        "other ideas!",
+        "Venkata Sai Kishore Modalavalasa",
+        "Researcher",
+        "Author | Creator of FinBot Agentic AI CTF | Chief Architect at Straiker",
+        "GitHub • LinkedIn • Slack",
+        "Agentic AI",
+        "Healthcare AI - Advisory Board | Former Head of Product Security SAP-IAG at SAP",
+        "Cloud infrastructure",
+        "CCSP",
+        "Software Engineer at Tech Chantier | Open Source Contributor",
+        "Please contact Arkadii Yakovets or Kate Golovanova if you\u2019re interested",
+        "Bjoern Kimminich - OWASP Juice Shop Project Leader (bkimminich on Slack)",
+        "Rupak Biswas (Rupak on Slack)",
+        "ardiansyah",
+        "Timo Pagel",
+    ]
+    assert mentor_names(raw) == [
+        "Spyros Gasteratos",
+        "Rob Van Der Veer",
+        "Venkata Sai Kishore Modalavalasa",
+        "Bjoern Kimminich",
+        "Rupak Biswas (Rupak on Slack)",
+        "ardiansyah",
+        "Timo Pagel",
+    ]

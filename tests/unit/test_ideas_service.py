@@ -195,3 +195,14 @@ def test_org_ideas_links_past_proposals(api: respx.MockRouter) -> None:
     assert data["past_proposals"]
     assert data["past_proposals"][0]["files"] == 1
     assert "never copy" in data["past_proposals_note"].lower()
+
+
+def test_org_ideas_says_when_the_page_is_from_last_year(api: respx.MockRouter) -> None:
+    # The target year is 2027 and only the 2026 list exists, so the page is 2026's.
+    api.get(SYMPY_RAW).mock(return_value=httpx.Response(200, text=_read("wiki_headings.md")))
+    data = GSoCToolkit().org_ideas("SymPy")
+    assert data["page_year"] == 2026
+    assert data["note"].startswith("This is the ideas page from GSoC 2026.")
+    assert "2027" in data["note"]
+    current = GSoCToolkit().org_ideas("SymPy", year=2026)
+    assert "from GSoC 2026" not in current["note"]
