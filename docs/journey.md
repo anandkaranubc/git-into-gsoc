@@ -16,7 +16,7 @@ You can loop (for example more issues after the first PR). Order is a default, n
 | `orient` | You know where a change would go and how you would test it | `orient` | [Get your bearings](guide/05-choose-an-issue.md#get-your-bearings-in-the-repository) |
 | `community` | You have introduced yourself in the organization's public channel and read how it works | `org` (channels), `draft intro` | [Introduce yourself](guide/05-choose-an-issue.md#introduce-yourself-to-the-community) |
 | `find_issues` | One available, well-specified issue you can reproduce | `issues`, `issue`, `pointers`, `draft claim` | [Pick a repository and an issue](guide/05-choose-an-issue.md) |
-| `contribute` | A meaningful, reviewed PR you can explain | `draft pr` | [First contribution](guide/06-first-contribution.md) |
+| `contribute` | A meaningful, reviewed PR you can explain | `draft pr`, `pr-check` | [First contribution](guide/06-first-contribution.md) |
 | `iterate` | Reviewers know you finish what you start | `draft review-reply`, `next` | [See it through review](guide/06-first-contribution.md#see-it-through-review) |
 | `proposal` | An original draft aligned to the organization's template | `proposal`, `contributions`, `program` | [Prepare a proposal](guide/07-prepare-a-proposal.md) |
 | `track` | A weekly log habit | `log`, `progress`, `next` | [Track progress](guide/08-track-progress.md) |
