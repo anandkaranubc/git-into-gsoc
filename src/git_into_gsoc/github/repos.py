@@ -22,8 +22,6 @@ KNOWN_BOTS = {
     "greenkeeper",
 }
 OUTSIDER_ROLES = {"CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER", "NONE"}
-MIN_OUTSIDER_SAMPLE = 10  # below this, the outsider merge rate is shown but not scored
-MIN_REPLY_SAMPLE = 5  # below this, the first-reply time is shown but not scored
 BEGINNER_LABELS = (
     "good first issue",
     "good-first-issue",

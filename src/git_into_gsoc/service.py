@@ -1487,7 +1487,10 @@ def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:
 
 
 def _repo_recommendation(score: float, warnings: list[str]) -> str:
-    if score >= 80:
+    # Same cut-off as grade A, so a B never reads as "go ahead".
+    if score >= 85:
+        if warnings:
+            return "Strong candidate. Read the warnings below, then set it up and pick an issue."
         return "Strong candidate. Go ahead with setup and pick an issue."
     if score >= 65:
         return "Promising, with caveats. Read the warnings and check that maintainers reply."

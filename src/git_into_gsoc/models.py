@@ -144,6 +144,7 @@ class RepoHealth(BaseModel):
     bus_factor: int | None = None
     beginner_label: str | None = None
     open_beginner_issues: int | None = None
+    assigned_beginner_issues: int | None = None
     health_score: float = 0.0
     grade: str = "F"
     signals: list[str] = Field(default_factory=list)

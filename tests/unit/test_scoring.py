@@ -177,3 +177,65 @@ def test_mentions_word_boundaries() -> None:
     assert not mentions("maintainers", "ai")
     assert mentions("Applied AI research", "ai")
     assert canonical(" Golang ") == "go"
+
+
+def _busy_repo(**overrides: object) -> RepoHealth:
+    # Shaped like OWASP/Nest on 2026-10-21: everything looks great except that
+    # 7 of the last 10 outside pull requests were not merged.
+    fields: dict[str, object] = {
+        "full_name": "acme/busy",
+        "url": "https://github.com/acme/busy",
+        "stars": 900,
+        "pushed_at": datetime.now(UTC) - timedelta(days=1),
+        "has_contributing": True,
+        "has_code_of_conduct": True,
+        "has_pr_template": True,
+        "has_ci": True,
+        "beginner_label": "good first issue",
+        "open_beginner_issues": 11,
+        "prs_sampled": 40,
+        "merge_rate": 0.56,
+        "outsider_prs_sampled": 10,
+        "outsider_merge_rate": 0.3,
+        "outside_authors_merged": 2,
+        "median_pr_hours": 12,
+        "committers_last_year": 135,
+        "newcomer_committers_last_year": 72,
+        "license": "MIT",
+        "median_outsider_pr_size": 3,
+    }
+    fields.update(overrides)
+    return RepoHealth(**fields)  # type: ignore[arg-type]
+
+
+def test_a_repo_that_rejects_most_outside_prs_never_gets_an_a() -> None:
+    scored = score_repo_health(_busy_repo())
+    assert scored.grade != "A"
+    assert scored.health_score < 85
+    assert any("7 of the last 10" in w for w in scored.warnings)
+    rare = score_repo_health(_busy_repo(outsider_merge_rate=0.1))
+    assert rare.grade in {"C", "D", "F"}
+
+
+def test_pr_size_is_reported_without_telling_people_to_shrink_their_work() -> None:
+    scored = score_repo_health(_busy_repo())
+    size = next(s for s in scored.signals if "lines" in s)
+    assert "keep yours" not in size
+
+
+def test_beginner_issue_count_says_how_many_are_still_unassigned() -> None:
+    scored = score_repo_health(_busy_repo(open_beginner_issues=11, assigned_beginner_issues=7))
+    assert any(
+        "4 open 'good first issue' issue(s) nobody is assigned to" in s for s in scored.signals
+    )
+    taken = score_repo_health(_busy_repo(open_beginner_issues=5, assigned_beginner_issues=5))
+    assert any("already assigned" in w for w in taken.warnings)
+
+
+def test_recommendation_text_matches_the_grade() -> None:
+    from git_into_gsoc.service import _repo_recommendation
+
+    busy = score_repo_health(_busy_repo())
+    assert "Go ahead" not in _repo_recommendation(busy.health_score, busy.warnings)
+    assert "warnings" in _repo_recommendation(90, ["One person wrote most commits"])
+    assert "Go ahead" in _repo_recommendation(90, [])

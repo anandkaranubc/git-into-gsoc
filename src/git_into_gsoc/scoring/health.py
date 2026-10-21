@@ -4,8 +4,13 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from git_into_gsoc.github.repos import MIN_OUTSIDER_SAMPLE, MIN_REPLY_SAMPLE
 from git_into_gsoc.models import RepoHealth
+
+MIN_OUTSIDER_SAMPLE = 10  # below this, the outsider merge rate is shown but not scored
+MIN_REPLY_SAMPLE = 5  # below this, the first-reply time is shown but not scored
+# A repository that turns down most outside pull requests cannot grade well, however
+# polished it looks: below 40% merged it tops out at B, below 20% at C.
+OUTSIDER_CAPS = ((0.2, 71.0), (0.4, 84.0))
 
 
 def _days_or_hours(hours: float) -> str:
@@ -71,9 +76,19 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         score += 8
         signals.append("CI runs on pull requests")
 
-    if health.open_beginner_issues:
+    open_issues = health.open_beginner_issues or 0
+    free = open_issues - (health.assigned_beginner_issues or 0)
+    if open_issues and free > 0:
         score += 10
-        signals.append(f"{health.open_beginner_issues} open '{health.beginner_label}' issue(s)")
+        total = f" ({open_issues} open in total)" if free < open_issues else ""
+        signals.append(
+            f"{free} open '{health.beginner_label}' issue(s) nobody is assigned to{total}"
+        )
+    elif open_issues:
+        score += 2
+        warnings.append(
+            f"All {open_issues} open '{health.beginner_label}' issue(s) are already assigned"
+        )
     elif health.beginner_label:
         score += 4
         warnings.append(f"'{health.beginner_label}' label exists but no open issues use it")
@@ -90,17 +105,24 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
 
     rate = health.outsider_merge_rate
     sampled = health.outsider_prs_sampled
+    cap = 100.0
     if rate is not None and sampled >= MIN_OUTSIDER_SAMPLE:
+        unmerged = sampled - round(rate * sampled)
         if rate >= 0.4:
             score += 12
             signals.append(f"Merges outside contributors' PRs ({rate:.0%} of {sampled})")
         elif rate >= 0.2:
             score += 6
-            signals.append(f"Sometimes merges outside PRs ({rate:.0%} of {sampled})")
+            warnings.append(
+                f"{unmerged} of the last {sampled} outside pull requests were not merged; "
+                "ask on the issue before you start, and expect competition"
+            )
         else:
             warnings.append(
-                f"Rarely merges PRs from outside contributors ({rate:.0%} of {sampled})"
+                f"Rarely merges PRs from outside contributors ({rate:.0%} of {sampled}): "
+                f"{unmerged} of the last {sampled} were not merged"
             )
+        cap = next((limit for below, limit in OUTSIDER_CAPS if rate < below), cap)
     elif rate is not None and sampled:
         signals.append(
             f"Outside PRs merged: {rate:.0%} of {sampled} (too few to score; check recent PRs)"
@@ -175,8 +197,8 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
 
     if health.median_outsider_pr_size is not None:
         signals.append(
-            f"Merged outside PRs change ~{health.median_outsider_pr_size} lines (median); "
-            "keep yours around that size"
+            f"Merged outside PRs change ~{health.median_outsider_pr_size} lines (median), "
+            "so focused changes are what land here"
         )
 
     if health.license:
@@ -191,7 +213,7 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
     elif health.stars > 50000:
         warnings.append("Very popular repo: beginner issues go fast, expect competition")
 
-    health.health_score = round(min(score, 100.0), 1)
+    health.health_score = round(min(score, cap, 100.0), 1)
     health.grade = _grade(health.health_score)
     health.signals = signals
     health.warnings = warnings

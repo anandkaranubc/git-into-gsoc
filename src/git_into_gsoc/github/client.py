@@ -15,7 +15,6 @@ from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
 from git_into_gsoc.github.repos import (
-    MIN_REPLY_SAMPLE,
     attach_first_replies,
     channels_in,
     closed_outside_unmerged,
@@ -34,7 +33,7 @@ from git_into_gsoc.models import (
     IssueCandidate,
     RepoHealth,
 )
-from git_into_gsoc.scoring.health import score_repo_health
+from git_into_gsoc.scoring.health import MIN_REPLY_SAMPLE, score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import parse_repo, search_term, validate_login
@@ -276,7 +275,8 @@ class GitHubClient:
             return []
         return data if isinstance(data, list) else []
 
-    def count_open_issues_with_label(self, owner: str, repo: str, label: str) -> int:
+    def count_open_issues_with_label(self, owner: str, repo: str, label: str) -> tuple[int, int]:
+        """Open issues with the label, and how many of them are assigned to someone."""
         try:
             data = self._api(
                 f"repos/{owner}/{repo}/issues",
@@ -284,8 +284,10 @@ class GitHubClient:
                 ttl=900,
             )
         except HttpError:
-            return 0
-        return sum(1 for i in data if "pull_request" not in i) if isinstance(data, list) else 0
+            return 0, 0
+        issues = [i for i in data if "pull_request" not in i] if isinstance(data, list) else []
+        assigned = sum(1 for i in issues if i.get("assignee") or i.get("assignees"))
+        return len(issues), assigned
 
     def root_listing(self, owner: str, repo: str) -> list[dict[str, Any]]:
         try:
@@ -409,7 +411,9 @@ class GitHubClient:
                 stats = pull_stats(source_pulls, insiders=source_insiders, landed=frozenset(landed))
         files = profile.get("files") or {}
         label = pick_beginner_label(labels)
-        open_beginner = self.count_open_issues_with_label(owner, repo, label) if label else None
+        open_beginner, assigned_beginner = (
+            self.count_open_issues_with_label(owner, repo, label) if label else (None, None)
+        )
         health = RepoHealth(
             full_name=f"{owner}/{repo}",
             url=raw.get("html_url", f"https://github.com/{owner}/{repo}"),
@@ -449,6 +453,7 @@ class GitHubClient:
             bus_factor=commits.bus_factor if commits else None,
             beginner_label=label,
             open_beginner_issues=open_beginner,
+            assigned_beginner_issues=assigned_beginner,
         )
         return score_repo_health(health)
 
