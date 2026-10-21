@@ -42,6 +42,8 @@ Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py`
 | Accepted projects: hit@10 | 0.622 | **0.765** |
 | Accepted projects: MRR | 0.363 | **0.456** |
 
+`holdout2.json` (12 personas in ecosystems the first set does not cover: Swift, Elixir, Scala and Spark, Lua, MATLAB, C#, embedded Rust, NLP, D3 with no language named, Java and Spring, documentation only, several with misspellings) was written and graded by a second reviewer who never saw the code or the first set. At its first and only blind look, the keyword ranker scored nDCG@10 0.451 (P@5 0.317, wrong@5 21) and the current ranker 0.566 (P@5 0.483, wrong@5 11). Its typed words then showed four vocabulary gaps (Phoenix, NLTK, Leaflet, "realtime chat"), now fixed, which moved it to 0.573; treat it as no longer blind. It is harder by design: four of its personas have no strong fit among the 2026 organizations.
+
 Measured on 2026-10-21 with the data shipped then. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
 
 ## Adding to the benchmark

@@ -99,6 +99,8 @@ Each has a dev half, used while tuning, and a test half, checked only after tuni
 | Accepted projects: accepting organization in the top 5 | 52.1% | **68.9%** |
 | Accepted projects: accepting organization in the top 10 | 62.2% | **76.5%** |
 
+A third set of 12 personas from a second blind reviewer, in ecosystems the first set does not cover (Swift, Elixir, Scala, Lua, C#, embedded Rust, documentation only), confirmed the gain on first sight: nDCG@10 0.451 for the keyword ranker against 0.566 now, and judged-wrong picks in the top five down from 21 to 11.
+
 Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/test_match_benchmark.py`) fails if a change makes them clearly worse, and CI runs it on the monthly data refresh too.
 
 ## Known limits

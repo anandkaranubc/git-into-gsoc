@@ -125,6 +125,9 @@ _SKILLS = [
     _c("jupyter", SKILL, "jupyterlab|ipython|notebooks|jupyter notebooks", label="Jupyter", broader="python|data science", tag_only="notebooks"),
     _c("pytorch", SKILL, "torch|tensorflow|keras|jax|scikit-learn|sklearn|huggingface|hugging face|transformers|onnx|xgboost|machine learning (ml)", label="ML frameworks (PyTorch, TensorFlow, scikit-learn)", broader="python|machine learning", tag_only="torch"),
     _c("opencv", SKILL, "open cv", label="OpenCV", broader="computer vision"),
+    _c("nltk", SKILL, "spacy|gensim|stanza|nltk python", label="NLP libraries (NLTK, spaCy)", broader="python|natural language processing"),
+    _c("leaflet", SKILL, "openlayers|maplibre|mapbox|cesium|leaflet.js", label="Web map libraries (Leaflet, OpenLayers)", broader="javascript|geospatial"),
+    _c("phoenix", SKILL, "phoenix framework|phoenix liveview|liveview", label="Phoenix", broader="elixir|backend", tag_only="phoenix"),
     _c("qt", SKILL, "qml|pyqt|pyside|qt5|qt6", label="Qt", broader="c++|desktop"),
     _c("gtk", SKILL, "gtkmm|gtk4|gtk3|gobject|glib|libadwaita", label="GTK", broader="c|desktop"),
     _c("wxwidgets", SKILL, "", label="wxWidgets", broader="c++|desktop"),
@@ -198,18 +201,18 @@ _DOMAINS = [
     _c("developer tools", DOMAIN, "devtools|dev tools|development tools|tooling|ide|ides|code editor|code editors|editor|editors|debugger|debuggers|debugging|linters|linter|formatters|testing|test automation|test frameworks|testing frameworks|unit testing|code review|code review tool|command line|command line tools|command-line|command-line tools|cli|cli tools|terminal|profilers|profiling|build tools|api clients|developer experience", label="Developer tools", related="compilers|devops", tag_only="cli|terminal|editor|editors|testing"),
     # Applications
     _c("web", DOMAIN, "web development|web dev|webdev|web-development|websites|website|web apps|web app|web applications|web application|full stack|full-stack|fullstack|web platform|browser|browsers|web services", label="Web development"),
-    _c("frontend", DOMAIN, "front-end|front end|frontend development|user interface|user interfaces|ui|ui development|ux|user experience|ui/ux|web design|interaction design|design systems|responsive design", label="Frontend and user interfaces", broader="web", related="design|accessibility"),
-    _c("backend", DOMAIN, "back-end|back end|server-side|server side|apis|api|rest|web apis|api design|api development|servers|server", label="Backend and APIs", broader="web", related="databases|cloud native", tag_only="api|rest|server|servers"),
+    _c("frontend", DOMAIN, "frontends|front-end|front end|frontend development|user interface|user interfaces|ui|ui development|ux|user experience|ui/ux|web design|interaction design|design systems|responsive design", label="Frontend and user interfaces", broader="web", related="design|accessibility"),
+    _c("backend", DOMAIN, "backends|web backends|back-end|back end|server-side|server side|apis|api|rest|web apis|api design|api development|servers|server", label="Backend and APIs", broader="web", related="databases|cloud native", tag_only="api|rest|server|servers"),
     _c("content management", DOMAIN, "cms|content management systems|content management system|wordpress|drupal|joomla|blogging|publishing|website builder|static site generators", label="Content management and publishing", broader="web", tag_only="publishing"),
     _c("accessibility", DOMAIN, "a11y|screen reader|screen readers|assistive technology|assistive technologies|inclusive design|wcag|aria|disabilities|disability", label="Accessibility", related="frontend|design", tag_only="aria"),
     _c("design", DOMAIN, "ui design|ux design|visual design|graphic design|usability|usability research|user research|human-computer interaction|hci|prototyping|figma", label="Design and usability", related="frontend|accessibility", tag_only="design"),
     _c("mobile", DOMAIN, "mobile apps|mobile app|mobile development|mobile applications|smartphones|apps|app development|cross-platform|multiplatform", label="Mobile apps", tag_only="apps|cross-platform"),
     _c("desktop", DOMAIN, "desktop applications|desktop apps|desktop environment|gui|guis|gnome|kde|linux desktop|window manager", label="Desktop applications", related="frontend"),
     _c("graphics", DOMAIN, "computer graphics|3d|3d graphics|2d|2d/3d graphics|rendering|renderer|ray tracing|path tracing|animation|cad|mesh processing|geometry processing|vr|ar|xr|virtual reality|augmented reality|gltf|3d modeling|3d printing|vector graphics|image editing|photo editing|raster graphics|svg|fonts|typography", label="Graphics and 3D", related="games|computer vision", tag_only="2d|ar|cad|rendering"),
-    _c("games", DOMAIN, "game|gaming|game development|gamedev|game dev|game engines|game engine|video games|game design|educational games|serious games|interactive fiction", label="Games"),
+    _c("games", DOMAIN, "game|gaming|modding|game modding|mods|game moding|game development|gamedev|game dev|game engines|game engine|video games|game design|educational games|serious games|interactive fiction", label="Games"),
     _c("audio", DOMAIN, "music|sound|audio processing|digital audio|daw|synthesizers|synthesizer|midi|music production|music information retrieval|audio plugins|signal processing|dsp|speech synthesis|podcasts", label="Music and audio", related="video"),
     _c("video", DOMAIN, "multimedia|media|streaming|video streaming|video processing|video editing|codecs|codec|subtitles|captions|ffmpeg|media players|broadcast|live streaming|video conferencing", label="Video and multimedia", related="audio|graphics|communication"),
-    _c("communication", DOMAIN, "chat|messaging|instant messaging|team chat|email|mail|social|social media|social networking|social networks|fediverse|activitypub|forums|forum|collaboration|real-time communication|web real-time communication|community", label="Communication and social", related="video", tag_only="social|community|mail|collaboration"),
+    _c("communication", DOMAIN, "chat|realtime chat|real-time chat|chat apps|messaging|instant messaging|team chat|email|mail|social|social media|social networking|social networks|fediverse|activitypub|forums|forum|collaboration|real-time communication|web real-time communication|community", label="Communication and social", related="video", tag_only="social|community|mail|collaboration"),
     _c("education", DOMAIN, "edtech|ed tech|learning|teaching|e-learning|elearning|learning management|students|student|school|schools|classroom|kids|children|mooc|educational|tutoring|courses|curriculum|literacy|stem education", label="Education", tag_only="learning|students|student|courses"),
     _c("digital humanities", DOMAIN, "humanities|history|archives|archival|libraries and archives|museums|cultural heritage|digital libraries|digital preservation|books|ebooks|wikipedia|encyclopedia|offline access|offline", label="Libraries, archives and digital humanities", related="open data", tag_only="history|books|offline"),
     _c("languages and linguistics", DOMAIN, "linguistics|translation|localization|localisation|internationalization|i18n|l10n|low-resource languages|indigenous languages|dictionaries|dictionary|language learning", label="Languages and translation", related="natural language processing|education", tag_only="dictionary|localization"),
@@ -356,7 +359,8 @@ def resolve(term: str) -> Resolved:
         return Resolved(raw=term, concepts=index[cleaned], corrected_from=fixed)
     whole = find_concepts(cleaned, free_text=False)
     if whole:
-        return Resolved(raw=term, concepts=tuple(whole))
+        specific = find_concepts(cleaned) if " " in cleaned else {}
+        return Resolved(raw=term, concepts=tuple(specific or whole))
     if len(cleaned) >= 4:
         close = difflib.get_close_matches(cleaned, list(index), n=1, cutoff=0.8)
         if close and len(close[0]) >= 4:

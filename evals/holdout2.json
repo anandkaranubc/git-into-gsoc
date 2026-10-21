@@ -1,0 +1,513 @@
+{
+ "about": "A second set of contributor personas, written and graded by a later reviewer who never saw the ranking code or the first set. Never used for tuning. See evals/README.md.",
+ "org_list": "official GSoC 2026 accepted organizations",
+ "personas": [
+  {
+   "id": "swift-ios-learner",
+   "split": "holdout2",
+   "about": "First-year student who has shipped two small iPhone apps in SwiftUI and wants a first open source project, ideally an app that helps people learn.",
+   "profile": {
+    "technologies": [
+     "swift",
+     "swiftui"
+    ],
+    "interests": [
+     "ios apps",
+     "education"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "International Catrobat Association": 3,
+    "MIT App Inventor": 3,
+    "Swift": 2,
+    "Open Transit Software Foundation": 2,
+    "Kiwix": 2,
+    "Wikimedia Foundation": 1,
+    "Oppia Foundation": 1,
+    "Sugar Labs": 1,
+    "AnkiDroid": 1,
+    "Learning Equality": 1
+   },
+   "wrong_top5": [
+    "Oppia Foundation",
+    "Sugar Labs",
+    "CircuitVerse.org",
+    "omegaUp",
+    "KDE Community",
+    "JdeRobot",
+    "Learning Unlimited",
+    "Submitty"
+   ],
+   "judge_notes": "Only a few orgs ship native iOS code in Swift (Catrobat's Pocket Code for iOS, App Inventor's iOS companion, OneBusAway iOS, Kiwix for Apple). Web-based education orgs match the word 'education' but use none of this person's skills."
+  },
+  {
+   "id": "elixir-phoenix-chat",
+   "split": "holdout2",
+   "about": "Backend developer at a small startup who writes Elixir and Phoenix on PostgreSQL and wants to work on realtime chat or messaging software.",
+   "profile": {
+    "technologies": [
+     "elixir",
+     "phoenix",
+     "postgresql"
+    ],
+    "interests": [
+     "realtime chat",
+     "web backends"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "Zulip": 2,
+    "rocket.chat": 2,
+    "Django Software Foundation": 2,
+    "Jitsi": 1,
+    "Typelevel": 1,
+    "PostgreSQL": 1,
+    "Ruby": 1
+   },
+   "wrong_top5": [
+    "GNU Radio",
+    "RTEMS Project",
+    "Metasploit",
+    "FOSSology",
+    "OpenELIS Global",
+    "Submitty",
+    "GNU Mailman",
+    "AOSSIE"
+   ],
+   "judge_notes": "No 2026 org uses Elixir, so nothing earns a 3. The tool should fall back to the chat and web backend domain (Zulip, Rocket.Chat, Django) rather than to orgs that just list postgresql or the word real-time."
+  },
+  {
+   "id": "scala-spark-engineer",
+   "split": "holdout2",
+   "about": "Data engineer with several years of Scala and Spark at work who wants a demanding summer project in functional programming or big data tooling.",
+   "profile": {
+    "technologies": [
+     "scala",
+     "spark",
+     "jvm"
+    ],
+    "interests": [
+     "functional programming",
+     "big data"
+    ],
+    "experience": "experienced",
+    "hours_per_week": 30
+   },
+   "grades": {
+    "Typelevel": 3,
+    "DBpedia": 2,
+    "MetaBrainz Foundation Inc": 2,
+    "Haskell.org": 2,
+    "Kotlin Foundation": 1,
+    "CERN-HSF": 1,
+    "Genome Assembly and Annotation": 1,
+    "MalariaGEN": 1,
+    "Metaflow": 1,
+    "JBoss Community": 1,
+    "Eclipse Foundation": 1,
+    "The JPF team": 1,
+    "cBioPortal for Cancer Genomics": 1,
+    "Internet Archive": 1,
+    "Apache Software Foundation": 1
+   },
+   "wrong_top5": [
+    "Apache Software Foundation",
+    "Jenkins",
+    "checkstyle",
+    "cBioPortal for Cancer Genomics",
+    "CERN-HSF",
+    "Ceph",
+    "JabRef e.V.",
+    "GRAME"
+   ],
+   "judge_notes": "Typelevel is the clear match (Scala plus functional programming). Apache lists big data and Java but has 0 projects in 2026, and Java-only orgs like Jenkins or checkstyle match the JVM word without matching either interest."
+  },
+  {
+   "id": "lua-game-modder",
+   "split": "holdout2",
+   "about": "High school student who learned Lua by writing game mods and scripts, has never opened a pull request, and only has a few hours each week.",
+   "profile": {
+    "technologies": [
+     "lua"
+    ],
+    "interests": [
+     "game moding",
+     "scripting"
+    ],
+    "experience": "new",
+    "hours_per_week": 6
+   },
+   "grades": {
+    "Neovim": 2,
+    "LabLua": 2,
+    "Tiled": 2,
+    "ScummVM": 2,
+    "ArduPilot": 1,
+    "Blender Foundation": 1,
+    "International Catrobat Association": 1
+   },
+   "wrong_top5": [
+    "OpenWISP",
+    "BRL-CAD",
+    "Sugar Labs",
+    "Gambit: The package for computation in game theory"
+   ],
+   "judge_notes": "The misspelled 'moding' should still reach game tools (Tiled, ScummVM), and Lua should reach Neovim and LabLua. OpenWISP lists lua for router scripts and Gambit matches 'game' only through game theory."
+  },
+  {
+   "id": "matlab-physicist-to-python",
+   "split": "holdout2",
+   "about": "Physics PhD student who did all research code in MATLAB and is moving to Python, looking for a scientific project on signal processing or physics simulation.",
+   "profile": {
+    "technologies": [
+     "matlab",
+     "python",
+     "numpy"
+    ],
+    "interests": [
+     "signal processing",
+     "physics simulations"
+    ],
+    "experience": "some",
+    "hours_per_week": 12
+   },
+   "grades": {
+    "GNU Octave": 3,
+    "GNU Radio": 3,
+    "gprMax": 3,
+    "TARDIS RT Collaboration": 3,
+    "preCICE": 2,
+    "Stichting SU2": 2,
+    "SymPy": 2,
+    "OpenAstronomy": 2,
+    "CERN-HSF": 2,
+    "Machine Learning for Science (ML4SCI)": 2,
+    "NumFOCUS": 2,
+    "MDAnalysis": 2,
+    "Open Science Initiative for Perfusion Imaging": 2,
+    "QC-Devs": 1,
+    "Project Mesa": 1,
+    "Alaska": 1,
+    "The Julia Language": 1,
+    "SageMath": 1,
+    "MLLAM": 1,
+    "Neuroinformatics Unit": 1,
+    "INCF": 1
+   },
+   "wrong_top5": [
+    "Alaska",
+    "The ns-3 Network Simulator Project",
+    "CircuitVerse.org",
+    "Open Robotics",
+    "stdlib",
+    "Free and Open Source Silicon Foundation",
+    "Project Mesa"
+   ],
+   "judge_notes": "Octave rewards MATLAB skills directly and GNU Radio, gprMax, and TARDIS hit signal processing or physics simulation in Python. Alaska lists matlab but works on radiology and neuroscience, and 'simulation' alone pulls in network, circuit, and robot simulators."
+  },
+  {
+   "id": "ts-node-devtools",
+   "split": "holdout2",
+   "about": "Web developer who writes internal CLI tools and build scripts in TypeScript and Node and wants to work on tools other programmers use every day.",
+   "profile": {
+    "technologies": [
+     "typescript",
+     "node"
+    ],
+    "interests": [
+     "developer tools",
+     "cli",
+     "build tools"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "webpack": 3,
+    "Gemini CLI": 3,
+    "Neutralinojs": 2,
+    "JSON Schema": 2,
+    "API Dash": 2,
+    "Jenkins": 1,
+    "Boa": 1,
+    "Meshery": 1,
+    "Joplin": 1,
+    "rocket.chat": 1,
+    "stdlib": 1,
+    "Processing Foundation": 1,
+    "Open Science Labs": 1,
+    "Zulip": 1,
+    "Git": 1,
+    "MetaCall": 1
+   },
+   "wrong_top5": [
+    "LLVM Compiler Infrastructure",
+    "GNU Compiler Collection (GCC)",
+    "checkstyle",
+    "Kotlin Foundation",
+    "Haskell.org",
+    "Zulip",
+    "Sugar Labs",
+    "Kubeflow"
+   ],
+   "judge_notes": "webpack and Gemini CLI match all three interests in TypeScript and Node. Compiler and static analysis orgs are tagged 'development tools' but need C++, Java, Kotlin, or Haskell, and TypeScript alone pulls in unrelated apps."
+  },
+  {
+   "id": "csharp-dotnet-bootcamp",
+   "split": "holdout2",
+   "about": "Bootcamp graduate who writes C# with .NET and has made small Unity games, looking for a first open source project around games or desktop apps.",
+   "profile": {
+    "technologies": [
+     "c#",
+     ".net",
+     "unity"
+    ],
+    "interests": [
+     "games",
+     "desktop apps"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "JabRef e.V.": 2,
+    "Tiled": 2,
+    "KDE Community": 1,
+    "ScummVM": 1,
+    "JSON Schema": 1,
+    "LibreOffice": 1,
+    "Blender Foundation": 1,
+    "Neutralinojs": 1,
+    "Processing Foundation": 1
+   },
+   "wrong_top5": [
+    "Sugar Labs",
+    "Gambit: The package for computation in game theory",
+    "Haiku",
+    "GNOME Foundation",
+    "International Catrobat Association",
+    "Blender Foundation"
+   ],
+   "judge_notes": "No org is built on C# and only JSON Schema mentions .NET, for a validator library far from games. Best bets are a Java desktop app (JabRef, an easy move from C#) and Tiled, a game level editor many Unity developers already use."
+  },
+  {
+   "id": "rust-embedded-firmware",
+   "split": "holdout2",
+   "about": "Firmware engineer who writes embedded Rust and C for microcontrollers at work and wants a full-time summer project on space or robotics systems.",
+   "profile": {
+    "technologies": [
+     "rust",
+     "c",
+     "embedded"
+    ],
+    "interests": [
+     "space",
+     "robotics"
+    ],
+    "experience": "experienced",
+    "hours_per_week": 35
+   },
+   "grades": {
+    "RTEMS Project": 3,
+    "LibreCube Initiative": 3,
+    "dora-rs": 3,
+    "ArduPilot": 3,
+    "Open Robotics": 2,
+    "The Linux Foundation": 2,
+    "Eclipse Foundation": 2,
+    "Kornia": 2,
+    "QEMU": 2,
+    "JdeRobot": 1,
+    "The FreeBSD Project": 1,
+    "The NetBSD Foundation": 1,
+    "Free and Open Source Silicon Foundation": 1,
+    "The Rust Foundation": 1,
+    "Unikraft": 1,
+    "GNU Radio": 1,
+    "FOSSASIA": 1
+   },
+   "wrong_top5": [
+    "CCExtractor Development",
+    "Graphite",
+    "AnkiDroid",
+    "Boa",
+    "OpenAstronomy",
+    "Machine Learning for Science (ML4SCI)",
+    "The Rust Foundation",
+    "MoFA Org"
+   ],
+   "judge_notes": "RTEMS (an RTOS used in spacecraft), LibreCube (space hardware with Rust), dora-rs (Rust robotics), and ArduPilot (vehicle firmware) fit an embedded engineer. Many orgs list rust for desktop or media apps, and astronomy orgs match 'space' through data analysis, not hardware."
+  },
+  {
+   "id": "linguist-nlp-typos",
+   "split": "holdout2",
+   "about": "Linguistics major who taught herself Python and NLTK to study text corpora; she types quickly and misspells her interests.",
+   "profile": {
+    "technologies": [
+     "python",
+     "nltk"
+    ],
+    "interests": [
+     "lingusitics",
+     "natural language procesing"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "Cuneiform Digital Library Initiative (CDLI)": 3,
+    "HumanAI": 3,
+    "Accord Project": 2,
+    "DBpedia": 2,
+    "Wikimedia Foundation": 2,
+    "FOSSology": 1,
+    "Internet Archive": 1,
+    "UC OSPO": 1,
+    "Python Software Foundation": 1,
+    "NumFOCUS": 1
+   },
+   "wrong_top5": [
+    "Processing Foundation",
+    "The Rust Foundation",
+    "Haskell.org",
+    "Machine Learning for Science (ML4SCI)",
+    "Django Software Foundation",
+    "Python Software Foundation",
+    "CERN-HSF",
+    "FOSSology"
+   ],
+   "judge_notes": "Fuzzy matching must recover 'linguistics' (CDLI) and 'natural language processing' (Accord Project, HumanAI). 'Procesing' must not drift to the Processing Foundation, and 'language' must not drift to programming language orgs."
+  },
+  {
+   "id": "d3-leaflet-dataviz",
+   "split": "holdout2",
+   "about": "Journalism student who makes interactive charts and maps with D3 and Leaflet for class projects and has never contributed to open source.",
+   "profile": {
+    "technologies": [
+     "d3",
+     "leaflet"
+    ],
+    "interests": [
+     "data visualization",
+     "maps"
+    ],
+    "experience": "new",
+    "hours_per_week": 8
+   },
+   "grades": {
+    "OpenStreetMap": 3,
+    "OSGeo (Open Source Geospatial Foundation)": 3,
+    "Liquid Galaxy project": 2,
+    "52°North Spatial Information Research GmbH": 2,
+    "National Resource for Network Biology (NRNB)": 2,
+    "Processing Foundation": 2,
+    "R project for statistical computing": 1,
+    "INCF": 1,
+    "cBioPortal for Cancer Genomics": 1,
+    "IOOS": 1,
+    "Data for the Common Good": 1,
+    "PEcAn Project": 1,
+    "stdlib": 1,
+    "Open Transit Software Foundation": 1
+   },
+   "wrong_top5": [
+    "TARDIS RT Collaboration",
+    "Submitty",
+    "Neuroinformatics Unit",
+    "Meshery",
+    "QC-Devs",
+    "Python Software Foundation",
+    "Gambit: The package for computation in game theory",
+    "R project for statistical computing"
+   ],
+   "judge_notes": "The profile names only JavaScript libraries, never the language, so the tool has to infer JavaScript web mapping. Many Python science orgs carry a 'visualization' tag but would not use D3 or Leaflet skills."
+  },
+  {
+   "id": "java-spring-health",
+   "split": "holdout2",
+   "about": "Junior backend developer who builds Spring Boot services on PostgreSQL and wants a summer project where the code helps clinics and hospitals.",
+   "profile": {
+    "technologies": [
+     "java",
+     "spring",
+     "postgresql"
+    ],
+    "interests": [
+     "healthcare",
+     "databases"
+    ],
+    "experience": "some",
+    "hours_per_week": 25
+   },
+   "grades": {
+    "OpenELIS Global": 3,
+    "OpenMRS": 3,
+    "LibreHealth": 2,
+    "Open HealthCare Network": 2,
+    "cBioPortal for Cancer Genomics": 2,
+    "Global Alliance for Genomics and Health": 2,
+    "PostgreSQL": 2,
+    "SW360": 1,
+    "The Mifos Initiative": 1,
+    "MariaDB": 1,
+    "Alaska": 1,
+    "Data for the Common Good": 1,
+    "JBoss Community": 1,
+    "Eclipse Foundation": 1
+   },
+   "wrong_top5": [
+    "checkstyle",
+    "Jenkins",
+    "JabRef e.V.",
+    "The JPF team",
+    "Metasploit",
+    "FOSSology",
+    "Invesalius",
+    "Apache Software Foundation"
+   ],
+   "judge_notes": "OpenELIS Global (Java, Spring, PostgreSQL) and OpenMRS (Java medical records) fit both skills and domain. Java-only dev tools and orgs that just list postgresql for unrelated work should stay out of the top five."
+  },
+  {
+   "id": "docs-writer-few-hours",
+   "split": "holdout2",
+   "about": "Technical writer who writes clear Markdown guides and uses Git but codes very little, and can give about four hours a week.",
+   "profile": {
+    "technologies": [
+     "markdown",
+     "git"
+    ],
+    "interests": [
+     "documentation",
+     "helping beginners"
+    ],
+    "experience": "new",
+    "hours_per_week": 4
+   },
+   "grades": {
+    "JSON Schema": 2,
+    "Processing Foundation": 2,
+    "Wikimedia Foundation": 1,
+    "Oppia Foundation": 1,
+    "Zulip": 1,
+    "Django Software Foundation": 1,
+    "Wagtail": 1,
+    "Open Science Labs": 1
+   },
+   "wrong_top5": [
+    "Git",
+    "NixOS Foundation",
+    "Pharo Consortium",
+    "libssh",
+    "FFmpeg",
+    "OpenAFS",
+    "Accord Project",
+    "MoganLab"
+   ],
+   "judge_notes": "GSoC is a coding program, so nothing is a strong fit. The best options are orgs with docs, website, or learning-material projects that need light code. Orgs that only list git as a tool, or that match 'document' or 'writing', are traps, and the tool should warn that 4 hours a week is below what even a small project needs."
+  }
+ ]
+}

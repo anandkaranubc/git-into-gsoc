@@ -32,6 +32,11 @@ from git_into_gsoc.matching.profile import (
         ("music", "audio"),
         ("command line tools", "developer tools"),
         ("genomics", "bioinformatics"),
+        ("phoenix", "phoenix"),
+        ("nltk", "nltk"),
+        ("leaflet", "leaflet"),
+        ("game moding", "games"),
+        ("web backends", "backend"),
     ],
 )
 def test_peoples_words_reach_the_concept_they_mean(typed: str, concept: str) -> None:
@@ -117,3 +122,10 @@ def test_slashed_tags_name_every_part() -> None:
     assert {"c", "c++"} <= set(find_tag_concepts("C\\C++"))
     assert {"c", "rust", "go"} <= set(find_tag_concepts("c/rust/go"))
     assert {"dart", "flutter"} <= set(find_tag_concepts("dart/flutter"))
+
+
+def test_in_a_phrase_the_specific_word_wins_over_an_ambiguous_one() -> None:
+    # "realtime chat" was read as embedded systems plus chat.
+    assert resolve("realtime chat").concepts == ("communication",)
+    assert resolve("realtime").concepts == ("embedded",)
+    assert resolve("real-time systems").concepts == ("embedded",)
