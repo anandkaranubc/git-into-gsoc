@@ -8,6 +8,9 @@
   },
   "homepage": "https://github.com/anandkaranubc/git-into-gsoc",
   "repository": "https://github.com/anandkaranubc/git-into-gsoc",
+  "documentationUrl": "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md",
+  "supportUrl": "https://github.com/anandkaranubc/git-into-gsoc/issues",
+  "icon": "./brand/logo/mark-tile-512.png",
   "license": "MIT",
   "keywords": [
     "gsoc",
@@ -17,15 +20,12 @@
     "github",
     "mcp"
   ],
-  "skills": [
-    "./skills/git-into-gsoc"
-  ],
   "mcpServers": {
     "git-into-gsoc": {
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/anandkaranubc/git-into-gsoc@main",
+        "${CLAUDE_PLUGIN_ROOT}",
         "git-into-gsoc",
         "mcp"
       ]

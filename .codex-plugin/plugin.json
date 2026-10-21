@@ -1,0 +1,63 @@
+{
+  "name": "git-into-gsoc",
+  "version": "0.10.0",
+  "description": "Evidence-based preparation for Google Summer of Code: find organizations, repositories and free beginner issues, get oriented in a codebase, and prepare a proposal, with an Agent Skill and an MCP server.",
+  "author": {
+    "name": "git-into-gsoc contributors",
+    "url": "https://github.com/anandkaranubc/git-into-gsoc"
+  },
+  "homepage": "https://github.com/anandkaranubc/git-into-gsoc",
+  "repository": "https://github.com/anandkaranubc/git-into-gsoc",
+  "license": "MIT",
+  "keywords": [
+    "gsoc",
+    "google-summer-of-code",
+    "open-source",
+    "onboarding",
+    "github",
+    "mcp"
+  ],
+  "skills": "./skills/",
+  "mcpServers": {
+    "git-into-gsoc": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        ".",
+        "git-into-gsoc",
+        "mcp"
+      ],
+      "cwd": ".",
+      "env_vars": [
+        "GIG_GITHUB_TOKEN",
+        "GITHUB_TOKEN",
+        "GH_TOKEN",
+        "HTTPS_PROXY",
+        "HTTP_PROXY",
+        "NO_PROXY"
+      ],
+      "startup_timeout_sec": 120
+    }
+  },
+  "interface": {
+    "displayName": "git-into-gsoc",
+    "shortDescription": "Prepare for Google Summer of Code one step at a time",
+    "longDescription": "Find mentoring organizations, pick a repository and a free beginner issue, get oriented in a codebase, and prepare a proposal. Uses live data and official GSoC pages, and never invents organizations, issues, or deadlines.",
+    "developerName": "git-into-gsoc contributors",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/anandkaranubc/git-into-gsoc",
+    "defaultPrompt": [
+      "Help me get started with Google Summer of Code",
+      "Find GSoC organizations that use Python",
+      "Find a free beginner issue I could work on"
+    ],
+    "brandColor": "#7A5AF8",
+    "composerIcon": "./brand/logo/mark-tile.svg",
+    "logo": "./brand/logo/mark-tile-512.png"
+  }
+}

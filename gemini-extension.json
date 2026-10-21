@@ -7,10 +7,15 @@
       "command": "uvx",
       "args": [
         "--from",
-        "git+https://github.com/anandkaranubc/git-into-gsoc@main",
+        "${extensionPath}",
         "git-into-gsoc",
         "mcp"
-      ]
+      ],
+      "env": {
+        "GIG_GITHUB_TOKEN": "$GIG_GITHUB_TOKEN",
+        "GITHUB_TOKEN": "$GITHUB_TOKEN",
+        "GH_TOKEN": "$GH_TOKEN"
+      }
     }
   }
 }

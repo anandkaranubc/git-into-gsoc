@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
+import re
 import subprocess
 from functools import lru_cache
 from pathlib import Path
@@ -137,13 +138,23 @@ class Settings(BaseSettings):
         return resolve_token(self)[1]
 
 
+# A value such as "$GITHUB_TOKEN" or "${user_config.github_token}" means a host copied a
+# config entry without filling it in (Antigravity does this with extension env values).
+# Sent to GitHub it would fail every request, so it counts as no token at all.
+_PLACEHOLDER = re.compile(r"^\$\{?[A-Za-z_][A-Za-z0-9_.]*\}?$")
+
+
+def _usable(value: str | None) -> str | None:
+    value = (value or "").strip()
+    return value if value and not _PLACEHOLDER.match(value) else None
+
+
 def resolve_token(settings: Settings) -> tuple[str | None, str | None]:
     """Return (token, source): explicit setting, env vars, then `gh auth token`."""
-    if settings.github_token:
-        return settings.github_token, "environment"
+    if token := _usable(settings.github_token):
+        return token, "environment"
     for key in ("GITHUB_TOKEN", "GH_TOKEN"):
-        value = os.environ.get(key)
-        if value:
+        if value := _usable(os.environ.get(key)):
             return value, f"${key}"
     if settings.use_gh_cli:
         token = _gh_cli_token()

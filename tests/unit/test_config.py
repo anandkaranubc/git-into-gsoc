@@ -32,6 +32,27 @@ def test_gh_cli_fallback_can_be_disabled(monkeypatch: pytest.MonkeyPatch) -> Non
     assert Settings(use_gh_cli=False).resolve_github_token() is None
 
 
+@pytest.mark.parametrize(
+    "placeholder", ["$GITHUB_TOKEN", "${GH_TOKEN}", "${user_config.github_token}"]
+)
+def test_a_placeholder_a_host_did_not_fill_in_is_no_token(
+    monkeypatch: pytest.MonkeyPatch, placeholder: str
+) -> None:
+    # Antigravity copies an extension's env values literally, so the server can see
+    # GITHUB_TOKEN="$GITHUB_TOKEN"; that must fall through to `gh auth token`.
+    for key in ("GIG_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"):
+        monkeypatch.setenv(key, placeholder)
+    monkeypatch.setattr(config, "_gh_cli_token", lambda: "from-gh")
+    assert resolve_token(Settings(use_gh_cli=True)) == ("from-gh", "gh auth token")
+
+
+def test_an_empty_token_variable_is_no_token(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Gemini CLI fills a named but unset variable with "".
+    for key in ("GIG_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"):
+        monkeypatch.setenv(key, "")
+    assert resolve_token(Settings(use_gh_cli=False)) == (None, None)
+
+
 def test_token_not_in_repr(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_TOKEN", "super-secret")
     assert "super-secret" not in repr(Settings())

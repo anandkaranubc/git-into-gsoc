@@ -12,9 +12,24 @@ def _load(name: str) -> dict:  # type: ignore[type-arg]
     return json.loads((ROOT / name).read_text(encoding="utf-8"))
 
 
+VERSIONED = (".claude-plugin/plugin.json", ".codex-plugin/plugin.json", "gemini-extension.json")
+
+
+def test_manifests_match_their_single_definition() -> None:
+    import subprocess
+    import sys
+
+    result = subprocess.run(
+        [sys.executable, str(ROOT / "scripts" / "sync_integrations.py"), "--check"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+
+
 def test_manifest_versions_match_the_package() -> None:
-    assert _load(".claude-plugin/plugin.json")["version"] == __version__
-    assert _load("gemini-extension.json")["version"] == __version__
+    for name in VERSIONED:
+        assert _load(name)["version"] == __version__, name
     server = _load("server.json")
     assert server["version"] == __version__
     assert len(server["description"]) <= 100  # the registry rejects longer descriptions
@@ -23,21 +38,39 @@ def test_manifest_versions_match_the_package() -> None:
     assert "mcp" in package["identifier"] and len(package["fileSha256"]) == 64
 
 
-def test_manifests_start_the_same_server() -> None:
-    for name in (".claude-plugin/plugin.json", "gemini-extension.json"):
-        entry = _load(name)["mcpServers"]["git-into-gsoc"]
+def test_release_please_bumps_every_versioned_manifest() -> None:
+    config = _load("release-please-config.json")["packages"]["."]["extra-files"]
+    bumped = {e["path"] for e in config if e.get("jsonpath") == "$.version"}
+    assert {*VERSIONED, "server.json"} <= bumped
+
+
+def test_each_plugin_runs_the_server_from_its_own_installed_copy() -> None:
+    # The server is then the same version as the skill beside it, updates arrive with
+    # the plugin, and nothing is fetched from GitHub when the server starts.
+    claude = _load(".claude-plugin/plugin.json")["mcpServers"]["git-into-gsoc"]
+    codex = _load(".codex-plugin/plugin.json")["mcpServers"]["git-into-gsoc"]
+    gemini = _load("gemini-extension.json")["mcpServers"]["git-into-gsoc"]
+    assert claude["args"] == ["--from", "${CLAUDE_PLUGIN_ROOT}", "git-into-gsoc", "mcp"]
+    assert gemini["args"] == ["--from", "${extensionPath}", "git-into-gsoc", "mcp"]
+    assert codex["args"] == ["--from", ".", "git-into-gsoc", "mcp"] and codex["cwd"] == "."
+    for entry in (claude, codex, gemini):
         assert entry["command"] == "uvx"
-        assert entry["args"][-2:] == ["git-into-gsoc", "mcp"]
-        # Runs from the repository today; switch to the PyPI package at the first release.
-        assert entry["args"][:2] == [
-            "--from",
-            "git+https://github.com/anandkaranubc/git-into-gsoc@main",
-        ]
-    plugin = _load(".claude-plugin/plugin.json")
-    assert plugin["skills"] == ["./skills/git-into-gsoc"]
+    # Codex passes servers only a few variables and allows 10 s to start by default.
+    assert "GITHUB_TOKEN" in codex["env_vars"] and codex["startup_timeout_sec"] >= 60
+    # Gemini CLI hides token variables unless they are named in env.
+    assert gemini["env"]["GITHUB_TOKEN"] == "$GITHUB_TOKEN"
+
+
+def test_plugins_find_the_skill_and_their_images() -> None:
     assert (ROOT / "skills" / "git-into-gsoc" / "SKILL.md").is_file()
+    plugin = _load(".claude-plugin/plugin.json")
+    codex = _load(".codex-plugin/plugin.json")
+    assert codex["skills"] == "./skills/"
+    for path in (plugin["icon"], codex["interface"]["logo"], codex["interface"]["composerIcon"]):
+        assert (ROOT / path).is_file(), path
     marketplace = _load(".claude-plugin/marketplace.json")
     assert marketplace["plugins"][0]["name"] == plugin["name"]
+    assert marketplace["plugins"][0]["source"] == "./"
     assert "mcp-name: io.github.anandkaranubc/git-into-gsoc" in (ROOT / "README.md").read_text()
 
 
