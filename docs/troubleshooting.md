@@ -15,7 +15,7 @@ Or use `.venv/bin/git-into-gsoc --version` directly. On Windows PowerShell use `
 
 ## Python is missing, too old, or cannot create `.venv`
 
-Run `python3 --version` (PowerShell: `py -3 --version`) and confirm Python 3.11 or newer. Install a supported version from [Python](https://www.python.org/downloads/). Some Linux distributions package `venv` separately; install the matching package if Python reports that it is missing.
+Run `python3 --version` (PowerShell: `py -3 --version`) and confirm Python 3.11 or newer. Install a supported version from [Python](https://www.python.org/downloads/). Some Linux distributions package `venv` separately. On Ubuntu, Debian, and WSL, creating `.venv` fails with "ensurepip is not available" until you run `sudo apt install python3-venv` (use the versioned name, such as `python3.12-venv`, if Python asks for it). Then delete the half-made `.venv` folder and run the install again.
 
 To choose an already-installed Python on macOS or Linux:
 
