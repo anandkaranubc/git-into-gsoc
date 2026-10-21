@@ -305,13 +305,22 @@ def _rate_limit_error(response: httpx.Response, url: str, authenticated: bool) -
     if reset and reset.isdigit():
         reset_at = datetime.fromtimestamp(int(reset), tz=UTC)
     when = f" (resets {reset_at:%H:%M} UTC)" if reset_at else ""
-    kind = "secondary rate limit" if "secondary" in response.text.lower() else "rate limit"
+    resource = response.headers.get("x-ratelimit-resource") or (
+        "search" if "/search/" in url else "core"
+    )
+    if "secondary" in response.text.lower():
+        kind = "secondary rate limit"
+    elif resource == "search":
+        kind = "search rate limit"
+    else:
+        kind = "rate limit"
     return RateLimitError(
         f"GitHub API {kind} exceeded{when}",
         reset_at=reset_at,
         status_code=response.status_code,
         url=url,
         authenticated=authenticated,
+        resource=resource,
     )
 
 

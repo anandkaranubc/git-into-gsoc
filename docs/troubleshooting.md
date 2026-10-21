@@ -43,7 +43,7 @@ Check your internet connection and the first error from pip. If a network proxy 
 
 ## `error: GitHub API rate limit exceeded`
 
-The message says when the limit resets. Cached results keep working meanwhile. If the hint says to run `gh auth login` or set `GITHUB_TOKEN`, you are unauthenticated and limited to 60 requests per hour; see [configuration](configuration.md). A **secondary rate limit** means too many searches in a short time; a token does not remove it, so wait a few minutes. Narrow searches with `--repo` and a small `-n` to use fewer requests. `doctor` shows the main allowance.
+The message says when the limit resets and which limit it was. A **search rate limit** is separate from the hourly allowance: GitHub permits 10 searches a minute without a token and 30 with one, and `issues` and `repos` each use at least one search, so wait a minute or narrow the search with `--repo` or `--org`. Cached results keep working meanwhile. If the hint says to run `gh auth login` or set `GITHUB_TOKEN`, you are unauthenticated and limited to 60 requests per hour; see [configuration](configuration.md). A **secondary rate limit** means too many searches in a short time; a token does not remove it, so wait a few minutes. Narrow searches with `--repo` and a small `-n` to use fewer requests. `doctor` shows the main allowance.
 
 ## `error: HTTP 401` or a token that seems ignored
 

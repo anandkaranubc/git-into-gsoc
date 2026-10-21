@@ -160,3 +160,33 @@ def test_clear_cache(tmp_path: Path) -> None:
     assert client.cache_size_bytes() > 0
     assert client.clear_cache() == 1
     assert client.cache_size_bytes() == 0
+
+
+@respx.mock
+def test_search_rate_limit_gets_a_search_specific_hint() -> None:
+    import pytest
+
+    from git_into_gsoc.errors import RateLimitError
+
+    respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(
+            403,
+            headers={"x-ratelimit-remaining": "0", "x-ratelimit-resource": "search"},
+            json={"message": "API rate limit exceeded"},
+        )
+    )
+    respx.get("https://api.github.com/repos/a/b").mock(
+        return_value=httpx.Response(
+            403, headers={"x-ratelimit-remaining": "0"}, json={"message": "rate limit"}
+        )
+    )
+    client = CachedHttpClient()
+    with pytest.raises(RateLimitError) as search:
+        client.get_json("https://api.github.com/search/issues", params={"q": "x"})
+    assert search.value.resource == "search"
+    assert "search rate limit" in str(search.value)
+    assert "10 requests a minute" in (search.value.hint or "")
+    with pytest.raises(RateLimitError) as core:
+        client.get_json("https://api.github.com/repos/a/b")
+    assert core.value.resource == "core"
+    assert "gh auth login" in (core.value.hint or "")

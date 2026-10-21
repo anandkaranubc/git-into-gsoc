@@ -50,14 +50,22 @@ class RateLimitError(HttpError):
         status_code: int | None = 403,
         url: str | None = None,
         authenticated: bool = False,
+        resource: str = "core",
     ) -> None:
-        hint = (
-            "Wait a few minutes; cached results keep working meanwhile."
-            if authenticated
-            else "Run `gh auth login` or set GITHUB_TOKEN to raise the limit from 60 to 5000 req/h."
-        )
+        if resource == "search":
+            hint = (
+                "GitHub search allows 10 requests a minute without a token and 30 with one; "
+                "wait a minute, narrow the search with --repo or --org, or run `gh auth login`."
+            )
+        elif authenticated:
+            hint = "Wait a few minutes; cached results keep working meanwhile."
+        else:
+            hint = (
+                "Run `gh auth login` or set GITHUB_TOKEN to raise the limit from 60 to 5000 req/h."
+            )
         super().__init__(message, status_code=status_code, url=url, hint=hint)
         self.reset_at = reset_at
+        self.resource = resource
 
     @property
     def reset_in_seconds(self) -> int | None:
