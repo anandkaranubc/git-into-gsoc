@@ -22,8 +22,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $RepoUrl = if ($env:GIG_REPO_URL) { $env:GIG_REPO_URL } else { "https://github.com/anandkaranubc/git-into-gsoc" }
-# An explicit GIG_REPO_URL means "install exactly this source", so PyPI is skipped.
-$TryPyPI = -not $env:GIG_REPO_URL
+$OwnRepo = "anandkaranubc/git-into-gsoc"
 $DocsUrl = "$RepoUrl/blob/main/docs"
 
 function Log($msg) { Write-Host "==> $msg" }
@@ -48,6 +47,41 @@ function Find-Python {
   throw "Python 3.11 or newer is required. Install it from https://www.python.org/downloads/ (tick 'Add python.exe to PATH') and run this script again."
 }
 
+# PyPI is used only for a release that this repository's own release workflow published.
+# The name "git-into-gsoc" is not reserved on PyPI until the first upload, so anyone
+# could claim it; PyPI checks the trusted-publishing attestation on every upload and
+# serves the publisher it verified, which an upload from another repository cannot fake.
+# Anything else (no release yet, another publisher, no network) installs from GitHub.
+# An explicit GIG_REPO_URL means "install exactly this source", so PyPI is skipped.
+function Get-VerifiedPyPISpec {
+  if ($env:GIG_REPO_URL) { return $null }
+  try {
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$OwnRepo/releases/latest" -TimeoutSec 10
+    $version = "$($release.tag_name)".TrimStart("v")
+    if (-not $version) { return $null }
+    $wheel = "git_into_gsoc-$version-py3-none-any.whl"
+    $provenance = Invoke-RestMethod -Uri "https://pypi.org/integrity/git-into-gsoc/$version/$wheel/provenance" -TimeoutSec 10
+    foreach ($bundle in $provenance.attestation_bundles) {
+      if ($bundle.publisher.kind -eq "GitHub" -and $bundle.publisher.repository -eq $OwnRepo) {
+        return "git-into-gsoc==$version"
+      }
+    }
+  } catch {
+    return $null
+  }
+  return $null
+}
+
+function Get-InstallSpec {
+  $spec = Get-VerifiedPyPISpec
+  if ($spec) {
+    Log "Using $spec from PyPI (published by $OwnRepo)"
+    return $spec
+  }
+  Log "Using the source on GitHub ($RepoUrl)"
+  return "git+$RepoUrl"
+}
+
 $GigBin = $null
 
 if (-not $SkillOnly) {
@@ -61,17 +95,14 @@ if (-not $SkillOnly) {
     & $venvPy -m pip install -q -e $Root
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
   } elseif (Get-Command uv -ErrorAction SilentlyContinue) {
+    $spec = Get-InstallSpec
     Log "Installing git-into-gsoc with uv"
-    # Prefer the PyPI release when it exists; fall back to the Git main branch.
-    $ok = $false
-    if ($TryPyPI) { uv tool install -q --force "git-into-gsoc" 2>$null; $ok = ($LASTEXITCODE -eq 0) }
-    if (-not $ok) { uv tool install -q --force "git+$RepoUrl" }
+    uv tool install -q --force $spec
     $GigBin = Join-Path (uv tool dir --bin) "git-into-gsoc.exe"
   } elseif (Get-Command pipx -ErrorAction SilentlyContinue) {
+    $spec = Get-InstallSpec
     Log "Installing git-into-gsoc with pipx"
-    $ok = $false
-    if ($TryPyPI) { pipx install --force "git-into-gsoc" 2>$null | Out-Null; $ok = ($LASTEXITCODE -eq 0) }
-    if (-not $ok) { pipx install --force "git+$RepoUrl" | Out-Null }
+    pipx install --force $spec | Out-Null
     $GigBin = "git-into-gsoc"
   } else {
     $py = Find-Python
@@ -81,9 +112,7 @@ if (-not $SkillOnly) {
     if (-not (Test-Path $venv)) { & $py[0] @($py[1..($py.Length)] | Where-Object { $_ }) -m venv $venv }
     $venvPy = Join-Path $venv "Scripts\python.exe"
     & $venvPy -m pip install -q -U pip
-    $ok = $false
-    if ($TryPyPI) { & $venvPy -m pip install -q "git-into-gsoc" 2>$null; $ok = ($LASTEXITCODE -eq 0) }
-    if (-not $ok) { & $venvPy -m pip install -q "git+$RepoUrl" }
+    & $venvPy -m pip install -q (Get-InstallSpec)
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
     Write-Host "Add $(Join-Path $venv 'Scripts') to your PATH to run git-into-gsoc from any folder."
   }

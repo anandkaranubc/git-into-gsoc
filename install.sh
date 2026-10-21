@@ -96,22 +96,46 @@ install_checkout() {
   GIG_BIN="${ROOT}/.venv/bin/git-into-gsoc"
 }
 
-# Prefer the PyPI release when it exists; fall back to the Git main branch. An explicit
-# GIG_REPO_URL means "install exactly this source", so PyPI is skipped.
-PACKAGE="git-into-gsoc"
-[[ -n "${GIG_REPO_URL:-}" ]] && PACKAGE=""
+# PyPI is used only for a release that this repository's own release workflow published.
+# The name "git-into-gsoc" is not reserved on PyPI until the first upload, so anyone
+# could claim it; PyPI checks the trusted-publishing attestation on every upload and
+# serves the publisher it verified, which an upload from another repository cannot fake.
+# Anything else (no release yet, another publisher, no network) installs from GitHub.
+# An explicit GIG_REPO_URL means "install exactly this source", so PyPI is skipped.
+OWN_REPO="anandkaranubc/git-into-gsoc"
 GIT_SPEC="git+${REPO_URL}"
 
+verified_pypi_spec() {
+  [[ -z "${GIG_REPO_URL:-}" ]] && command -v curl >/dev/null 2>&1 || return 1
+  local version wheel publisher
+  version="$(curl -fsSL --max-time 10 "https://api.github.com/repos/${OWN_REPO}/releases/latest" 2>/dev/null \
+    | sed -n 's/^ *"tag_name": *"v\{0,1\}\([0-9][0-9A-Za-z.+-]*\)".*/\1/p')" || return 1
+  [[ -n "$version" ]] || return 1
+  wheel="git_into_gsoc-${version}-py3-none-any.whl"
+  publisher="$(curl -fsSL --max-time 10 \
+    "https://pypi.org/integrity/git-into-gsoc/${version}/${wheel}/provenance" 2>/dev/null \
+    | grep -o '"publisher": *{[^}]*}')" || return 1
+  [[ "$publisher" == *'"kind":"GitHub"'* || "$publisher" == *'"kind": "GitHub"'* ]] || return 1
+  [[ "$publisher" == *"\"repository\":\"${OWN_REPO}\""* || "$publisher" == *"\"repository\": \"${OWN_REPO}\""* ]] || return 1
+  printf 'git-into-gsoc==%s\n' "$version"
+}
+
 install_remote() {
+  local spec
+  spec="$(verified_pypi_spec || true)"
+  if [[ -n "$spec" ]]; then
+    log "Using ${spec} from PyPI (published by ${OWN_REPO})"
+  else
+    spec="$GIT_SPEC"
+    log "Using the source on GitHub (${REPO_URL})"
+  fi
   if command -v uv >/dev/null 2>&1; then
     log "Installing git-into-gsoc with uv"
-    { [[ -n "$PACKAGE" ]] && uv tool install -q --force "$PACKAGE" 2>/dev/null; } \
-      || uv tool install -q --force "$GIT_SPEC"
+    uv tool install -q --force "$spec"
     GIG_BIN="$(uv tool dir --bin)/git-into-gsoc"
   elif command -v pipx >/dev/null 2>&1; then
     log "Installing git-into-gsoc with pipx"
-    { [[ -n "$PACKAGE" ]] && pipx install --force "$PACKAGE" >/dev/null 2>&1; } \
-      || pipx install --force "$GIT_SPEC" >/dev/null
+    pipx install --force "$spec" >/dev/null
     GIG_BIN="$(pipx environment --value PIPX_BIN_DIR 2>/dev/null || echo "${HOME}/.local/bin")/git-into-gsoc"
   else
     check_python
@@ -120,8 +144,7 @@ install_remote() {
     mkdir -p "$base" "${HOME}/.local/bin"
     [[ -d "${base}/venv" ]] || "$PYTHON" -m venv "${base}/venv"
     "${base}/venv/bin/python" -m pip install -q -U pip
-    { [[ -n "$PACKAGE" ]] && "${base}/venv/bin/python" -m pip install -q "$PACKAGE" 2>/dev/null; } \
-      || "${base}/venv/bin/python" -m pip install -q "$GIT_SPEC"
+    "${base}/venv/bin/python" -m pip install -q "$spec"
     ln -sf "${base}/venv/bin/git-into-gsoc" "${HOME}/.local/bin/git-into-gsoc"
     GIG_BIN="${HOME}/.local/bin/git-into-gsoc"
   fi

@@ -30,7 +30,7 @@ To set it up once:
 2. On GitHub, create an environment named `release` under **Settings > Environments** (no secrets needed; optionally require a reviewer).
 3. Merge the next release pull request. The `Publish to PyPI` job runs under that environment and uploads the wheel.
 
-After the first publish, users can install with `uv tool install git-into-gsoc` or `pipx install git-into-gsoc` instead of the Git URL; the installer scripts try the package name first once it exists. Until then, every release carries the wheel and the source archive as release assets, so anyone can install a pinned version by URL (see the [install guide](guide/02-install.md)).
+After the first publish, users can install with `uv tool install git-into-gsoc` or `pipx install git-into-gsoc` instead of the Git URL. The installer scripts use PyPI only for the latest GitHub release, and only when PyPI's provenance record says this repository's workflow published it. PyPI checks that attestation on upload, and the publish action creates it by default with trusted publishing. The name is not reserved until the first upload, so someone else could claim it; the check makes the installers ignore such an upload and install from GitHub. Until then, every release carries the wheel and the source archive as release assets, so anyone can install a pinned version by URL (see the [install guide](guide/02-install.md)).
 
 ## 4. Release assets and the MCP registry (automatic)
 
