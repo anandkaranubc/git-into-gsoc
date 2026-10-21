@@ -752,7 +752,11 @@ def ideas_cmd(
                 title = f"[dim]{escape(idea['section'])} /[/dim] {title}"
             if idea["confidence"] == "low":
                 title = f"? {title}"
-            hours = f"{idea['hours']}h" if idea.get("hours") else (idea.get("size") or "")
+            hours = (
+                f"{idea['hours']}h"
+                if idea.get("hours")
+                else (idea.get("size") or (idea.get("size_raw") or "")[:16])
+            )
             if idea.get("too_big_for_your_hours"):
                 hours = f"[yellow]{hours} too big[/yellow]"
             table.add_row(

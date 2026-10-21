@@ -14,6 +14,7 @@ from git_into_gsoc.gsoc.project_ideas import (
     normalize_difficulty,
     normalize_size,
     rank_ideas,
+    to_lines,
 )
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "ideas"
@@ -388,3 +389,32 @@ def test_application_guidance_is_not_an_idea() -> None:
     )
     doc = extract_ideas(markdown_to_lines(page), source_url="https://example.org/ideas")
     assert [i.title for i in doc.ideas] == ["Faster builds", "Review dashboard"]
+
+
+GNOME_2026 = """<html><body>
+<h1>GNOME Project ideas for Google Summer of Code 2026</h1>
+<p>For general information, read the internship guide.</p>
+<h2>Project list</h2>
+<h1>Add Native Uninstallation Support to GNOME Shell App Grid</h1>
+<p>Right-click an app to remove it.</p>
+<h3>Requirements</h3><p>JavaScript and C, D-Bus, Polkit.</p>
+<h3>Project Length: Long (~350 hours)</h3>
+<h1>Add Vocab-style Puzzles to GNOME Crosswords</h1>
+<p>Add a new puzzle kind to libipuz.</p>
+<h3>Requirements</h3><p>Experience with C / GLib-style programming.</p>
+<h3>Mentors</h3><p>jblandford, federico</p>
+<h3>Project length</h3><p>Short Project</p>
+</body></html>"""
+
+
+def test_gnome_style_headings_give_sizes_and_the_page_title_is_not_an_idea() -> None:
+    # gsoc.gnome.org/2026 (2026-10-21): sizes were blank for every idea and the page
+    # title was read as a seventh idea.
+    doc = extract_ideas(to_lines(GNOME_2026), source_url="https://gsoc.gnome.org/2026/")
+    titles = [idea.title for idea in doc.ideas]
+    assert not any("Google Summer of Code" in t for t in titles)
+    by_title = {idea.title: idea for idea in doc.ideas}
+    shell = by_title["Add Native Uninstallation Support to GNOME Shell App Grid"]
+    assert (shell.size, shell.hours) == ("large", 350)
+    crosswords = by_title["Add Vocab-style Puzzles to GNOME Crosswords"]
+    assert crosswords.size is None and crosswords.size_raw == "Short Project"  # no guessing

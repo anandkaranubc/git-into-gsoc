@@ -649,6 +649,12 @@ def _labelled(idea: ProjectIdea) -> int:
     )
 
 
+# A page title such as "GNOME Project ideas for Google Summer of Code 2026".
+_PAGE_TITLE_RE = re.compile(
+    r"\bideas?\b.*\b(?:gsoc|summer of code)\b|\b(?:gsoc|summer of code)\b.*\bideas?\b"
+)
+
+
 def _is_non_idea(title: str) -> bool:
     low = title.lower().strip(" :")
     return (
@@ -656,6 +662,7 @@ def _is_non_idea(title: str) -> bool:
             low == word or low.startswith(word + " ") or low.endswith(" " + word)
             for word in _NON_IDEA_HEADINGS
         )
+        or bool(_PAGE_TITLE_RE.search(low))
         or len(low) < 3
     )
 
@@ -669,6 +676,12 @@ def _parse_block(
     for line in body:
         head = _heading(line)
         if head:
+            # GNOME writes "### Project Length: Long (~350 hours)" as a heading.
+            inline = _label(head[1])
+            if inline and inline[2]:
+                _assign(idea, inline[0], inline[2])
+                current = None
+                continue
             label = _norm_label(head[1])
             current = _LABEL_LOOKUP.get(label)
             if current is None:
