@@ -201,3 +201,29 @@ def test_common_filler_lines_are_flagged() -> None:
 def test_short_draft_advice_cites_no_made_up_word_range() -> None:
     finding = _by_id(check_proposal("Timeline\nWeek 1: start."))["length"]
     assert "1,500" not in finding["detail"] and "no official length" in finding["detail"]
+
+
+def test_proposal_check_file_works_as_people_type_it(tmp_path: Path) -> None:
+    # A simulated beginner typed `proposal check proposal.txt` and got
+    # "Got unexpected extra argument(s)".
+    from typer.testing import CliRunner
+
+    from git_into_gsoc.cli import app
+
+    draft = tmp_path / "proposal.txt"
+    draft.write_text("Synopsis\nAdd keyboard navigation.\n", encoding="utf-8")
+    runner = CliRunner()
+    typed = runner.invoke(app, ["proposal", "check", str(draft), "--no-verify"])
+    assert typed.exit_code == 0, typed.output
+    assert "Proposal check: proposal.txt" in typed.output
+    missing = runner.invoke(app, ["proposal", "check"])
+    assert missing.exit_code == 1 and "git-into-gsoc proposal draft.md" in missing.output
+
+
+def test_a_template_heading_for_the_synopsis_counts() -> None:
+    # Learning Unlimited's template calls it "The thing I want to do this summer".
+    text = "The thing I want to do this summer\nImprove the scheduler.\n"
+    assert detect_sections(text)["synopsis"] == "the thing i want to do this summer"
+    detail = _by_id(check_proposal("Hello"))["deliverables"]["detail"]
+    assert "gsocguides/student/writing-a-proposal" in detail
+    assert "skip proposals" not in detail

@@ -16,7 +16,18 @@ from typing import Any, Literal
 Status = Literal["pass", "warn", "fail"]
 
 SECTION_KEYWORDS: dict[str, tuple[str, ...]] = {
-    "synopsis": ("synopsis", "abstract", "summary", "overview", "introduction", "the problem"),
+    "synopsis": (
+        "synopsis",
+        "abstract",
+        "summary",
+        "overview",
+        "introduction",
+        "the problem",
+        "project idea",
+        "project description",
+        "what i want to do",
+        "thing i want to do",
+    ),
     "benefits": ("benefit", "impact", "motivation", "why this matters", "value"),
     "deliverables": ("deliverable", "goals", "scope", "outcome", "what i will build"),
     "timeline": ("timeline", "schedule", "milestone", "weekly plan", "work plan"),
@@ -34,6 +45,26 @@ SECTION_KEYWORDS: dict[str, tuple[str, ...]] = {
 }
 REQUIRED_SECTIONS = ("synopsis", "deliverables", "timeline", "about")
 RECOMMENDED_SECTIONS = ("benefits", "contributions", "availability")
+SECTION_NAMES = {"about": "about you", "ai_statement": "AI use"}
+# What Google's proposal guide says about each required section.
+_REQUIRED_WHY = {
+    "synopsis": "Google's guide lists a synopsis.",
+    "deliverables": "Google's guide lists deliverables.",
+    "timeline": "Google's guide asks for milestones with dates under the deliverables.",
+    "about": "Google's guide lists biographical information.",
+}
+# Why each recommended section helps, and whether Google's guide names it.
+_RECOMMENDED_WHY = {
+    "benefits": "Google's guide lists 'Benefits to Community'.",
+    "contributions": (
+        "Link the pull requests and issues you worked on in this organization; "
+        "`git-into-gsoc contributions --org NAME` collects them."
+    ),
+    "availability": (
+        "Say how many hours a week you can give and what else you have on, so mentors "
+        "can judge your timeline."
+    ),
+}
 
 GENERIC_PHRASES = (
     "i am passionate about",
@@ -88,6 +119,7 @@ BUZZWORDS = (
     "holistic",
 )
 SPAM_GUIDANCE_URL = "https://developers.google.com/open-source/gsoc/resources/spam_proposals"
+PROPOSAL_GUIDE_URL = "https://google.github.io/gsocguides/student/writing-a-proposal"
 
 _URL_RE = re.compile(r"https?://[^\s)>\]]+")
 _GITHUB_LINK_RE = re.compile(
@@ -98,7 +130,7 @@ _HEADING_RE = re.compile(
     r"^(?:#{1,6}\s+(.+?)\s*#*$|\*\*([^*]{3,80})\*\*:?\s*$|([A-Z][^\n]{2,60}):\s*$)"
 )
 # A heading typed as its own short line, as in a Google Doc pasted into a file:
-# "Timeline", "2. About me". Only counts when it names a known section.
+# "Timeline", "2. About me", up to eight words. Only counts when it names a known section.
 _PLAIN_HEADING_RE = re.compile(r"^(?:\d{1,2}[.)]\s*)?([A-Z][A-Za-z&/'() -]{2,59})$")
 _WEEK_RE = re.compile(
     r"\b(?:week\s*\d+|weeks?\s*\d+\s*(?:-|to|\u2013)\s*\d+|w\d{1,2}\b|"
@@ -141,7 +173,7 @@ def headings(text: str) -> list[str]:
             found.append(next(g for g in match.groups() if g).strip().lower())
             continue
         plain = _PLAIN_HEADING_RE.match(line.strip())
-        if plain and len(plain.group(1).split()) <= 6:
+        if plain and len(plain.group(1).split()) <= 8:
             title = plain.group(1).strip().lower()
             if any(k in title for k in keys):
                 found.append(title)
@@ -307,29 +339,32 @@ def check_proposal(
 
     for section in REQUIRED_SECTIONS:
         heading = sections[section]
+        name = SECTION_NAMES.get(section, section)
         if heading:
-            findings.append(Finding(section, "pass", f"Has a {section} section", heading))
+            findings.append(Finding(section, "pass", f"Section found: {name}", heading))
         else:
             findings.append(
                 Finding(
                     section,
                     "fail",
-                    f"No {section} section found",
-                    f"Add a heading such as '{SECTION_KEYWORDS[section][0].title()}'; "
-                    "reviewers skim by section and skip proposals that lack one.",
+                    f"Section missing: {name}",
+                    f"Add a heading such as '{SECTION_KEYWORDS[section][0].title()}', or use the "
+                    f"name your organization's template gives it. {_REQUIRED_WHY[section]} "
+                    f"({PROPOSAL_GUIDE_URL})",
                 )
             )
     for section in RECOMMENDED_SECTIONS:
         heading = sections[section]
         if heading:
-            findings.append(Finding(section, "pass", f"Has a {section} section", heading))
+            findings.append(Finding(section, "pass", f"Section found: {section}", heading))
         else:
             findings.append(
                 Finding(
                     section,
                     "warn",
-                    f"No {section} section found",
-                    "Most org templates ask for it; add it unless your org's template does not.",
+                    f"Section missing: {section}",
+                    f"{_RECOMMENDED_WHY[section]} Leave it out if your organization's "
+                    "template has no such section.",
                 )
             )
     if sections["ai_statement"]:

@@ -1526,6 +1526,9 @@ def proposal_cmd(
     file: Path | None = typer.Argument(
         None, help="Draft proposal to check (Markdown or text). Omit for the checklist."
     ),
+    second: Path | None = typer.Argument(
+        None, hidden=True, help="The draft, when typed as `proposal check FILE`"
+    ),
     github: str | None = typer.Option(
         None, "--github", "-g", help="Your GitHub login, to confirm linked PRs are yours"
     ),
@@ -1538,6 +1541,19 @@ def proposal_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Show the proposal checklist, or check a draft for what organizations reject on."""
+    # `proposal check draft.md` reads naturally; accept it as `proposal draft.md`.
+    if file is not None and str(file) == "check" and not file.exists():
+        if second is None:
+            raise InputError(
+                "No draft given to check",
+                hint="Pass its file name: git-into-gsoc proposal draft.md",
+            )
+        file = second
+    elif second is not None:
+        raise InputError(
+            "Only one draft can be checked at a time",
+            hint="Pass one file name: git-into-gsoc proposal draft.md",
+        )
     if file is None:
         data = _toolkit().proposal_help()
         if output == Output.json:
