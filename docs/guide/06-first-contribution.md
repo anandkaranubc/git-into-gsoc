@@ -40,7 +40,7 @@ Read every changed line. Leave out temporary files, credentials, unrelated forma
 
 ## Ask for review
 
-A useful pull request description answers:
+`git-into-gsoc draft pr --repo sympy/sympy --issue sympy/sympy#12345` prints a skeleton that follows the repository's pull request rules (template, sign-off, commit style). A useful pull request description answers:
 
 ```text
 Problem: What was confusing or broken? Link the issue if there is one.
@@ -53,7 +53,7 @@ The project's **continuous integration (CI)** checks are automated tests that ru
 
 ## See it through review
 
-Reviews often ask for changes. That is a normal part of collaboration, and how you respond is the strongest predictor of whether your pull request lands. Reply to every review comment within a day, even if only to say when you will get to it. Make the requested updates, push them as new commits to the same branch, and say what changed. If you disagree, explain your reasoning with an example. If you are stuck, ask one focused question instead of going quiet; a pull request that falls silent is usually closed. If the project declines the change, thank them, note what you learned, and choose the next thing. When reviewers know you finish what you start, mark the phase done:
+Reviews often ask for changes. That is a normal part of collaboration, and how you respond is the strongest predictor of whether your pull request lands. Reply to every review comment within a day, even if only to say when you will get to it. Make the requested updates, push them as new commits to the same branch, and say what changed. If you disagree, explain your reasoning with an example. If you are stuck, ask one focused question instead of going quiet; a pull request that falls silent is usually closed. `git-into-gsoc draft review-reply --repo sympy/sympy --issue sympy/sympy#12345` gives you a respectful structure for answering a review. If the project declines the change, thank them, note what you learned, and choose the next thing. When reviewers know you finish what you start, mark the phase done:
 
 ```bash
 git-into-gsoc progress complete_phase --phase iterate
@@ -61,7 +61,7 @@ git-into-gsoc progress complete_phase --phase iterate
 
 ## Work with the community
 
-When stuck, ask in the project's preferred channel (the `org` command lists them) with what you tried, the exact error without private data, and the relevant versions. Avoid sending the same request to several maintainers. Allow time for volunteers to reply, and follow up according to the community's expectations.
+`git-into-gsoc draft intro --org "SymPy"` and `draft question` give you a short, specific structure for a first message. When stuck, ask in the project's preferred channel (the `org` command lists them) with what you tried, the exact error without private data, and the relevant versions. Avoid sending the same request to several maintainers. Allow time for volunteers to reply, and follow up according to the community's expectations.
 
 A PR can be declined because of timing, scope, or a different approach. Ask what you can learn from the decision and choose a useful next step. Your learning does not depend on an immediate merge.
 

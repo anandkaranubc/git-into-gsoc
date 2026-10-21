@@ -68,6 +68,14 @@ Each result has a status:
 | `closed` | Issue is closed | Look for another |
 | `unknown` | The tool could not fetch the timeline | Open GitHub and check manually |
 
+To see where to start reading for an issue, ask for pointers:
+
+```bash
+git-into-gsoc pointers sympy/sympy#12345
+```
+
+It lists the files the issue names, past fixes of similar issues and the files they touched, and how big a typical fix is. It never proposes a fix; it tells you where to look.
+
 Before you comment, check one issue in depth:
 
 ```bash
@@ -91,7 +99,7 @@ I reproduced this using [version and steps]. I think the relevant code is
 approach fit, or is there a direction you would prefer?
 ```
 
-Replace the brackets with real observations. Do not post the template unchanged, and never post a bare "can I work on this?". If someone is already working on it, find another issue or ask whether they welcome help.
+Replace the brackets with real observations. Do not post the template unchanged, and never post a bare "can I work on this?". `git-into-gsoc draft claim --issue sympy/sympy#12345` prints a skeleton that already respects the repository's claim rules; fill it with what you found. If someone is already working on it, find another issue or ask whether they welcome help.
 
 ```bash
 git-into-gsoc issue sympy/sympy#12345 --track   # same check, and saves the issue to your progress

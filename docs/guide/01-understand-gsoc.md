@@ -26,6 +26,14 @@ My time zone and upcoming exams, work, or travel:
 One thing I would like to learn:
 ```
 
+Save the same answers for the tool, so every recommendation fits you without retyping flags:
+
+```bash
+git-into-gsoc profile --tech python --interests science --hours 10 --tz Asia/Kolkata
+```
+
+Add `--github YOUR_USERNAME` and it also reads your public repositories to confirm your main language. The profile lives only on your computer.
+
 You can start by reading documentation or reproducing a bug. You do not need to be an expert in the whole codebase. The time you can spend preparing may differ from the time a GSoC project requires; discuss the project schedule before applying.
 
 ## Where you are in the year
@@ -43,6 +51,8 @@ The best time to start is before the program is announced. Organizations that pa
 ## AI assistance
 
 Before using AI for a contribution or proposal, read [Google's AI guidance](https://developers.google.com/open-source/gsoc/resources/ai_guidance) and the organization's own policy. Ask if the policy is unclear. You are responsible for understanding and checking anything you submit. Many organizations reject proposals that read as AI-generated, and the tool's guidance is written to keep you on the right side of that.
+
+When you are unsure what to do at any point, run `git-into-gsoc next`. It combines the program phase, your profile, and your saved progress into the next few actions, each with the command to run.
 
 **Ready to move on:** you can describe GSoC, know where to check the rules, and have written down your interests.
 

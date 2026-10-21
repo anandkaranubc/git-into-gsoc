@@ -15,6 +15,10 @@ You do not need to understand the whole project on day one. Work through one ste
 
 Join a community and keep notes whenever they become useful. These steps are a guide, not a required sequence or an acceptance checklist.
 
+## Lost? Ask the tool
+
+Once you have [installed it](guide/02-install.md), `git-into-gsoc next` reads the program calendar, your saved profile, and your progress, re-checks the issues you track, and prints the next few actions with the exact commands. Use it whenever you are not sure what to do.
+
 ## Just trying the tool?
 
 Start with [installation](guide/02-install.md), then [find organizations](guide/04-find-organizations.md). The command-line interface, or **CLI**, means you type a command in a terminal and read its response. You can complete the journey without an AI assistant.

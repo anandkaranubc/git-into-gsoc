@@ -11,7 +11,13 @@ git-into-gsoc program            # when does the proposal window open and close?
 
 ## Gather evidence before drafting
 
-Collect the project idea, required questions, relevant code or documentation, your real contribution links, and feedback from the community. Check the organization's requested project size and your availability. There is no universal requirement for a fixed number of merged PRs; follow the organization's prerequisites.
+Collect the project idea, required questions, relevant code or documentation, your real contribution links, and feedback from the community. The tool can gather the links for you:
+
+```bash
+git-into-gsoc contributions --org "SymPy"
+```
+
+With your GitHub username saved in your profile, it lists your pull requests, issues, and reviews in the organization's repositories with their state, ready to paste into the "about you" and "prior contributions" sections. The proposal check below verifies those links again. Check the organization's requested project size and your availability. There is no universal requirement for a fixed number of merged PRs; follow the organization's prerequisites.
 
 To see how big accepted projects have been and what the organization values:
 

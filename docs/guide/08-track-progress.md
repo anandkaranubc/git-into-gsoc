@@ -26,16 +26,21 @@ Valid phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `f
 
 ## Keep a weekly note
 
-```text
-This week's goal:
-What I tried or finished:
-Links to work and discussions:
-What I learned:
-Where I am stuck:
-My next small step:
+```bash
+git-into-gsoc log --goal "Reproduce #12345" --done "Built sympy, found the failing test" \
+  --links https://github.com/sympy/sympy/issues/12345 --stuck "Fixture missing" --next "Ask in the channel"
+git-into-gsoc log            # shows your recent notes
 ```
 
-`progress note` prints the saved state, including notes. `progress summary` does not include note text. To read all notes later, open `progress.json` in the data directory shown by `doctor`. See [local data](../configuration.md) for backup and editing instructions.
+Each note has the structure mentors expect in progress updates: goal, what you tried or finished, links, what you learned, where you are stuck, and the next small step. Free-form notes still work with `progress note`. To read everything later, open `progress.json` in the data directory shown by `doctor`. See [local data](../configuration.md) for backup and editing instructions.
+
+## Ask what to do next
+
+```bash
+git-into-gsoc next
+```
+
+`next` reads the program calendar, your profile, your phases, and your shortlist, re-checks every tracked issue live (and tells you if one was claimed since you last looked), and prints the next few actions with the exact commands. Run it at the start of each session.
 
 There is no CLI command to remove an entry or undo a completed phase. The store is local, does not sync between computers, and does not send updates to mentors. Share a useful update yourself through the community's preferred channel.
 

@@ -35,7 +35,12 @@ On Windows, run `irm https://raw.githubusercontent.com/anandkaranubc/git-into-gs
 
 Claude Code users can install the skill and the MCP server together as a plugin: `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`. It needs [uv](https://docs.astral.sh/uv/) and runs the server straight from this repository.
 
-`program` shows the current GSoC phase and timeline with no GitHub token needed. If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits. `git-into-gsoc doctor` shows what is configured.
+`program` shows the current GSoC phase and timeline with no GitHub token needed. Then tell the tool about yourself once and ask it what to do:
+
+```bash
+git-into-gsoc profile --tech python --interests science --hours 10   # saved locally
+git-into-gsoc next                                                   # your next few actions, with the commands to run
+``` If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits. `git-into-gsoc doctor` shows what is configured.
 
 Then explore:
 
@@ -46,6 +51,7 @@ git-into-gsoc repos "SymPy"                                # which of its repos 
 git-into-gsoc repo sympy/sympy                             # will a newcomer's PR land here?
 git-into-gsoc issues --language python -n 5                # beginner issues that are actually free
 git-into-gsoc issue owner/repo#123 --track                 # claims, PRs, what to do before commenting; save it
+git-into-gsoc contributions --org "SymPy"                  # your PRs, issues, and reviews there, as proposal evidence
 git-into-gsoc proposal draft.md --github YOUR_USERNAME     # what organizations reject on, with evidence
 ```
 
@@ -56,6 +62,7 @@ git-into-gsoc proposal draft.md --github YOUR_USERNAME     # what organizations 
 | **CLI** (`git-into-gsoc`, alias `gsoc`) | Every feature in the terminal, with `--output json` for scripts |
 | **MCP server** (`git-into-gsoc mcp`) | The same features as tools for Claude Code, Cursor, Codex, Gemini CLI, and any MCP client |
 | **Agent Skill** (`skills/git-into-gsoc`) | A portable playbook that teaches an assistant how to coach a GSoC contributor without fabricating or spamming |
+| **Journey coach** (`profile`, `next`, `log`) | A saved profile, a daily "what should I do now" that re-checks your tracked issues live, and weekly notes |
 | **Progress store** | A local record of your phases, shortlist, tracked repos and issues, and notes |
 
 ### Evidence, not vibes

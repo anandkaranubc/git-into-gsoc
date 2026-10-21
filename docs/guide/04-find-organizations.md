@@ -17,6 +17,15 @@ git-into-gsoc org "SymPy"
 
 `org` shows one organization's ideas page, contributor guide, source code, website, GitHub organizations, contact channels, technologies, projects per year, and its recent accepted project titles. Those titles are there to help you understand the scope organizations fund; never copy a past proposal. SymPy is an example lookup, not a promise of future participation or available work.
 
+## Read the ideas page as a list
+
+```bash
+git-into-gsoc ideas "SymPy" --skills python,sympy
+git-into-gsoc mentors "SymPy"
+```
+
+Ideas pages are long and every organization formats them differently. `ideas` reads the page into a table with each idea's size, difficulty, mentors, and skills, and ranks the ones that match the skills you give. `mentors` lists who has mentored the organization's completed projects and which ones, so you know whose name to look for in discussions. Both are best-effort readings of pages the tool does not control; open the page itself before you decide.
+
 ## See what organizations have funded before
 
 ```bash
