@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.2.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.2.0...v0.2.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **ci:** registry description under 100 characters and bundle built from the tagged source ([#40](https://github.com/anandkaranubc/git-into-gsoc/issues/40)) ([a78ce62](https://github.com/anandkaranubc/git-into-gsoc/commit/a78ce6250a245549b61a6a12d96a048c1e01c2a4))
+* honour the configured target year everywhere and keep local data private ([#43](https://github.com/anandkaranubc/git-into-gsoc/issues/43)) ([0c3ad09](https://github.com/anandkaranubc/git-into-gsoc/commit/0c3ad091631b576725759444f12eb7bf313a8156))
+
+
+### Documentation
+
+* **research:** replace comma-for-dash artifacts with readable punctuation ([#39](https://github.com/anandkaranubc/git-into-gsoc/issues/39)) ([78cbbed](https://github.com/anandkaranubc/git-into-gsoc/commit/78cbbed7187848368290fa3d42749441966c7aff))
+* walk beginners through the journey coach and evidence commands ([#41](https://github.com/anandkaranubc/git-into-gsoc/issues/41)) ([4f3ee45](https://github.com/anandkaranubc/git-into-gsoc/commit/4f3ee456de2bc7d87765d0fe944a133fb9a8e0e6))
+
 ## [0.2.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.1.0...v0.2.0) (2026-10-21)
 
 
