@@ -764,6 +764,33 @@ def pointers_cmd(
     console.print(f"\n[dim]{escape(data['next_step'])}[/dim]")
 
 
+@app.command("draft")
+def draft_cmd(
+    kind: str = typer.Argument(
+        ..., help="intro, question, claim, pr, review-reply, status, or final"
+    ),
+    org: str | None = typer.Option(None, "--org", help="GSoC org name, for channels"),
+    repo: str | None = typer.Option(None, "--repo", help="owner/repo, for its claim and PR rules"),
+    issue: str | None = typer.Option(None, "--issue", help="owner/repo#N, for a claim or PR draft"),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """A skeleton for an intro, question, claim comment, PR description, review reply, or report."""
+    data = _toolkit().draft(kind, org=org, repo=repo, issue=issue)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    console.print(Panel(Text(data["template"]), title=f"Draft: {data['kind']}"))
+    if data.get("warning"):
+        console.print(f"[yellow]![/yellow] {escape(data['warning'])}")
+    console.print("[bold]Fill these with real observations before sending[/bold]")
+    for field in data["must_fill"]:
+        console.print(f"  ☐ {escape(field)}")
+    console.print("\n[bold]Rules, with sources[/bold]")
+    for rule in data["rules"]:
+        console.print(f"  • {escape(rule['rule'])}\n    [dim]{rule['source']}[/dim]")
+    console.print(f"\n[dim]{escape(data['note'])}[/dim]")
+
+
 @app.command("recommend")
 def recommend_cmd(
     github: str | None = typer.Option(

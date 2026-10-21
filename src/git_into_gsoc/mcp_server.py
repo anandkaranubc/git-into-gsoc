@@ -311,6 +311,19 @@ def gsoc_issue_pointers(
 
 
 @mcp.tool()
+def gsoc_draft(kind: str, org: str = "", repo: str = "", issue: str = "") -> str:
+    """Skeleton for a message the contributor must write themselves: kind is intro, question,
+    claim, pr, review-reply, status, or final. Returns a template with <placeholders>, the
+    fields that must hold the contributor's own observations, and the rules maintainers and
+    the official guide state, each with its source URL. With org, repo, or issue it fills in
+    real context: channels, the project's claim convention (/assign, .take, "do not assign"),
+    sign-off and AI-disclosure requirements, and the issue's availability. Never fill the
+    placeholders with invented observations; ask the contributor for them.
+    """
+    return _dump(toolkit().draft(kind, org=org or None, repo=repo or None, issue=issue or None))
+
+
+@mcp.tool()
 @mcp.tool(annotations=LOCAL_WRITE, structured_output=False)
 @mcp.tool(title="Personalized starting path", annotations=LOCAL_WRITE, structured_output=False)
 @guarded

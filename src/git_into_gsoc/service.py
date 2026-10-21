@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from git_into_gsoc.coach import plan_actions, upcoming_deadlines
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
+from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, render_draft
 from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
@@ -865,6 +867,69 @@ class GSoCToolkit:
             else f"{len(items)} similar closed issues found, but none closed by a traceable PR."
         )
         return fixes, label, note
+
+    # --------------------------------------------------------------- drafts
+
+    def draft(
+        self,
+        kind: str,
+        *,
+        org: str | None = None,
+        repo: str | None = None,
+        issue: str | None = None,
+    ) -> dict[str, Any]:
+        """A message skeleton with evidence fields and sourced rules, using real context."""
+        if kind not in DRAFT_KINDS:
+            raise InputError(
+                f"Unknown draft kind: {kind!r}", hint="Choose one of: " + ", ".join(DRAFT_KINDS)
+            )
+        context: dict[str, Any] = {"year": self.settings.target_year}
+        profile = self.progress.profile()
+        if profile.get("github"):
+            context["handle"] = profile["github"]
+        if org:
+            found = self.gsoc.get_organization(org)
+            if found:
+                context["org"] = found.name
+                context["channels"] = [c.value for c in found.channels if c.kind == "chat"] or [
+                    c.value for c in found.channels
+                ]
+        if issue:
+            owner, name, num = parse_issue_ref(issue)
+            repo = repo or f"{owner}/{name}"
+            context["issue"] = {"repo": f"{owner}/{name}", "number": num}
+            try:
+                status = self.issue_status(issue)
+                context["issue"]["title"] = status.get("title")
+                context["issue"]["availability"] = status.get("availability")
+            except GigError as exc:
+                context["issue"]["note"] = str(exc)
+        if repo:
+            guide = self.github.contribution_guide(repo)
+            context["channels"] = context.get("channels") or guide.communication_channels
+            text = guide.contributing_excerpt
+            context["claim_convention"] = claim_convention(text)
+            context["dco"] = bool(
+                re.search(r"Signed-off-by|git commit -s|Developer Certificate", text)
+            )
+            context["ai_disclosure"] = bool(re.search(r"\bai\b.*disclos", text, re.I | re.S))
+            context["contributing_url"] = guide.contributing_url
+        if kind == "status":
+            latest = self.progress.recent_logs(limit=1)
+            if latest:
+                context["log"] = latest[0].model_dump(mode="json")
+        draft = render_draft(kind, context=context)
+        draft["context"] = {
+            k: v
+            for k, v in context.items()
+            if k in {"org", "channels", "issue", "claim_convention", "contributing_url"}
+        }
+        if context.get("issue", {}).get("availability") not in (None, "available"):
+            draft["warning"] = (
+                f"Issue availability is {context['issue']['availability']}; check the thread "
+                "before claiming."
+            )
+        return draft
 
     # ------------------------------------------------------------ project ideas
 
