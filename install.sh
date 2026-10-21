@@ -1,31 +1,39 @@
 #!/usr/bin/env bash
-# git-into-gsoc installer: Python package, Agent Skill copies, and MCP setup hints.
+# git-into-gsoc one-shot installer (macOS, Linux, WSL).
+#
+#   From a clone:   ./install.sh [options]
+#                   -> installs the package into ./.venv, then runs `git-into-gsoc setup`
+#   From anywhere:  curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
+#                   -> installs the tool with uv or pipx (or a private venv), then runs setup
+#
+# `git-into-gsoc setup` is what copies the Agent Skill and registers the MCP
+# server with your assistants; it is plain Python, so Windows users can run
+# install.ps1 or call `setup` directly.
 set -euo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILL_SRC="${ROOT}/skills/git-into-gsoc"
+REPO_URL="https://github.com/anandkaranubc/git-into-gsoc"
+DOCS_URL="${REPO_URL}/blob/main/docs"
 PYTHON="${PYTHON:-python3}"
-DOCS_URL="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs"
 
-SKILL_ONLY=0
-MCP_ONLY=0
-USER_SKILLS=0
+SCOPE=""
+DO_PACKAGE=1
+DO_SKILL=1
+DO_MCP=1
+DRY_RUN=0
+ASSISTANTS=()
 
 usage() {
   cat <<'USAGE'
 Usage: ./install.sh [options]
 
-By default this creates .venv, installs the package into it, and copies the
-Agent Skill into this repository's .agents, .cursor, and .claude folders.
-Nothing outside this folder is changed unless you ask for it.
-
-  --user-skills    Also copy the skill into ~/.agents, ~/.cursor, ~/.claude,
-                   ~/.codex, and ~/.gemini (when Gemini CLI is present).
-                   Existing copies of this skill there are replaced.
-  --no-user-skills Keep skill copies inside this repository (the default)
-  --skill-only     Copy the skill only; skip the Python package
-  --mcp-only       Install the Python package and show MCP setup; skip the skill copy
-  -h, --help       Show this help
+  --no-user-skills   Set up inside this repository only (project scope; default from a clone)
+  --user-skills      Set up in your home folder so every project can use it (user scope)
+  --assistant NAME   Configure only this assistant (repeatable): claude-code, cursor, codex,
+                     gemini, windsurf, vscode, all. Default: every assistant detected.
+  --skill-only       Copy the Agent Skill only (skip package install and MCP registration)
+  --mcp-only         Install the package and register the MCP server, skip the skill copy
+  --dry-run          Show what setup would change without writing anything
+  -h, --help         Show this help
 
 Use a specific Python:  PYTHON=python3.12 ./install.sh
 USAGE
@@ -33,10 +41,13 @@ USAGE
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skill-only) SKILL_ONLY=1 ;;
-    --mcp-only) MCP_ONLY=1 ;;
-    --user-skills) USER_SKILLS=1 ;;
-    --no-user-skills) USER_SKILLS=0 ;;
+    --no-user-skills) SCOPE="project" ;;
+    --user-skills) SCOPE="user" ;;
+    --assistant) shift; [[ $# -gt 0 ]] || { echo "--assistant needs a name" >&2; exit 1; }; ASSISTANTS+=("$1") ;;
+    --assistant=*) ASSISTANTS+=("${1#*=}") ;;
+    --skill-only) DO_PACKAGE=0; DO_MCP=0 ;;
+    --mcp-only) DO_SKILL=0 ;;
+    --dry-run) DRY_RUN=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
@@ -44,15 +55,24 @@ while [[ $# -gt 0 ]]; do
 done
 
 log() { printf '==> %s\n' "$*"; }
+die() { printf 'error: %s\n' "$*" >&2; exit 1; }
 
-install_python() {
-  log "Installing the Python package into ${ROOT}/.venv"
-  if ! command -v "$PYTHON" >/dev/null 2>&1; then
-    echo "Python 3.11 or newer is required, but '${PYTHON}' was not found." >&2
-    echo "Install it from https://www.python.org/downloads/ and run this script again." >&2
-    exit 1
-  fi
-  "$PYTHON" - <<'PY'
+# ---------------------------------------------------------------- where are we
+ROOT=""
+if [[ -n "${BASH_SOURCE[0]:-}" && -f "${BASH_SOURCE[0]}" ]]; then
+  ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+fi
+MODE="remote"
+if [[ -n "$ROOT" && -f "$ROOT/pyproject.toml" ]] && grep -q '^name = "git-into-gsoc"' "$ROOT/pyproject.toml"; then
+  MODE="checkout"
+fi
+if [[ -z "$SCOPE" ]]; then
+  SCOPE="project"; [[ "$MODE" == "remote" ]] && SCOPE="user"
+fi
+
+check_python() {
+  command -v "$PYTHON" >/dev/null 2>&1 || die "Python 3.11 or newer is required, but '$PYTHON' was not found. Install it from https://www.python.org/downloads/ and run this script again."
+  "$PYTHON" - <<'PY' || exit 1
 import sys
 if sys.version_info < (3, 11):
     raise SystemExit(
@@ -61,106 +81,106 @@ if sys.version_info < (3, 11):
     )
 print(f"Using {sys.executable}")
 PY
-  if [[ ! -d "${ROOT}/.venv" ]]; then
-    "$PYTHON" -m venv "${ROOT}/.venv"
-  fi
-  # shellcheck disable=SC1091
-  source "${ROOT}/.venv/bin/activate"
-  pip install -U pip >/dev/null
-  pip install -e "${ROOT}[dev]"
-  log "Checking your setup"
-  git-into-gsoc doctor || true
 }
 
-copy_skill() {
-  local dest="$1"
-  mkdir -p "$(dirname "$dest")"
-  rm -rf "$dest"
-  mkdir -p "$dest"
-  cp -R "${SKILL_SRC}/." "$dest/"
-  log "Skill copied to ${dest}"
+# ----------------------------------------------------------- install package
+GIG_BIN=""
+
+install_checkout() {
+  log "Installing git-into-gsoc into ${ROOT}/.venv"
+  check_python
+  [[ -d "${ROOT}/.venv" ]] || "$PYTHON" -m venv "${ROOT}/.venv"
+  "${ROOT}/.venv/bin/python" -m pip install -q -U pip
+  "${ROOT}/.venv/bin/python" -m pip install -q -e "${ROOT}"
+  GIG_BIN="${ROOT}/.venv/bin/git-into-gsoc"
 }
 
-install_skills() {
-  if [[ ! -f "${SKILL_SRC}/SKILL.md" ]]; then
-    echo "Missing skill at ${SKILL_SRC}" >&2
-    exit 1
-  fi
-  # Project-local copies let assistants find the skill when this folder is open.
-  local targets=(
-    "${ROOT}/.agents/skills/git-into-gsoc"
-    "${ROOT}/.cursor/skills/git-into-gsoc"
-    "${ROOT}/.claude/skills/git-into-gsoc"
-  )
-  if [[ "$USER_SKILLS" -eq 1 ]]; then
-    targets+=(
-      "${HOME}/.agents/skills/git-into-gsoc"
-      "${HOME}/.cursor/skills/git-into-gsoc"
-      "${HOME}/.claude/skills/git-into-gsoc"
-      "${HOME}/.codex/skills/git-into-gsoc"
-    )
-    if [[ -d "${HOME}/.gemini" ]] || command -v gemini >/dev/null 2>&1; then
-      targets+=("${HOME}/.gemini/skills/git-into-gsoc")
-    fi
-  fi
-  for dest in "${targets[@]}"; do
-    copy_skill "$dest"
-  done
-  if [[ "$USER_SKILLS" -eq 0 ]]; then
-    log "Skill copies stay inside this repository. Add --user-skills to install them for every project."
+install_remote() {
+  if command -v uv >/dev/null 2>&1; then
+    log "Installing git-into-gsoc with uv"
+    uv tool install -q --force "git+${REPO_URL}"
+    GIG_BIN="$(uv tool dir --bin)/git-into-gsoc"
+  elif command -v pipx >/dev/null 2>&1; then
+    log "Installing git-into-gsoc with pipx"
+    pipx install --force "git+${REPO_URL}" >/dev/null
+    GIG_BIN="$(pipx environment --value PIPX_BIN_DIR 2>/dev/null || echo "${HOME}/.local/bin")/git-into-gsoc"
+  else
+    check_python
+    local base="${XDG_DATA_HOME:-${HOME}/.local/share}/git-into-gsoc"
+    log "Installing git-into-gsoc into ${base}/venv (install uv or pipx for a lighter setup)"
+    mkdir -p "$base" "${HOME}/.local/bin"
+    [[ -d "${base}/venv" ]] || "$PYTHON" -m venv "${base}/venv"
+    "${base}/venv/bin/python" -m pip install -q -U pip
+    "${base}/venv/bin/python" -m pip install -q "git+${REPO_URL}"
+    ln -sf "${base}/venv/bin/git-into-gsoc" "${HOME}/.local/bin/git-into-gsoc"
+    GIG_BIN="${HOME}/.local/bin/git-into-gsoc"
   fi
 }
 
-print_mcp_help() {
-  local cmd="${ROOT}/.venv/bin/git-into-gsoc"
-  cat <<MCP
-
-MCP server (lets AI assistants call git-into-gsoc directly)
-
-For Cursor, merge this into ~/.cursor/mcp.json:
-{
-  "mcpServers": {
-    "git-into-gsoc": {
-      "command": "${cmd}",
-      "args": ["mcp"]
-    }
-  }
+locate_existing() {
+  if [[ "$MODE" == "checkout" && -x "${ROOT}/.venv/bin/git-into-gsoc" ]]; then
+    GIG_BIN="${ROOT}/.venv/bin/git-into-gsoc"
+  elif command -v git-into-gsoc >/dev/null 2>&1; then
+    GIG_BIN="$(command -v git-into-gsoc)"
+  else
+    die "git-into-gsoc is not installed yet; run ./install.sh without --skill-only first."
+  fi
 }
 
-Claude Code, Codex, and Gemini CLI steps:
-  ${DOCS_URL}/guide/03-connect-your-ai-assistant.md
-MCP
+# --------------------------------------------------------------------- setup
+run_setup() {
+  local args=(setup --scope "$SCOPE")
+  [[ "$SCOPE" == "project" && -n "$ROOT" ]] && args+=(--project-dir "$ROOT")
+  [[ "$DO_SKILL" -eq 1 ]] || args+=(--no-skill)
+  [[ "$DO_MCP" -eq 1 ]] || args+=(--no-mcp)
+  [[ "$DRY_RUN" -eq 1 ]] && args+=(--dry-run)
+  for a in "${ASSISTANTS[@]:-}"; do [[ -n "$a" ]] && args+=(--assistant "$a"); done
+  log "Running: git-into-gsoc ${args[*]}"
+  "$GIG_BIN" "${args[@]}"
 }
 
 print_next_steps() {
-  cat <<NEXT
-
-All set. Next steps:
+  echo
+  echo "All set. Next steps:"
+  if [[ "$MODE" == "checkout" ]]; then
+    cat <<NEXT
 
   1. Turn on the tool in this terminal. Do this again in every new terminal:
        source "${ROOT}/.venv/bin/activate"
 
   2. Try your first command:
        git-into-gsoc program
+NEXT
+  else
+    cat <<NEXT
 
-  3. Follow the beginner guide, one step at a time:
+  1. Make sure the tool is on your PATH (open a new terminal if needed):
+       ${GIG_BIN} --version
+
+  2. Try your first command:
+       git-into-gsoc program
+NEXT
+  fi
+  cat <<NEXT
+
+  3. Check your setup any time:
+       git-into-gsoc doctor
+
+  4. Follow the beginner guide, one step at a time:
        ${DOCS_URL}/README.md
 NEXT
 }
 
 main() {
-  log "git-into-gsoc installer"
-  if [[ "$SKILL_ONLY" -eq 0 ]]; then
-    install_python
+  log "git-into-gsoc installer (${MODE} mode, ${SCOPE} scope)"
+  if [[ "$DO_PACKAGE" -eq 1 ]]; then
+    if [[ "$MODE" == "checkout" ]]; then install_checkout; else install_remote; fi
+    "$GIG_BIN" --version >/dev/null || die "Installed, but '${GIG_BIN} --version' failed."
+  else
+    locate_existing
   fi
-  if [[ "$MCP_ONLY" -eq 0 ]]; then
-    install_skills
-    log "Restart your AI assistant so it picks up the git-into-gsoc skill."
-  fi
-  if [[ "$SKILL_ONLY" -eq 0 ]]; then
-    print_mcp_help
-    print_next_steps
-  fi
+  run_setup
+  [[ "$DRY_RUN" -eq 1 ]] || print_next_steps
 }
 
 main
