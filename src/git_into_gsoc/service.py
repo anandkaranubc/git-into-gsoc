@@ -1344,6 +1344,13 @@ class GSoCToolkit:
                         ]
                 except GigError:
                     pass
+                # The commands CI really runs, instead of "<the project's test command>".
+                try:
+                    ci = self._ci_setup(repo)
+                    context["test_commands"] = [c["command"] for c in ci["test_commands"]]
+                    context["install_commands"] = [c["command"] for c in ci["install_commands"]]
+                except GigError:
+                    pass
             guide = self.github.contribution_guide(repo)
             context["channels"] = context.get("channels") or guide.communication_channels
             text = guide.contributing_text or guide.contributing_excerpt
@@ -1589,29 +1596,31 @@ class GSoCToolkit:
             ),
         }
 
+    def _ci_setup(self, repo: str) -> dict[str, Any]:
+        """What the repository's CI sets up and runs: environment, install, and test commands."""
+        owner, name = parse_repo(repo)
+        raw = self.github.get_repo(owner, name)
+        branch = str(raw.get("default_branch") or "HEAD")
+        found = find_paths(list(self.github.git_tree(owner, name, branch).get("tree") or []))
+        paths = rank_workflows(found.get("workflows") or [])
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            texts = {
+                p: f.result() or ""
+                for p, f in {
+                    p: pool.submit(self.github.get_raw_file, owner, name, p) for p in paths
+                }.items()
+            }
+        return {
+            **ci_environment(texts),
+            "test_commands": ci_test_commands(texts),
+            "install_commands": ci_install_commands(texts),
+        }
+
     def diagnose(self, text: str, *, repo: str | None = None) -> dict[str, Any]:
         """Likely causes for failed setup or test output; with `repo`, what its CI sets up."""
         from git_into_gsoc.diagnose import diagnose_output
 
-        ci: dict[str, Any] | None = None
-        if repo:
-            owner, name = parse_repo(repo)
-            raw = self.github.get_repo(owner, name)
-            branch = str(raw.get("default_branch") or "HEAD")
-            found = find_paths(list(self.github.git_tree(owner, name, branch).get("tree") or []))
-            paths = rank_workflows(found.get("workflows") or [])
-            with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
-                texts = {
-                    p: f.result() or ""
-                    for p, f in {
-                        p: pool.submit(self.github.get_raw_file, owner, name, p) for p in paths
-                    }.items()
-                }
-            ci = {
-                **ci_environment(texts),
-                "test_commands": ci_test_commands(texts),
-                "install_commands": ci_install_commands(texts),
-            }
+        ci = self._ci_setup(repo) if repo else None
         report = diagnose_output(text, ci=ci)
         report["repo"] = repo
         return report

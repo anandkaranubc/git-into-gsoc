@@ -270,6 +270,15 @@ def _pr(ctx: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _venv_line(ctx: dict[str, Any]) -> list[str]:
+    """A private Python environment first: many systems refuse a global pip install."""
+    if not any(re.search(r"\bpip3? install\b", c) for c in ctx.get("install_commands") or []):
+        return []
+    return [
+        "  python3 -m venv .venv && source .venv/bin/activate   # Windows: .venv\\Scripts\\activate"
+    ]
+
+
 def _setup_commands(ctx: dict[str, Any]) -> list[str]:
     """The exact git commands for a first pull request, with the real default branch."""
     repo = str(ctx.get("repo") or "")
@@ -287,6 +296,8 @@ def _setup_commands(ctx: dict[str, Any]) -> list[str]:
         f"  git clone https://github.com/{handle}/{name}.git   # after forking {repo} on GitHub",
         f"  cd {name} && git remote add upstream https://github.com/{repo}.git && git fetch upstream",
         f"  git switch -c {branch} upstream/{base}",
+        *_venv_line(ctx),
+        *(f"  {cmd}   # install as CI does" for cmd in (ctx.get("install_commands") or [])[:2]),
         f"  {test_cmd}   # run the tests once before changing anything",
         "When the change is ready:",
         f"  git push -u origin {branch}   # then open the pull request against {base}",

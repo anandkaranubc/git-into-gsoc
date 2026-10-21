@@ -192,3 +192,30 @@ def test_claim_draft_reads_the_whole_contributing_guide(monkeypatch) -> None:  #
     assert draft["context"]["claim_convention"] == {"kind": "command", "text": "@zulipbot claim"}
     assert "@zulipbot claim" in draft["template"]
     assert "contributing_text" not in guide.model_dump()  # never printed or sent to assistants
+
+
+def test_pr_draft_uses_the_install_and_test_commands_ci_runs(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import ContributionGuide
+    from git_into_gsoc.service import GSoCToolkit
+
+    # A real run on sympy/sympy: the draft said "<the project's test command>" although
+    # orient knew CI runs `pytest -n auto`, and it never said how to install.
+    toolkit = GSoCToolkit()
+    gh = toolkit.github
+    monkeypatch.setattr(gh, "get_repo", lambda o, r: {"default_branch": "master"})
+    monkeypatch.setattr(gh, "branch_rules", lambda *a: [])
+    monkeypatch.setattr(
+        gh, "contribution_guide", lambda repo: ContributionGuide(repo="sympy/sympy")
+    )
+    tree = {"tree": [{"path": ".github/workflows/runtests.yml", "type": "blob"}]}
+    monkeypatch.setattr(gh, "git_tree", lambda *a: tree)
+    workflow = (
+        "jobs:\n  t:\n    steps:\n      - run: python -m pip install --upgrade pip\n"
+        "      - run: pip install -r requirements-dev.txt\n      - run: pytest -n auto\n"
+    )
+    monkeypatch.setattr(gh, "get_raw_file", lambda *a: workflow)
+    draft = toolkit.draft("pr", repo="sympy/sympy")
+    assert "pip install -r requirements-dev.txt   # install as CI does" in draft["template"]
+    assert "pytest -n auto   # run the tests once" in draft["template"]
+    assert "<the project's test command>" not in draft["template"]
+    assert "python3 -m venv .venv" in draft["template"]  # before any pip install
