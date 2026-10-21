@@ -176,3 +176,66 @@ def test_http_request_lines_stay_out_of_the_mcp_log() -> None:
 
     assert logging.getLogger("httpx").getEffectiveLevel() >= logging.WARNING
     assert logging.getLogger("httpcore").getEffectiveLevel() >= logging.WARNING
+
+
+_WRITERS = {"gsoc_progress", "gsoc_log", "gsoc_next", "gsoc_recommend_path"}
+
+
+def test_write_hints_match_what_each_tool_does() -> None:
+    from git_into_gsoc.mcp_server import mcp
+
+    hints = {t.name: t.annotations for t in mcp._tool_manager.list_tools()}
+    for name, hint in hints.items():
+        assert hint is not None
+        assert hint.read_only_hint is (name not in _WRITERS), name
+        assert not hint.destructive_hint, name
+    # A second note is a second entry, and a second check moves the "new since" window.
+    for name in ("gsoc_log", "gsoc_progress", "gsoc_next"):
+        assert hints[name].idempotent_hint is False, name  # type: ignore[union-attr]
+    assert hints["gsoc_recommend_path"].idempotent_hint is True  # type: ignore[union-attr]
+    for name in ("gsoc_log", "gsoc_progress"):
+        assert hints[name].open_world_hint is False, name  # type: ignore[union-attr]
+    for name in _WRITERS:
+        assert name in (mcp.instructions or ""), name
+
+
+class _FailingToolkit:
+    """Stands in for the toolkit: every call fails the way a real one can."""
+
+    def __getattr__(self, name: str) -> _FailingToolkit:
+        return _FailingToolkit()
+
+    def __call__(self, *args: object, **kwargs: object) -> None:
+        from git_into_gsoc.errors import InputError
+
+        raise InputError("probe failure", hint="probe hint")
+
+
+def test_every_tool_passes_the_failure_reason_to_the_assistant(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import asyncio
+
+    import pytest
+    from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+
+    from git_into_gsoc import mcp_server
+
+    monkeypatch.setattr(mcp_server, "toolkit", lambda: _FailingToolkit())
+    values = {
+        "github_username": "octocat",
+        "org": "sympy",
+        "kind": "intro",
+        "full_name": "sympy/sympy",
+        "ref": "sympy/sympy#1",
+        "name": "sympy",
+        "text": "A short draft.",
+    }
+    for tool in mcp_server.mcp._tool_manager.list_tools():
+        args: dict[str, object] = {key: values[key] for key in tool.parameters.get("required", [])}
+        if tool.name in {"gsoc_log", "gsoc_progress"}:
+            args.update({"done": "x"} if tool.name == "gsoc_log" else {"action": "note"})
+        try:
+            asyncio.run(mcp_server.mcp.call_tool(tool.name, args))
+        except UnexpectedToolError as exc:
+            pytest.fail(f"{tool.name} hid the reason from the assistant: {exc}")
+        except ToolError as exc:
+            assert str(exc).split(":", 1)[1].strip(), tool.name

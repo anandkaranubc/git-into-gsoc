@@ -54,7 +54,7 @@ How the parameters work:
 - `gsoc_orient_repo` with `codetour=True` adds a CodeTour file as JSON under `codetour`. `gsoc_org_ideas` adds `past_proposals`, links to matching folders in community archives of accepted proposals. `gsoc_find_issues` reports `labels_used`, which includes the repository's own beginner label when `repo` is given.
 - `gsoc_org_ideas`, `gsoc_orient_repo`, `gsoc_issue_pointers`, `gsoc_contribution_evidence`, and `gsoc_draft` report expected failures (unknown organization, a pull request passed as an issue, an unknown draft kind) as tool errors with a next step rather than as result JSON. `gsoc_next` and `gsoc_log` are the only new tools that write, and only to the local progress file.
 - The server also offers four prompts an assistant can run as commands: `coach_phase(phase)`, `before_you_comment(issue)`, `first_pr_plan(repo, issue)`, and `weekly_checkin()`. Each tells the assistant which tools to call and what not to invent. The `gsoc://progress` resource returns the saved progress summary without a tool call.
-- `gsoc_progress` actions are `summary`, `complete_phase` (needs `phase`), `shortlist_org`, `track_repo`, `track_issue`, and `note` (each needs `value`). Phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`.
+- `gsoc_progress` actions are `summary`, `complete_phase` (needs `phase`), `shortlist_org`, `track_repo`, `track_issue`, and `note` (each needs `value`). A value that is not a repository or an issue is refused with a tool error, and notes and weekly-note fields hold up to 2,000 characters. Phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`.
 
 ## Example calls
 
@@ -92,7 +92,7 @@ The repository ships the manifests assistants look for: `.claude-plugin/plugin.j
 
 ## Resources and tool hints
 
-The server also publishes three read-only resources an assistant can load into context without a tool call: `gsoc://journey` (the ten phases with goals and actions), `gsoc://official-sources` (the Google pages for rules, dates, AI guidance, and proposal quality), and `gsoc://anti-spam-rules`. Every tool except `gsoc_progress` and `gsoc_recommend_path` is annotated read-only and idempotent, so clients that ask before side effects can call them freely; those two write only to the local progress file.
+The server also publishes four read-only resources an assistant can load into context without a tool call: `gsoc://journey` (the ten phases with goals and actions), `gsoc://official-sources` (the Google pages for rules, dates, AI guidance, and proposal quality), `gsoc://anti-spam-rules`, and `gsoc://progress`. Every tool except four is annotated read-only and idempotent, so clients that ask before side effects can call them freely. `gsoc_progress` and `gsoc_log` append to the local progress file, so calling either twice saves two entries. `gsoc_next` records when it last checked, and `gsoc_recommend_path` saves profile fields. None of the four deletes anything or writes anywhere else.
 
 A server can connect successfully and still return an error for a call that needs the network. A GitHub token is optional; see [configuration](configuration.md) for how the tool finds one and [troubleshooting](troubleshooting.md) for connection problems.
 
