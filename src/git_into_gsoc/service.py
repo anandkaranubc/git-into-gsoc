@@ -295,6 +295,63 @@ class GSoCToolkit:
             return {"year": year, "posts": [], "error": exc.to_dict()}
         return {"year": year, "posts": posts[:6]}
 
+    def check_participation(
+        self, orgs: list[dict[str, Any]], *, year: int | None = None, check: int = 5
+    ) -> list[dict[str, Any]]:
+        """Check what the top organizations posted about the coming year, and act on it.
+
+        An organization that says it will not take part keeps its place in the data
+        but moves after the others, with the post as the first caveat. One whose
+        maintainers posted about the year gets that as a readiness line. Costs one
+        search (plus wiki reads) per checked organization; failures become
+        "unknown". Returns a new list and leaves `orgs` unchanged.
+        """
+        year = year or self.settings.target_year
+        out = [dict(org) for org in orgs]
+        targets = [org for org in out[: max(0, check)] if org.get("github_orgs")]
+
+        def one(org: dict[str, Any]) -> dict[str, Any]:
+            found = self.gsoc_posts_for(list(org["github_orgs"])[:3], year=year)
+            if found.get("error"):
+                return {"status": "unknown"}
+            posts = found.get("posts") or []
+            trusted = [p for p in posts if p.get("by_maintainer") or p.get("source") == "wiki"]
+            for status in ("not_taking_part", "undecided", "mentions"):
+                post = next((p for p in trusted if p.get("status") == status), None)
+                if post:
+                    return {
+                        "status": "posted" if status == "mentions" else status,
+                        "url": post.get("url"),
+                        "title": post.get("title"),
+                    }
+            return {"status": "no_post"}
+
+        if targets:
+            workers = min(len(targets), max(1, self.settings.max_concurrency))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                results = list(pool.map(one, targets))
+            for org, participation in zip(targets, results, strict=True):
+                org["participation"] = participation
+                status = participation["status"]
+                if status == "not_taking_part":
+                    org["caveats"] = [
+                        f"Says it will not take part in GSoC {year}: {participation['url']}",
+                        *(org.get("caveats") or []),
+                    ]
+                elif status == "undecided":
+                    org["caveats"] = [
+                        *(org.get("caveats") or []),
+                        f"Has not decided about GSoC {year} yet: {participation['url']}",
+                    ]
+                elif status == "posted":
+                    org["readiness"] = [
+                        f"Its maintainers posted about GSoC {year}: {participation['url']}",
+                        *(org.get("readiness") or []),
+                    ]
+        return sorted(
+            out, key=lambda o: (o.get("participation") or {}).get("status") == "not_taking_part"
+        )
+
     def _org_not_found(self, name: str, *, year: int | None = None) -> dict[str, Any]:
         similar, mentioned_by = self.gsoc.suggest_organizations(name, year=year)
         hints = []
