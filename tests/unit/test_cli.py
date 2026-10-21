@@ -151,3 +151,22 @@ def test_contributions_uses_the_saved_profile_or_asks_for_a_username(monkeypatch
     saved = runner.invoke(app, ["contributions", "--org", "SymPy", "--output", "json"])
     assert saved.exit_code == 0, saved.output
     assert seen == ["octocat"]
+
+
+def test_not_found_org_is_an_error_and_limits_must_be_positive(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc import cli
+
+    missing = {"found": False, "error": "No organization matched 'zz'", "hint": "Try orgs --query"}
+
+    class Fake:
+        def org_details(self, *a, **k):  # type: ignore[no-untyped-def]
+            return missing
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    rich = runner.invoke(app, ["org", "zz"])
+    assert rich.exit_code == 1
+    assert "error:" in rich.output and "hint:" in rich.output and "{" not in rich.output
+    as_json = runner.invoke(app, ["org", "zz", "--output", "json"])
+    assert as_json.exit_code == 1 and '"found": false' in as_json.output
+    assert runner.invoke(app, ["orgs", "-n", "0"]).exit_code == 2
+    assert runner.invoke(app, ["issues", "-n", "-5"]).exit_code == 2

@@ -91,6 +91,20 @@ def _markup_safe(value: Any) -> Any:
     return value
 
 
+def _emit_or_fail(data: dict[str, Any], output: Output) -> None:
+    """JSON as-is; a not-found result becomes a one-line error with exit code 1."""
+    if data.get("found", True):
+        _emit(data, Output.json)
+        return
+    if output == Output.json:
+        _emit(data, Output.json)
+    else:
+        err_console.print(f"[bold red]error:[/bold red] {escape(str(data.get('error')))}")
+        if data.get("hint"):
+            err_console.print(f"[dim]hint:[/dim] {escape(str(data['hint']))}")
+    raise typer.Exit(code=1)
+
+
 def _emit(data: object, output: Output) -> None:
     if output == Output.json:
         console.print_json(json.dumps(data, default=str))
@@ -207,7 +221,7 @@ def orgs_cmd(
     year: int | None = typer.Option(
         None, help="Program year (default: target year; falls back to the latest announced)"
     ),
-    limit: int = typer.Option(10, "--limit", "-n", help="How many organizations to show"),
+    limit: int = typer.Option(10, "--limit", "-n", min=1, help="How many organizations to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Rank mentoring organizations for your skills and interests."""
@@ -265,7 +279,7 @@ def org_cmd(
         _toolkit().progress.shortlist_org(data["organization"]["name"])
         data["shortlisted"] = True
     if output == Output.json or not data.get("found"):
-        _emit(data, Output.json)
+        _emit_or_fail(data, output)
         return
     data = _markup_safe(data)
     org = data["organization"]
@@ -305,7 +319,7 @@ def projects_cmd(
     query: str | None = typer.Argument(None, help="Keywords, for example 'graph neural networks'"),
     org: str | None = typer.Option(None, "--org", help="Limit to one organization"),
     since: int | None = typer.Option(None, "--since", help="Earliest program year"),
-    limit: int = typer.Option(15, "--limit", "-n", help="How many projects to show"),
+    limit: int = typer.Option(15, "--limit", "-n", min=1, help="How many projects to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Search past accepted GSoC projects to judge scope and find organizations."""
@@ -331,7 +345,7 @@ def ideas_cmd(
     ),
     size: str | None = typer.Option(None, "--size", help="small, medium, or large"),
     difficulty: str | None = typer.Option(None, "--difficulty", help="easy, medium, or hard"),
-    limit: int = typer.Option(20, "--limit", "-n", help="How many ideas to show"),
+    limit: int = typer.Option(20, "--limit", "-n", min=1, help="How many ideas to show"),
     no_follow: bool = typer.Option(
         False, "--no-follow", help="Do not open linked sub-project pages on umbrella orgs"
     ),
@@ -347,7 +361,7 @@ def ideas_cmd(
         follow=not no_follow,
     )
     if output == Output.json or not data.get("found"):
-        _emit(data, Output.json)
+        _emit_or_fail(data, output)
         return
     data = _markup_safe(data)
     lines = [f"[bold]{escape(data['org'])}[/bold]", f"Ideas page: {data['ideas_url']}"]
@@ -400,13 +414,13 @@ def ideas_cmd(
 def mentors_cmd(
     org: str = typer.Argument(..., help="GSoC organization name, full or partial"),
     years: int = typer.Option(3, "--years", help="How many archived years to read"),
-    limit: int = typer.Option(25, "--limit", "-n", help="How many mentors to show"),
+    limit: int = typer.Option(25, "--limit", "-n", min=1, help="How many mentors to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Who has mentored this organization's completed projects, and which repositories they touched."""
     data = _toolkit().org_mentors(org, years=years, limit=limit)
     if output == Output.json or not data.get("found"):
-        _emit(data, Output.json)
+        _emit_or_fail(data, output)
         return
     data = _markup_safe(data)
     per_year = ", ".join(f"{y}: {n}" for y, n in data["mentors_per_year"].items())
@@ -454,7 +468,7 @@ def repos_cmd(
         ..., help="GSoC organization name, for example 'GNU Radio', or its GitHub login"
     ),
     language: str | None = typer.Option(None, "--language", "-l", help="Prefer this language"),
-    limit: int = typer.Option(10, "--limit", "-n", help="How many repositories to show"),
+    limit: int = typer.Option(10, "--limit", "-n", min=1, help="How many repositories to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Rank an organization's repositories by ideas-page mentions, beginner issues, and activity."""
@@ -686,7 +700,7 @@ def issues_cmd(
         "--scope",
         help="gsoc: only repositories of GSoC organizations; all: any repository",
     ),
-    limit: int = typer.Option(10, "--limit", "-n", help="How many issues to show"),
+    limit: int = typer.Option(10, "--limit", "-n", min=1, help="How many issues to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Find beginner issues that still look free: no pull request, assignee, or recent claim."""
@@ -1217,7 +1231,7 @@ def log_cmd(
     learned: str | None = typer.Option(None, "--learned", help="What you learned"),
     stuck: str | None = typer.Option(None, "--stuck", help="Where you are stuck"),
     next_step: str | None = typer.Option(None, "--next", help="Your next small step"),
-    limit: int = typer.Option(5, "--limit", "-n", help="How many past notes to show"),
+    limit: int = typer.Option(5, "--limit", "-n", min=1, help="How many past notes to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Write a weekly note, or show recent ones when you give no fields."""
