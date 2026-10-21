@@ -93,7 +93,7 @@ Run `source .venv/bin/activate` again in every new terminal. If `./install.sh` w
 - A maintainer reviews the change. Reviews are conversations: ask questions, push follow-up commits to the same branch, and resolve each thread when it is addressed.
 - Pull requests are squash-merged: all of your commits become one commit on `main`. The PR title becomes the commit message on `main`, so keep it in Conventional Commits form. Your branch is deleted automatically after merging.
 - [Release Please](https://github.com/googleapis/release-please) opens a release pull request when `main` has new `feat` or `fix` commits. Merging it tags a release and updates `CHANGELOG.md`. You do not edit version numbers by hand.
-- Dependabot opens weekly grouped update PRs for Python packages and GitHub Actions.
+- Dependabot opens weekly update PRs for Python packages, GitHub Actions, and pre-commit hooks. It waits a week after a release before proposing it; security fixes come right away.
 
 ## Using AI tools
 
