@@ -709,6 +709,18 @@ class GitHubClient:
             return []
         return data if isinstance(data, list) else []
 
+    def branch_rules(self, owner: str, repo: str, branch: str) -> list[dict[str, Any]]:
+        """Active ruleset rules on a branch (readable without a token for public repos).
+
+        Classic branch protection is visible only to admins, so an empty list means
+        "no rulesets found", not "no rules".
+        """
+        try:
+            data = self._api(f"repos/{owner}/{repo}/rules/branches/{quote(branch, safe='')}")
+        except HttpError:
+            return []
+        return [r for r in data if isinstance(r, dict)] if isinstance(data, list) else []
+
     def check_run_names(self, owner: str, repo: str, ref: str) -> list[str]:
         """Names of check runs and status contexts on a commit (CLA/DCO/CI detection)."""
         names: list[str] = []

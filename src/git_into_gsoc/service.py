@@ -14,6 +14,7 @@ from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
     active_committers,
+    branch_gates,
     ci_test_commands,
     code_map,
     codeowners_for,
@@ -23,9 +24,11 @@ from git_into_gsoc.github.orientation import (
     entry_points,
     find_paths,
     policy_quotes,
+    rank_gate_workflows,
     rank_workflows,
     reading_plan,
     since_iso,
+    workflow_gates,
 )
 from git_into_gsoc.github.pointers import (
     closing_pull_request,
@@ -590,7 +593,7 @@ class GSoCToolkit:
     # ---------------------------------------------------------- orientation
 
     def orient_repo(self, full_name: str, *, codetour: bool = False) -> dict[str, Any]:
-        """A one-screen orientation sheet: facts and paths only, about 16 API calls."""
+        """A one-screen orientation sheet: facts and paths only, about 20 API calls."""
         owner, repo = parse_repo(full_name)
         raw = self.github.get_repo(owner, repo)
         owner, repo = (raw.get("full_name") or f"{owner}/{repo}").split("/", 1)
@@ -602,8 +605,10 @@ class GSoCToolkit:
             profile_f = pool.submit(self.github.community_profile, owner, repo)
             commits_f = pool.submit(self.github.list_commits, owner, repo, since=since_iso(90))
             pulls_f = pool.submit(self.github.list_pulls, owner, repo, state="closed", per_page=30)
+            rules_f = pool.submit(self.github.branch_rules, owner, repo, branch)
             tree, langs = tree_f.result(), langs_f.result()
             profile, commits, pulls = profile_f.result(), commits_f.result(), pulls_f.result()
+            branch_rules = rules_f.result()
         entries = list(tree.get("tree") or [])
         found = find_paths(entries)
         if not found.get("contributing"):
@@ -612,6 +617,7 @@ class GSoCToolkit:
                 found["contributing"] = html.split("/blob/", 1)[1].split("/", 1)[1]
 
         workflow_paths = rank_workflows(found.get("workflows") or [])
+        gate_paths = rank_gate_workflows(found.get("workflows") or [], skip=workflow_paths)
         raw_wanted = {
             key: found[key]
             for key in ("contributing", "pr_template", "pyproject", "package_json", "codeowners")
@@ -626,7 +632,7 @@ class GSoCToolkit:
             }
             wf_futures = {
                 path: pool.submit(self.github.get_raw_file, owner, repo, path)
-                for path in workflow_paths
+                for path in [*workflow_paths, *gate_paths]
             }
             for key, future in futures.items():
                 texts[key] = future.result() or ""
@@ -649,6 +655,7 @@ class GSoCToolkit:
             check_names=check_names,
             found=found,
         )
+        rules["gates"] = branch_gates(branch_rules, branch=branch) + workflow_gates(workflow_texts)
         quotes = policy_quotes(
             {
                 str(found.get("contributing") or "CONTRIBUTING"): texts.get("contributing", ""),
@@ -660,7 +667,7 @@ class GSoCToolkit:
             {"name": name, "share": round(100 * size / total_bytes)}
             for name, size in sorted(langs.items(), key=lambda kv: -kv[1])[:4]
         ]
-        tests = ci_test_commands(workflow_texts)
+        tests = ci_test_commands({p: workflow_texts.get(p, "") for p in workflow_paths})
         result: dict[str, Any]
         fallback_hints = [
             f"{found['makefile']} lists local targets" if found.get("makefile") else "",
@@ -942,6 +949,14 @@ class GSoCToolkit:
                     owner_name, repo_name = parse_repo(repo)
                     meta = self.github.get_repo(owner_name, repo_name)
                     context["default_branch"] = str(meta.get("default_branch") or "") or None
+                    if context["default_branch"]:
+                        found_rules = self.github.branch_rules(
+                            owner_name, repo_name, context["default_branch"]
+                        )
+                        context["gates"] = [
+                            g["gate"]
+                            for g in branch_gates(found_rules, branch=context["default_branch"])
+                        ]
                 except GigError:
                     pass
             guide = self.github.contribution_guide(repo)

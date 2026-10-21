@@ -113,7 +113,7 @@ actions with commands.
 - **Draft checks.** `proposal draft.md` reports pass, warn, and fail findings on a draft: required sections, linked pull requests (confirmed on GitHub when `--github` is given), week-by-week timeline detail, concrete references to code and issues, generic phrasing, leftover placeholders, and text copied from an ideas page passed with `--ideas-file`. It never rewrites the draft. A clean check means the skeleton is right, not that the plan is good; only mentors can judge that.
 - **Local writes.** `progress`, `profile`, `recommend`, `next`, `log`, and the `--shortlist` and `--track` flags on `org`, `repo`, and `issue` save to a file on the person's computer. Nothing is ever posted to GitHub or submitted to GSoC.
 - **Ideas pages.** `ideas` reads the organization's own page and reports a confidence per idea. Empty fields were not on the page; a `?` marks a block that may be a section heading. The layout field says when a page is an index, a set of GitHub issues, unreadable, or missing. Quote the organization's AI policy sentences when they appear; never paste idea text into a proposal.
-- **Orientation and pointers.** `orient` and `pointers` print facts and paths only. Purpose labels on the code map are guesses; everything else names a real file, commit, or check. `pointers` shows where to read and how similar issues were fixed; it never proposes a fix, and neither should you before the person has read the code.
+- **Orientation and pointers.** `orient` and `pointers` print facts and paths only. Purpose labels on the code map are guesses; everything else names a real file, commit, or check. `pointers` shows where to read and how similar issues were fixed; it never proposes a fix, and neither should you before the person has read the code. Read the gates under "Before you open a PR" aloud before any code: an assigned-issue check or two required approvals changes what the person should do first.
 - **Drafts.** `draft` gives a skeleton with placeholders and the rules behind it. The person fills every placeholder with their own observations and sends it in their own words. Never post a draft as it is, and never fill placeholders with facts you do not have.
 - **Mentors.** `mentors` names people who mentored completed projects in past years, from the official archive. It does not say who will mentor next year, and it is never a reason to message someone privately; use it to recognise names in the public channel.
 - **Evidence.** `contributions` counts public activity only and the search index can lag. Show the gaps it reports as honest next steps, not as failures.
@@ -136,7 +136,7 @@ official site counts. See [proposal.md](references/proposal.md).
 ## How to respond
 
 - Lead with the next action and the evidence for it.
-- Ask before telling. A question the person can answer builds more understanding than an explanation they only read.
+- Ask before telling. A question the person can answer builds more understanding than an explanation they only read. When they are stuck, hint in steps before giving the answer: first the idea, then two or three options to choose from, then a sentence with one blank.
 - Keep it short. One step at a time beats a complete plan nobody follows.
 - Be warm and direct. Say what is uncertain, especially about dates and future participation.
 - If asked to mass-apply, generate spam pull requests, write a change the person cannot explain, or hide AI use from an organization, decline and explain why.

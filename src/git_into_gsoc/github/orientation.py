@@ -380,6 +380,115 @@ def policy_quotes(texts: dict[str, str], *, limit: int = 8) -> list[dict[str, st
     return quotes[:limit]
 
 
+_GATE_WORKFLOW_RE = re.compile(
+    r"contribut|pr[-_.]?(?:title|check|lint|label)|pull[-_]?request|semantic|"
+    r"linked[-_]?issue|issue[-_]?(?:link|check|ref)|assign|dco|cla\b|title",
+    re.I,
+)
+
+
+def rank_gate_workflows(paths: list[str], *, skip: list[str], limit: int = 3) -> list[str]:
+    """Workflow files that look like pull-request gates (title, issue link, assignment)."""
+    taken = set(skip)
+    return [
+        p
+        for p in sorted(paths)
+        if p not in taken and _GATE_WORKFLOW_RE.search(p.rsplit("/", 1)[-1])
+    ][:limit]
+
+
+def branch_gates(rules: list[dict[str, Any]], *, branch: str) -> list[dict[str, str]]:
+    """Plain-language gates from a branch's active ruleset rules, one per rule that
+    changes what a contributor has to do. Rules about deleting or force-pushing the
+    branch itself are left out: a contributor works on a fork."""
+    gates: list[dict[str, str]] = []
+    source = f"ruleset on {branch}"
+
+    def add(gate: str) -> None:
+        if gate not in (g["gate"] for g in gates):
+            gates.append({"gate": gate, "source": source})
+
+    for rule in rules:
+        kind = str(rule.get("type") or "")
+        params = rule.get("parameters") or {}
+        if kind == "required_signatures":
+            add("Commits must be signed (GPG or SSH); set up commit signing before you push")
+        elif kind == "required_linear_history":
+            add(f"Linear history: rebase on {branch} instead of merging it into your branch")
+        elif kind == "pull_request":
+            count = int(params.get("required_approving_review_count") or 0)
+            parts = []
+            if count:
+                parts.append(f"{count} approving review{'s' if count != 1 else ''}")
+            if params.get("require_code_owner_review"):
+                parts.append("including a code owner")
+            if parts:
+                text = "Needs " + " ".join(parts)
+                if params.get("dismiss_stale_reviews_on_push"):
+                    text += "; pushing new commits dismisses earlier approvals"
+                add(text)
+            if params.get("required_review_thread_resolution"):
+                add("Every review conversation must be resolved before merge")
+        elif kind == "required_status_checks":
+            checks = [
+                str(c.get("context"))
+                for c in params.get("required_status_checks") or []
+                if isinstance(c, dict) and c.get("context")
+            ]
+            if checks:
+                extra = len(checks) - 4
+                shown = ", ".join(checks[:4]) + (f" and {extra} more" if extra > 0 else "")
+                add(f"Required checks must pass: {shown}")
+            if params.get("strict_required_status_checks_policy"):
+                add(f"Your branch must be up to date with {branch} before it can merge")
+        elif kind == "merge_queue":
+            method = str(params.get("merge_method") or "").lower()
+            add("Merged through a merge queue" + (f" ({method})" if method else ""))
+        elif kind in {"commit_message_pattern", "commit_author_email_pattern"}:
+            what = "Commit messages" if kind == "commit_message_pattern" else "Commit author emails"
+            operator = str(params.get("operator") or "match").replace("_", " ")
+            pattern = str(params.get("pattern") or "")
+            label = str(params.get("name") or "").strip()
+            negate = "must not" if params.get("negate") else "must"
+            if pattern:
+                add(f"{what} {negate} {operator} `{pattern}`" + (f" ({label})" if label else ""))
+    return gates
+
+
+_ISSUE_GATE_RE = re.compile(
+    r"issue_assignee|issue_reference|linked[_ -]issue|check-linked-issues|"
+    r"require[sd]?[_ -]linked|must (?:reference|link) an issue",
+    re.I,
+)
+_TITLE_GATE_RE = re.compile(
+    r"action-semantic-pull-request|semantic[-_ ]pull[-_ ]request|pr[-_ ]title|"
+    r"conventional[-_ ]pr|commitlint.*title",
+    re.I,
+)
+
+
+def workflow_gates(workflows: dict[str, str]) -> list[dict[str, str]]:
+    """Pull-request gates that live in workflow files rather than in CONTRIBUTING."""
+    gates: list[dict[str, str]] = []
+    for path, text in workflows.items():
+        if not text:
+            continue
+        if _ISSUE_GATE_RE.search(text):
+            assignee = re.search(r"issue_assignee|assigned to", text, re.I)
+            closes = re.search(r"close_on|close[sd]?[_ ](?:the )?(?:pr|pull)", text, re.I)
+            gate = "Pull requests must reference an issue"
+            if assignee:
+                gate += " that is assigned to the author"
+            if closes:
+                gate += "; pull requests that do not are closed automatically"
+            gates.append({"gate": gate, "source": path})
+        if _TITLE_GATE_RE.search(text):
+            gates.append(
+                {"gate": "The pull request title is checked against a format", "source": path}
+            )
+    return gates
+
+
 def rank_workflows(paths: list[str], *, limit: int = 2) -> list[str]:
     """Workflow files most likely to run the test suite, best first."""
 
