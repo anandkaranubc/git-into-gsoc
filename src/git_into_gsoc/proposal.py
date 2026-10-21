@@ -63,6 +63,11 @@ GENERIC_PHRASES = (
     "tapestry",
     "as an ai",
     "as a language model",
+    "make the world a better place",
+    "fast learner",
+    "hard worker",
+    "hardworking",
+    "amazing community",
 )
 
 PLACEHOLDER_RE = re.compile(
@@ -92,6 +97,9 @@ _GITHUB_LINK_RE = re.compile(
 _HEADING_RE = re.compile(
     r"^(?:#{1,6}\s+(.+?)\s*#*$|\*\*([^*]{3,80})\*\*:?\s*$|([A-Z][^\n]{2,60}):\s*$)"
 )
+# A heading typed as its own short line, as in a Google Doc pasted into a file:
+# "Timeline", "2. About me". Only counts when it names a known section.
+_PLAIN_HEADING_RE = re.compile(r"^(?:\d{1,2}[.)]\s*)?([A-Z][A-Za-z&/'() -]{2,59})$")
 _WEEK_RE = re.compile(
     r"\b(?:week\s*\d+|weeks?\s*\d+\s*(?:-|to|\u2013)\s*\d+|w\d{1,2}\b|"
     r"(?:may|june|july|august|september|october)\s+\d{1,2})",
@@ -126,10 +134,17 @@ class LinkEvidence:
 
 def headings(text: str) -> list[str]:
     found: list[str] = []
+    keys = [k for group in SECTION_KEYWORDS.values() for k in group]
     for line in text.splitlines():
         match = _HEADING_RE.match(line.strip())
         if match:
             found.append(next(g for g in match.groups() if g).strip().lower())
+            continue
+        plain = _PLAIN_HEADING_RE.match(line.strip())
+        if plain and len(plain.group(1).split()) <= 6:
+            title = plain.group(1).strip().lower()
+            if any(k in title for k in keys):
+                found.append(title)
     return found
 
 
@@ -462,7 +477,8 @@ def check_proposal(
                 "length",
                 "warn",
                 f"Short draft ({words} words)",
-                "Most accepted proposals run 1,500 to 4,000 words.",
+                "There is no official length, but a timeline, deliverables, and links to "
+                "your work rarely fit in under 500 words. Follow the organization's template.",
             )
         )
     elif words > 6000:

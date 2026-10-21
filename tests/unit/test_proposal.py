@@ -167,3 +167,37 @@ def test_a_pr_described_as_merged_must_be_merged() -> None:
 def test_common_cover_letter_phrases_are_flagged() -> None:
     found = generic_phrases("I am a passionate and highly motivated student and a quick learner.")
     assert {"passionate and", "highly motivated", "quick learner"} <= set(found)
+
+
+def test_plain_line_headings_from_a_pasted_doc_count_as_sections() -> None:
+    # A simulated beginner pasted a Google Doc: headings were plain lines, so the
+    # checker said the timeline and about sections were missing.
+    text = (
+        "Synopsis\n"
+        "I will add keyboard navigation to the scheduler.\n\n"
+        "2. Timeline\n"
+        "Week 1: read the scheduler code.\n\n"
+        "About Me\n"
+        "I study computer science.\n"
+        "The timeline is tight but fine.\n"
+    )
+    sections = detect_sections(text)
+    assert sections["synopsis"] == "synopsis"
+    assert sections["timeline"] == "timeline"
+    assert sections["about"] == "about me"
+    # An ordinary sentence that mentions a section word is not a heading.
+    assert detect_sections("I will share a timeline later.")["timeline"] is None
+
+
+def test_common_filler_lines_are_flagged() -> None:
+    found = generic_phrases(
+        "I am a fast learner and a hard worker who wants to make the world a better place "
+        "with this amazing community."
+    )
+    assert {"fast learner", "hard worker", "make the world a better place"} <= set(found)
+    assert "amazing community" in found
+
+
+def test_short_draft_advice_cites_no_made_up_word_range() -> None:
+    finding = _by_id(check_proposal("Timeline\nWeek 1: start."))["length"]
+    assert "1,500" not in finding["detail"] and "no official length" in finding["detail"]
