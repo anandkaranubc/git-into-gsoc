@@ -20,6 +20,7 @@ from git_into_gsoc.github.repos import (
     pick_beginner_label,
     pull_stats,
 )
+from git_into_gsoc.github.search import build_issue_query
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import (
     Availability,
@@ -169,9 +170,16 @@ class GitHubClient:
         per_page: int = 20,
         sort: str = "updated",
     ) -> list[dict[str, Any]]:
+        """Issue search on GitHub's advanced engine; group repeated qualifiers with OR."""
         data = self._api(
             "search/issues",
-            params={"q": query, "per_page": per_page, "sort": sort, "order": "desc"},
+            params={
+                "q": query,
+                "per_page": per_page,
+                "sort": sort,
+                "order": "desc",
+                "advanced_search": "true",
+            },
         )
         return data.get("items", []) if isinstance(data, dict) else []
 
@@ -381,18 +389,23 @@ class GitHubClient:
             base.append(f"repo:{owner_name}/{repo_name}")
         since = (datetime.now(UTC) - timedelta(days=365)).date().isoformat()
         base.append(f"updated:>={since}")
-        for owner in dict.fromkeys(owners):
-            if len(" ".join(base)) + len(owner) + 5 > MAX_QUERY_CHARS - 30:
-                break
-            base.append(f"org:{owner}")
 
         wanted = max(1, min(max_results, 30))
-        items: list[dict[str, Any]] = []
-        for lab in [label] if label else ["good first issue", "help wanted"]:
-            query = " ".join([*base, f"label:{search_term(lab)}"])
-            items.extend(self.search_issues(query, per_page=min(100, wanted * 5)))
-            if len({i.get("id") for i in items}) >= wanted * 3:
-                break
+        labels = [label] if label else ["good first issue", "help wanted"]
+        # One request: the label group is OR-ed, repeated orgs are OR-ed, so GitHub's
+        # advanced search cannot AND them away. Results keep the preferred label first.
+        query = build_issue_query(base=base, labels=labels, orgs=list(dict.fromkeys(owners)))
+        items: list[dict[str, Any]] = self.search_issues(query, per_page=min(100, wanted * 5))
+        if labels[0] != "help wanted":
+            preferred = {labels[0].lower()}
+            items.sort(
+                key=lambda i: (
+                    not any(
+                        str((lab or {}).get("name", lab)).lower() in preferred
+                        for lab in i.get("labels") or []
+                    )
+                )
+            )
 
         seen: set[int] = set()
         prelim: list[IssueCandidate] = []
