@@ -43,7 +43,9 @@ from git_into_gsoc.github.pointers import (
     days_between,
     extract_mentions,
     fix_norm,
+    rank_similar,
     resolve_paths,
+    title_keywords,
 )
 from git_into_gsoc.github.prcheck import check_pull_request
 from git_into_gsoc.github.pulls import pull_request_status
@@ -1100,8 +1102,30 @@ class GSoCToolkit:
                 "Code search needs a GitHub token (run `gh auth login`); search links are "
                 "given instead."
             )
+        words = title_keywords(str(issue.get("title") or ""), exclude=(owner, repo))
+        if code_search and not resolved and not unresolved and words and self.github.token:
+            # Nothing in the issue names a file: search the code for its title words.
+            try:
+                hits = self.github.search_code(f"{' '.join(words)} repo:{full}", per_page=8)
+            except HttpError as exc:
+                hits, code_search_note = [], f"Code search stopped: {exc}"
+            paths = [str(h.get("path")) for h in hits if h.get("path")]
+            paths = [p for p in paths if not p.startswith(("node_modules/", "vendor/"))]
+            if paths:
+                searched.append({"identifier": " ".join(words), "paths": paths[:6]})
+            for path in paths[:3]:
+                resolved_paths.add(path)
+                resolved.append(
+                    {
+                        "path": path,
+                        "score": 0.5,
+                        "lines": [],
+                        "reasons": [f"code search for the title words: {', '.join(words)}"],
+                        "confidence": "title words",
+                    }
+                )
 
-        fixes, label, similar_note = self._similar_fixes(owner, repo, issue, limit=similar)
+        fixes, label, similar_note, shared = self._similar_fixes(owner, repo, issue, limit=similar)
         norm = fix_norm(fixes)
         search_links = [
             {
@@ -1129,6 +1153,7 @@ class GSoCToolkit:
             "similar_fixes": fixes,
             "similar_label": label,
             "similar_note": similar_note,
+            "similar_shares_title_words": shared,
             "fix_norm": norm,
             "next_step": (
                 "Open the files above and the fix PRs for similar issues before touching code. "
@@ -1140,8 +1165,9 @@ class GSoCToolkit:
 
     def _similar_fixes(
         self, owner: str, repo: str, issue: dict[str, Any], *, limit: int
-    ) -> tuple[list[dict[str, Any]], str | None, str]:
-        """Closed issues with the same beginner label, the PRs that closed them, and a note."""
+    ) -> tuple[list[dict[str, Any]], str | None, str, bool]:
+        """Closed issues with the same beginner label, the PRs that closed them, a note, and
+        whether they share title words with this issue (False: just the most recent)."""
         full = f"{owner}/{repo}"
         labels = self.github.list_labels(owner, repo)
         label = pick_beginner_label(labels)
@@ -1153,17 +1179,27 @@ class GSoCToolkit:
             ]
             label = own[0] if own else None
         if not label:
-            return [], None, "No beginner label found to look up similar closed issues."
+            return [], None, "No beginner label found to look up similar closed issues.", False
         query = f"repo:{full} is:issue is:closed label:{_quote_label(label)}"
         try:
-            items = self.github.search_issues(query, per_page=limit + 3)
+            items = self.github.search_issues(query, per_page=30)
         except HttpError as exc:
-            return [], label, f"Could not search similar issues: {exc}"
+            return [], label, f"Could not search similar issues: {exc}", False
         items = [
             i for i in items if "pull_request" not in i and i.get("number") != issue.get("number")
-        ][:limit]
+        ]
         if not items:
-            return [], label, f"No closed issues carry the '{label}' label yet."
+            return [], label, f"No closed issues carry the '{label}' label yet.", False
+        # Same label is not the same problem: prefer closed issues sharing title words.
+        items, shared = rank_similar(str(issue.get("title") or ""), items, limit=limit)
+        basis = (
+            ""
+            if shared
+            else (
+                f"None of the closed '{label}' issues share words with this title; "
+                "these are the most recent ones."
+            )
+        )
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
             timelines = list(
                 pool.map(
@@ -1199,12 +1235,13 @@ class GSoCToolkit:
                     "days_to_merge": days_between(closer.get("opened_at"), closer.get("merged_at")),
                 }
             )
+        kind = "similar" if shared else "recent"
         note = (
-            f"{len(fixes)} of {len(items)} similar closed issues had a traceable fix PR."
+            f"{len(fixes)} of {len(items)} {kind} closed issues had a traceable fix PR."
             if fixes
-            else f"{len(items)} similar closed issues found, but none closed by a traceable PR."
+            else f"{len(items)} {kind} closed issues found, but none closed by a traceable PR."
         )
-        return fixes, label, note
+        return fixes, label, f"{basis} {note}".strip(), shared
 
     # --------------------------------------------------------------- drafts
 

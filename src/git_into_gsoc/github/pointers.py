@@ -182,6 +182,120 @@ def resolve_paths(
     return ranked[:limit]
 
 
+# Words that say little about where in the code an issue lives.
+_TITLE_FILLER = {
+    "a",
+    "add",
+    "adds",
+    "after",
+    "all",
+    "an",
+    "and",
+    "are",
+    "as",
+    "be",
+    "bug",
+    "but",
+    "by",
+    "can",
+    "cannot",
+    "do",
+    "does",
+    "doesn",
+    "for",
+    "from",
+    "get",
+    "has",
+    "have",
+    "how",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "join",
+    "make",
+    "missing",
+    "more",
+    "new",
+    "no",
+    "not",
+    "of",
+    "on",
+    "one",
+    "or",
+    "out",
+    "should",
+    "some",
+    "support",
+    "that",
+    "the",
+    "this",
+    "to",
+    "two",
+    "up",
+    "use",
+    "using",
+    "when",
+    "while",
+    "with",
+    "fix",
+    "fixes",
+    "methods",
+    "method",
+    "update",
+    "improve",
+    "allow",
+    "option",
+    "version",
+    "work",
+    "works",
+    "find",
+    "bugs",
+    "crash",
+    "crashes",
+    "wrong",
+    "broken",
+    "fails",
+    "failing",
+    "incorrect",
+    "error",
+    "errors",
+    "issue",
+    "issues",
+    "rewrite",
+    "system",
+}
+
+
+def title_keywords(title: str, *, limit: int = 2, exclude: tuple[str, ...] = ()) -> list[str]:
+    """The most distinctive words of an issue title, for a code search when no file is named.
+
+    Longer words first: "assumption" says more about where to look than "find".
+    """
+    skip = _TITLE_FILLER | _STOP_WORDS | {e.lower() for e in exclude}
+    words = re.findall(r"[a-z][a-z0-9_]+", (title or "").lower())
+    picked = list(dict.fromkeys(w for w in words if len(w) >= 4 and w not in skip))
+    return sorted(picked, key=lambda w: -len(w))[:limit]
+
+
+def rank_similar(
+    title: str, items: list[dict[str, Any]], *, limit: int
+) -> tuple[list[dict[str, Any]], bool]:
+    """Closed issues sharing the most title words first; False when none share any."""
+    wanted = set(title_keywords(title, limit=6))
+
+    def shared(item: dict[str, Any]) -> int:
+        return len(wanted & set(title_keywords(str(item.get("title") or ""), limit=6)))
+
+    scored = [(shared(item), index, item) for index, item in enumerate(items)]
+    if not any(score for score, _, _ in scored):
+        return items[:limit], False
+    scored.sort(key=lambda s: (-s[0], s[1]))
+    return [item for _, _, item in scored[:limit]], True
+
+
 def _dt(value: Any) -> datetime | None:
     if not value:
         return None

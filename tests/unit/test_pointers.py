@@ -138,3 +138,30 @@ def test_fix_norm_counts_common_test_folders() -> None:
     ]
     norm = fix_norm(fixes)
     assert norm["touches_tests_pct"] == 67  # autotest and .spec.ts count; "latest" does not
+
+
+def test_title_keywords_pick_distinctive_words() -> None:
+    from git_into_gsoc.github.pointers import title_keywords
+
+    assert title_keywords("Two undo/redo methods do not join up") == ["undo", "redo"]
+    assert title_keywords("Add version to Docs site") == ["docs", "site"]
+    assert title_keywords("Fix it") == []
+    # sympy/sympy#30671: "find, bugs" searched README and a Fortran parser.
+    title = "Find bugs in the rewrite of SymPy's assumption system"
+    assert title_keywords(title, exclude=("sympy", "sympy")) == ["assumption"]
+
+
+def test_rank_similar_prefers_shared_words_and_says_when_none_are_shared() -> None:
+    from git_into_gsoc.github.pointers import rank_similar
+
+    items = [
+        {"number": 1, "title": "Add version to Docs site"},
+        {"number": 2, "title": "Redo button greyed out after undo"},
+        {"number": 3, "title": "Configurable OAuth frontend URL"},
+    ]
+    ranked, shared = rank_similar("Two undo/redo methods do not join up", items, limit=2)
+    assert shared is True
+    assert ranked[0]["number"] == 2
+    unrelated, shared = rank_similar("Translate to Farsi", items, limit=2)
+    assert shared is False
+    assert [i["number"] for i in unrelated] == [1, 2]  # newest first, as GitHub sent them

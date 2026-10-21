@@ -963,7 +963,8 @@ def pointers_cmd(
     if data["code_search_note"]:
         console.print(f"[dim]{escape(data['code_search_note'])}[/dim]")
     if data["similar_fixes"]:
-        table = Table(title=f"How similar '{data['similar_label']}' issues were fixed here")
+        kind = "similar" if data.get("similar_shares_title_words") else "recent"
+        table = Table(title=f"How {kind} '{data['similar_label']}' issues were fixed here")
         table.add_column("Issue", overflow="fold")
         table.add_column("Fix PR")
         table.add_column("Files", justify="right")
