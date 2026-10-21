@@ -3,7 +3,7 @@
 New here? Follow the [beginner guide](README.md) first. Run these commands in your activated environment. `gsoc` is a shorter alias for `git-into-gsoc`.
 
 ```bash
-git-into-gsoc --help
+git-into-gsoc --help          # commands grouped by journey step
 git-into-gsoc issues --help
 git-into-gsoc --version
 git-into-gsoc --install-completion     # tab completion for your shell
@@ -129,7 +129,7 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 | Command | Purpose |
 |---|---|
 | `setup` | Copy the Agent Skill and register the MCP server with your assistants (see below) |
-| `doctor` | Version, Python, cache and data paths, GitHub token source, remaining API requests, skill source, which assistants have the skill, and where the MCP server is registered |
+| `doctor` | Version, Python, cache and data paths, GitHub token source, remaining API requests, whether each data source (official site, organization archive, commit statistics) answers, skill source, which assistants have the skill, and where the MCP server is registered |
 | `cache` | Size of the HTTP cache; `cache --clear` deletes it |
 | `mcp` | Start the MCP server on stdio; it waits for a client until stopped |
 

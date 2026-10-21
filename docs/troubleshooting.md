@@ -59,7 +59,7 @@ Also remove a token stored in `.env` if you want to stop using it. Restart the a
 
 Check spelling. A repository argument looks like `sympy/sympy` or a GitHub URL. `issues --org` takes a GitHub login; `repos` and `org` take the GSoC organization name or a GitHub login. Private or deleted repositories also return 404. `issue` refuses pull-request numbers and tells you so.
 
-For organization searches, try a broader `--query` or fewer technologies. The tool cannot discover future participants before Google announces them; until then it shows the latest official list and says so. If the official site and the archive are both unavailable, the error names the source; use the [official GSoC directory](https://summerofcode.withgoogle.com) and retry later.
+Run `git-into-gsoc doctor` first: it reports whether the official site, the organization archive, and the commit statistics service answer, so you know which source is down. For organization searches, try a broader `--query` or fewer technologies. The tool cannot discover future participants before Google announces them; until then it shows the latest official list and says so. If the official site and the archive are both unavailable, the error names the source; use the [official GSoC directory](https://summerofcode.withgoogle.com) and retry later.
 
 An empty issue search does not mean the project has no useful work. Try `--label` with the repository's own beginner label (shown by `repo`), `--scope all`, or browse the issue tracker and contribution guide. See [how to choose an issue](guide/05-choose-an-issue.md).
 
