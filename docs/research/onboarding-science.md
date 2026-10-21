@@ -19,7 +19,7 @@ Research stream for git-into-gsoc. Written 2026-10-20. Every claim about a paper
 7. **Our journey order is wrong in one important place:** community contact comes *before* finding issues in every authoritative source (GSoC guide "lurk first, ask questions before offering opinions", Outreachy "All applicants need to be the first one to reach out to mentors", Google "TALK TO THE ORG!", Steinmacher's FLOSScoach flow). We also lack an "orient" phase (environment + code reading), an "iterate" phase (respond to review; second contribution), an explicit "ask a good question" skill, and a post-decision phase.
 8. **A weekly log should copy python-gsoc's three questions** ("What did you do this week? What is coming up next? Did you get stuck anywhere?") plus links, and feed the proposal's "about you / prior contributions" and the mandatory GSoC final work product (whose required contents Google lists). Weekly, not daily streaks: streak research says rigid streaks cause guilt and abandonment, and Outreachy caps blogging at "1-3 hours". ([python-gsoc.org](https://python-gsoc.org/blogs.html), [GSoC work product](https://developers.google.com/open-source/gsoc/help/work-product), [Outreachy internship docs](https://www.outreachy.org/docs/internship/))
 9. **Templates should be grounded in maintainers' words**, which converge on: say what you tried, be specific, one claim comment with a plan, small PRs with tests and a what/why description, reply to every review comment, never DM/LinkedIn mentors. Details and sources in section 6.
-10. **Present ethics as the reviewer's inbox, not a sermon**: show the ratio (stdlib: 1,000+ PRs from 100+ people for 4 slots), quote the org's own consequence ("It will be caught... will either be ignored or closed" , SymPy), and make the evidence-bearing path the default template.
+10. **Present ethics as the reviewer's inbox, not a sermon**: show the ratio (stdlib: 1,000+ PRs from 100+ people for 4 slots), quote the org's own consequence ("It will be caught... will either be ignored or closed", SymPy), and make the evidence-bearing path the default template.
 
 ---
 
@@ -85,7 +85,7 @@ The 15 recommendations (verbatim titles):
 
 ### 1.4 What integrators accept, and why PRs die
 
-**Gousios et al., integrator perspective (ICSE 2015; 749 integrators), via Colyer's summary:** acceptance driven by quality (style, documentation, granularity, convention compliance), project fit, timeliness, tests/CI. Rejection reasons: technical quality 85%, test failures 55%, not following project conventions 48%. Prioritisation: urgency, type (bug fixes first), feature status, size/complexity, age. Integrator quotes: "well written commit messages; one commit about a single subsystem , each commit compiles separately"; "Performance related changes require test data or a test case"; challenge: "Telling people that something is wrong without hurting their feelings". ([acolyer summary](https://blog.acolyer.org/2015/06/23/work-practices-and-challenges-in-pull-based-development/)) Large replication (3.3M PRs, 11,230 projects): whether the integrator is the submitter is the top factor; CI failed-build percentage matters when CI is used. ([Zhang, Yu, Gousios, Rastogi 2021](https://arxiv.org/pdf/2105.13970.pdf))
+**Gousios et al., integrator perspective (ICSE 2015; 749 integrators), via Colyer's summary:** acceptance driven by quality (style, documentation, granularity, convention compliance), project fit, timeliness, tests/CI. Rejection reasons: technical quality 85%, test failures 55%, not following project conventions 48%. Prioritisation: urgency, type (bug fixes first), feature status, size/complexity, age. Integrator quotes: "well written commit messages; one commit about a single subsystem, each commit compiles separately"; "Performance related changes require test data or a test case"; challenge: "Telling people that something is wrong without hurting their feelings". ([acolyer summary](https://blog.acolyer.org/2015/06/23/work-practices-and-challenges-in-pull-based-development/)) Large replication (3.3M PRs, 11,230 projects): whether the integrator is the submitter is the top factor; CI failed-build percentage matters when CI is used. ([Zhang, Yu, Gousios, Rastogi 2021](https://arxiv.org/pdf/2105.13970.pdf))
 
 **Steinmacher, Pinto, Wiese, Gerosa, "Almost There" (ICSE 2018):** 21 projects; 10,099 quasi-contributors (~70% as many as actual contributors) with 12,367 unmerged PRs; 85% tried exactly once. Reasons given by quasi-contributors (mentions / % who disagreed with the decision): superseded/duplicated 52 (13%), mismatch of vision 45 (60%), PR not needed 37 (22%), lack of integrator interest 25 (72%), not optimal solution 24 (8%), lack of experience/commitment 20, side effects 12, lack of tests 11, incomplete 10, WIP 7, obsolete 6. 67.4% agreed with the non-acceptance; 88.8% found comments constructive; 30.3% were demotivated. Observations: "No tests, no fun" (Bootstrap closes test-less PRs "no questions asked"); "Typos are sometimes hard to fix" (a one-comma PR rejected; integrators call such PRs "noisy"); "The fast development cycle hinders external contributions" (a PR obsolete within days); some rejected PRs were re-implemented by integrators. Advice to newcomers: "work closely with integrators, and, when necessary, stand and argue for their contributions... investigate whether there are existing pull-requests proposing the same contribution... back up their contributions with tests... make sure that their contributions do not introduce side effects." ([PDF](https://www.ime.usp.br/~gerosa/papers/icse2018-Pinto.pdf))
 
@@ -172,7 +172,7 @@ Org-level AI policies seen: SW360 bans AI for the idea, allows formatting ([ecli
 
 ### 4.6 Contributor ladders (CNCF, Apache)
 - [cncf/project-template CONTRIBUTOR_LADDER.md](https://github.com/cncf/project-template) (Apache-2.0, 82 stars, pushed 2026-08-11): roles Community Participant → Contributor → Organization Member → Reviewer → Maintainer, each with Responsibilities / Requirements / Privileges; "Contributions need not be code"; Contributor requirements include "Answer questions from other community members", "Test releases and patches and submit reviews", "Show up at meetings, takes notes".
-- [cncf/mentoring](https://github.com/cncf/mentoring) (Apache-2.0, 3,123 stars, pushed 2026-10-19): mentors/mentees guidance; stats: 2025 LFX 176 mentorships vs GSoC 11 , the CNCF now runs far more mentorships through LFX than GSoC (useful "alternative path" datum for users).
+- [cncf/mentoring](https://github.com/cncf/mentoring) (Apache-2.0, 3,123 stars, pushed 2026-10-19): mentors/mentees guidance; stats: 2025 LFX 176 mentorships vs GSoC 11, the CNCF now runs far more mentorships through LFX than GSoC (useful "alternative path" datum for users).
 - Apache: ladder user → developer → committer → PMC member; "A committer is a developer who has write access"; "how people respond [to your intro] can be a good indicator of how welcoming the project is"; non-code contributors get "the same rights and privileges". ([how it works](https://www.apache.org/foundation/how-it-works/), [community.apache.org](https://community.apache.org/contributors/))
 - Borrow: show the user the project's ladder (if `CONTRIBUTOR_LADDER.md`/`GOVERNANCE.md`/`MAINTAINERS` exist) and frame GSoC as a rung, not the goal; count non-code acts (triage, review, answering) as evidence in the ledger.
 
@@ -242,12 +242,12 @@ Proposed sequence (10 phases, with the 4-phase beginner view in bold):
 
 Fields (one entry per ISO week; all optional except the three python-gsoc questions):
 - `week` (auto), `hours` (int; feeds project-size realism against 90/175/350 h sizes), `goal_set_last_week` (carried over).
-- `did` , "What did you do this week?" with links (PRs, issues, comments, chat threads). Links are validated against GitHub and tagged by type using the All-Contributors taxonomy.
-- `next` , "What is coming up next?" (becomes next week's goal).
-- `stuck` , "Did you get stuck anywhere?" plus `tried` (what you tried) and `asked_where` (channel/issue URL, date; response received y/n and after how long). This captures Outreachy's "asked for help in a timely manner" and Tan's "no response" metric for the user's own experience.
-- `learned` , one sentence (feeds the final report's "challenges or important things you learned").
+- `did`, "What did you do this week?" with links (PRs, issues, comments, chat threads). Links are validated against GitHub and tagged by type using the All-Contributors taxonomy.
+- `next`, "What is coming up next?" (becomes next week's goal).
+- `stuck`, "Did you get stuck anywhere?" plus `tried` (what you tried) and `asked_where` (channel/issue URL, date; response received y/n and after how long). This captures Outreachy's "asked for help in a timely manner" and Tan's "no response" metric for the user's own experience.
+- `learned`, one sentence (feeds the final report's "challenges or important things you learned").
 - `public_interactions` (auto-derived count of comments/reviews by the user's GitHub login in tracked repos).
-- `confidence` 1-5 ("can I explain my last change without notes?") , mirrors our "Author can walk through the change on a voice call" bar.
+- `confidence` 1-5 ("can I explain my last change without notes?"), mirrors our "Author can walk through the change on a voice call" bar.
 
 Cadence and tone: weekly; a missed week can be back-filled with no penalty (streak repair); the CLI shows "weeks with a public interaction" rather than a streak. Cap guidance: "15 minutes; Outreachy says blogging should not take priority over the work."
 
@@ -275,7 +275,7 @@ I'm looking at <issue URL>; before I start, <one specific question>.
 ```
 Rules shown next to it: public channel only (GSoC: "Never private-message someone you don't know"); no "hello" alone ([nohello.net](https://nohello.net/en/)); no "any experts around?" ([dontasktoask.com](https://dontasktoask.com/)).
 
-**Ask a good question.** Synthesised from ESR's FAQ sections (Before You Ask; Describe the research you did; Describe the problem's symptoms, not your guesses; Describe the goal, not the step; Volume is not precision; Be explicit about your question; Follow up with a brief note on the solution , [catb.org](http://www.catb.org/~esr/faqs/smart-questions.html)), the XY problem ("Always include information about a broader picture along with any attempted solution" , [xyproblem.info](https://xyproblem.info/)), Steinmacher's core-member quote, and Outreachy's timing rule:
+**Ask a good question.** Synthesised from ESR's FAQ sections (Before You Ask; Describe the research you did; Describe the problem's symptoms, not your guesses; Describe the goal, not the step; Volume is not precision; Be explicit about your question; Follow up with a brief note on the solution, [catb.org](http://www.catb.org/~esr/faqs/smart-questions.html)), the XY problem ("Always include information about a broader picture along with any attempted solution", [xyproblem.info](https://xyproblem.info/)), Steinmacher's core-member quote, and Outreachy's timing rule:
 ```
 Goal: <what I am trying to achieve, not the step I am stuck on>
 What happens: <exact error / observed behaviour, trimmed, no private data>
@@ -294,7 +294,7 @@ Plan: <1-2 lines>. I expect a PR by <date>. If someone is already on it, tell me
 ```
 One comment, after reading the thread and checking `-linked:pr`; if no reply within the project's norm (pandas: 2-3 weeks of inactivity before takeover), start anyway on a fork and open a draft PR, since Joplin/Kubernetes-style projects judge the work, not the claim.
 
-**Write a good PR description.** From Google's CL guide ("A CL description is a public record of change"; first line "short, focused, and to the point", imperative; body says what and why, "If there are any shortcomings to the approach, they should be mentioned"; "Fix bug" is inadequate , [eng-practices](https://google.github.io/eng-practices/review/developer/cl-descriptions.html)), Gousios (quality, conventions, tests), ICSE 2018 (check duplicates, tests, side effects), Jenkins ("Clearly explain what you intended to do in your PR and request guidance"):
+**Write a good PR description.** From Google's CL guide ("A CL description is a public record of change"; first line "short, focused, and to the point", imperative; body says what and why, "If there are any shortcomings to the approach, they should be mentioned"; "Fix bug" is inadequate, [eng-practices](https://google.github.io/eng-practices/review/developer/cl-descriptions.html)), Gousios (quality, conventions, tests), ICSE 2018 (check duplicates, tests, side effects), Jenkins ("Clearly explain what you intended to do in your PR and request guidance"):
 ```
 Title: <imperative, < 70 chars, matches project subject conventions>
 Problem: <what was broken/confusing>; Fixes #<issue>
@@ -327,7 +327,7 @@ Size rule shown with the evidence: fewer added lines, few files, one logical cha
 - Prior public engagement before the application period (Google, stdlib, mentor blog, ICSME 2017: 23% contributed before acceptance).
 - Small bug fixes / GFIs, few lines, few files, tests, conventions (Turzo 2025, Gousios, ICSE 2018).
 - Prompt, public, specific communication; reply to every review comment (R14/R15, Tan 2023, GSoC guide).
-- Less popular projects retain newcomers better (Zhou & Mockus; Tan 2023) , "prestige" is the wrong filter.
+- Less popular projects retain newcomers better (Zhou & Mockus; Tan 2023), "prestige" is the wrong filter.
 
 ### 7.3 Pitfalls to avoid
 - Counting PRs or encouraging claim comments as activity (Hacktoberfest 2026; stdlib).
