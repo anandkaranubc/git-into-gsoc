@@ -292,6 +292,26 @@ def gsoc_issue_status(ref: str, number: int = 0) -> str:
     return _dump(toolkit().issue_status(ref, number or None))
 
 
+@mcp.tool()
+def gsoc_issue_pointers(
+    ref: str, number: int = 0, similar: int = 5, code_search: bool = True
+) -> str:
+    """Where to start reading the code for one issue, as evidence only (never a fix): files the
+    issue text names (blob links, stack frames, paths, identifiers) resolved against the real
+    tree with a confidence label; GitHub code search hits for unresolved identifiers (needs a
+    token; otherwise ready-made search links); closed issues with the same beginner label and
+    the pull requests that closed them with the files they touched; and the repository's fix
+    norm (median files per fix, how often tests and docs are touched). Use after
+    gsoc_issue_status says the issue is available and before the contributor comments a plan.
+    ref: "owner/repo#123", an issue URL, or "owner/repo" + number.
+    """
+    return _dump(
+        toolkit().issue_pointers(ref, number or None, similar=similar, code_search=code_search)
+    )
+
+
+@mcp.tool()
+@mcp.tool(annotations=LOCAL_WRITE, structured_output=False)
 @mcp.tool(title="Personalized starting path", annotations=LOCAL_WRITE, structured_output=False)
 @guarded
 def gsoc_recommend_path(

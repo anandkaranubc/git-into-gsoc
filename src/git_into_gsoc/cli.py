@@ -686,6 +686,84 @@ def profile_cmd(
     console.print(Panel(Text("\n".join(lines)), title="Your profile"))
 
 
+@app.command("pointers")
+def pointers_cmd(
+    ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
+    number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
+    similar: int = typer.Option(
+        5, "--similar", help="How many similar closed issues to learn from"
+    ),
+    no_search: bool = typer.Option(False, "--no-search", help="Skip GitHub code search"),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Where to start reading for an issue: files it names, past fixes of similar issues."""
+    data = _toolkit().issue_pointers(ref, number, similar=similar, code_search=not no_search)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    issue = data["issue"]
+    console.print(
+        Panel(
+            Text.from_markup(
+                f"[bold]{escape(issue['title'])}[/bold]\n{issue['url']}\n"
+                f"[dim]As of commit {(data.get('as_of_commit') or '')[:10]}[/dim]"
+            ),
+            title=f"{issue['repo']}#{issue['number']}",
+        )
+    )
+    if data["files_likely_involved"]:
+        table = Table(title="Files the issue points at")
+        table.add_column("Confidence")
+        table.add_column("Path", overflow="fold")
+        table.add_column("Lines")
+        table.add_column("Because", overflow="fold")
+        for row in data["files_likely_involved"]:
+            table.add_row(
+                row["confidence"],
+                row["path"],
+                ", ".join(str(n) for n in row["lines"]),
+                "; ".join(escape(r) for r in row["reasons"][:3]),
+            )
+        console.print(table)
+    else:
+        console.print(
+            "[yellow]The issue text names no file this tool could match in the tree.[/yellow]"
+        )
+    if data["search_links"]:
+        console.print("\n[bold]Search these on GitHub[/bold]")
+        for link in data["search_links"]:
+            console.print(f"  {escape(link['identifier'])}: {link['url']}")
+    if data["code_search_note"]:
+        console.print(f"[dim]{escape(data['code_search_note'])}[/dim]")
+    if data["similar_fixes"]:
+        table = Table(title=f"How similar '{data['similar_label']}' issues were fixed here")
+        table.add_column("Issue", overflow="fold")
+        table.add_column("Fix PR")
+        table.add_column("Files", justify="right")
+        table.add_column("Days")
+        table.add_column("Touched", overflow="fold")
+        for fix in data["similar_fixes"]:
+            pr = fix["pull_request"]
+            table.add_row(
+                f"#{fix['issue']['number']} {escape(fix['issue']['title'][:50])}",
+                f"#{pr['number']} ({pr['confidence']})",
+                str(len(fix["files"])),
+                str(fix["days_to_merge"] if fix["days_to_merge"] is not None else ""),
+                ", ".join(escape(p) for p in fix["files"][:4]),
+            )
+        console.print(table)
+    if not data["similar_fixes"] and data.get("similar_note"):
+        console.print(f"[dim]{escape(data['similar_note'])}[/dim]")
+    norm = data["fix_norm"]
+    if norm.get("sample"):
+        console.print(
+            f"Fix norm here: median {norm['median_files']} file(s) per fix, "
+            f"{norm['touches_tests_pct']}% touch tests, {norm['touches_docs_pct']}% touch docs "
+            f"(from {norm['sample']} fixes)."
+        )
+    console.print(f"\n[dim]{escape(data['next_step'])}[/dim]")
+
+
 @app.command("recommend")
 def recommend_cmd(
     github: str | None = typer.Option(

@@ -8,7 +8,7 @@ from typing import Any
 
 from git_into_gsoc.coach import plan_actions, upcoming_deadlines
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
-from git_into_gsoc.errors import GigError
+from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
     active_committers,
@@ -24,11 +24,19 @@ from git_into_gsoc.github.orientation import (
     reading_plan,
     since_iso,
 )
+from git_into_gsoc.github.pointers import (
+    closing_pull_request,
+    days_between,
+    extract_mentions,
+    fix_norm,
+    resolve_paths,
+)
 from git_into_gsoc.github.repos import (
     OUTSIDER_ROLES,
     channels_in,
     is_bot,
     mentioned_repos,
+    pick_beginner_label,
     repo_lead_score,
 )
 from git_into_gsoc.gsoc.client import GSoCClient
@@ -689,6 +697,174 @@ class GSoCToolkit:
                     ),
                 }
         return None
+
+    # ------------------------------------------------------------- pointers
+
+    def issue_pointers(
+        self,
+        ref: str,
+        number: int | None = None,
+        *,
+        similar: int = 5,
+        code_search: bool = True,
+    ) -> dict[str, Any]:
+        """Where to start reading for one issue: resolved paths, past fixes, fix norms."""
+        owner, repo, num = parse_issue_ref(ref, number)
+        full = f"{owner}/{repo}"
+        issue = self.github.get_issue(owner, repo, num)
+        if "pull_request" in issue:
+            raise InputError(
+                f"{full}#{num} is a pull request, not an issue",
+                hint="Pass the issue number the PR addresses.",
+            )
+        raw = self.github.get_repo(owner, repo)
+        branch = str(raw.get("default_branch") or "HEAD")
+        tree = self.github.git_tree(owner, repo, branch)
+        tree_paths = [str(e.get("path")) for e in tree.get("tree") or [] if e.get("type") == "blob"]
+        text = f"{issue.get('title') or ''}\n{issue.get('body') or ''}"
+        mentions = extract_mentions(text, repo=full)
+        resolved = resolve_paths(mentions, tree_paths)
+        resolved_paths = {r["path"] for r in resolved}
+
+        searched: list[dict[str, Any]] = []
+        unresolved = [
+            m["text"]
+            for m in mentions
+            if m["kind"] in {"identifier", "backtick"} and m["text"] not in resolved_paths
+        ][:4]
+        code_search_note = ""
+        if code_search and unresolved and self.github.token:
+            for ident in unresolved[:2]:
+                try:
+                    hits = self.github.search_code(f'"{ident}" repo:{full}', per_page=8)
+                except HttpError as exc:
+                    code_search_note = f"Code search stopped: {exc}"
+                    break
+                paths = [str(h.get("path")) for h in hits if h.get("path")]
+                paths = [p for p in paths if not p.startswith(("node_modules/", "vendor/"))]
+                searched.append({"identifier": ident, "paths": paths[:6]})
+                for path in paths[:3]:
+                    if path not in resolved_paths:
+                        resolved_paths.add(path)
+                        resolved.append(
+                            {
+                                "path": path,
+                                "score": 1.0,
+                                "lines": [],
+                                "reasons": [f"code search: {ident}"],
+                                "confidence": "code search",
+                            }
+                        )
+        elif code_search and unresolved and not self.github.token:
+            code_search_note = (
+                "Code search needs a GitHub token (run `gh auth login`); search links are "
+                "given instead."
+            )
+
+        fixes, label, similar_note = self._similar_fixes(owner, repo, issue, limit=similar)
+        norm = fix_norm(fixes)
+        search_links = [
+            {
+                "identifier": ident,
+                "url": f"https://github.com/search?type=code&q=repo%3A{owner}%2F{repo}+%22{ident}%22",
+            }
+            for ident in unresolved
+            if not any(s["identifier"] == ident for s in searched)
+        ]
+        return {
+            "issue": {
+                "repo": full,
+                "number": num,
+                "title": str(issue.get("title") or ""),
+                "url": issue.get("html_url") or f"https://github.com/{full}/issues/{num}",
+                "labels": [
+                    lab.get("name") for lab in issue.get("labels") or [] if isinstance(lab, dict)
+                ],
+            },
+            "as_of_commit": tree.get("sha"),
+            "files_likely_involved": resolved[:8],
+            "code_search": searched,
+            "search_links": search_links[:4],
+            "code_search_note": code_search_note,
+            "similar_fixes": fixes,
+            "similar_label": label,
+            "similar_note": similar_note,
+            "fix_norm": norm,
+            "next_step": (
+                "Open the files above and the fix PRs for similar issues before touching code. "
+                "If no file resolved, the issue needs clarification: ask in the thread what "
+                "part of the code it concerns."
+            ),
+            "note": "Pointers are places to read, not a diagnosis. The fix is yours to work out.",
+        }
+
+    def _similar_fixes(
+        self, owner: str, repo: str, issue: dict[str, Any], *, limit: int
+    ) -> tuple[list[dict[str, Any]], str | None, str]:
+        """Closed issues with the same beginner label, the PRs that closed them, and a note."""
+        full = f"{owner}/{repo}"
+        labels = self.github.list_labels(owner, repo)
+        label = pick_beginner_label(labels)
+        if not label:
+            own = [
+                str(lab.get("name"))
+                for lab in issue.get("labels") or []
+                if isinstance(lab, dict) and lab.get("name")
+            ]
+            label = own[0] if own else None
+        if not label:
+            return [], None, "No beginner label found to look up similar closed issues."
+        query = f"repo:{full} is:issue is:closed label:{_quote_label(label)}"
+        try:
+            items = self.github.search_issues(query, per_page=limit + 3)
+        except HttpError as exc:
+            return [], label, f"Could not search similar issues: {exc}"
+        items = [
+            i for i in items if "pull_request" not in i and i.get("number") != issue.get("number")
+        ][:limit]
+        if not items:
+            return [], label, f"No closed issues carry the '{label}' label yet."
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            timelines = list(
+                pool.map(
+                    lambda i: self.github.get_issue_timeline(owner, repo, int(i["number"])), items
+                )
+            )
+        closers = [
+            closing_pull_request(i, t or [], repo=full)
+            for i, t in zip(items, timelines, strict=True)
+        ]
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            files = list(
+                pool.map(
+                    lambda c: self.github.list_pull_files(owner, repo, c["number"]) if c else [],
+                    closers,
+                )
+            )
+        fixes = []
+        for item, closer, changed in zip(items, closers, files, strict=True):
+            if not closer:
+                continue
+            fixes.append(
+                {
+                    "issue": {
+                        "number": int(item["number"]),
+                        "title": str(item.get("title") or "")[:120],
+                        "url": item.get("html_url"),
+                    },
+                    "pull_request": closer,
+                    "files": [str(f.get("filename")) for f in changed[:12]],
+                    "additions": sum(int(f.get("additions") or 0) for f in changed),
+                    "deletions": sum(int(f.get("deletions") or 0) for f in changed),
+                    "days_to_merge": days_between(closer.get("opened_at"), closer.get("merged_at")),
+                }
+            )
+        note = (
+            f"{len(fixes)} of {len(items)} similar closed issues had a traceable fix PR."
+            if fixes
+            else f"{len(items)} similar closed issues found, but none closed by a traceable PR."
+        )
+        return fixes, label, note
 
     # ------------------------------------------------------------ project ideas
 
