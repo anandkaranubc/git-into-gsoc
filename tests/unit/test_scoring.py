@@ -23,7 +23,7 @@ def test_repo_health_rewards_active_welcoming_projects() -> None:
         merge_rate=0.7,
         outsider_prs_sampled=12,
         outsider_merge_rate=0.6,
-        newcomers_merged=3,
+        outside_authors_merged=3,
         median_pr_hours=24,
         license="MIT",
     )
@@ -45,6 +45,21 @@ def test_repo_health_warns_when_outsiders_rarely_merged() -> None:
     )
     scored = score_repo_health(health)
     assert any("Rarely merges" in w for w in scored.warnings)
+
+
+def test_repo_health_does_not_score_tiny_outsider_samples_or_stars() -> None:
+    few = RepoHealth(
+        full_name="acme/small",
+        url="https://github.com/acme/small",
+        pushed_at=datetime.now(UTC) - timedelta(days=3),
+        stars=5000,
+        outsider_prs_sampled=4,
+        outsider_merge_rate=0.0,
+    )
+    scored = score_repo_health(few)
+    assert not any("Rarely merges" in w for w in scored.warnings)
+    assert any("too few to score" in s for s in scored.signals)
+    assert not any("star" in s.lower() for s in scored.signals)
 
 
 def test_repo_health_zeros_archived() -> None:

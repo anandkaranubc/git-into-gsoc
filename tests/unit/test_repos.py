@@ -50,7 +50,7 @@ def test_pull_stats_ignore_bots_and_split_outsiders() -> None:
     assert stats.merge_rate == 0.5
     assert stats.outsider_sampled == 3
     assert round(stats.outsider_merge_rate or 0, 2) == 0.33
-    assert stats.newcomers_merged == 1
+    assert stats.outside_authors_merged == 1  # alice; bob and carol were not merged
     assert stats.median_hours == 25
 
 

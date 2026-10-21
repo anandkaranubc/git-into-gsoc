@@ -315,7 +315,7 @@ class GitHubClient:
             median_pr_hours=stats.median_hours,
             outsider_prs_sampled=stats.outsider_sampled,
             outsider_merge_rate=stats.outsider_merge_rate,
-            newcomers_merged=stats.newcomers_merged,
+            outside_authors_merged=stats.outside_authors_merged,
             beginner_label=label,
             open_beginner_issues=open_beginner,
         )

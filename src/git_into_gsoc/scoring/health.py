@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+from git_into_gsoc.github.repos import MIN_OUTSIDER_SAMPLE
 from git_into_gsoc.models import RepoHealth
 
 
@@ -20,7 +21,10 @@ def _grade(score: float) -> str:
 
 
 def score_repo_health(health: RepoHealth) -> RepoHealth:
-    """Weights sum to 100. Outsider merge rate is the strongest newcomer signal."""
+    """Weights sum to 100. Outsider merge rate is the strongest newcomer signal.
+
+    Stars add nothing: larger projects reject a higher share of newcomer PRs.
+    """
     score = 0.0
     signals: list[str] = []
     warnings: list[str] = []
@@ -80,28 +84,41 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         else:
             warnings.append(f"Low merge rate ({health.merge_rate:.0%})")
 
-    if health.outsider_merge_rate is not None and health.outsider_prs_sampled >= 3:
-        rate = health.outsider_merge_rate
+    rate = health.outsider_merge_rate
+    sampled = health.outsider_prs_sampled
+    if rate is not None and sampled >= MIN_OUTSIDER_SAMPLE:
         if rate >= 0.4:
             score += 12
-            signals.append(f"Merges outside contributors' PRs ({rate:.0%})")
+            signals.append(f"Merges outside contributors' PRs ({rate:.0%} of {sampled})")
         elif rate >= 0.2:
             score += 6
-            signals.append(f"Sometimes merges outside PRs ({rate:.0%})")
+            signals.append(f"Sometimes merges outside PRs ({rate:.0%} of {sampled})")
         else:
-            warnings.append(f"Rarely merges PRs from outside contributors ({rate:.0%})")
-    if health.newcomers_merged:
-        signals.append(f"{health.newcomers_merged} first-time contributor(s) merged recently")
+            warnings.append(
+                f"Rarely merges PRs from outside contributors ({rate:.0%} of {sampled})"
+            )
+    elif rate is not None and sampled:
+        signals.append(
+            f"Outside PRs merged: {rate:.0%} of {sampled} (too few to score; check recent PRs)"
+        )
+    if health.outside_authors_merged:
+        score += min(6.0, 2.0 * health.outside_authors_merged)
+        signals.append(
+            f"{health.outside_authors_merged} different outside author(s) merged recently"
+        )
 
     if health.median_pr_hours is not None:
         if health.median_pr_hours <= 72:
             score += 10
-            signals.append(f"Fast reviews (~{health.median_pr_hours:.0f}h median to merge)")
+            signals.append(f"Merged PRs land fast (~{health.median_pr_hours:.0f}h median)")
         elif health.median_pr_hours <= 240:
             score += 5
-            signals.append(f"Reasonable reviews (~{health.median_pr_hours / 24:.0f}d median)")
+            signals.append(f"Merged PRs take ~{health.median_pr_hours / 24:.0f}d (median)")
         else:
-            warnings.append(f"Slow reviews (~{health.median_pr_hours / 24:.0f}d median to merge)")
+            warnings.append(
+                f"Merged PRs take ~{health.median_pr_hours / 24:.0f}d (median); "
+                "unmerged ones are not counted"
+            )
 
     if health.license:
         score += 4
@@ -109,9 +126,8 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
     else:
         warnings.append("No license detected")
 
-    if 50 <= health.stars <= 30000:
-        score += 4
-    elif health.stars < 20:
+    # Stars carry no points: popularity predicts competition, not acceptance.
+    if health.stars < 20:
         warnings.append("Very small project; confirm it is still maintained")
     elif health.stars > 50000:
         warnings.append("Very popular repo: beginner issues go fast, expect competition")

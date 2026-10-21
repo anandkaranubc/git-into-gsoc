@@ -22,7 +22,7 @@ KNOWN_BOTS = {
     "greenkeeper",
 }
 OUTSIDER_ROLES = {"CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER", "NONE"}
-FIRST_TIMER_ROLES = {"FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER", "NONE"}
+MIN_OUTSIDER_SAMPLE = 10  # below this, the outsider merge rate is shown but not scored
 BEGINNER_LABELS = (
     "good first issue",
     "good-first-issue",
@@ -86,14 +86,21 @@ def _dt(value: str | None) -> datetime | None:
 class PullStats:
     sampled: int
     merge_rate: float | None
-    median_hours: float | None
+    median_hours: float | None  # merged PRs only: time to merge, not time to first reply
     outsider_sampled: int
     outsider_merge_rate: float | None
-    newcomers_merged: int
+    outside_authors_merged: int  # distinct people without write access who got a PR merged
 
 
 def pull_stats(pulls: list[dict[str, Any]]) -> PullStats:
-    """Merge behaviour of closed PRs, ignoring bots, split by author association."""
+    """Merge behaviour of closed PRs, ignoring bots, split by author association.
+
+    GitHub evaluates ``author_association`` when the list is fetched, so anyone
+    whose PR has merged shows as CONTRIBUTOR and FIRST_TIME_CONTRIBUTOR never
+    appears on a merged PR. Outsiders are therefore everyone without write
+    access (CONTRIBUTOR, NONE, first-timers), and breadth is measured as the
+    number of distinct outside authors merged rather than "first-timers".
+    """
     human = [p for p in pulls if not is_bot(p.get("user"))]
     merged = [p for p in human if p.get("merged_at")]
     hours = []
@@ -103,18 +110,14 @@ def pull_stats(pulls: list[dict[str, Any]]) -> PullStats:
             hours.append((done - created).total_seconds() / 3600)
     outsiders = [p for p in human if p.get("author_association") in OUTSIDER_ROLES]
     outsider_merged = [p for p in outsiders if p.get("merged_at")]
-    newcomers = {
-        str((p.get("user") or {}).get("login"))
-        for p in outsider_merged
-        if p.get("author_association") in FIRST_TIMER_ROLES
-    }
+    authors = {str((p.get("user") or {}).get("login")) for p in outsider_merged}
     return PullStats(
         sampled=len(human),
         merge_rate=len(merged) / len(human) if human else None,
         median_hours=statistics.median(hours) if hours else None,
         outsider_sampled=len(outsiders),
         outsider_merge_rate=len(outsider_merged) / len(outsiders) if outsiders else None,
-        newcomers_merged=len(newcomers),
+        outside_authors_merged=len(authors),
     )
 
 

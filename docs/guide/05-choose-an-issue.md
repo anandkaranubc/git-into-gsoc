@@ -21,8 +21,8 @@ git-into-gsoc repo sympy/sympy
 Expect a grade from A to F, the evidence behind it, and setup hints. The signals that matter most for you:
 
 - **Merges outside contributors' PRs.** A project can have a high overall merge rate that is entirely core-team work. This signal looks only at PRs from people without write access.
-- **First-time contributors merged recently.** Direct proof that newcomers get through.
-- **Review speed.** The median time from opening to merging a human PR.
+- **Different outside authors merged recently.** Breadth of people without write access who got a PR in, which is direct proof that newcomers get through. The outside merge rate is only scored once at least ten outside PRs are in the sample; with fewer it is shown as evidence only.
+- **Time to merge.** The median time from opening to merging among merged human PRs. It says nothing about PRs that were never merged, so read it together with the outside merge rate.
 - **Open beginner issues** under the repository's actual beginner label, which may be "good first issue", "beginner friendly", or something project-specific.
 - **CONTRIBUTING guide, Code of Conduct, issue and PR templates, CI.**
 

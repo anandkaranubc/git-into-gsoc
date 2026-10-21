@@ -13,9 +13,9 @@ class JourneyPhase(StrEnum):
     LEARN = "learn"
     DISCOVER = "discover"
     EVALUATE = "evaluate"
+    COMMUNITY = "community"
     FIND_ISSUES = "find_issues"
     CONTRIBUTE = "contribute"
-    COMMUNITY = "community"
     PROPOSAL = "proposal"
     TRACK = "track"
 
@@ -127,7 +127,7 @@ class RepoHealth(BaseModel):
     median_pr_hours: float | None = None
     outsider_prs_sampled: int = 0
     outsider_merge_rate: float | None = None
-    newcomers_merged: int = 0
+    outside_authors_merged: int = 0
     beginner_label: str | None = None
     open_beginner_issues: int | None = None
     health_score: float = 0.0
