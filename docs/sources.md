@@ -47,6 +47,8 @@ Where these features came from, and which ideas from other tools were adopted or
 
 Text written by other people (issue and pull request titles, idea descriptions, policy sentences, repository descriptions) is cleaned before it is shown: hidden Unicode characters, HTML comments and risky tags are removed and length is capped. It is still data written by strangers; read it as such.
 
+Pages link to other pages, and `ideas` follows some links on umbrella pages. The tool never fetches an address on your computer or your local network, such as `localhost`, `127.0.0.1`, `192.168.x.x`, or the cloud metadata address `169.254.169.254`. This also holds when a public page redirects there. Service addresses you set yourself, such as `GIG_GITHUB_API_URL`, are exempt.
+
 ## Caching
 
 Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source fails, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.

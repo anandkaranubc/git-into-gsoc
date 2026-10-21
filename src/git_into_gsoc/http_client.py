@@ -12,9 +12,11 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
+import ipaddress
 import json
 import logging
 import os
+import socket
 import tempfile
 import threading
 import time
@@ -52,11 +54,22 @@ class CachedHttpClient:
         self._cache_root = cache_root or (cache_dir(self.settings) / "http")
         self._cache_root.mkdir(parents=True, exist_ok=True)
         self._sleep = sleep
+        # Service addresses the user configured may be local (a mirror, a test server).
+        self._trusted_origins = {
+            _origin(httpx.URL(url))
+            for url in (
+                self.settings.github_api_url,
+                self.settings.gsoc_orgs_api_url,
+                self.settings.gsoc_official_api_url,
+                self.settings.ecosystems_commits_api_url,
+            )
+        }
         self._client = httpx.Client(
             timeout=self.settings.http_timeout_seconds,
             headers={"User-Agent": self.settings.user_agent},
             transport=transport,
             follow_redirects=True,
+            event_hooks={"request": [self._refuse_private_address]},
         )
         self.stats = {"requests": 0, "cache_hits": 0, "revalidated": 0, "stale_served": 0}
         self._throttle_lock = threading.Lock()
@@ -225,6 +238,22 @@ class CachedHttpClient:
 
         raise HttpError(f"Request failed: {last_error}", url=url)  # pragma: no cover
 
+    def _refuse_private_address(self, request: httpx.Request) -> None:
+        """Runs before every request, redirects included.
+
+        Ideas pages and wikis that strangers can edit link to other pages, and the
+        tool follows some of those links. A link (or a redirect) to this computer or
+        its local network must never be fetched on the reader's behalf.
+        """
+        host = request.url.host
+        if _origin(request.url) not in self._trusted_origins and is_private_host(host):
+            raise HttpError(
+                f"Refused to fetch {host}: it is a local or private network address.",
+                url=str(request.url),
+                hint="git-into-gsoc reads only public pages; links to private addresses "
+                "are skipped.",
+            )
+
     def _throttle(self, url: str) -> None:
         """Space out GitHub search calls; search has its own, much lower, rate limit."""
         interval = self.settings.search_min_interval_seconds
@@ -263,6 +292,39 @@ class CachedHttpClient:
 
 def _host(url: str) -> str:
     return httpx.URL(url).host
+
+
+def _origin(url: httpx.URL) -> tuple[str, str, int | None]:
+    return url.scheme, url.host, url.port
+
+
+_LOCAL_SUFFIXES = (".localhost", ".local", ".internal", ".home.arpa", ".lan")
+
+
+def is_private_host(host: str) -> bool:
+    """True when a host names this computer or a private network.
+
+    Covers local names and every way of writing an address directly
+    (127.1, 2130706433, 0x7f.0.0.1, [::1], ::ffff:127.0.0.1). Public names that
+    resolve to private addresses are not caught here; that would need a DNS lookup
+    per request.
+    """
+    name = host.strip("[]").rstrip(".").lower()
+    if not name:
+        return False
+    if name == "localhost" or name.endswith(_LOCAL_SUFFIXES):
+        return True
+    try:
+        address: ipaddress.IPv4Address | ipaddress.IPv6Address = ipaddress.ip_address(name)
+    except ValueError:
+        if not all(part.isalnum() for part in name.split(".")):
+            return False  # a hostname with hyphens or underscores, never an address
+        try:
+            address = ipaddress.IPv4Address(socket.inet_aton(name))
+        except OSError:
+            return False
+    mapped = getattr(address, "ipv4_mapped", None)
+    return not (mapped or address).is_global
 
 
 def _etag_candidates(etag: str) -> list[str]:
