@@ -879,6 +879,8 @@ class GSoCToolkit:
                 if len(issues) > first
                 else f" Other organizations that use {language} had none free either."
             )
+        if use_gsoc and language:
+            note += self._skipped_off_github(language, year=year)
         related = RELATED_LANGUAGES.get(canonical(language), []) if language else []
         if related and not repo:
             note += (
@@ -2337,6 +2339,25 @@ class GSoCToolkit:
             "changed": bool(before and before != found["availability"]),
             "off_github": True,
         }
+
+    def _skipped_off_github(self, language: str, *, year: int | None) -> str:
+        """A note naming organizations that use `language` but keep code outside GitHub.
+
+        `issues --language c` left out GNOME, FFmpeg, and VideoLAN without a word, so a
+        C developer never learned they exist. This reads only the embedded list.
+        """
+        try:
+            _, ranked = self.gsoc.search_organizations(technologies=[language], year=year, limit=60)
+        except GigError:
+            return ""
+        names = [org.name for org in ranked if not org.github_orgs]
+        if not names:
+            return ""
+        shown = ", ".join(names[:3]) + (f", and {len(names) - 3} more" if len(names) > 3 else "")
+        return (
+            f" Not searched, because their code is outside GitHub: {shown}. "
+            'See git-into-gsoc org "NAME" for where each one keeps its issues.'
+        )
 
     def _code_elsewhere(self, names: list[str]) -> dict[str, str]:
         """Shortlisted organizations with no GitHub owner, and where their code is."""

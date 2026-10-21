@@ -150,3 +150,17 @@ def test_next_moves_on_for_an_org_whose_code_is_elsewhere() -> None:
     tracked = [{"ref": link, "url": link, "availability": "unknown", "off_github": True}]
     third = plan_actions(state, program, tracked_issues=tracked, new_issues=[])[0]
     assert third["command"] == link and "cannot check it" in third["why"]
+
+
+def test_a_language_search_names_the_organizations_it_could_not_search(monkeypatch: Any) -> None:
+    # `issues --language c` skipped GNOME, FFmpeg, and VideoLAN without a word.
+    toolkit = GSoCToolkit()
+    ranked = [
+        OrgSummary(name="Apache", github_orgs=["apache"]),
+        OrgSummary(name="GNOME Foundation", source_code="https://gitlab.gnome.org/"),
+        OrgSummary(name="FFmpeg"),
+    ]
+    monkeypatch.setattr(toolkit.gsoc, "search_organizations", lambda **k: (None, ranked))
+    note = toolkit._skipped_off_github("c", year=None)
+    assert "outside GitHub: GNOME Foundation, FFmpeg." in note
+    assert "Apache" not in note
