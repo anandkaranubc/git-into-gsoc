@@ -68,12 +68,12 @@ class RateLimitError(HttpError):
         if resource == "search" and authenticated:
             hint = (
                 "GitHub search allows 30 requests a minute, and other tools using the same "
-                "token count too; wait a minute, or narrow the search with --repo or --org."
+                "token count too; wait a minute and run it again."
             )
         elif resource == "search":
             hint = (
                 "GitHub search allows 10 requests a minute without a token and 30 with one; "
-                "wait a minute, narrow the search with --repo or --org, or run `gh auth login`."
+                "wait a minute, or run `gh auth login` to get the higher limit."
             )
         elif authenticated:
             hint = "Wait a few minutes; cached results keep working meanwhile."

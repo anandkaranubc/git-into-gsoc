@@ -243,3 +243,21 @@ def test_a_tracked_issue_counts_as_a_chosen_repository() -> None:
     )
     actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
     assert not any(a["title"].startswith("Pick the repository") for a in actions)
+
+
+def test_a_tracked_issue_keeps_its_caution(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # `issue` warned about an old claim on ArduPilot/ardupilot#9828; `next` only said
+    # "no open PR or recent claim ... It is still free".
+    from git_into_gsoc.models import Availability, IssueAssessment
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    assessment = IssueAssessment(
+        availability=Availability.AVAILABLE,
+        reason="Open, unassigned, no open PR or recent claim",
+        caveats=["@someone asked 138d ago with no PR; ask politely in the thread first"],
+    )
+    monkeypatch.setattr(toolkit.github, "assess", lambda full, n: ({}, assessment))
+    status, reason = toolkit._availability_of("ArduPilot/ardupilot", 9828)
+    assert status == "available"
+    assert "asked 138d ago" in reason

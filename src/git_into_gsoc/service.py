@@ -1518,7 +1518,9 @@ class GSoCToolkit:
             return "unknown", "Issue not found"
         except GigError as exc:
             return "unknown", str(exc)
-        return assessment.availability.value, assessment.reason
+        # Carry the first caution (an old claim in the thread) so `next` and `issue` agree.
+        caveat = f" ({assessment.caveats[0]})" if assessment.caveats else ""
+        return assessment.availability.value, assessment.reason + caveat
 
     def pr_check(self, ref: str, number: int | None = None) -> dict[str, Any]:
         """Check one pull request against the repository's own rules before review.
