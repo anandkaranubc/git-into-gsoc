@@ -119,3 +119,39 @@ def test_issues_without_a_language_use_the_saved_profile(api: respx.MockRouter) 
     explicit = GSoCToolkit().find_issues(language="python", max_results=3)
     assert explicit["language_used"] == "python"
     assert "saved profile" not in explicit["note"]
+
+
+def test_recommend_starter_issues_come_from_the_recommended_orgs(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from git_into_gsoc.models import Availability, IssueCandidate
+
+    calls: list[dict[str, Any]] = []
+
+    def issue(repo: str, number: int, availability: Availability) -> IssueCandidate:
+        return IssueCandidate(
+            repo=repo,
+            number=number,
+            title=f"Issue {number}",
+            url=f"https://github.com/{repo}/issues/{number}",
+            availability=availability,
+        )
+
+    def fake_search(**kwargs: Any) -> list[IssueCandidate]:
+        calls.append(kwargs)
+        return [
+            issue("astropy/astropy", 1, Availability.AVAILABLE),
+            issue("astropy/astropy", 2, Availability.CLAIMED),
+            issue("sunpy/sunpy", 3, Availability.LIKELY_TAKEN),
+            issue("sunpy/sunpy", 4, Availability.UNKNOWN),
+        ]
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", fake_search)
+    data = toolkit.recommend_path(technologies=["python"], interests=["astronomy"])
+
+    owners = {o["github_orgs"][0] for o in data["recommended_orgs"] if o.get("github_orgs")}
+    assert set(calls[0]["orgs"]) == owners  # scoped to the orgs it just recommended
+    assert [i["number"] for i in data["starter_issues"]] == [1, 4]  # claimed ones left out
+    assert data["starter_issues_hidden"] == 2
+    assert "recommended" in data["starter_issue_scope"]

@@ -372,3 +372,15 @@ def test_one_big_org_cannot_fill_the_whole_list() -> None:
     owners = [r.repo.split("/")[0] for r in results]
     assert owners.count("apache") <= 3
     assert {"sympy", "zulip"} <= set(owners)
+
+
+@respx.mock
+def test_javascript_and_typescript_are_searched_together() -> None:
+    search = respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(200, json={"items": []})
+    )
+    GitHubClient().find_beginner_issues(language="JS", orgs=["jitsi"], max_results=3)
+    GitHubClient().find_beginner_issues(language="python", orgs=["sympy"], max_results=3)
+    js, py = (call.request.url.params["q"] for call in search.calls)
+    assert "(language:javascript OR language:typescript)" in js
+    assert "language:python" in py and "OR language" not in py

@@ -24,7 +24,7 @@ from git_into_gsoc.github.repos import (
     pick_beginner_label,
     pull_stats,
 )
-from git_into_gsoc.github.search import build_issue_query
+from git_into_gsoc.github.search import build_issue_query, language_group
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import (
     Availability,
@@ -36,9 +36,8 @@ from git_into_gsoc.models import (
 from git_into_gsoc.scoring.health import MIN_REPLY_SAMPLE, score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.text import clean_untrusted
-from git_into_gsoc.validation import parse_repo, search_term, validate_login
+from git_into_gsoc.validation import parse_repo, validate_login
 
-MAX_QUERY_CHARS = 256
 MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample is short
 
 
@@ -480,7 +479,7 @@ class GitHubClient:
         ]
         base = ["is:issue", "is:open", "no:assignee", "-linked:pr", "archived:false"]
         if language:
-            base.append(f"language:{search_term(language)}")
+            base.append(language_group(language))
         if repo:
             owner_name, repo_name = parse_repo(repo)
             base.append(f"repo:{owner_name}/{repo_name}")

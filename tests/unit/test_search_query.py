@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from git_into_gsoc.github.search import MAX_QUERY_CHARS, build_issue_query, or_group
+from git_into_gsoc.github.search import (
+    MAX_OWNER_FILTERS,
+    MAX_QUERY_CHARS,
+    build_issue_query,
+    or_group,
+)
 
 
 def test_or_group_quotes_and_groups() -> None:
@@ -23,7 +28,29 @@ def test_build_issue_query_groups_and_respects_length() -> None:
     assert '(label:"good first issue" OR label:"help wanted")' in query
     assert "(org:org0 OR org:org1" in query
     assert len(query) <= MAX_QUERY_CHARS
-    assert query.count(" OR ") < 60
+    assert query.count("org:") == MAX_OWNER_FILTERS  # GitHub rejects 16 or more
+
+
+def test_build_issue_query_keeps_every_org_github_accepts() -> None:
+    # The old 256-character budget silently dropped three of eight recommended orgs.
+    owners = ["chicagopcdc", "openmrs", "cBioPortal", "jitsi", "accordproject"]
+    owners += ["laurent22", "I-TECH-UW", "owasp"]
+    base = ["is:issue", "is:open", "no:assignee", "-linked:pr", "archived:false"]
+    base += ["(language:javascript OR language:typescript)", "updated:>=2025-10-21"]
+    query = build_issue_query(
+        base=base,
+        labels=["good first issue", "help wanted"],
+        orgs=owners,
+    )
+    assert all(f"org:{o}" in query for o in owners)
+
+
+def test_repo_filters_count_toward_the_owner_limit() -> None:
+    repos = or_group("repo", [f"a/r{i}" for i in range(5)])
+    query = build_issue_query(
+        base=["is:issue"], labels=[], orgs=[f"o{i}" for i in range(20)], extra=[repos]
+    )
+    assert query.count("repo:") + query.count("org:") == MAX_OWNER_FILTERS
 
 
 def test_build_issue_query_without_groups() -> None:

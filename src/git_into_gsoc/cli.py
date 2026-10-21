@@ -1108,7 +1108,13 @@ def recommend_cmd(
         table.add_row(f"{org['match_score']:.0f}", org["name"], "; ".join(fit))
     console.print(table)
     if data["starter_issues"]:
-        issues = Table(title="Starter issues (verified availability)")
+        caption = f"From {data['starter_issue_scope']}." if data.get("starter_issue_scope") else ""
+        if data.get("starter_issues_hidden"):
+            caption += (
+                f" Left out {data['starter_issues_hidden']} that someone already claimed or "
+                "is working on."
+            )
+        issues = Table(title="Starter issues still open to newcomers", caption=caption.strip())
         issues.add_column("Status")
         issues.add_column("Issue", overflow="fold")
         issues.add_column("Title", overflow="fold")
@@ -1123,6 +1129,11 @@ def recommend_cmd(
     elif data.get("starter_issue_error"):
         console.print(
             f"[yellow]Starter issues unavailable:[/yellow] {data['starter_issue_error']['error']}"
+        )
+    elif data.get("starter_issue_scope"):
+        console.print(
+            "[dim]No free starter issue found right now in "
+            f"{data['starter_issue_scope']}. Try `git-into-gsoc repos ORG` for one of them.[/dim]"
         )
     console.print("\n[bold]Next steps[/bold]")
     for step in data["next_steps"]:

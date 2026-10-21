@@ -67,7 +67,13 @@ from git_into_gsoc.gsoc.project_ideas import (
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
-from git_into_gsoc.models import IdeasDocument, ProgressState, ProjectIdea, RepoLead
+from git_into_gsoc.models import (
+    Availability,
+    IdeasDocument,
+    ProgressState,
+    ProjectIdea,
+    RepoLead,
+)
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_login, validate_year
@@ -364,10 +370,7 @@ class GSoCToolkit:
             "labels_used": labels_used,
             "note": note,
             "count": len(issues),
-            "issues": [
-                i.model_dump(mode="json", exclude={"signals"}) | {"signals": i.signals}
-                for i in issues
-            ],
+            "issues": [_issue_dict(i) for i in issues],
             "before_you_comment": BEFORE_YOU_COMMENT,
         }
 
@@ -499,9 +502,34 @@ class GSoCToolkit:
         issue_language = techs[0] if techs else None
         issues: list[dict[str, Any]] = []
         issue_error: dict[str, str] | None = None
-        if issue_language:
+        issue_scope = None
+        hidden = 0
+        owners = {o["github_orgs"][0]: o["name"] for o in orgs if o.get("github_orgs")}
+        if issue_language or owners:
             try:
-                issues = self.find_issues(language=issue_language, max_results=5)["issues"]
+                if owners:
+                    found = self.github.find_beginner_issues(
+                        language=issue_language,
+                        orgs=list(owners),
+                        org_names={k.lower(): v for k, v in owners.items()},
+                        max_results=8,
+                    )
+                    issue_scope = "the recommended organizations above"
+                else:
+                    found = []
+                # A starter list should only hold issues someone can still pick up.
+                candidates = [_issue_dict(i) for i in found]
+                if len([i for i in candidates if _open(i)]) < 3 and issue_language:
+                    broad = self.find_issues(language=issue_language, max_results=5)
+                    candidates += broad["issues"]
+                    issue_scope = (
+                        f"{issue_scope}, then other GSoC organizations that use {issue_language}"
+                        if issue_scope
+                        else f"GSoC organizations that use {issue_language}"
+                    )
+                unique = list({(i["repo"], i["number"]): i for i in candidates}.values())
+                issues = [i for i in unique if _open(i)][:5]
+                hidden = sum(1 for i in unique if not _open(i))
             except GigError as exc:
                 issue_error = exc.to_dict()
 
@@ -521,6 +549,8 @@ class GSoCToolkit:
             "interests_used": wants,
             "recommended_orgs": orgs,
             "starter_issues": issues,
+            "starter_issue_scope": issue_scope,
+            "starter_issues_hidden": hidden,
             "starter_issue_error": issue_error,
             "next_steps": [
                 "Shortlist three organizations and join their community channels",
@@ -1491,6 +1521,21 @@ def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:
         if low
         else f"Parsed {len(doc.ideas)} idea block(s). Empty fields were not on the page."
     )
+
+
+# Availability values a starter list may show: free, or not checked (timeline unreadable).
+_OPEN_TO_NEWCOMERS = frozenset({Availability.AVAILABLE.value, Availability.UNKNOWN.value})
+
+
+def _open(issue: dict[str, Any]) -> bool:
+    return issue.get("availability") in _OPEN_TO_NEWCOMERS
+
+
+def _issue_dict(issue: Any) -> dict[str, Any]:
+    if isinstance(issue, dict):
+        return issue
+    data: dict[str, Any] = issue.model_dump(mode="json", exclude={"signals"})
+    return data | {"signals": issue.signals}
 
 
 def _repo_recommendation(score: float, warnings: list[str]) -> str:
