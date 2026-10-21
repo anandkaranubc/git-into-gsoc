@@ -46,7 +46,7 @@ git-into-gsoc progress complete_phase --phase evaluate
 git-into-gsoc orient sympy/sympy
 ```
 
-Before you look for an issue, spend one session learning how the project is put together. `orient` prints a code map with entry points, the command CI really runs for tests, who merges pull requests, and the rules you must follow before opening one (sign-offs, commit style, templates, AI disclosure), each with the file it came from. Then clone the repository, build it, run its test suite once, and read the files behind the feature you care about. When you can say where a change would go and how you would test it, mark the phase done:
+Before you look for an issue, spend one session learning how the project is put together. `orient` prints a code map with entry points, the command CI really runs for tests, who writes most of the code (commit authors and CODEOWNERS), and the rules you must follow before opening one (sign-offs, commit style, templates, AI disclosure), each with the file it came from. Then clone the repository, build it, run its test suite once, and read the files behind the feature you care about. When you can say where a change would go and how you would test it, mark the phase done:
 
 ```bash
 git-into-gsoc progress complete_phase --phase orient

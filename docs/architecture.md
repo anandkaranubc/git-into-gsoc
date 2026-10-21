@@ -52,7 +52,7 @@ Scoring lives in `scoring/` and is pure Python with no network, so it is easy to
 | `github/graphql.py` | GitHub GraphQL API (token only) | One query for repository health: recent closed pull requests, the insider set, and each pull request's first human reply |
 | `github/ecosystems.py` | commits.ecosyste.ms | Token-free committer statistics: single-commit authors and bus factor |
 | `github/search.py` | GitHub search syntax | Builds issue search queries that keep working with GitHub's advanced search |
-| `github/orientation.py` | Repository tree, workflows, CODEOWNERS, branch rules | `orient`: code map, test command, environment CI sets up, who merges, rules before a pull request |
+| `github/orientation.py` | Repository tree, workflows, CODEOWNERS, branch rules | `orient`: code map, test command, environment CI sets up, active commit authors, rules before a pull request |
 | `github/pointers.py` | Issue text, repository tree, past fixes | `pointers`: where to start reading for one issue and how similar issues were fixed |
 | `github/evidence.py` | Scoped GitHub searches | `contributions`: what a contributor has done in an organization's repositories |
 | `github/pulls.py` | A contributor's open pull requests | The part of `next` that says which pull requests need the person and which are waiting |

@@ -199,7 +199,7 @@ def test_cli_orient_renders_sections() -> None:
         "Code map",
         "Entry points",
         "pytest -q",
-        "Who merges",
+        "Who writes the code",
         "Before you open a PR",
         "Read in this order",
     ):

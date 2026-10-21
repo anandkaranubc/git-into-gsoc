@@ -644,7 +644,7 @@ def orient_cmd(
     ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Get your bearings in a repository: code map, entry points, test command, who merges, rules."""
+    """Get your bearings in a repository: code map, entry points, test command, who writes the code, rules."""
     data = _toolkit().orient_repo(full_name, codetour=codetour is not None)
     if codetour is not None:
         codetour.parent.mkdir(parents=True, exist_ok=True)
@@ -701,7 +701,9 @@ def orient_cmd(
     )
     people = data["maintainers"]
     section(
-        f"Who merges ({people['commits_90d']} commits in 90 days)",
+        # Commit authors, not mergers: a merge through GitHub records GitHub itself as the
+        # committer, so the commits cannot say who pressed the button.
+        f"Who writes the code ({people['commits_90d']} commits in 90 days, by author)",
         [f"@{p['login']} ({p['commits']})" for p in people["active_committers_90d"]]
         + [
             f"CODEOWNERS {escape(c['pattern'])}: {escape(c['owners'])}"
