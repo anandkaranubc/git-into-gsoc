@@ -42,6 +42,22 @@ Or via pre-commit:
 pre-commit run --all-files
 ```
 
+## No AI tool attribution
+
+Do **not** add AI tool attribution to commits, pull requests, issues, or release notes. That includes:
+
+- `Co-authored-by: Cursor <cursoragent@cursor.com>` (or similar tool trailers)
+- "Made with Cursor" / equivalent footers in PR or issue bodies
+- Marketing badges that credit an AI assistant for the contribution
+
+Human authors remain the git authors. Optional local protection:
+
+```bash
+./scripts/install-git-hooks.sh
+```
+
+This installs a `commit-msg` hook that strips Cursor co-author trailers if a tool appends them.
+
 ## Git workflow
 
 ### Branches

@@ -118,6 +118,7 @@ Compared with generic OSS issue MCP servers or multi-skill OSS packs:
 * [Contributor guide (this repo)](CONTRIBUTING.md)
 * [Architecture](docs/architecture.md)
 * [Journey map](docs/journey.md)
+* [Repository governance](docs/governance.md)
 * [MCP reference](docs/mcp.md)
 * [Examples](examples/)
 * Skill references under `skills/git-into-gsoc/references/`

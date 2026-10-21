@@ -1,0 +1,15 @@
+#!/bin/sh
+# Strip AI tool attribution trailers from commit messages.
+tmp=$(mktemp)
+sed \
+  -e '/^Co-authored-by: Cursor <cursoragent@cursor.com>/d' \
+  -e '/^Made-with: Cursor/d' \
+  -e '/^Made with \[Cursor\]/d' \
+  "$1" > "$tmp"
+python3 - "$tmp" "$1" <<'PY'
+import pathlib, sys
+src, dst = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+text = src.read_text(encoding="utf-8").rstrip() + "\n"
+dst.write_text(text, encoding="utf-8")
+src.unlink(missing_ok=True)
+PY
