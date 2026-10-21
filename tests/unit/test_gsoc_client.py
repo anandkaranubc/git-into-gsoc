@@ -135,3 +135,41 @@ def test_github_refs() -> None:
 
 def test_normalize_name() -> None:
     assert normalize_name("GNU Radio") == normalize_name("gnu-radio") == "gnuradio"
+
+
+def test_catalog_uses_embedded_history_without_fetching_the_archive() -> None:
+    with respx.mock(assert_all_called=False) as router:
+        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
+        router.get(f"{OFFICIAL}/2026/organizations/").mock(
+            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
+        )
+        archive = router.get(f"{ARCHIVE}/organizations.json").mock(return_value=httpx.Response(500))
+        _, orgs = GSoCClient().catalog(2027)
+    sympy = next(o for o in orgs if o.name == "SymPy")
+    assert len(sympy.years_active) >= 10  # from the embedded snapshot
+    assert not archive.called
+
+
+def test_snapshot_serves_catalog_when_every_source_is_down() -> None:
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url__startswith=OFFICIAL).mock(return_value=httpx.Response(503))
+        router.get(url__startswith=ARCHIVE).mock(return_value=httpx.Response(503))
+        catalog, orgs = GSoCClient().catalog(2027)
+    assert catalog.source == "snapshot"
+    assert catalog.year >= 2026
+    assert len(orgs) > 100
+    assert "snapshot" in catalog.note and "Verify" in catalog.note
+    assert any(o.name == "SymPy" and o.ideas_url for o in orgs)
+
+
+def test_snapshot_files_are_fresh_and_complete() -> None:
+    from git_into_gsoc.gsoc.snapshot import build_history, load_history, load_official
+
+    history = load_history()
+    official = load_official()
+    assert len(history["organizations"]) > 400
+    assert len(official["organizations"]) > 100
+    assert str(official["year"]) in history["organizations"]["SymPy"]["years"]
+    compact = build_history(load_fixture("archive_organizations.json"))
+    assert set(compact["SymPy"]["years"]["2026"]) == {"num_projects"}
+    assert compact["SymPy"]["years"]["2026"]["num_projects"] >= 1

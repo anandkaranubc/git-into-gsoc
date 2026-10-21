@@ -1,11 +1,14 @@
 """Mentoring-organization intelligence.
 
-Two sources are merged:
+Three sources are layered:
 
 * the **official** accepted-org list for a year (authoritative: source code,
-  ideas page, contributor guidance, contact channels), and
-* the community **archive** (api.gsocorganizations.dev) for multi-year history,
-  slot counts, and past accepted project titles.
+  ideas page, contributor guidance, contact channels),
+* an **embedded snapshot** of multi-year history (slug and projects per year
+  for every org that ever participated) plus the latest official list, so
+  ranking never needs the 15 MB community archive and still works offline, and
+* the community **archive** (api.gsocorganizations.dev), fetched lazily only
+  for past accepted project titles and for orgs missing from the snapshot.
 
 When the target year's orgs are not announced yet, the most recent official
 year is used and labelled as such.
@@ -20,6 +23,7 @@ from urllib.parse import urlparse
 
 from git_into_gsoc.config import LATEST_ARCHIVED_YEAR, Settings, get_settings
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
+from git_into_gsoc.gsoc.snapshot import load_history, load_official
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.models import ContactChannel, OrgCatalog, OrgSummary, PastProject
 from git_into_gsoc.scoring.org_match import canonical, mentions, score_org_match
@@ -110,6 +114,7 @@ class GSoCClient:
         return f"{self.settings.gsoc_orgs_api_url.rstrip('/')}/{name}"
 
     def list_all_organizations(self) -> list[dict[str, Any]]:
+        """The full community archive (large); loaded lazily and overlaid on the snapshot."""
         if self._archive is None:
             data = self.http.get_json(
                 self._archive_url("organizations.json"), ttl=self.settings.archive_ttl_seconds
@@ -117,6 +122,7 @@ class GSoCClient:
             if isinstance(data, dict):
                 data = data.get("organizations")
             self._archive = list(data) if isinstance(data, list) else []
+            self._history = None  # rebuild so archive records (richer) win over the snapshot
         return self._archive
 
     def list_year_organizations(self, year: int | None = None) -> list[dict[str, Any]]:
@@ -129,13 +135,17 @@ class GSoCClient:
         return list(data) if isinstance(data, list) else []
 
     def _history_index(self) -> dict[str, dict[str, Any]]:
+        """Name/slug -> history record, from the embedded snapshot plus any loaded archive."""
         if self._history is None:
             self._history = {}
-            for raw in self.list_all_organizations():
+            snapshot = load_history().get("organizations") or {}
+            records = [{"name": name, **entry} for name, entry in snapshot.items()]
+            records.extend(self._archive or [])
+            for raw in records:
                 self._history[normalize_name(raw.get("name") or "")] = raw
                 slug = _archive_slug(raw)
                 if slug:
-                    self._history.setdefault(f"slug:{slug}", raw)
+                    self._history[f"slug:{slug}"] = raw
         return self._history
 
     def _history_for(self, name: str, slug: str | None = None) -> dict[str, Any] | None:
@@ -170,11 +180,30 @@ class GSoCClient:
                 return OrgCatalog(year=ref, source="official", note=note, count=len(orgs)), orgs
 
         ref = min(target, LATEST_ARCHIVED_YEAR)
-        orgs = [self._from_archive(raw, ref) for raw in self.list_year_organizations(ref)]
-        note = f"Archive copy of the {ref} org list (official site unavailable)."
-        if ref != target:
-            note += f" {target} orgs are not announced yet."
-        return OrgCatalog(year=ref, source="archive", note=note, count=len(orgs)), orgs
+        try:
+            raw_orgs = self.list_year_organizations(ref)
+        except HttpError:
+            raw_orgs = []
+        if raw_orgs:
+            orgs = [self._from_archive(raw, ref) for raw in raw_orgs]
+            note = f"Archive copy of the {ref} org list (official site unavailable)."
+            if ref != target:
+                note += f" {target} orgs are not announced yet."
+            return OrgCatalog(year=ref, source="archive", note=note, count=len(orgs)), orgs
+
+        snapshot = load_official()
+        if snapshot.get("organizations") and snapshot.get("year"):
+            ref = int(snapshot["year"])
+            orgs = [self._from_official(raw, ref) for raw in snapshot["organizations"]]
+            note = (
+                f"Embedded snapshot of the official {ref} org list from {snapshot['generated']} "
+                "(live sources unreachable). Verify on summerofcode.withgoogle.com."
+            )
+            return OrgCatalog(year=ref, source="snapshot", note=note, count=len(orgs)), orgs
+        raise HttpError(
+            "GSoC organization data is unavailable (official site and archive unreachable).",
+            hint="Check your connection and retry; see https://summerofcode.withgoogle.com.",
+        )
 
     def _history_fields(self, hist: dict[str, Any] | None, year: int) -> dict[str, Any]:
         years_obj = (hist or {}).get("years") or {}
@@ -311,6 +340,7 @@ class GSoCClient:
         org = next((o for o in orgs if normalize_name(o.name) == needle or o.slug == name), None)
         org = org or next((o for o in orgs if needle in normalize_name(o.name)), None)
         if org is None:
+            self.list_all_organizations()  # full records for orgs outside the current list
             hist = self._history_for(name) or next(
                 (
                     raw
