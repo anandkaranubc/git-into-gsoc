@@ -30,7 +30,7 @@ Both the mark and the typeface sit on a square grid with a thick stroke, so they
 | `avatar/` | `avatar.svg`, `avatar-512.png`, `avatar-1024.png`, `avatar-violet.svg` for the GitHub organization or repository picture |
 | `social/` | `social-preview.svg` and `.png` at 1280×640 for GitHub's social preview and Open Graph |
 | `readme/` | `banner-light.svg`, `banner-dark.svg` (animated cursor) and compact `header-*.svg` for docs |
-| `icons/` | 14 pixel icons in ink, paper, and violet, plus `sheet-ink.svg` |
+| `icons/` | 17 pixel icons (one per journey phase, plus interface icons) in ink, paper, and violet, plus `sheet-ink.svg` |
 | `stickers/` | die-cut stickers: `git in.`, `merged.`, `the door is open.`, `evidence > vibes`, `no drive-by prs`, a blinking cursor |
 | `stamps/` | passport-style milestone stamps: entered, discovered, evaluated, first pr, merged, proposed |
 | `merch/` | `sticker-sheet.svg/.png`, `tee-back-dark.svg`, `tee-back-light.svg`, `tee-front-chest.svg` |

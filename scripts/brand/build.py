@@ -559,6 +559,7 @@ def build_merch(out: Path) -> None:
 def build_font(out: Path) -> bool:
     try:
         from fontTools.fontBuilder import FontBuilder
+        from fontTools.misc.timeTools import timestampSinceEpoch
         from fontTools.pens.ttGlyphPen import TTGlyphPen
     except ImportError:
         print("fontTools not installed; skipping font (pip install fonttools brotli)")
@@ -639,6 +640,10 @@ def build_font(out: Path) -> bool:
         fsType=0,
     )
     fb.setupPost()
+    # a fixed date (2026-10-21) instead of "now" keeps rebuilds byte-identical
+    stamp = timestampSinceEpoch(1792540800)
+    fb.updateHead(created=stamp, modified=stamp)
+    fb.font.recalcTimestamp = False
     fb.save(str(d / "GigPixel.ttf"))
     font = fb.font
     font.flavor = "woff2"
