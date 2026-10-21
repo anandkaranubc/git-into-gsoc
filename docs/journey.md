@@ -1,49 +1,22 @@
-# Contributor journey map
+# Contributor journey
 
-```
+The full journey lives in the [beginner guide](README.md). Start there for explanations, commands, expected results, and next steps.
+
+```text
 learn → discover → evaluate → find_issues → contribute → community → proposal → track
 ```
 
-You can loop (e.g. more issues after the first PR). Order is a default, not a prison.
+You can loop (for example more issues after the first PR). Order is a default, not a rule.
 
-## Phase outcomes
+| Phase | Useful outcome | Commands | Guide |
+|---|---|---|---|
+| `learn` | You can explain GSoC and your constraints | `program`, `journey` | [Understand GSoC](guide/01-understand-gsoc.md) |
+| `discover` | A shortlist of 3 to 5 organizations with reasons | `orgs`, `org`, `projects`, `recommend` | [Find organizations](guide/04-find-organizations.md) |
+| `evaluate` | 1 or 2 repositories that merge newcomers' work | `repos`, `repo` | [Pick a repository and an issue](guide/05-choose-an-issue.md) |
+| `find_issues` | One available, well-specified issue you can reproduce | `issues`, `issue` | [Pick a repository and an issue](guide/05-choose-an-issue.md) |
+| `contribute` | A meaningful, reviewed PR you can explain | | [First contribution](guide/06-first-contribution.md) |
+| `community` | Mentors recognize your name from useful interactions | `org` (channels) | [Work with the community](guide/06-first-contribution.md#work-with-the-community) |
+| `proposal` | An original draft aligned to the org template | `proposal`, `program` | [Prepare a proposal](guide/07-prepare-a-proposal.md) |
+| `track` | A weekly log habit | `progress` | [Track progress](guide/08-track-progress.md) |
 
-| Phase | Artifact |
-|-------|----------|
-| learn | Self-profile + understanding of rules/AI policy |
-| discover | Shortlist of 3–5 orgs with written fit reasons |
-| evaluate | 1–2 healthy repos |
-| find_issues | One available, well-specified issue |
-| contribute | Meaningful PR |
-| community | Public intro + ongoing helpful presence |
-| proposal | Original draft aligned to org template |
-| track | Weekly log habit |
-
-## Commands per phase
-
-```bash
-# learn
-git-into-gsoc program --year 2027
-git-into-gsoc journey
-
-# discover
-git-into-gsoc orgs --tech python --year 2026
-git-into-gsoc progress complete_phase --phase discover
-
-# evaluate
-git-into-gsoc repo owner/repo
-
-# find_issues / contribute
-git-into-gsoc issues --language python
-git-into-gsoc issue owner/repo 42
-
-# proposal
-git-into-gsoc proposal
-```
-
-## Success metrics (personal)
-
-* Merged or substantively reviewed contribution before proposals open
-* Mentors recognize your name
-* Proposal cites your real work and discussions
-* You can explain your project without an LLM present
+Mark a phase done with `git-into-gsoc progress complete_phase --phase discover`. Community participation and note-taking can start at any point.

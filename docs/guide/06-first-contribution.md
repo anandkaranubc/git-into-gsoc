@@ -1,0 +1,64 @@
+# 6. Make your first contribution
+
+Your goal is one useful change that you understand. Fixing a confusing instruction can be as valuable as fixing a bug. If you want to improve git-into-gsoc itself, use [this repository's contributor guide](../../CONTRIBUTING.md).
+
+## Set up the project
+
+Start from the "Getting set up" section of `git-into-gsoc repo owner/name`: it lists the toolchain files in the repository, whether a dev container exists, and the CONTRIBUTING link. If there is a dev container, opening the repository in GitHub Codespaces or VS Code gives you a working environment with no local setup. Otherwise follow the project's README and contribution guide. First get the unchanged project running; this helps distinguish setup problems from problems caused by your change.
+
+Many GitHub projects use this workflow:
+
+1. **Fork** the repository on GitHub to create a copy under your account.
+2. **Clone** your fork to download it to your computer.
+3. Create a **branch**, a separate line of work for your change.
+4. Make the change and run the project's checks.
+5. **Commit** the change to save a named checkpoint, then **push** it to your fork.
+6. Open a **pull request** from your branch to the original project.
+
+GitHub's [fork tutorial](https://docs.github.com/en/get-started/quickstart/fork-a-repo) walks through the first steps. The project's own workflow takes priority.
+
+This is a command template, not something to paste unchanged. Replace `YOUR_USERNAME` and `PROJECT` with your fork's owner and name:
+
+```text
+git clone https://github.com/YOUR_USERNAME/PROJECT.git
+cd PROJECT
+git switch -c fix/describe-the-problem
+```
+
+## Make and check a focused change
+
+Reproduce the problem before editing. For a bug, record expected and actual behavior. For documentation, try the instructions as written. Then change only what is needed to solve that problem.
+
+Run the relevant tests and checks listed by the project. If a test already failed before your change, note that separately. Review your own work:
+
+```bash
+git diff
+git status --short
+```
+
+Read every changed line. Leave out temporary files, credentials, unrelated formatting, and changes you cannot explain. If AI assistance is allowed, verify its suggestions just as carefully as your own. You must be able to walk a reviewer through every line.
+
+## Ask for review
+
+A useful pull request description answers:
+
+```text
+Problem: What was confusing or broken? Link the issue if there is one.
+Change: What did you change, and why?
+Validation: What commands or manual checks did you run? What happened?
+Questions: Is there anything you still need help with?
+```
+
+The project's **continuous integration (CI)** checks are automated tests that run after you push. Open their logs if they fail. A draft PR can be useful for early feedback when the project welcomes drafts. Explain what is unfinished.
+
+## Work with the community
+
+Reviews often ask for changes. That is a normal part of collaboration. Reply to questions, make the requested updates, and push new commits to the same branch. If you disagree, explain your reasoning with an example.
+
+When stuck, ask in the project's preferred channel (the `org` command lists them) with what you tried, the exact error without private data, and the relevant versions. Avoid sending the same request to several maintainers. Allow time for volunteers to reply, and follow up according to the community's expectations.
+
+A PR can be declined because of timing, scope, or a different approach. Ask what you can learn from the decision and choose a useful next step. Your learning does not depend on an immediate merge.
+
+**Ready to move on:** your change has been reviewed or is ready for review, and you can explain what it does and how you checked it.
+
+[Next: prepare a proposal](07-prepare-a-proposal.md) · [Track your progress](08-track-progress.md) · [Guide contents](../README.md)

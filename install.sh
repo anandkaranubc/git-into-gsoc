@@ -1,32 +1,42 @@
 #!/usr/bin/env bash
-# git-into-gsoc one-shot installer — package + Agent Skill + MCP hints
+# git-into-gsoc installer: Python package, Agent Skill copies, and MCP setup hints.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SKILL_SRC="${ROOT}/skills/git-into-gsoc"
 PYTHON="${PYTHON:-python3}"
+DOCS_URL="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs"
 
 SKILL_ONLY=0
 MCP_ONLY=0
-USER_SKILLS=1
+USER_SKILLS=0
 
 usage() {
-  cat <<'EOF'
+  cat <<'USAGE'
 Usage: ./install.sh [options]
 
-  --skill-only     Copy Agent Skill only (skip Python package)
-  --mcp-only       Install Python package / show MCP config (skip skill copy)
-  --no-user-skills Do not copy skills into ~/.cursor, ~/.claude, etc.
-  -h, --help       Show help
-EOF
+By default this creates .venv, installs the package into it, and copies the
+Agent Skill into this repository's .agents, .cursor, and .claude folders.
+Nothing outside this folder is changed unless you ask for it.
+
+  --user-skills    Also copy the skill into ~/.agents, ~/.cursor, ~/.claude,
+                   ~/.codex, and ~/.gemini (when Gemini CLI is present).
+                   Existing copies of this skill there are replaced.
+  --no-user-skills Keep skill copies inside this repository (the default)
+  --skill-only     Copy the skill only; skip the Python package
+  --mcp-only       Install the Python package and show MCP setup; skip the skill copy
+  -h, --help       Show this help
+
+Use a specific Python:  PYTHON=python3.12 ./install.sh
+USAGE
 }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --skill-only) SKILL_ONLY=1 ;;
     --mcp-only) MCP_ONLY=1 ;;
-    --no-user-skills) USER_SKILLS=0 ;;
     --user-skills) USER_SKILLS=1 ;;
+    --no-user-skills) USER_SKILLS=0 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage; exit 1 ;;
   esac
@@ -34,18 +44,21 @@ while [[ $# -gt 0 ]]; do
 done
 
 log() { printf '==> %s\n' "$*"; }
-warn() { printf 'warn: %s\n' "$*" >&2; }
 
 install_python() {
-  log "Installing Python package (editable)"
+  log "Installing the Python package into ${ROOT}/.venv"
   if ! command -v "$PYTHON" >/dev/null 2>&1; then
-    echo "Python 3.11+ is required (python3 not found)" >&2
+    echo "Python 3.11 or newer is required, but '${PYTHON}' was not found." >&2
+    echo "Install it from https://www.python.org/downloads/ and run this script again." >&2
     exit 1
   fi
   "$PYTHON" - <<'PY'
 import sys
 if sys.version_info < (3, 11):
-    raise SystemExit(f"Python 3.11+ required, found {sys.version}")
+    raise SystemExit(
+        f"Python 3.11 or newer is required, but this is Python {sys.version.split()[0]}.\n"
+        "Install a newer Python, then run: PYTHON=python3.12 ./install.sh"
+    )
 print(f"Using {sys.executable}")
 PY
   if [[ ! -d "${ROOT}/.venv" ]]; then
@@ -55,7 +68,7 @@ PY
   source "${ROOT}/.venv/bin/activate"
   pip install -U pip >/dev/null
   pip install -e "${ROOT}[dev]"
-  log "CLI available as: $(command -v git-into-gsoc)"
+  log "Checking your setup"
   git-into-gsoc doctor || true
 }
 
@@ -65,7 +78,7 @@ copy_skill() {
   rm -rf "$dest"
   mkdir -p "$dest"
   cp -R "${SKILL_SRC}/." "$dest/"
-  log "Skill installed → ${dest}"
+  log "Skill copied to ${dest}"
 }
 
 install_skills() {
@@ -73,7 +86,7 @@ install_skills() {
     echo "Missing skill at ${SKILL_SRC}" >&2
     exit 1
   fi
-  # Always install project-local copies for repo users
+  # Project-local copies let assistants find the skill when this folder is open.
   local targets=(
     "${ROOT}/.agents/skills/git-into-gsoc"
     "${ROOT}/.cursor/skills/git-into-gsoc"
@@ -81,8 +94,8 @@ install_skills() {
   )
   if [[ "$USER_SKILLS" -eq 1 ]]; then
     targets+=(
-      "${HOME}/.cursor/skills/git-into-gsoc"
       "${HOME}/.agents/skills/git-into-gsoc"
+      "${HOME}/.cursor/skills/git-into-gsoc"
       "${HOME}/.claude/skills/git-into-gsoc"
       "${HOME}/.codex/skills/git-into-gsoc"
     )
@@ -93,33 +106,46 @@ install_skills() {
   for dest in "${targets[@]}"; do
     copy_skill "$dest"
   done
+  if [[ "$USER_SKILLS" -eq 0 ]]; then
+    log "Skill copies stay inside this repository. Add --user-skills to install them for every project."
+  fi
 }
 
 print_mcp_help() {
-  local cmd="git-into-gsoc"
-  if [[ -x "${ROOT}/.venv/bin/git-into-gsoc" ]]; then
-    cmd="${ROOT}/.venv/bin/git-into-gsoc"
-  fi
-  cat <<EOF
+  local cmd="${ROOT}/.venv/bin/git-into-gsoc"
+  cat <<MCP
 
-MCP server (stdio):
-  ${cmd} mcp
+MCP server (lets AI assistants call git-into-gsoc directly)
 
-Example Cursor MCP snippet (~/.cursor/mcp.json):
+For Cursor, merge this into ~/.cursor/mcp.json:
 {
   "mcpServers": {
     "git-into-gsoc": {
       "command": "${cmd}",
-      "args": ["mcp"],
-      "env": {
-        "GITHUB_TOKEN": "\${env:GITHUB_TOKEN}"
-      }
+      "args": ["mcp"]
     }
   }
 }
 
-Set GITHUB_TOKEN (or GH_TOKEN) for higher GitHub API rate limits.
-EOF
+Claude Code, Codex, and Gemini CLI steps:
+  ${DOCS_URL}/guide/03-connect-your-ai-assistant.md
+MCP
+}
+
+print_next_steps() {
+  cat <<NEXT
+
+All set. Next steps:
+
+  1. Turn on the tool in this terminal. Do this again in every new terminal:
+       source "${ROOT}/.venv/bin/activate"
+
+  2. Try your first command:
+       git-into-gsoc program
+
+  3. Follow the beginner guide, one step at a time:
+       ${DOCS_URL}/README.md
+NEXT
 }
 
 main() {
@@ -129,12 +155,12 @@ main() {
   fi
   if [[ "$MCP_ONLY" -eq 0 ]]; then
     install_skills
+    log "Restart your AI assistant so it picks up the git-into-gsoc skill."
   fi
   if [[ "$SKILL_ONLY" -eq 0 ]]; then
     print_mcp_help
+    print_next_steps
   fi
-  log "Done. Try: git-into-gsoc program --year 2027"
-  log "In your assistant: ask to use the git-into-gsoc skill for your GSoC journey."
 }
 
 main

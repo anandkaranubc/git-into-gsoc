@@ -1,129 +1,66 @@
 # git-into-gsoc
 
-**AI-native toolkit for aspiring [Google Summer of Code](https://summerofcode.withgoogle.com) contributors** — starting with GSoC 2027.
+Find your first open-source contribution and prepare for [Google Summer of Code (GSoC)](https://summerofcode.withgoogle.com), using real evidence instead of guesses.
 
-One-shot installable **Agent Skill** + **MCP server** + **CLI** that works with Claude Code, Codex, Cursor, Gemini CLI, and other assistants that load portable skills / MCP.
+GSoC season has a familiar failure mode: beginners pick an abandoned repository, comment "can I work on this?" under an issue that five people already claimed, and submit a generic proposal that organizations reject. git-into-gsoc is built to prevent exactly that. It reads the official program site, the GSoC organization archive, and GitHub, and tells you which organizations fit you, which of their repositories mentors actually work in, whether a newcomer's pull request is likely to land there, and which beginner issues are genuinely free.
 
-It guides the full journey: understand the program → discover orgs → evaluate repos → find *available* beginner issues → make high-quality contributions → engage communities → prepare proposals → track progress.
+You can use it in a terminal or let an AI assistant use it for you. It never fabricates organizations, issues, or deadlines, and it never helps produce spam contributions.
 
-> **Never fabricates opportunities. Never encourages spammy AI-generated contributions.** Evidence from GitHub and GSoC archives, grounded in [official GSoC guidance](https://developers.google.com/open-source/gsoc/resources).
+**[Start the beginner guide](docs/README.md)** for setup and a step-by-step path from your first search to a proposal.
 
-## Why this exists
+## Try it
 
-Generic “good first issue” finders and unconstrained coding agents often push beginners toward:
-
-* abandoned repos and already-claimed issues  
-* typo-farm PRs mentors hate  
-* AI-written proposals orgs auto-reject  
-
-**git-into-gsoc** is opinionated the other way: mentor-trusted contributors, official sources, availability checks, and a journey skill that refuses spam workflows.
-
-## Features
-
-| Layer | What you get |
-|-------|----------------|
-| **Agent Skill** | Portable `SKILL.md` playbooks for every journey phase |
-| **MCP tools** | Live org search, repo health, issue availability, recommendations, progress |
-| **CLI** | Same power in the terminal (`git-into-gsoc` / `gsoc`) |
-| **Progress store** | Local phase tracking, shortlists, contribution log |
-| **Ethics baked in** | Anti-spam rules + AI policy pointers in skill & `program` output |
-
-## Quick start
+You need Git and Python 3.11 or newer. These commands work on macOS, Linux, and Linux on Windows through WSL. For Windows PowerShell steps, see [installation](docs/guide/02-install.md).
 
 ```bash
 git clone https://github.com/anandkaranubc/git-into-gsoc.git
 cd git-into-gsoc
-./install.sh
-export GITHUB_TOKEN=ghp_...   # recommended for GitHub API rate limits
-
-git-into-gsoc doctor
-git-into-gsoc program --year 2027
-git-into-gsoc recommend --github YOUR_USER --tech python --interests science
+./install.sh --no-user-skills
+source .venv/bin/activate
+git-into-gsoc program
 ```
 
-Then in Cursor / Claude Code / Codex / Gemini CLI:
+`program` shows the current GSoC phase and timeline with no GitHub token needed. If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits.
 
-> Use the **git-into-gsoc** skill. I want to prepare for GSoC 2027; I know Python and care about scientific computing.
-
-See [skills/git-into-gsoc/references/install.md](skills/git-into-gsoc/references/install.md) for MCP JSON snippets.
-
-## CLI cheatsheet
+Then explore:
 
 ```bash
-git-into-gsoc program --year 2027
-git-into-gsoc orgs --tech python --topics science --year 2026
-git-into-gsoc org "SymPy"
-git-into-gsoc repos "SymPy"          # rank an org's repos for a first PR
-git-into-gsoc repo sympy/sympy
-git-into-gsoc issues --language python --org sympy
-git-into-gsoc issue sympy/sympy 123
-git-into-gsoc recommend --github alice --tech python
-git-into-gsoc proposal
-git-into-gsoc progress summary
-git-into-gsoc journey
-git-into-gsoc mcp          # stdio MCP server
+git-into-gsoc orgs --tech python --topics science -n 5     # which orgs fit me?
+git-into-gsoc org "SymPy"                                  # ideas page, channels, slot history
+git-into-gsoc repos "SymPy"                                # which of its repos should I start in?
+git-into-gsoc repo sympy/sympy                             # will a newcomer's PR land here?
+git-into-gsoc issues --language python -n 5                # beginner issues that are actually free
+git-into-gsoc issue owner/repo#123                         # claims, PRs, and what to do before commenting
 ```
 
-JSON output: add `--output json` to most commands.
+## What you get
 
-## MCP tools
+| Layer | What it does |
+|-------|--------------|
+| **CLI** (`git-into-gsoc`, alias `gsoc`) | Every feature in the terminal, with `--output json` for scripts |
+| **MCP server** (`git-into-gsoc mcp`) | The same features as tools for Claude Code, Cursor, Codex, Gemini CLI, and any MCP client |
+| **Agent Skill** (`skills/git-into-gsoc`) | A portable playbook that teaches an assistant how to coach a GSoC contributor without fabricating or spamming |
+| **Progress store** | A local record of your phases, shortlist, tracked repos and issues, and notes |
 
-| Tool | Purpose |
-|------|---------|
-| `gsoc_program_info` | Timeline, official links, anti-spam rules |
-| `gsoc_journey_guide` | Phase playbooks |
-| `gsoc_search_orgs` | Rank mentoring orgs from archive data |
-| `gsoc_org_details` | Single org profile |
-| `gsoc_discover_repos` | Rank an org's repos: ideas-page mentions, beginner issues, activity |
-| `gsoc_evaluate_repo` | Will a newcomer's PR land? Grade, outsider merge rate, setup hints |
-| `gsoc_find_issues` | Beginner issues + availability |
-| `gsoc_issue_status` | Claimability check |
-| `gsoc_recommend_path` | Personalized orgs + starter issues |
-| `gsoc_proposal_checklist` | Proposal quality bar |
-| `gsoc_progress` | Local journey tracking |
-| `gsoc_rate_limit` | GitHub API budget |
+### Evidence, not vibes
 
-## Architecture
+- **Organizations** come from the official accepted-org list for the year, merged with the public archive for multi-year history, slot counts, and past project titles. When next year's list is not out yet, the tool says so and shows the latest official list.
+- **Timelines** come from the official site when published. Unpublished years are projected from the last official year and clearly labelled as estimates.
+- **Repository ranking** reads the org's GSoC ideas page and counts open, unassigned beginner issues per repository.
+- **Repository health** measures what matters to newcomers: whether outside contributors' PRs get merged, review speed, open beginner issues, community files, and CI.
+- **Issue availability** reads each issue's timeline: linked PRs, assignees, "can I work on this?" claims with dates, maintainer approvals, and contested threads.
 
-```
-skills/git-into-gsoc/     # portable Agent Skill (progressive disclosure)
-src/git_into_gsoc/
-  cli.py                  # Typer CLI
-  mcp_server.py           # FastMCP stdio server
-  service.py              # shared facade
-  github/                 # GitHub REST intelligence
-  gsoc/                   # org archive + timeline
-  scoring/                # org / repo / issue scores
-  progress/               # local progress.json
-  guidance.py             # official sources + ethics
-```
+## Where to go next
 
-**Data sources**
-
-* Official GSoC site & Google developer docs (cited, not scraped for auth-gated content)
-* [GSoC Organizations API](https://api.gsocorganizations.dev/) (community archive of public GSoC pages)
-* GitHub REST API (optional `GITHUB_TOKEN`)
-
-**GSoC 2027:** org lists and dates may be unpublished. The toolkit defaults research to the latest archived year (**2026**) and labels 2027 timeline entries as estimates until Google publishes them.
-
-## Differentiation
-
-Compared with generic OSS issue MCP servers or multi-skill OSS packs:
-
-1. **GSoC-native journey** (proposal, bonding, org continuity) — not only “find an issue”
-2. **Archive-aware org matching** with technologies/topics/years
-3. **Skill + MCP + CLI** one-shot install across assistants
-4. **Explicit anti-spam / anti-fabrication** product stance aligned with [official AI](https://developers.google.com/open-source/gsoc/resources/ai_guidance) and [spam](https://developers.google.com/open-source/gsoc/resources/spam_proposals) guidance
-
-## Documentation
-
-* [Contributor guide (this repo)](CONTRIBUTING.md)
-* [Architecture](docs/architecture.md)
-* [Journey map](docs/journey.md)
-* [Repository governance](docs/governance.md)
-* [MCP reference](docs/mcp.md)
-* [Examples](examples/)
-* Skill references under `skills/git-into-gsoc/references/`
+| I want to... | Start here |
+|---|---|
+| Understand GSoC and open source | [Beginner guide](docs/README.md) |
+| Connect my AI assistant | [Assistant setup](docs/guide/03-connect-your-ai-assistant.md) |
+| Look up a command | [Command reference](docs/cli.md) |
+| See the MCP tools | [MCP reference](docs/mcp.md) |
+| Fix a setup or connection problem | [Troubleshooting](docs/troubleshooting.md) |
+| Know where results come from | [Sources and limitations](docs/sources.md) |
+| Improve this project | [Contributing](CONTRIBUTING.md) and [architecture](docs/architecture.md) |
 
 ## Development
 
@@ -136,12 +73,10 @@ mypy src
 pytest
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for Conventional Commits, squash-merge PRs, and release process.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for Conventional Commits, squash-merge PRs, and the release process.
 
-## License
+## License and disclaimer
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
 
-## Disclaimer
-
-Google Summer of Code and GSoC are trademarks of Google LLC. This project is **not** affiliated with or endorsed by Google. Always verify dates, orgs, and rules on the [official program site](https://summerofcode.withgoogle.com).
+This independent project is not affiliated with or endorsed by Google. Google Summer of Code and GSoC are trademarks of Google LLC. Always verify dates, organizations, and rules on the [official program site](https://summerofcode.withgoogle.com), and follow each organization's [AI policy](https://developers.google.com/open-source/gsoc/resources/ai_guidance).
