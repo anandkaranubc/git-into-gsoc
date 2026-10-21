@@ -21,7 +21,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoUrl = "https://github.com/anandkaranubc/git-into-gsoc"
+$RepoUrl = if ($env:GIG_REPO_URL) { $env:GIG_REPO_URL } else { "https://github.com/anandkaranubc/git-into-gsoc" }
 $DocsUrl = "$RepoUrl/blob/main/docs"
 
 function Log($msg) { Write-Host "==> $msg" }

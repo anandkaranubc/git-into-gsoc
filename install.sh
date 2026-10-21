@@ -11,7 +11,8 @@
 # install.ps1 or call `setup` directly.
 set -euo pipefail
 
-REPO_URL="https://github.com/anandkaranubc/git-into-gsoc"
+# GIG_REPO_URL overrides the source (CI tests the bootstrap against a local checkout).
+REPO_URL="${GIG_REPO_URL:-https://github.com/anandkaranubc/git-into-gsoc}"
 DOCS_URL="${REPO_URL}/blob/main/docs"
 PYTHON="${PYTHON:-python3}"
 
