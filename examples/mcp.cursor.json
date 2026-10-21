@@ -1,11 +1,8 @@
 {
   "mcpServers": {
     "git-into-gsoc": {
-      "command": "git-into-gsoc",
-      "args": ["mcp"],
-      "env": {
-        "GITHUB_TOKEN": "${env:GITHUB_TOKEN}"
-      }
+      "command": "/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc",
+      "args": ["mcp"]
     }
   }
 }
