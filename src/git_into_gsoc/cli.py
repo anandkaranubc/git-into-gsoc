@@ -1278,7 +1278,7 @@ def proposal_cmd(
         if link["kind"] != "pull":
             continue
         state = link["state"] or ("not verified" if not report["links_verified"] else "unknown")
-        who = f" by @{link['author']}" if link["author"] else ""
+        who = f", opened by @{link['author']}" if link["author"] else ""
         note = f"  [yellow]{link['note']}[/yellow]" if link["note"] else ""
         console.print(f"  PR {link['repo']}#{link['number']}: {state}{who}{note}")
     console.print(f"\n[bold]{report['verdict']}[/bold]")

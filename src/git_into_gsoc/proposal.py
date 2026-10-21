@@ -38,6 +38,13 @@ RECOMMENDED_SECTIONS = ("benefits", "contributions", "availability")
 GENERIC_PHRASES = (
     "i am passionate about",
     "i am very passionate",
+    "passionate and",
+    "highly motivated",
+    "self-motivated",
+    "quick learner",
+    "team player",
+    "hard-working",
+    "fast-paced world",
     "cutting-edge",
     "cutting edge",
     "state-of-the-art",
@@ -222,6 +229,17 @@ def verify_links(
     return links
 
 
+def _claims_merged(text: str, link: LinkEvidence) -> bool:
+    """Whether the sentence or list item that holds the link calls it merged."""
+    for line in text.splitlines():
+        if link.url not in line:
+            continue
+        for sentence in re.split(r"(?<=[.!?])\s+(?=[A-Z])", line):
+            if link.url in sentence and re.search(r"\bmerged\b", sentence, re.I):
+                return True
+    return False
+
+
 def check_proposal(
     text: str,
     *,
@@ -343,6 +361,19 @@ def check_proposal(
         if lookup is not None:
             detail += f", {len(merged)} merged"
         findings.append(Finding("links", "pass", "Links to pull requests", detail))
+    overclaimed = [
+        link for link in pulls if link.state in {"open", "closed"} and _claims_merged(text, link)
+    ]
+    if overclaimed:
+        findings.append(
+            Finding(
+                "link_claims",
+                "fail",
+                f"{len(overclaimed)} PR(s) described as merged are not merged",
+                "; ".join(f"{link.url} is {link.state}" for link in overclaimed[:3])
+                + ". Reviewers open every link; describe each PR as it is.",
+            )
+        )
     if foreign:
         findings.append(
             Finding(

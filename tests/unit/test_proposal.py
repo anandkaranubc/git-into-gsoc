@@ -137,3 +137,33 @@ def test_placeholders_and_ideas_page_mirroring() -> None:
     assert (
         _by_id(check_proposal(copied, ideas_text=ideas))["mirrors_ideas_page"]["status"] == "fail"
     )
+
+
+def test_a_pr_described_as_merged_must_be_merged() -> None:
+    # A real beginner draft (2026-10-21) said "I have merged PR .../27463 and .../27402";
+    # #27402 was closed without merging and the check still passed.
+    draft = (
+        "## About me\nI have merged PR https://github.com/sympy/sympy/pull/27463 and "
+        "https://github.com/sympy/sympy/pull/27402.\n\n"
+        "## Contributions\n- https://github.com/sympy/sympy/pull/27500 (open, under review)\n"
+    )
+    states = {27463: "merged", 27402: "closed", 27500: "open"}
+
+    def lookup(repo: str, number: int) -> dict[str, Any] | None:
+        state = states[number]
+        return {
+            "user": {"login": "me"},
+            "merged_at": "2025-01-09T00:00:00Z" if state == "merged" else None,
+            "state": "closed" if state != "open" else "open",
+        }
+
+    findings = _by_id(check_proposal(draft, github_user="me", lookup=lookup))
+    claim = findings["link_claims"]
+    assert claim["status"] == "fail"
+    assert "27402" in claim["detail"] and "27463" not in claim["detail"]
+    assert "27500" not in claim["detail"]  # described as open, which is true
+
+
+def test_common_cover_letter_phrases_are_flagged() -> None:
+    found = generic_phrases("I am a passionate and highly motivated student and a quick learner.")
+    assert {"passionate and", "highly motivated", "quick learner"} <= set(found)

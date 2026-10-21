@@ -26,7 +26,7 @@ Repositories can be written as `owner/name`, as any GitHub URL, or as the `git@g
 git-into-gsoc proposal draft.md --github YOUR_USERNAME --ideas-file ideas.txt
 ```
 
-The check never rewrites your draft. It verifies linked pull requests on GitHub (and flags ones authored by someone else when `--github` is given), counts week-by-week timeline entries and buffer time, looks for concrete references to files, functions, and issues, lists generic phrases and leftover template placeholders that [Google's spam guidance](https://developers.google.com/open-source/gsoc/resources/spam_proposals) warns about, and, with `--ideas-file`, measures how much of the text is copied from the organization's ideas page. `--no-verify` skips the GitHub lookups.
+The check never rewrites your draft. It verifies linked pull requests on GitHub (and flags ones authored by someone else when `--github` is given, and any that the draft calls merged but that are open or were closed without merging), counts week-by-week timeline entries and buffer time, looks for concrete references to files, functions, and issues, lists generic phrases and leftover template placeholders that [Google's spam guidance](https://developers.google.com/open-source/gsoc/resources/spam_proposals) warns about, and, with `--ideas-file`, measures how much of the text is copied from the organization's ideas page. `--no-verify` skips the GitHub lookups.
 
 `program` fetches the year's milestones from the official site. If Google has not published that year, it projects the previous official year forward and marks every date as an estimate with an uncertainty window. Offline, it uses an embedded snapshot. `--size` selects which evaluation deadlines to show, because they differ by project size.
 
