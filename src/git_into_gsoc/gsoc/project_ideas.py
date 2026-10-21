@@ -157,6 +157,8 @@ _NON_IDEA_HEADINGS = (
     "sizes",
     "what you should know",
     "how do we judge",
+    "navigation menu",
+    "navigation",
 )
 _COMMENT_RE = re.compile(r"^\s*(?:\[//\]:\s*#|#(?!#*\s)|<!--)")
 _BULLET_RE = re.compile(r"^\s*(?:[-*+•]|\d+[.)])\s+")
