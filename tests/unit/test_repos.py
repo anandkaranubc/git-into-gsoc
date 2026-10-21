@@ -179,8 +179,12 @@ def test_repo_health_end_to_end() -> None:
         return_value=httpx.Response(
             200,
             json=[_pull(f"u{i}", "CONTRIBUTOR", i % 2 == 0) for i in range(8)]
-            + [_pull("core", "MEMBER", True)],
+            + [_pull("core", "MEMBER", True)]
+            + [_pull("lead", "CONTRIBUTOR", True)],  # assignable: an insider despite the label
         )
+    )
+    respx.get(f"{api}/assignees").mock(
+        return_value=httpx.Response(200, json=[{"login": "core"}, {"login": "lead"}])
     )
     respx.get(f"{api}/labels").mock(
         return_value=httpx.Response(200, json=[{"name": "good first issue"}])
@@ -194,5 +198,6 @@ def test_repo_health_end_to_end() -> None:
     health = GitHubClient().repo_health("https://github.com/acme/lib")
     assert health.has_contributing and health.has_ci and health.has_pr_template
     assert health.open_beginner_issues == 1
-    assert health.outsider_prs_sampled == 8
+    assert health.outsider_prs_sampled == 8  # lead is assignable, so not an outsider
+    assert health.insiders_known and health.pr_source == "rest"
     assert health.grade in {"A", "B"}

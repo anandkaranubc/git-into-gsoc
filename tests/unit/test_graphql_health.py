@@ -170,10 +170,11 @@ def test_repo_health_falls_back_to_rest_when_graphql_fails(monkeypatch: pytest.M
     respx.get(f"{api}/actions/workflows").mock(return_value=httpx.Response(200, json={}))
     respx.get(f"{api}/labels").mock(return_value=httpx.Response(200, json=[]))
     rest_pulls = respx.get(f"{api}/pulls").mock(return_value=httpx.Response(200, json=[]))
+    respx.get(f"{api}/assignees").mock(return_value=httpx.Response(403, json={}))
     respx.get(url__startswith="https://commits.ecosyste.ms").mock(
         return_value=httpx.Response(404, json={})
     )
     respx.post("https://api.github.com/graphql").mock(return_value=httpx.Response(502))
     health = GitHubClient().repo_health("acme/lib")
     assert rest_pulls.called
-    assert health.pr_source == "rest" and not health.insiders_known
+    assert health.pr_source == "rest" and not health.insiders_known  # assignees call failed

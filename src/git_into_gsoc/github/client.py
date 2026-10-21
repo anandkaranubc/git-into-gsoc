@@ -286,6 +286,22 @@ class GitHubClient:
             return []
         return data if isinstance(data, list) else []
 
+    def list_assignees(self, owner: str, repo: str) -> frozenset[str] | None:
+        """Logins that can be assigned issues: the public proxy for write access (one call)."""
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/assignees",
+                params={"per_page": 100},
+                ttl=self.settings.archive_ttl_seconds,
+            )
+        except HttpError:
+            return None
+        if not isinstance(data, list):
+            return None
+        return frozenset(
+            str(u.get("login")) for u in data if isinstance(u, dict) and u.get("login")
+        )
+
     def pull_analysis(self, owner: str, repo: str) -> PullAnalysis | None:
         """GraphQL PR analysis (insiders, first human reply); None without a token."""
         if not self.token:
@@ -329,9 +345,15 @@ class GitHubClient:
             pr_source = "graphql"
         else:
             # Most recently created, like the GraphQL path; sorting by update time
-            # pulls in old PRs that were merely closed or relabelled recently.
-            pulls = self.list_pulls(owner, repo, state="closed", per_page=60, sort="created")
-            stats = pull_stats(pulls)
+            # pulls in old PRs that were merely closed or relabelled recently. The
+            # assignees endpoint gives the same insider set without a token.
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                pulls_f = pool.submit(
+                    self.list_pulls, owner, repo, state="closed", per_page=60, sort="created"
+                )
+                insiders_f = pool.submit(self.list_assignees, owner, repo)
+                pulls, insiders = pulls_f.result(), insiders_f.result()
+            stats = pull_stats(pulls, insiders=insiders)
             pr_source = "rest"
         files = profile.get("files") or {}
         label = pick_beginner_label(labels)
