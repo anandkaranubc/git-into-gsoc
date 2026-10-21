@@ -274,3 +274,29 @@ def test_pr_draft_lists_each_install_step_once() -> None:
         },
     )
     assert draft["template"].count("npm clean-install") == 1
+
+
+def test_intro_goes_to_a_public_channel_never_a_mentor_email(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import ContactChannel, OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    # Learning Unlimited lists its mentors' email first; a public hello does not go there.
+    org = OrgSummary(
+        name="Learning Unlimited",
+        slug="learning-unlimited",
+        channels=[
+            ContactChannel(kind="email", value="gsoc-mentors@example.org"),
+            ContactChannel(kind="mailingList", value="https://lists.example.org/dev"),
+            ContactChannel(kind="blog", value="https://blog.example.org"),
+            ContactChannel(kind="chat", value="https://chat.example.org"),
+        ],
+    )
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name: org)
+    draft = toolkit.draft("intro", org="Learning Unlimited")
+    assert draft["context"]["channels"] == [
+        "https://chat.example.org",
+        "https://lists.example.org/dev",
+    ]
+    assert draft["template"].startswith("In https://chat.example.org, once:")
+    assert "gsoc-mentors@example.org" not in draft["template"]

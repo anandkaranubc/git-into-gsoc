@@ -73,6 +73,7 @@ from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import (
     Availability,
+    ContactChannel,
     IdeasDocument,
     ProgressState,
     ProjectIdea,
@@ -113,6 +114,20 @@ _MANIFESTS = ("package.json", "pyproject.toml", "setup.py", "Cargo.toml", "go.mo
 # Match reasons from an organization's own topic tags or category; a passing mention in
 # its description (LLVM mentions "embedded") is too weak to count as an interest match.
 _TOPIC_REASONS = ("Topic", "Related topic", "Category")
+
+
+# Where a newcomer should say hello, best first. A contact email reaches the
+# org admins or mentors privately, so a public introduction never goes there.
+_PUBLIC_CHANNEL_ORDER = ("chat", "irc", "forum", "mailingList")
+
+
+def public_channels(channels: list[ContactChannel]) -> list[str]:
+    """The org's public channels, chat first, leaving out private emails and blogs."""
+    ranked = sorted(
+        (c for c in channels if c.kind in _PUBLIC_CHANNEL_ORDER),
+        key=lambda c: _PUBLIC_CHANNEL_ORDER.index(c.kind),
+    )
+    return [c.value for c in ranked]
 
 
 class GSoCToolkit:
@@ -1319,9 +1334,7 @@ class GSoCToolkit:
             found = self.gsoc.get_organization(org)
             if found:
                 context["org"] = found.name
-                context["channels"] = [c.value for c in found.channels if c.kind == "chat"] or [
-                    c.value for c in found.channels
-                ]
+                context["channels"] = public_channels(found.channels)
         if issue:
             owner, name, num = parse_issue_ref(issue)
             repo = repo or f"{owner}/{name}"
