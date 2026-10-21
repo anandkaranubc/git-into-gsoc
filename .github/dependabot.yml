@@ -1,10 +1,16 @@
 version: 2
+
+# Every ecosystem waits seven days before proposing a new release, so a broken
+# or malicious upload is usually pulled before it reaches this repository.
+# Security updates are never delayed.
 updates:
   - package-ecosystem: pip
     directory: /
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     labels:
       - dependencies
@@ -22,10 +28,27 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 3
     labels:
       - dependencies
       - ci
     commit-message:
       prefix: ci
+      include: scope
+
+  # The hooks in .pre-commit-config.yaml that come from other repositories.
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 2
+    labels:
+      - dependencies
+    commit-message:
+      prefix: chore
       include: scope
