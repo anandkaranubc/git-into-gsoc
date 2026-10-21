@@ -770,6 +770,15 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
     return pages[:40]
 
 
+_TEMPLATE_TITLES = {"title", "project title", "idea title", "your title", "name of the project"}
+
+
+def _is_template(idea: ProjectIdea) -> bool:
+    title = re.sub(r"[<>\[\]{}]", "", idea.title).strip().lower()
+    section = (idea.section or "").strip().lower()
+    return title in _TEMPLATE_TITLES or "template" in section or title.startswith("template")
+
+
 def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
     doc = IdeasDocument(source_url=source_url, fetched_url=source_url)
     doc.headings = [h[1] for line in lines if (h := _heading(line))][:60]
@@ -800,6 +809,9 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
     _, _, _, ideas, outside = best
     doc.ai_policy = ai_policy_sentences("\n".join(outside))
 
+    # Pages show a blank template for new ideas ("Template / Title", mentors "Mentor,
+    # Info"); it has every label and none of the content.
+    ideas = [i for i in ideas if not _is_template(i)]
     labelled_blocks = sum(1 for i in ideas if _labelled(i))
     if ideas and labelled_blocks * 2 >= len(ideas):
         # On a mostly labelled page, a block with no recognised field at all is a

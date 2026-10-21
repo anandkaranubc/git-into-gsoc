@@ -362,3 +362,15 @@ def test_mentor_lists_keep_names_and_drop_titles_and_instructions() -> None:
         "ardiansyah",
         "Timo Pagel",
     ]
+
+
+def test_a_blank_idea_template_is_not_an_idea() -> None:
+    # Open Robotics' 2026 page ends with a template for new ideas; `ideas` listed it as
+    # a high-confidence idea titled "Title" with mentors "Mentor, Info".
+    page = (
+        "# GSoC Ideas\n\n## Faster builds\n- Mentors: Ada Example\n- Difficulty: Easy\n"
+        "- Size: 175 hours\n\n## Template\n### Title\n- Mentors: Mentor, Info\n"
+        "- Difficulty: Easy, Medium, Hard\n- Size: 90 / 175 / 350 hours\n"
+    )
+    doc = extract_ideas(markdown_to_lines(page), source_url="https://example.org/ideas")
+    assert [i.title for i in doc.ideas] == ["Faster builds"]
