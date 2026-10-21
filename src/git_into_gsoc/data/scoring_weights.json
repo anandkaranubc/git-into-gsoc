@@ -1,0 +1,25 @@
+{
+  "repo_health": {
+    "push_recency_max": 25,
+    "contributing": 15,
+    "code_of_conduct": 5,
+    "ci": 10,
+    "beginner_labels": 10,
+    "merge_rate_max": 15,
+    "pr_turnaround_max": 10,
+    "stars_band": 5,
+    "license": 5
+  },
+  "issue": {
+    "base": 40,
+    "available_bonus": 20,
+    "label_bonus_per": 8,
+    "label_bonus_cap": 25
+  },
+  "org_match": {
+    "prefer_year_bonus": 20,
+    "long_term_bonus": 15,
+    "tech_bonus": 18,
+    "topic_bonus": 14
+  }
+}
