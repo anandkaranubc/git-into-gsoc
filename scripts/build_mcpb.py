@@ -12,8 +12,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import re
 import sys
+import time
 import zipfile
 from pathlib import Path
 
@@ -83,13 +85,41 @@ def bundle_files(root: Path = ROOT) -> list[Path]:
     return files
 
 
+ZIP_EPOCH = (1980, 1, 1, 0, 0, 0)  # the earliest date the zip format can store
+
+
+def entry_timestamp() -> tuple[int, int, int, int, int, int]:
+    """One fixed time for every entry, so the same source always gives the same bytes.
+
+    The registry records the bundle's checksum when a version is published, so a
+    rebuild must reproduce it exactly. SOURCE_DATE_EPOCH (the reproducible-builds
+    convention) wins when set; otherwise the zip format's earliest date is used.
+    """
+    epoch = os.environ.get("SOURCE_DATE_EPOCH")
+    if not epoch:
+        return ZIP_EPOCH
+    stamp = time.gmtime(int(epoch))[:6]
+    return stamp if stamp >= ZIP_EPOCH else ZIP_EPOCH
+
+
+def _entry(name: str, *, mode: int, stamp: tuple[int, int, int, int, int, int]) -> zipfile.ZipInfo:
+    info = zipfile.ZipInfo(name, date_time=stamp)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.external_attr = (0o100000 | mode) << 16  # regular file with this Unix mode
+    return info
+
+
 def build(out: Path, root: Path = ROOT) -> tuple[Path, str]:
     version = package_version(root)
+    stamp = entry_timestamp()
     out.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("manifest.json", json.dumps(manifest(version), indent=2) + "\n")
+        manifest_bytes = (json.dumps(manifest(version), indent=2) + "\n").encode("utf-8")
+        zf.writestr(_entry("manifest.json", mode=0o644, stamp=stamp), manifest_bytes)
         for path in bundle_files(root):
-            zf.write(path, path.relative_to(root).as_posix())
+            mode = 0o755 if path.stat().st_mode & 0o111 else 0o644
+            name = path.relative_to(root).as_posix()
+            zf.writestr(_entry(name, mode=mode, stamp=stamp), path.read_bytes())
     digest = hashlib.sha256(out.read_bytes()).hexdigest()
     return out, digest
 

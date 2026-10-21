@@ -9,8 +9,10 @@ name: Release assets and MCP registry
 #
 # The release workflow dispatches this one after Release Please creates a
 # release, because a release created with the built-in Actions token does not
-# fire the `release` event. Running it again for a tag refreshes the assets and
-# skips the registry when that version is already published.
+# fire the `release` event. Running it again for a tag refreshes the wheel and
+# the source archive. The registry records the bundle's checksum when a version
+# is published and cannot be edited by this workflow, so an already published
+# bundle is never replaced: the run only checks that it still matches.
 
 on:
   release:
@@ -69,22 +71,54 @@ jobs:
           test -f "dist/git_into_gsoc-${{ steps.tag.outputs.version }}-py3-none-any.whl"
           test -f "dist/git_into_gsoc-${{ steps.tag.outputs.version }}.tar.gz"
 
-      - name: Attach the assets to the release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/*.whl dist/*.tar.gz dist/git-into-gsoc.mcpb --clobber
-
-      - name: Skip the registry when this version is already published
+      - name: Look the version up in the registry
         id: registry
         run: |
           NAME="$(jq -r .name server.json)"
           VERSION="${{ steps.tag.outputs.version }}"
-          PUBLISHED="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers/${NAME//\//%2F}/versions" | jq -r '.servers[].server.version' || true)"
-          if printf '%s\n' "$PUBLISHED" | grep -qx "$VERSION"; then
-            echo "Version $VERSION is already in the registry; refreshed the release assets only."
+          RECORD="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers/${NAME//\//%2F}/versions/${VERSION}" || true)"
+          RECORDED_SHA="$(jq -r '.server.packages[0].fileSha256 // empty' <<<"$RECORD" 2>/dev/null || true)"
+          if [ -n "$RECORDED_SHA" ]; then
+            echo "Version $VERSION is already in the registry with bundle checksum $RECORDED_SHA."
             echo "publish=false" >> "$GITHUB_OUTPUT"
           else
             echo "publish=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "recorded_sha=${RECORDED_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Attach the wheel and source archive to the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/*.whl dist/*.tar.gz --clobber
+
+      - name: Attach the bundle to the release
+        if: steps.registry.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ steps.tag.outputs.tag }}" dist/git-into-gsoc.mcpb --clobber
+
+      - name: Check that the published bundle still matches the registry
+        if: steps.registry.outputs.publish == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="${{ steps.tag.outputs.tag }}"
+          RECORDED="${{ steps.registry.outputs.recorded_sha }}"
+          BUILT="$(openssl dgst -sha256 dist/git-into-gsoc.mcpb | awk '{print $NF}')"
+          mkdir -p published
+          if gh release download "$TAG" --pattern git-into-gsoc.mcpb --dir published --clobber; then
+            ON_RELEASE="$(openssl dgst -sha256 published/git-into-gsoc.mcpb | awk '{print $NF}')"
+          else
+            ON_RELEASE="missing"
+          fi
+          if [ "$ON_RELEASE" = "$RECORDED" ]; then
+            echo "The bundle on the release matches the registry; left untouched."
+          elif [ "$BUILT" = "$RECORDED" ]; then
+            echo "The bundle on the release was $ON_RELEASE; restoring the matching build."
+            gh release upload "$TAG" dist/git-into-gsoc.mcpb --clobber
+          else
+            echo "::error::The registry recorded bundle checksum $RECORDED for $TAG, the release has $ON_RELEASE, and this build gives $BUILT. The registry entry cannot be edited, so restore the original bundle by hand (see docs/releasing.md)."
+            exit 1
           fi
 
       - name: Point server.json at the release asset
