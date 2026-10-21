@@ -10,7 +10,16 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
 # The main branch ruleset requires these check names; renaming a job blocks every merge.
-REQUIRED_CHECKS = {"Quality", "Test (Python 3.11)", "Test (Python 3.13)", "Installer smoke"}
+REQUIRED_CHECKS = {
+    "Quality",
+    "Test (Python 3.11)",
+    "Test (Python 3.13)",
+    "Test (Python 3.14)",
+    "Test (macOS, Python 3.12)",
+    "Test (Windows, Python 3.12)",
+    "Installer smoke",
+    "Installer smoke (Windows)",
+}
 
 
 def test_workflows_are_found() -> None:

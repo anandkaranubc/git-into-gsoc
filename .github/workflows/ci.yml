@@ -48,7 +48,7 @@ jobs:
 
   test:
     # Job names are required status checks in the main branch ruleset; keep
-    # "Test (Python 3.11)" and "Test (Python 3.13)" stable when editing.
+    # them stable when editing (tests/unit/test_workflows.py lists them).
     name: Test (${{ matrix.label }})
     runs-on: ${{ matrix.os }}
     needs: quality
