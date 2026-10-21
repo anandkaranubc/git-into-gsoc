@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.6.0...v0.6.1) (2026-10-21)
+
+
+### Documentation
+
+* **research:** open all 292 census repositories, resolve every link in the notes, and fix the one stale link ([#67](https://github.com/anandkaranubc/git-into-gsoc/issues/67)) ([e27b292](https://github.com/anandkaranubc/git-into-gsoc/commit/e27b29218422c51e3aa886d69d659e332ae77d54))
+
 ## [0.6.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.5.1...v0.6.0) (2026-10-21)
 
 
