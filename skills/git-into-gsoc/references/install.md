@@ -17,17 +17,12 @@ git-into-gsoc doctor
 ```
 
 The installer creates a virtual environment in `.venv`, installs the package,
-and copies this skill into the repository's `.agents`, `.cursor`, and `.claude`
-folders. The `source` line turns the tool on in the current terminal; repeat
-it in every new terminal. `doctor` prints the version, where cache and progress
-files live, and whether a GitHub token was found.
+and runs the project-scoped assistant setup described below. The `source` line
+turns the tool on in the current terminal; repeat it in every new terminal.
+`doctor` prints the version, where cache and progress files live, whether a
+GitHub token was found, and which assistants have the skill and the MCP server.
 
-To copy the skill into your home folders as well (`~/.agents`, `~/.cursor`,
-`~/.claude`, `~/.codex`, and `~/.gemini` when present), run
-`./install.sh --skill-only --user-skills` from the repository. Existing copies
-of this skill are replaced.
-
-Package only, no skill copies:
+Package only, with no assistant setup:
 
 ```bash
 python3 -m venv .venv
@@ -48,21 +43,37 @@ current folder, then the GitHub CLI (`gh auth token`) when `gh` is installed
 and logged in. `doctor` reports which source it used without printing the
 token. Never paste a token into chat.
 
-## Connect an assistant over MCP
+## Connect an assistant
 
 MCP (Model Context Protocol) lets an assistant call the tool directly. The
 server runs on the person's computer and reads public data; it never posts to
-GitHub. Register it with the full path to the executable and the single
-argument `mcp`:
+GitHub.
 
-- macOS, Linux, WSL: `/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc`
-- Windows: `C:\path\to\git-into-gsoc\.venv\Scripts\git-into-gsoc.exe`
+`git-into-gsoc setup` copies this skill and registers the MCP server for every
+assistant it detects: Claude Code, Cursor, Codex, Gemini CLI, Windsurf, and
+VS Code.
 
+```bash
+git-into-gsoc setup                       # every detected assistant, user-wide
+git-into-gsoc setup --assistant cursor    # one assistant
+git-into-gsoc setup --scope project       # only inside the current project folder
+git-into-gsoc setup --dry-run             # show what would change
+```
+
+Existing configuration files are merged, never replaced, and a `.bak` copy is
+written first. Running it again reports "unchanged". `--no-skill` and
+`--no-mcp` limit it to one half of the job. From a clone, `./install.sh`
+runs the project-scoped setup and `./install.sh --user-skills` runs the
+user-wide one.
+
+If the installed version has no `setup` command, register the server by hand.
+The command is the full path to the executable
+(`/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc`, or
+`.venv\Scripts\git-into-gsoc.exe` on Windows) with the single argument `mcp`.
 [mcp.example.json](../assets/mcp.example.json) shows the shape for clients
-that read a JSON file, such as Cursor. Replace the placeholder path and merge
-the entry into the existing configuration. For Claude Code, Codex CLI, and
-Gemini CLI commands, follow the repository's
-[assistant setup guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md).
+that read a JSON file, such as Cursor. The repository's
+[assistant setup guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md)
+has the commands for each client.
 
 Running `git-into-gsoc mcp` by hand shows nothing: the server waits for an
 assistant to talk to it. Press Ctrl+C to stop it. Normally the assistant
