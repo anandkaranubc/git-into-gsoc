@@ -48,14 +48,21 @@ jobs:
           python -c "from pathlib import Path; t=Path('skills/git-into-gsoc/SKILL.md').read_text(); assert t.startswith('---'); assert 'name: git-into-gsoc' in t"
 
   test:
-    name: Test (Python ${{ matrix.python-version }})
-    runs-on: ubuntu-latest
+    # Job names are required status checks in the main branch ruleset; keep
+    # "Test (Python 3.11)" and "Test (Python 3.13)" stable when editing.
+    name: Test (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
     needs: quality
     strategy:
       fail-fast: false
       matrix:
-        # Full matrix kept lean: oldest supported + current stable.
-        python-version: ["3.11", "3.13"]
+        # Oldest and newest supported Python on Linux; one current Python on
+        # macOS and Windows because install paths and config files differ.
+        include:
+          - { os: ubuntu-latest, python-version: "3.11", label: "Python 3.11" }
+          - { os: ubuntu-latest, python-version: "3.13", label: "Python 3.13" }
+          - { os: macos-latest, python-version: "3.12", label: "macOS, Python 3.12" }
+          - { os: windows-latest, python-version: "3.12", label: "Windows, Python 3.12" }
     steps:
       - uses: actions/checkout@v4
 
@@ -84,9 +91,40 @@ jobs:
           python-version: "3.12"
           cache: pip
 
-      - name: One-shot installer
+      - name: One-shot installer (clone, project scope)
         run: |
           chmod +x install.sh
-          ./install.sh --no-user-skills
+          ./install.sh --no-user-skills --assistant all
           .venv/bin/git-into-gsoc --version
           .venv/bin/git-into-gsoc journey --output json | grep -q learn
+          test -f .claude/skills/git-into-gsoc/SKILL.md
+          test -f .cursor/mcp.json
+          .venv/bin/git-into-gsoc setup --dry-run --scope project --assistant all --output json | grep -q '"unchanged"'
+
+      - name: Wheel ships the skill (uv tool install, no clone)
+        run: |
+          pip install -q uv
+          uv tool install --force .
+          GIG_HOME="$RUNNER_TEMP/home" "$(uv tool dir --bin)/git-into-gsoc" setup --assistant gemini --output json | grep -q '"created"'
+          test -f "$RUNNER_TEMP/home/.gemini/skills/git-into-gsoc/SKILL.md"
+
+  smoke-windows:
+    name: Installer smoke (Windows)
+    runs-on: windows-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: PowerShell installer (clone, project scope)
+        shell: pwsh
+        run: |
+          .\install.ps1 -NoUserSkills -Assistant all
+          .\.venv\Scripts\git-into-gsoc.exe --version
+          if (-not (Test-Path ".claude\skills\git-into-gsoc\SKILL.md")) { throw "skill not installed" }
+          if (-not (Test-Path ".cursor\mcp.json")) { throw "mcp not registered" }
+          .\.venv\Scripts\git-into-gsoc.exe doctor
