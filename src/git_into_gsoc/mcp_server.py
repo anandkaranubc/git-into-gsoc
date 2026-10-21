@@ -10,6 +10,7 @@ from mcp.server.mcpserver import MCPServer
 from git_into_gsoc.guidance import journey_overview
 from git_into_gsoc.models import JourneyPhase
 from git_into_gsoc.service import GSoCToolkit
+from git_into_gsoc.validation import split_csv
 
 mcp = MCPServer(
     name="git-into-gsoc",
@@ -70,40 +71,45 @@ def gsoc_search_orgs(
     technologies: str = "",
     topics: str = "",
     category: str = "",
-    year: int = 2026,
+    year: int = 0,
     limit: int = 10,
 ) -> str:
-    """Search and rank GSoC mentoring organizations from archive data.
+    """Rank GSoC mentoring organizations by fit with a contributor's skills and interests.
 
-    technologies/topics: comma-separated lists (e.g. \"python,rust\").
-    Default year=2026 (latest archived). GSoC 2027 org lists are not final until announced.
+    technologies/topics: comma-separated (e.g. "python,rust"; aliases like js/golang/ml work).
+    year: target program year (default: configured target, 2027). If that year's orgs are not
+    announced yet, the latest official list is used and `catalog.note` says so.
+    Each org includes ideas_url, guide_url, github_orgs, channels, and slot history.
     """
-    tech = [t.strip() for t in technologies.split(",") if t.strip()]
-    tops = [t.strip() for t in topics.split(",") if t.strip()]
-    results = toolkit().match_orgs(
-        query=query or None,
-        technologies=tech or None,
-        topics=tops or None,
-        category=category or None,
-        year=year,
-        limit=limit,
-    )
     return _dump(
-        {
-            "count": len(results),
-            "organizations": results,
-            "disclaimer": (
-                "Archive-derived data. Confirm org participation and ideas pages "
-                "on the official GSoC site for your target year."
-            ),
-        }
+        toolkit().match_orgs(
+            query=query or None,
+            technologies=split_csv(technologies) or None,
+            topics=split_csv(topics) or None,
+            category=category or None,
+            year=year or None,
+            limit=limit,
+        )
     )
 
 
 @mcp.tool()
-def gsoc_org_details(name: str) -> str:
-    """Get details for a mentoring organization by name (exact or partial)."""
-    return _dump(toolkit().org_details(name))
+def gsoc_org_details(name: str, year: int = 0) -> str:
+    """Full profile for one org: ideas page, contributor guide, channels, GitHub orgs,
+    projects per year, and recent accepted project titles. Accepts partial names."""
+    return _dump(toolkit().org_details(name, year=year or None))
+
+
+@mcp.tool()
+def gsoc_past_projects(query: str = "", org: str = "", since: int = 0, limit: int = 15) -> str:
+    """Search accepted GSoC projects from past years by keyword and/or org.
+
+    Use to calibrate proposal scope and discover which orgs fund a kind of work.
+    Never suggest copying a past proposal.
+    """
+    return _dump(
+        toolkit().past_projects(query or None, org=org or None, since=since or None, limit=limit)
+    )
 
 
 @mcp.tool()

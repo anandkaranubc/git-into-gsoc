@@ -10,12 +10,14 @@ import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from rich.text import Text
 from typer.core import TyperGroup
 
 from git_into_gsoc import __version__
 from git_into_gsoc.errors import GigError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, journey_overview
 from git_into_gsoc.service import GSoCToolkit
+from git_into_gsoc.validation import split_csv
 
 console = Console()
 err_console = Console(stderr=True)
@@ -134,52 +136,135 @@ def program_cmd(
         console.print(f"• {rule}")
 
 
+_FIT_PREFIXES = (
+    "Uses",
+    "Topic",
+    "Related",
+    "Category",
+    "Mentions",
+    "Name",
+    "Matches",
+    "Slots growing",
+)
+
+
+def _trend(projects_by_year: dict[str, int]) -> str:
+    recent = sorted(projects_by_year.items(), key=lambda kv: int(kv[0]))[-4:]
+    return " ".join(f"'{str(year)[2:]}:{count}" for year, count in recent)
+
+
 @app.command("orgs")
 def orgs_cmd(
-    query: str | None = typer.Option(None, "--query", "-q"),
+    query: str | None = typer.Option(None, "--query", "-q", help="Free-text search"),
     tech: str | None = typer.Option(None, "--tech", "-t", help="Comma-separated technologies"),
-    topics: str | None = typer.Option(None, "--topics", help="Comma-separated topics"),
+    topics: str | None = typer.Option(None, "--topics", help="Comma-separated topics/interests"),
     category: str | None = typer.Option(None, "--category", "-c"),
-    year: int = typer.Option(2026, help="Archive year to search"),
+    year: int | None = typer.Option(
+        None, help="Program year (default: target year; falls back to latest announced)"
+    ),
     limit: int = typer.Option(10, "--limit", "-n"),
     output: Output = Output.rich,
 ) -> None:
-    """Search mentoring organizations."""
-    techs = [x.strip() for x in (tech or "").split(",") if x.strip()]
-    tops = [x.strip() for x in (topics or "").split(",") if x.strip()]
-    results = _toolkit().match_orgs(
+    """Rank mentoring organizations for your skills and interests."""
+    data = _toolkit().match_orgs(
         query=query,
-        technologies=techs or None,
-        topics=tops or None,
+        technologies=split_csv(tech) or None,
+        topics=split_csv(topics) or None,
         category=category,
         year=year,
         limit=limit,
     )
     if output == Output.json:
-        _emit(results, output)
+        _emit(data, output)
         return
-    table = Table(title=f"GSoC organizations (archive year {year})")
+    catalog = data["catalog"]
+    table = Table(title="GSoC organizations", caption=catalog["note"], show_lines=False)
     table.add_column("Score", justify="right")
-    table.add_column("Name")
-    table.add_column("Tech")
-    table.add_column("Years")
-    table.add_column("Why")
-    for org in results:
+    table.add_column("Organization", overflow="fold", max_width=28)
+    table.add_column("Fit", overflow="fold")
+    table.add_column("Years", justify="right")
+    table.add_column("Slots", no_wrap=True)
+    for org in data["organizations"]:
+        fit = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
         table.add_row(
-            str(org["match_score"]),
+            f"{org['match_score']:.0f}",
             org["name"],
-            ", ".join(org.get("technologies") or [])[:40],
-            ",".join(str(y) for y in (org.get("years_active") or [])[-4:]),
-            "; ".join(org.get("match_reasons") or [])[:60],
+            "; ".join(fit) or "—",
+            str(len(org.get("years_active") or [])),
+            _trend(org.get("projects_by_year") or {}),
         )
     console.print(table)
+    if not data["organizations"]:
+        console.print("[yellow]No organizations matched.[/yellow] Try broader --tech/--topics.")
+    else:
+        console.print(
+            '[dim]Next: git-into-gsoc org "<name>" for ideas page, channels, and repos.[/dim]'
+        )
 
 
 @app.command("org")
-def org_cmd(name: str, output: Output = Output.rich) -> None:
-    """Show details for one organization."""
-    data = _toolkit().org_details(name)
-    _emit(data if output == Output.json else json.dumps(data, indent=2, default=str), output)
+def org_cmd(
+    name: str,
+    year: int | None = typer.Option(None, help="Program year"),
+    output: Output = Output.rich,
+) -> None:
+    """Show ideas page, channels, GitHub orgs, slot history, and past projects."""
+    data = _toolkit().org_details(name, year=year)
+    if output == Output.json or not data.get("found"):
+        _emit(data, Output.json)
+        return
+    org = data["organization"]
+    lines = [f"[bold]{org['name']}[/bold] — {org['description']}"]
+    for label, key in (
+        ("Ideas", "ideas_url"),
+        ("Contributor guide", "guide_url"),
+        ("Source", "source_code"),
+        ("Website", "url"),
+    ):
+        if org.get(key):
+            lines.append(f"{label}: {org[key]}")
+    if org.get("github_orgs"):
+        lines.append("GitHub: " + ", ".join(org["github_orgs"]))
+    for channel in org.get("channels") or []:
+        lines.append(f"{channel['kind']}: {channel['value']}")
+    lines.append(
+        f"Tech: {', '.join(org.get('technologies') or [])}  |  "
+        f"Topics: {', '.join(org.get('topics') or [])}"
+    )
+    lines.append(f"Projects per year: {_trend(org.get('projects_by_year') or {})}")
+    status = "accepted" if org.get("official") else "archive record"
+    console.print(
+        Panel(Text.from_markup("\n".join(lines)), title=f"{data['catalog']['year']} · {status}")
+    )
+    if org.get("recent_projects"):
+        table = Table(title="Recent accepted projects (scope reference — never copy)")
+        table.add_column("Year")
+        table.add_column("Title", overflow="fold")
+        for project in org["recent_projects"]:
+            table.add_row(str(project["year"]), project["title"])
+        console.print(table)
+
+
+@app.command("projects")
+def projects_cmd(
+    query: str | None = typer.Argument(None, help="Keywords, e.g. 'graph neural networks'"),
+    org: str | None = typer.Option(None, "--org", help="Limit to one organization"),
+    since: int | None = typer.Option(None, "--since", help="Earliest program year"),
+    limit: int = typer.Option(15, "--limit", "-n"),
+    output: Output = Output.rich,
+) -> None:
+    """Search past accepted GSoC projects to calibrate scope and find orgs."""
+    data = _toolkit().past_projects(query, org=org, since=since, limit=limit)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    table = Table(title="Past accepted projects", caption=data["note"])
+    table.add_column("Year")
+    table.add_column("Organization", overflow="fold", max_width=26)
+    table.add_column("Project", overflow="fold")
+    for project in data["projects"]:
+        table.add_row(str(project["year"]), project["org"], project["title"])
+    console.print(table)
 
 
 @app.command("repo")
@@ -266,7 +351,7 @@ def recommend_cmd(
         )
     console.print("\n[bold]Orgs[/bold]")
     for org in data["recommended_orgs"][:5]:
-        console.print(f"  • {org['name']} (score {org['match_score']})")
+        console.print(f"  • {org['name']} (score {org['match_score']:.0f})")
     console.print("\n[bold]Next steps[/bold]")
     for step in data["next_steps"]:
         console.print(f"  → {step}")

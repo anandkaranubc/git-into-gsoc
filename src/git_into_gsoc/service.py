@@ -19,8 +19,8 @@ class GSoCToolkit:
         self.settings = get_settings()
         self.http = CachedHttpClient(self.settings)
         self.github = GitHubClient(self.settings, self.http)
-        self.gsoc = GSoCClient(self.settings, self.http)
         self.official = OfficialGSoCClient(self.settings, self.http)
+        self.gsoc = GSoCClient(self.settings, self.http, self.official)
         self.progress = ProgressStore()
 
     def program_info(self, year: int | None = None, project_size: str = "medium") -> dict[str, Any]:
@@ -51,30 +51,49 @@ class GSoCToolkit:
         category: str | None = None,
         year: int | None = None,
         limit: int = 10,
-    ) -> list[dict[str, Any]]:
-        # For 2027 aspirants, default to latest archived participation year.
-        search_year = year
-        if search_year is None or search_year > LATEST_ARCHIVED_YEAR:
-            search_year = LATEST_ARCHIVED_YEAR
-        results = self.gsoc.search_organizations(
+    ) -> dict[str, Any]:
+        catalog, results = self.gsoc.search_organizations(
             query=query,
             technologies=technologies,
             topics=topics,
             category=category,
-            year=search_year,
+            year=year,
             limit=limit,
         )
-        return [r.model_dump() for r in results]
+        return {
+            "catalog": catalog.model_dump(),
+            "count": len(results),
+            "organizations": [r.model_dump(exclude={"recent_projects"}) for r in results],
+        }
 
-    def org_details(self, name: str) -> dict[str, Any]:
-        org = self.gsoc.get_organization(name)
+    def org_details(self, name: str, year: int | None = None) -> dict[str, Any]:
+        org = self.gsoc.get_organization(name, year=year)
         if not org:
             return {
                 "found": False,
-                "error": f"No organization matched '{name}' in archive data",
-                "hint": "Try a partial name or list orgs with a technology filter",
+                "error": f"No organization matched '{name}'",
+                "hint": "Try a partial name, or search with `orgs --query`.",
             }
-        return {"found": True, "organization": org.model_dump()}
+        catalog, _ = self.gsoc.catalog(year)
+        return {"found": True, "catalog": catalog.model_dump(), "organization": org.model_dump()}
+
+    def past_projects(
+        self,
+        query: str | None = None,
+        *,
+        org: str | None = None,
+        since: int | None = None,
+        limit: int = 15,
+    ) -> dict[str, Any]:
+        projects = self.gsoc.search_projects(query, org=org, since=since, limit=limit)
+        return {
+            "count": len(projects),
+            "projects": [p.model_dump() for p in projects],
+            "note": (
+                "Accepted GSoC projects from the public archive. Use them to understand scope "
+                "and what each org values. Never copy a past proposal."
+            ),
+        }
 
     def evaluate_repo(self, full_name: str) -> dict[str, Any]:
         health = self.github.repo_health(full_name)
@@ -136,7 +155,7 @@ class GSoCToolkit:
             technologies=techs or None,
             topics=interests,
             limit=8,
-        )
+        )["organizations"]
         issue_language = techs[0] if techs else None
         issues: list[dict[str, Any]] = []
         if issue_language:
