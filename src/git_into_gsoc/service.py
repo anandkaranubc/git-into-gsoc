@@ -69,6 +69,7 @@ from git_into_gsoc.github.repos import (
     repo_lead_score,
 )
 from git_into_gsoc.github.search import RELATED_LANGUAGES, build_issue_query, or_group
+from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
@@ -898,6 +899,9 @@ class GSoCToolkit:
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
+        if number is None and parse_gitlab_issue(ref):
+            # GNOME, KDE, and others keep issues on GitLab; its public API has the basics.
+            return {**gitlab_issue_status(self.http, ref), "before_you_comment": BEFORE_YOU_COMMENT}
         owner, repo, num = parse_issue_ref(ref, number)
         issue, assessment = self.github.assess(f"{owner}/{repo}", num)
         return {
@@ -1314,7 +1318,9 @@ class GSoCToolkit:
                 try:
                     owner, repo, num = parse_issue_ref(raw)
                 except GigError:
-                    if other_host_link(raw):
+                    if parse_gitlab_issue(raw):
+                        tracked.append(self._tracked_gitlab_issue(raw, state.issue_status))
+                    elif other_host_link(raw):
                         tracked.append(_off_github_issue(raw))
                     continue
                 refs.append((raw, f"{owner}/{repo}", f"{owner}/{repo}#{num}", num))
@@ -2314,6 +2320,23 @@ class GSoCToolkit:
             found = [r for r in pool.map(one, items[:limit]) if r]
         found.sort(key=lambda r: (r["status"] != "needs_you", -(r.get("quiet_days") or 0)))
         return found
+
+    def _tracked_gitlab_issue(self, link: str, previous: dict[str, str]) -> dict[str, Any]:
+        """A tracked GitLab issue, re-checked through the host's public API when it answers."""
+        try:
+            found = gitlab_issue_status(self.http, link)
+        except GigError:
+            return _off_github_issue(link)
+        before = previous.get(link)
+        return {
+            "ref": link,
+            "url": found["url"],
+            "availability": found["availability"],
+            "reason": found["reason"],
+            "previous": before,
+            "changed": bool(before and before != found["availability"]),
+            "off_github": True,
+        }
 
     def _code_elsewhere(self, names: list[str]) -> dict[str, str]:
         """Shortlisted organizations with no GitHub owner, and where their code is."""

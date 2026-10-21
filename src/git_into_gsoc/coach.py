@@ -269,8 +269,8 @@ def plan_actions(
                     f"Find a newcomer issue in {repo}",
                     "git-into-gsoc progress track_issue --value LINK   # once you pick one",
                     "This tool cannot search issues outside GitHub. Open the project's issue "
-                    "list, filter by its newcomer label, and skip any with an assignee, a "
-                    "linked merge request, or a recent claim.",
+                    "list and filter by its newcomer label; for a GitLab issue, git-into-gsoc "
+                    "issue LINK then checks its assignee and merge requests.",
                 )
             )
         else:
@@ -283,7 +283,9 @@ def plan_actions(
             )
     else:
         free = [t for t in tracked_issues if t.get("availability") == "available"]
-        elsewhere_issues = [t for t in tracked_issues if t.get("off_github")]
+        elsewhere_issues = [
+            t for t in tracked_issues if t.get("off_github") and t.get("availability") == "unknown"
+        ]
         if not free and elsewhere_issues:
             link = elsewhere_issues[0]["url"]
             actions.append(
@@ -305,10 +307,15 @@ def plan_actions(
             )
         else:
             repo = repos[0] if repos else tracked_issues[0]["ref"].split("#")[0]
+            command = (
+                f"{repo}   # pick another newcomer issue there"
+                if repo.startswith("http")
+                else f"git-into-gsoc issues --repo {repo} -n 5"
+            )
             actions.append(
                 _action(
                     "Everything you tracked is taken or stale; pick another issue",
-                    f"git-into-gsoc issues --repo {repo} -n 5",
+                    command,
                     "Do not compete for claimed issues; a free one gets you reviewed sooner.",
                 )
             )

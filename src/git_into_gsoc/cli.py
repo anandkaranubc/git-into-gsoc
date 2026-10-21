@@ -1202,7 +1202,9 @@ def issue_cmd(
     if assessment["maintainer_engaged"]:
         lines.append("Maintainers have commented in this thread.")
     for pr in assessment["linked_prs"]:
-        lines.append(f"PR #{pr['number']} ({pr['state']}) by @{pr['author']}")
+        gitlab = "/merge_requests/" in str(pr.get("url") or "")
+        ref = f"MR !{pr['number']}" if gitlab else f"PR #{pr['number']}"
+        lines.append(f"{ref} ({pr['state']}) by @{pr['author']}")
     for claim in assessment["claims"][:5]:
         granted = ", approved by a maintainer" if claim["granted"] else ""
         lines.append(f"Claim: @{claim['login']}, last active {claim['days_ago']}d ago{granted}")

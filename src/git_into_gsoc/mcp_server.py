@@ -355,7 +355,9 @@ def gsoc_find_issues(
 @guarded
 def gsoc_issue_status(ref: str, number: int = 0) -> str:
     """Check if one issue is free: linked PRs, assignees, claims (with dates), maintainer
-    approval, and caveats. ref: "owner/repo#123", an issue URL, or "owner/repo" + number."""
+    approval, and caveats. ref: "owner/repo#123", an issue URL, or "owner/repo" + number. A
+    GitLab issue link (gitlab.com, gitlab.gnome.org, ...) gets state, assignees, labels, and
+    merge requests from GitLab's public API; its comments cannot be read, and it says so."""
     return _dump(toolkit().issue_status(ref, number or None))
 
 
