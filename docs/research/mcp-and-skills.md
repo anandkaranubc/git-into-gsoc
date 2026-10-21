@@ -64,7 +64,7 @@ Tracing `service.py` → `github/client.py` → `models.py`:
 | `contribution_guide.contributing_excerpt` | raw CONTRIBUTING file via `get_raw_file` → `_excerpt(text, 1500)` | 1,500 chars | Raw; CONTRIBUTING is repository-controlled, i.e. attacker-controlled on a malicious or compromised repo. |
 | `health.description`, `repos[].description`, `organizations[].description`, `projects[].title/summary` | repo description / archive API | none | Raw. The archive (api.gsocorganizations.dev) is a third party that scrapes Google's pages. |
 | `assessment.reason`, `availability_reason`, `caveats[]` | synthesised by `availability.py` but interpolates `@login` strings from comments | n/a | Logins are charset-constrained (`[A-Za-z0-9-]`), so safe. |
-| `evidence_markdown[]` (ecosystem branch) | `- merged PR: [repo#n](url) {PR title}` built from the **contributor's own** PR/issue titles | 12 lines | Titles are raw; the lines are explicitly "paste-ready", so an injected title would be pasted into a proposal. |
+| `evidence_markdown[]` (ecosystem branch) | `- merged PR: repo#n (link) {PR title}` built from the **contributor's own** PR/issue titles | 12 lines | Titles are raw; the lines are explicitly "paste-ready", so an injected title would be pasted into a proposal. |
 | ideas-page text | fetched and stripped to text (`gsoc/ideas.py`, cap 400,000 chars) | used only server-side for `mentioned_repos`; **not** returned | Good: the biggest untrusted document never reaches the model. |
 
 Claims parsing (`availability.py`) reads comment bodies with regexes but returns only booleans/dates/logins, a good "evidence, not text" pattern that the rest of the surface should copy.
