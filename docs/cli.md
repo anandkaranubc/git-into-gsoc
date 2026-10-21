@@ -44,7 +44,7 @@ git-into-gsoc projects "graph neural networks" --since 2024
 | Command | Arguments and options |
 |---|---|
 | `orgs` | `--query` / `-q`, `--tech` / `-t`, `--topics`, `--category` / `-c`, `--year`, `--limit` / `-n` (default 10) |
-| `org NAME` | Full or partial organization name (quote names with spaces); `--year`; `--shortlist` saves it to your progress |
+| `org NAME` | Organization name or a whole word of it, such as `mailman` (quote names with spaces). A word that fits several organizations lists them so you can pick one; a misspelled name suggests close matches. `--year`; `--shortlist` saves it to your progress |
 | `ideas ORG` | `--skills` / `-s` (default: your profile), `--size small\|medium\|large`, `--difficulty easy\|medium\|hard`, `--limit` / `-n` (default 20), `--no-follow` |
 | `mentors ORG` | `--years` (default 3), `--limit` / `-n` (default 25) |
 | `projects [KEYWORDS]` | `--org`, `--since` (earliest year), `--limit` / `-n` (default 15) |

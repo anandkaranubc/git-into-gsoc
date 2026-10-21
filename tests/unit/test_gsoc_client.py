@@ -173,3 +173,41 @@ def test_snapshot_files_are_fresh_and_complete() -> None:
     compact = build_history(load_fixture("archive_organizations.json"))
     assert set(compact["SymPy"]["years"]["2026"]) == {"num_projects"}
     assert compact["SymPy"]["years"]["2026"]["num_projects"] >= 1
+
+
+def _archive_org(name: str, titles: list[str]) -> dict[str, Any]:
+    projects = [{"title": t, "short_description": "", "project_url": None} for t in titles]
+    return {"name": name, "years": {"2025": {"num_projects": len(titles), "projects": projects}}}
+
+
+def test_org_past_projects_never_borrow_from_similar_names() -> None:
+    archive = [
+        _archive_org("Git", ["Refactor git-submodule"]),
+        _archive_org("GitLab", ["GitLab runner metrics"]),
+        _archive_org("Cuneiform Digital Library Initiative (CDLI)", ["Digital tablets"]),
+    ]
+    with respx.mock(assert_all_called=False) as router:
+        router.get(f"{ARCHIVE}/organizations.json").mock(
+            return_value=httpx.Response(200, json=archive)
+        )
+        projects = GSoCClient().search_projects(org="Git")
+    assert [p.org for p in projects] == ["Git"]
+
+
+def test_official_names_find_their_archive_history_without_filler_words() -> None:
+    # The archive calls it "The Apache Software Foundation"; without this the
+    # official list showed a veteran organization as a first-year one.
+    hist = GSoCClient()._history_for("Apache Software Foundation")
+    assert hist is not None
+    assert hist["name"] == "The Apache Software Foundation"
+    assert len(hist["years"]) >= 5
+    assert GSoCClient()._history_for("Apache DataFusion")["name"] == "Apache DataFusion"
+
+
+def test_lookup_by_one_word_and_unknown_names(api: respx.MockRouter) -> None:
+    client = GSoCClient()
+    radio = client.get_organization("radio", year=2027)
+    assert radio is not None and radio.name == "GNU Radio"
+    assert client.get_organization("Meta", year=2027) is None  # not inside "Metasploit"
+    similar, _ = client.suggest_organizations("Metaspolit", year=2027)
+    assert similar[0] == "Metasploit"

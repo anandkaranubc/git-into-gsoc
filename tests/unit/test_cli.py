@@ -180,3 +180,43 @@ def test_cli_setup_says_when_nothing_was_set_up(tmp_path, monkeypatch) -> None: 
     assert result.exit_code == 0, result.output
     assert "Nothing was set up" in result.output
     assert "Restart your assistant" not in result.output
+
+
+def test_org_from_an_earlier_year_is_not_shown_as_current(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc import cli
+
+    past = {
+        "found": True,
+        "catalog": {"year": 2026},
+        "organization": {
+            "name": "The Tor Project",
+            "description": "Privacy tools",
+            "official": False,
+            "years_active": [2017, 2023, 2025],
+            "projects_by_year": {2025: 3},
+        },
+    }
+
+    class Fake:
+        def org_details(self, *a, **k):  # type: ignore[no-untyped-def]
+            return past
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    result = runner.invoke(app, ["org", "Tor"])
+    assert result.exit_code == 0, result.output
+    assert "not in the 2026 list" in result.output
+    assert "last took part in 2025" in result.output
+    assert "2026 · accepted" not in result.output
+
+
+def test_unknown_org_for_past_projects_is_an_error(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc import cli
+
+    class Fake:
+        def past_projects(self, *a, **k):  # type: ignore[no-untyped-def]
+            return {"found": False, "error": "No GSoC organization is named 'zz'", "hint": "x"}
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    result = runner.invoke(app, ["projects", "--org", "zz"])
+    assert result.exit_code == 1
+    assert "No GSoC organization is named 'zz'" in result.output

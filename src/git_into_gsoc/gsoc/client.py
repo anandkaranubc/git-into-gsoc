@@ -22,6 +22,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from git_into_gsoc.config import LATEST_ARCHIVED_YEAR, Settings, get_settings
+from git_into_gsoc.gsoc.names import core_key, resolve_name, same_org, suggest_names
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.snapshot import load_history, load_official
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
@@ -141,16 +142,34 @@ class GSoCClient:
             snapshot = load_history().get("organizations") or {}
             records = [{"name": name, **entry} for name, entry in snapshot.items()]
             records.extend(self._archive or [])
+            cores: dict[str, dict[str, Any]] = {}
             for raw in records:
-                self._history[normalize_name(raw.get("name") or "")] = raw
+                name = str(raw.get("name") or "")
+                self._history[normalize_name(name)] = raw
                 slug = _archive_slug(raw)
                 if slug:
                     self._history[f"slug:{slug}"] = raw
+                # "Apache Software Foundation" is "The Apache Software Foundation" in the
+                # archive. A filler-free key finds it; the record with more years wins.
+                key = f"core:{core_key(name)}"
+                kept = cores.get(key)
+                if kept is None or len(raw.get("years") or {}) > len(kept.get("years") or {}):
+                    cores[key] = raw
+            for key, raw in cores.items():
+                self._history.setdefault(key, raw)
         return self._history
 
     def _history_for(self, name: str, slug: str | None = None) -> dict[str, Any] | None:
         index = self._history_index()
-        return index.get(normalize_name(name)) or (index.get(f"slug:{slug}") if slug else None)
+        return (
+            index.get(normalize_name(name))
+            or (index.get(f"slug:{slug}") if slug else None)
+            or index.get(f"core:{core_key(name)}")
+        )
+
+    def _past_names(self) -> list[str]:
+        index = self._history_index()
+        return [str(raw.get("name") or "") for key, raw in index.items() if ":" not in key]
 
     # ----------------------------------------------------------------- catalog
 
@@ -332,23 +351,39 @@ class GSoCClient:
         )
         return catalog, ranked[: max(1, limit)]
 
-    def get_organization(self, name: str, *, year: int | None = None) -> OrgSummary | None:
-        needle = normalize_name(name)
-        if not needle:
+    def resolve_org_name(self, name: str, *, year: int | None = None) -> str | None:
+        """The full name of the organization `name` means: current list, then history.
+
+        Raises AmbiguousNameError when the name fits several organizations equally.
+        """
+        if not normalize_name(name):
             return None
         _, orgs = self.catalog(year)
-        org = next((o for o in orgs if normalize_name(o.name) == needle or o.slug == name), None)
-        org = org or next((o for o in orgs if needle in normalize_name(o.name)), None)
+        by_slug = next((o.name for o in orgs if o.slug == name), None)
+        if by_slug:
+            return by_slug
+        current = [o.name for o in orgs]
+        chosen = resolve_name(name, current, self._past_names())
+        if chosen is None and self._archive is None:
+            self.list_all_organizations()  # full archive, for orgs the snapshot lacks
+            chosen = resolve_name(name, current, self._past_names())
+        return chosen
+
+    def get_organization(self, name: str, *, year: int | None = None) -> OrgSummary | None:
+        """The organization `name` means, or None.
+
+        Raises AmbiguousNameError when the name fits several organizations equally.
+        """
+        if not normalize_name(name):
+            return None
+        _, orgs = self.catalog(year)
+        chosen = self.resolve_org_name(name, year=year)
+        if chosen is None:
+            return None
+        org = next((o for o in orgs if o.name == chosen), None)
         if org is None:
             self.list_all_organizations()  # full records for orgs outside the current list
-            hist = self._history_for(name) or next(
-                (
-                    raw
-                    for raw in self.list_all_organizations()
-                    if needle in normalize_name(raw.get("name") or "")
-                ),
-                None,
-            )
+            hist = self._history_for(chosen)
             if hist is None:
                 return None
             years = sorted(int(y) for y in (hist.get("years") or {}))
@@ -358,6 +393,21 @@ class GSoCClient:
         except HttpError:
             projects = []  # the archive is optional detail; the profile itself still shows
         return org.model_copy(update={"recent_projects": projects})
+
+    def suggest_organizations(
+        self, name: str, *, year: int | None = None
+    ) -> tuple[list[str], list[str]]:
+        """For a name that matched nothing: near spellings, and orgs that mention it.
+
+        Many projects (NumPy, Kubernetes) take part under an umbrella organization
+        (NumFOCUS, CNCF), whose description names them.
+        """
+        _, orgs = self.catalog(year)
+        similar = suggest_names(name, [o.name for o in orgs])
+        similar += [n for n in suggest_names(name, self._past_names()) if n not in similar][:3]
+        _, mentioned = self.search_organizations(query=name, year=year, limit=4)
+        mentions = [o.name for o in mentioned if o.name not in similar]
+        return similar[:5], mentions[:4]
 
     def search_projects(
         self,
@@ -369,11 +419,11 @@ class GSoCClient:
     ) -> list[PastProject]:
         """Search accepted projects from past years (titles + short descriptions)."""
         tokens = [canonical(t) for t in (query or "").split() if len(t) > 1]
-        org_key = normalize_name(org) if org else None
         results: list[PastProject] = []
         for raw in self.list_all_organizations():
             org_name = str(raw.get("name") or "")
-            if org_key and org_key not in normalize_name(org_name):
+            # Whole-name match: "Git" must not pull in GitLab's or "diGITal" projects.
+            if org and not same_org(org, org_name):
                 continue
             for year_key, year_data in (raw.get("years") or {}).items():
                 try:

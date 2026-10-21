@@ -209,7 +209,9 @@ def gsoc_search_orgs(
 @guarded
 def gsoc_org_details(name: str, year: int = 0) -> str:
     """Full profile for one org: ideas page, contributor guide, channels, GitHub orgs,
-    projects per year, and recent accepted project titles. Accepts partial names."""
+    projects per year, and recent accepted project titles. Accepts the full name or a
+    whole word of it ("mailman"); a word that fits several orgs returns their names to
+    choose from, and an unknown name returns close matches in did_you_mean."""
     return _dump(toolkit().org_details(name, year=year or None))
 
 

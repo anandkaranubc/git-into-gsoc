@@ -142,13 +142,28 @@ class GSoCToolkit:
     def org_details(self, name: str, year: int | None = None) -> dict[str, Any]:
         org = self.gsoc.get_organization(name, year=year)
         if not org:
-            return {
-                "found": False,
-                "error": f"No organization matched '{name}'",
-                "hint": "Try a partial name, or search with `orgs --query`.",
-            }
+            return self._org_not_found(name, year=year)
         catalog, _ = self.gsoc.catalog(year)
         return {"found": True, "catalog": catalog.model_dump(), "organization": org.model_dump()}
+
+    def _org_not_found(self, name: str, *, year: int | None = None) -> dict[str, Any]:
+        similar, mentioned_by = self.gsoc.suggest_organizations(name, year=year)
+        hints = []
+        if similar:
+            hints.append("Did you mean: " + "; ".join(similar) + "?")
+        if mentioned_by:
+            hints.append(
+                f"Organizations whose description mentions '{name}' (projects often take "
+                "part under an umbrella organization): " + "; ".join(mentioned_by) + "."
+            )
+        return {
+            "found": False,
+            "error": f"No GSoC organization is named '{name}'",
+            "did_you_mean": similar,
+            "mentioned_by": mentioned_by,
+            "hint": " ".join(hints)
+            or "Check the spelling, or search by keyword with `orgs --query`.",
+        }
 
     def past_projects(
         self,
@@ -158,8 +173,14 @@ class GSoCToolkit:
         since: int | None = None,
         limit: int = 15,
     ) -> dict[str, Any]:
+        if org:
+            resolved = self.gsoc.resolve_org_name(org)
+            if resolved is None:
+                return self._org_not_found(org)
+            org = resolved
         projects = self.gsoc.search_projects(query, org=org, since=since, limit=limit)
         return {
+            "org": org,
             "count": len(projects),
             "projects": [p.model_dump() for p in projects],
             "note": (
@@ -1041,11 +1062,7 @@ class GSoCToolkit:
         """Who mentored this org's completed projects in recent years, from the archive."""
         org = self.gsoc.get_organization(name)
         if org is None:
-            return {
-                "found": False,
-                "error": f"No organization matched '{name}'",
-                "hint": "Try a partial name, or search with `orgs --query`.",
-            }
+            return self._org_not_found(name)
         projects = self.archive.projects_by_year(years=years)
         summary = summarize_mentors(projects, org_slug=org.slug, org_name=org.name, limit=limit)
         return {
@@ -1075,11 +1092,7 @@ class GSoCToolkit:
         """Structured project ideas from an org's ideas page, ranked for the contributor."""
         org = self.gsoc.get_organization(name, year=year)
         if org is None:
-            return {
-                "found": False,
-                "error": f"No organization matched '{name}'",
-                "hint": "Try a partial name, or search with `orgs --query`.",
-            }
+            return self._org_not_found(name, year=year)
         base = {"found": True, "org": org.name, "ideas_url": org.ideas_url}
         if not org.ideas_url:
             return {
@@ -1338,7 +1351,7 @@ class GSoCToolkit:
         for name in state.shortlisted_orgs[:5]:
             try:
                 org = self.gsoc.get_organization(name)
-            except HttpError:
+            except GigError:
                 org = None
             if org and org.github_orgs:
                 scope.append(f"org:{org.github_orgs[0]}")

@@ -305,7 +305,7 @@ def orgs_cmd(
 @app.command("org", rich_help_panel="Find an organization")
 def org_cmd(
     name: str = typer.Argument(
-        ..., help="Organization name, part of it, or its slug, for example SymPy"
+        ..., help="Organization name or a word of it, for example SymPy or mailman"
     ),
     year: int | None = typer.Option(None, help="Program year"),
     shortlist: bool = typer.Option(
@@ -341,10 +341,17 @@ def org_cmd(
         f"Topics: {', '.join(org.get('topics') or [])}"
     )
     lines.append(f"Projects per year: {_trend(org.get('projects_by_year') or {})}")
-    status = "accepted" if org.get("official") else "archive record"
-    console.print(
-        Panel(Text.from_markup("\n".join(lines)), title=f"{data['catalog']['year']} · {status}")
-    )
+    year = data["catalog"]["year"]
+    if org.get("official"):
+        title = f"{year} · accepted"
+    else:
+        last = max(org.get("years_active") or [0]) or "an earlier year"
+        title = f"not in the {year} list · last took part in {last}"
+        lines.append(
+            f"[yellow]Not accepted in {year}. "
+            "Check its website to see whether it plans to apply again.[/yellow]"
+        )
+    console.print(Panel(Text.from_markup("\n".join(lines)), title=title))
     if org.get("recent_projects"):
         table = Table(title="Recent accepted projects (for scope reference, never copy)")
         table.add_column("Year")
@@ -364,8 +371,8 @@ def projects_cmd(
 ) -> None:
     """Search past accepted GSoC projects to judge scope and find organizations."""
     data = _toolkit().past_projects(query, org=org, since=since, limit=limit)
-    if output == Output.json:
-        _emit(data, output)
+    if output == Output.json or not data.get("found", True):
+        _emit_or_fail(data, output)
         return
     data = _markup_safe(data)
     table = Table(title="Past accepted projects", caption=data["note"])
@@ -379,7 +386,7 @@ def projects_cmd(
 
 @app.command("ideas", rich_help_panel="Find an organization")
 def ideas_cmd(
-    org: str = typer.Argument(..., help="GSoC organization name, full or partial"),
+    org: str = typer.Argument(..., help="GSoC organization name, for example SymPy"),
     skills: str | None = typer.Option(
         None, "--skills", "-s", help="Skills to match, comma-separated (default: your profile)"
     ),
@@ -452,7 +459,7 @@ def ideas_cmd(
 
 @app.command("mentors", rich_help_panel="Find an organization")
 def mentors_cmd(
-    org: str = typer.Argument(..., help="GSoC organization name, full or partial"),
+    org: str = typer.Argument(..., help="GSoC organization name, for example SymPy"),
     years: int = typer.Option(3, "--years", help="How many archived years to read"),
     limit: int = typer.Option(25, "--limit", "-n", min=1, help="How many mentors to show"),
     output: Output = OUTPUT_OPTION,

@@ -23,6 +23,19 @@ class InputError(GigError, ValueError):
     """Invalid user input (repo names, usernames, phases, ...)."""
 
 
+class AmbiguousNameError(InputError):
+    """A name fits more than one organization equally well."""
+
+    def __init__(self, name: str, candidates: list[str]) -> None:
+        shown = candidates[:8]
+        more = f" and {len(candidates) - len(shown)} more" if len(candidates) > len(shown) else ""
+        super().__init__(
+            f"'{name}' fits more than one organization: {', '.join(shown)}{more}",
+            hint=f'Repeat with the full name, for example "{shown[0]}".',
+        )
+        self.candidates = candidates
+
+
 class HttpError(GigError):
     def __init__(
         self,
