@@ -15,7 +15,7 @@ from rich.text import Text
 from typer.core import TyperGroup
 
 from git_into_gsoc import __version__
-from git_into_gsoc.errors import GigError
+from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, journey_overview
 from git_into_gsoc.service import GSoCToolkit
 from git_into_gsoc.validation import split_csv
@@ -225,10 +225,16 @@ def org_cmd(
         ..., help="Organization name, part of it, or its slug, for example SymPy"
     ),
     year: int | None = typer.Option(None, help="Program year"),
+    shortlist: bool = typer.Option(
+        False, "--shortlist", help="Also add this organization to your shortlist"
+    ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Show ideas page, channels, GitHub orgs, slot history, and past projects."""
     data = _toolkit().org_details(name, year=year)
+    if shortlist and data.get("found"):
+        _toolkit().progress.shortlist_org(data["organization"]["name"])
+        data["shortlisted"] = True
     if output == Output.json or not data.get("found"):
         _emit(data, Output.json)
         return
@@ -324,10 +330,14 @@ def repo_cmd(
     full_name: str = typer.Argument(
         ..., help="Repository as owner/name or a GitHub URL, for example sympy/sympy"
     ),
+    track: bool = typer.Option(False, "--track", help="Also save this repo to your progress"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Check whether a newcomer's PR can land here: health grade, merge behaviour, setup path."""
     data = _toolkit().evaluate_repo(full_name)
+    if track:
+        _toolkit().progress.track_repo(data["health"]["full_name"])
+        data["tracked"] = True
     if output == Output.json:
         _emit(data, output)
         return
@@ -420,10 +430,14 @@ def issues_cmd(
 def issue_cmd(
     ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
     number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
+    track: bool = typer.Option(False, "--track", help="Also save this issue to your progress"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Check whether an issue is free to pick up: PRs, claims, assignees, activity."""
     data = _toolkit().issue_status(ref, number)
+    if track:
+        _toolkit().progress.track_issue(data["url"])
+        data["tracked"] = True
     if output == Output.json:
         _emit(data, output)
         return
@@ -487,19 +501,65 @@ def recommend_cmd(
         console.print(f"  → {step}")
 
 
+_FINDING_MARK = {"pass": "[green]✓[/green]", "warn": "[yellow]![/yellow]", "fail": "[red]✗[/red]"}
+
+
 @app.command("proposal")
-def proposal_cmd(output: Output = OUTPUT_OPTION) -> None:
-    """Show proposal checklist and structure."""
-    data = _toolkit().proposal_help()
-    if output == Output.json:
-        _emit(data, output)
+def proposal_cmd(
+    file: Path | None = typer.Argument(
+        None, help="Draft proposal to check (Markdown or text). Omit for the checklist."
+    ),
+    github: str | None = typer.Option(
+        None, "--github", "-g", help="Your GitHub login, to confirm linked PRs are yours"
+    ),
+    verify: bool = typer.Option(
+        True, "--verify/--no-verify", help="Look up linked pull requests on GitHub"
+    ),
+    ideas_file: Path | None = typer.Option(
+        None, "--ideas-file", help="The org's ideas page as text, to detect copied passages"
+    ),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Show the proposal checklist, or check a draft for what organizations reject on."""
+    if file is None:
+        data = _toolkit().proposal_help()
+        if output == Output.json:
+            _emit(data, output)
+            return
+        console.print("[bold]Checklist[/bold]")
+        for item in data["checklist"]:
+            console.print(f"☐ {item['title']}: {item['description']}")
+        console.print("\n[bold]Suggested structure[/bold]")
+        for i, section in enumerate(data["structure"], 1):
+            console.print(f"  {i}. {section}")
+        console.print("\n[dim]Check a draft: git-into-gsoc proposal draft.md --github you[/dim]")
         return
-    console.print("[bold]Checklist[/bold]")
-    for item in data["checklist"]:
-        console.print(f"☐ {item['title']}: {item['description']}")
-    console.print("\n[bold]Suggested structure[/bold]")
-    for i, section in enumerate(data["structure"], 1):
-        console.print(f"  {i}. {section}")
+    try:
+        text = file.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise InputError(f"Cannot read {file}: {exc.strerror or exc}") from exc
+    ideas_text = ideas_file.read_text(encoding="utf-8", errors="replace") if ideas_file else None
+    report = _toolkit().check_proposal(text, github=github, verify=verify, ideas_text=ideas_text)
+    if output == Output.json:
+        _emit(report, output)
+        return
+    table = Table(title=f"Proposal check: {file.name} ({report['word_count']} words)")
+    table.add_column("")
+    table.add_column("Check")
+    table.add_column("Detail", overflow="fold")
+    for finding in report["findings"]:
+        table.add_row(_FINDING_MARK[finding["status"]], finding["title"], finding["detail"])
+    console.print(table)
+    for link in report["links"]:
+        if link["kind"] != "pull":
+            continue
+        state = link["state"] or ("not verified" if not report["links_verified"] else "unknown")
+        who = f" by @{link['author']}" if link["author"] else ""
+        note = f"  [yellow]{link['note']}[/yellow]" if link["note"] else ""
+        console.print(f"  PR {link['repo']}#{link['number']}: {state}{who}{note}")
+    console.print(f"\n[bold]{report['verdict']}[/bold]")
+    for check in report["manual_checks"]:
+        console.print(f"  ☐ {check}")
 
 
 @app.command("progress")
