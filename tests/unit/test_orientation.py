@@ -520,3 +520,10 @@ def test_policy_quotes_join_wrapped_lines_and_drop_markdown() -> None:
         "Note that you should not claim an issue while you are iterating; snake_case_names stay."
         in texts
     )
+
+
+def test_policy_quotes_drop_markdown_escapes() -> None:
+    # ArduPilot: "simply work on it\\*" printed with the backslash.
+    text = "We typically do not assign issues, simply work on it\\* and open a PR.\n"
+    quotes = [q["text"] for q in policy_quotes({"CONTRIBUTING.md": text})]
+    assert quotes == ["We typically do not assign issues, simply work on it* and open a PR."]

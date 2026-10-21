@@ -576,6 +576,7 @@ def conventions(
 _ITEM_START = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 _MD_LINK = re.compile(r"!?\[([^\]]*)\](?:\([^)]*\)|\[[^\]]*\])")
 _MD_EMPHASIS = re.compile(r"(\*\*|__)(.+?)\1")
+_MD_ESCAPE = re.compile(r"\\([\\`*_{}\[\]()#+\-.!>|])")
 _MD_SINGLE_EMPHASIS = re.compile(r"(?<![\w*])([*_])(?=\S)(.+?)(?<=\S)\1(?![\w*])")
 
 
@@ -603,7 +604,8 @@ def _logical_lines(text: str) -> list[str]:
 
 def _plain(markdown: str) -> str:
     text = _MD_EMPHASIS.sub(r"\2", _MD_LINK.sub(r"\1", markdown))
-    return _MD_SINGLE_EMPHASIS.sub(r"\2", text).replace("`", "")
+    text = _MD_SINGLE_EMPHASIS.sub(r"\2", text).replace("`", "")
+    return _MD_ESCAPE.sub(r"\1", text)  # "work on it\*" -> "work on it*"
 
 
 def policy_quotes(texts: dict[str, str], *, limit: int = 8) -> list[dict[str, str]]:
