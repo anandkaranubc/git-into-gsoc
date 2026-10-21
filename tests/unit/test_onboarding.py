@@ -65,9 +65,10 @@ def test_milestones_count_what_is_saved() -> None:
             "tracked_repos": [],
             "tracked_issues": [],
             "log_entries": 0,
+            "contributions": 1,
         }
     )
-    assert [s["done"] for s in steps] == [True, True, False, False, False]
+    assert [s["done"] for s in steps] == [True, True, False, False, False, True]
     assert steps[1]["count"] == 2
     assert all(s["command"].startswith("git-into-gsoc ") for s in steps)
 
@@ -103,7 +104,7 @@ def test_bare_command_welcomes_back_with_progress(api: respx.MockRouter) -> None
     result = runner.invoke(app, [])
     assert result.exit_code == 0, result.output
     assert "Welcome back, @octocat." in result.stdout
-    assert "2 of 5" in result.stdout
+    assert "2 of 6" in result.stdout
     assert "git-into-gsoc next" in result.stdout
 
 

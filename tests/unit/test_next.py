@@ -265,3 +265,69 @@ def test_a_tracked_issue_keeps_its_caution(monkeypatch) -> None:  # type: ignore
     status, reason = toolkit._availability_of("ArduPilot/ardupilot", 9828)
     assert status == "available"
     assert "asked 138d ago" in reason
+
+
+def _merged_item(number: int, repo: str, days_ago: int) -> dict[str, Any]:
+    return {
+        **_search_item(number, repo, days_ago),
+        "title": f"Fix bug {number}",
+        "html_url": f"https://github.com/{repo}/pull/{number}",
+        "pull_request": {"merged_at": _iso(days_ago)},
+    }
+
+
+def _search_with_merged(items: list[dict[str, Any]]):  # type: ignore[no-untyped-def]
+    def respond(request: httpx.Request) -> httpx.Response:
+        if "is:merged" in request.url.params["q"]:
+            return httpx.Response(200, json={"items": items})
+        return httpx.Response(200, json={"items": []})
+
+    return respond
+
+
+def test_next_celebrates_a_first_merged_pull_request_once(api: respx.MockRouter) -> None:
+    store = ProgressStore()
+    store.set_profile(technologies=["python"], github="alice")
+    api.get(f"{GH}/search/issues").mock(
+        side_effect=_search_with_merged([_merged_item(42, "sympy/sympy", 1)])
+    )
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert [m["ref"] for m in data["merged_pull_requests"]] == ["sympy/sympy#42"]
+    assert data["first_merge"] is True
+    assert data["actions"][0]["command"].startswith(
+        'git-into-gsoc log --done "Merged sympy/sympy#42"'
+    )
+    assert store.summary()["contributions"] == 1
+    # Recorded: the next check does not announce it again.
+    again = GSoCToolkit().next_steps(now=NOW + timedelta(hours=1))
+    assert again["merged_pull_requests"] == []
+    assert again["first_merge"] is False
+    assert store.summary()["contributions"] == 1
+
+
+def test_next_records_old_merges_quietly(api: respx.MockRouter) -> None:
+    store = ProgressStore()
+    store.set_profile(technologies=["python"], github="alice")
+    old = [_merged_item(n, "numpy/numpy", 200 + n) for n in (1, 2, 3)]
+    api.get(f"{GH}/search/issues").mock(side_effect=_search_with_merged(old))
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert data["merged_pull_requests"] == []
+    assert data["first_merge"] is False
+    assert store.summary()["contributions"] == 3
+
+
+def test_next_shows_merged_pull_requests_in_the_terminal(api: respx.MockRouter) -> None:
+    from typer.testing import CliRunner
+
+    from git_into_gsoc.cli import app
+
+    ProgressStore().set_profile(technologies=["python"], github="alice")
+    # The command uses the real clock, so the merge is dated from now.
+    item = _merged_item(42, "sympy/sympy", 1)
+    item["pull_request"]["merged_at"] = (datetime.now(UTC) - timedelta(days=1)).isoformat()
+    api.get(f"{GH}/search/issues").mock(side_effect=_search_with_merged([item]))
+    result = CliRunner().invoke(app, ["next"])
+    assert result.exit_code == 0, result.output
+    assert "Merged since your last check" in result.stdout
+    assert "sympy/sympy#42" in result.stdout
+    assert "first merged pull request" in " ".join(result.stdout.split())

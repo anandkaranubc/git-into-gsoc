@@ -43,6 +43,7 @@ _MILESTONES: tuple[tuple[str, str, str], ...] = (
     ("repo", "Pick a repository", "git-into-gsoc repo OWNER/NAME --track"),
     ("issue", "Track an issue you could work on", "git-into-gsoc issue OWNER/REPO#123 --track"),
     ("log", "Write a weekly note", 'git-into-gsoc log --goal "..." --done "..."'),
+    ("merged", "Get a pull request merged", "git-into-gsoc next"),
 )
 
 
@@ -72,6 +73,8 @@ def milestones(summary: dict[str, Any]) -> list[dict[str, Any]]:
         "repo": len(summary.get("tracked_repos") or []),
         "issue": len(summary.get("tracked_issues") or []),
         "log": int(summary.get("log_entries") or 0),
+        # `next` records merged pull requests it finds once your profile has a username.
+        "merged": int(summary.get("contributions") or 0),
     }
     return [
         {"key": key, "label": label, "done": counts[key] > 0, "count": counts[key], "command": cmd}

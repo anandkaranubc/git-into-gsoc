@@ -1150,6 +1150,18 @@ class GSoCToolkit:
         open_prs = (
             self.open_pull_requests(github_login, now=now) if recheck and github_login else []
         )
+        merged = self.merged_pull_requests(github_login) if recheck and github_login else []
+        recorded = {str(c.get("ref")) for c in state.contributions}
+        newly_merged = [m for m in merged if m["ref"] not in recorded]
+        # Only one merged pull request in someone else's project, ever, and it is new.
+        first_merge = len(merged) == 1 and bool(newly_merged)
+        if newly_merged:
+            with contextlib.suppress(InputError):
+                for item in newly_merged:
+                    self.progress.add_contribution(kind="merged_pull_request", **item)
+        # A first run records older merges quietly; only recent ones are news.
+        news_since = state.last_checked_at or now - timedelta(days=14)
+        merged_news = [m for m in newly_merged if _after(m.get("merged_at"), news_since)]
         if recheck:
             # Where the progress folder cannot be written (a sandboxed assistant), the
             # results still count; the next run just reports the same changes again.
@@ -1170,6 +1182,17 @@ class GSoCToolkit:
             now=now,
             code_elsewhere=self._code_elsewhere(state.shortlisted_orgs[:3]),
         )
+        for item in reversed(merged_news[:2]):
+            actions.insert(
+                0,
+                {
+                    "title": f"{item['ref']} was merged. Write down what you did and learned "
+                    "while it is fresh",
+                    "command": f'git-into-gsoc log --done "Merged {item["ref"]}" '
+                    f'--links {item["url"]} --learned "..."',
+                    "why": "Notes like this become the evidence in your proposal.",
+                },
+            )
         for post in reversed([p for p in org_posts if p["status"] == "not_taking_part"]):
             actions.insert(
                 0,
@@ -1195,6 +1218,8 @@ class GSoCToolkit:
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
             "open_pull_requests": open_prs,
+            "merged_pull_requests": merged_news,
+            "first_merge": first_merge and bool(merged_news),
             "changes": changes,
             "new_issues": new_issues,
             "org_posts": org_posts,
@@ -2018,6 +2043,34 @@ class GSoCToolkit:
             )
         return check_message(kind, text)
 
+    def merged_pull_requests(self, username: str, *, limit: int = 10) -> list[dict[str, Any]]:
+        """The contributor's latest merged pull requests in other people's repositories.
+
+        One search. Failures return nothing, so `next` never stops over it.
+        """
+        login = validate_login(username, kind="GitHub username")
+        try:
+            items = self.github.search_issues(
+                f"is:pr is:merged author:{login} -user:{login}", per_page=limit
+            )
+        except GigError:
+            return []
+        found: list[dict[str, Any]] = []
+        for item in items:
+            parts = str(item.get("repository_url") or "").rstrip("/").split("/")
+            merged_at = (item.get("pull_request") or {}).get("merged_at")
+            if len(parts) < 2 or not item.get("number") or not merged_at:
+                continue
+            found.append(
+                {
+                    "ref": f"{parts[-2]}/{parts[-1]}#{item['number']}",
+                    "url": str(item.get("html_url") or ""),
+                    "title": clean_untrusted(item.get("title"), limit=160),
+                    "merged_at": str(merged_at),
+                }
+            )
+        return found
+
     def open_pull_requests(
         self, username: str, *, now: datetime | None = None, limit: int = 5
     ) -> list[dict[str, Any]]:
@@ -2235,6 +2288,17 @@ def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:
 
 # Availability values a starter list may show: free, or not checked (timeline unreadable).
 _OPEN_TO_NEWCOMERS = frozenset({Availability.AVAILABLE.value, Availability.UNKNOWN.value})
+
+
+def _after(stamp: object, when: datetime) -> bool:
+    """True when an ISO timestamp from GitHub is later than `when`."""
+    try:
+        moment = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
+    return moment > when
 
 
 def _open(issue: dict[str, Any]) -> bool:

@@ -1785,6 +1785,16 @@ def next_cmd(
             console.print(f"  {mark} {pr['ref']}  {escape(pr['summary'])}")
             for extra in pr.get("reasons", [])[1:]:
                 console.print(f"           [dim]also: {escape(extra)}[/dim]")
+    if data.get("merged_pull_requests"):
+        console.print("\n[bold]Merged since your last check[/bold]")
+        for pr in data["merged_pull_requests"]:
+            console.print(f"  [green]✓[/green] {pr['ref']}  {escape(pr['title'])}", highlight=False)
+        if data.get("first_merge"):
+            console.print(
+                "  [bold green]Your first merged pull request in someone else's project.[/] "
+                "That is the hardest step, and it is done. Maintainers will remember a "
+                "contributor who finished one."
+            )
     news = [p for p in data.get("org_posts") or [] if p["status"] != "mentions"] + [
         p for p in data.get("org_posts") or [] if p["status"] == "mentions"
     ]
