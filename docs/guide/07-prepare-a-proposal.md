@@ -37,6 +37,16 @@ Use the organization's sections first. If it does not provide a template, these 
 
 A **milestone** is a concrete result you can demonstrate. For example, "add and test input validation for the agreed cases" is easier to assess than "work on validation." Use examples from your actual project and discuss the scope with mentors.
 
+## Check the draft before anyone else reads it
+
+```bash
+git-into-gsoc proposal draft.md --github YOUR_USERNAME
+```
+
+Save your draft as Markdown or plain text and run the check. It reports, with reasons, whether the required sections are there (synopsis, deliverables, timeline, about you), whether you linked pull requests and whether GitHub confirms they are yours and merged, whether the timeline is week by week with buffer time, whether the text names real files, functions, and issues, and whether it contains the generic phrases and leftover placeholders that [Google's spam guidance](https://developers.google.com/open-source/gsoc/resources/spam_proposals) warns organizations about. If you saved the organization's ideas page as a text file, add `--ideas-file ideas.txt` to see how much of your draft merely restates it.
+
+The check never rewrites anything. Fix the failures, then the warnings, in your own words. "Structurally complete" means the skeleton is right; only a mentor can tell you whether the plan is good.
+
 ## Get feedback and submit
 
 1. Share a draft through the organization's requested channel, if it accepts drafts.

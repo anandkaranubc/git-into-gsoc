@@ -19,7 +19,13 @@ Repositories can be written as `owner/name` or as any GitHub URL. Issues can be 
 |---|---|---|
 | `program` | `--year` (default 2027), `--size small\|medium\|large` | Current phase and advice, timeline with official or estimated dates, anti-spam rules |
 | `journey` | none | All eight phases with goals and actions |
-| `proposal` | none | Proposal checklist, suggested structure, and warnings |
+| `proposal [FILE]` | `--github`, `--verify/--no-verify`, `--ideas-file` | Without a file: the checklist and suggested structure. With a draft: pass/warn/fail findings on sections, contribution links, timeline detail, specificity, generic phrasing, placeholders, and length |
+
+```bash
+git-into-gsoc proposal draft.md --github YOUR_USERNAME --ideas-file ideas.txt
+```
+
+The check never rewrites your draft. It verifies linked pull requests on GitHub (and flags ones authored by someone else when `--github` is given), counts week-by-week timeline entries and buffer time, looks for concrete references to files, functions, and issues, lists generic phrases and leftover template placeholders that [Google's spam guidance](https://developers.google.com/open-source/gsoc/resources/spam_proposals) warns about, and, with `--ideas-file`, measures how much of the text is copied from the organization's ideas page. `--no-verify` skips the GitHub lookups.
 
 `program` fetches the year's milestones from the official site. If Google has not published that year, it projects the previous official year forward and marks every date as an estimate with an uncertainty window. Offline, it uses an embedded snapshot. `--size` selects which evaluation deadlines to show, because they differ by project size.
 
@@ -35,7 +41,7 @@ git-into-gsoc projects "graph neural networks" --since 2024
 | Command | Arguments and options |
 |---|---|
 | `orgs` | `--query` / `-q`, `--tech` / `-t`, `--topics`, `--category` / `-c`, `--year`, `--limit` / `-n` (default 10) |
-| `org NAME` | Full or partial organization name (quote names with spaces); `--year` |
+| `org NAME` | Full or partial organization name (quote names with spaces); `--year`; `--shortlist` saves it to your progress |
 | `projects [KEYWORDS]` | `--org`, `--since` (earliest year), `--limit` / `-n` (default 15) |
 
 `--tech` and `--topics` take comma-separated lists and understand aliases (`js`, `golang`, `ml`, `k8s`). They decide whether an organization matches; continuity, slot counts, and trend decide the order. Without filters, all organizations are listed by continuity.
@@ -55,9 +61,9 @@ git-into-gsoc issue sympy/sympy#12345
 | Command | Arguments and options | Result |
 |---|---|---|
 | `repos ORG` | GSoC org name or GitHub login; `--language` / `-l`, `--limit` / `-n` | The org's active repositories ranked by ideas-page mentions, open beginner issues, activity, stars, and language |
-| `repo OWNER/REPO` | Repository or URL | Grade A to F with evidence, warnings, and setup hints |
+| `repo OWNER/REPO` | Repository or URL; `--track` saves it to your progress | Grade A to F with evidence, warnings, and setup hints |
 | `issues` | `--language` / `-l`, `--org`, `--repo`, `--label`, `--scope gsoc\|all`, `--limit` / `-n` | Beginner issues with a verified availability status |
-| `issue REF [NUMBER]` | `owner/repo#123`, a URL, or `owner/repo` plus a number | Linked PRs, claims with dates, approvals, caveats, and a before-you-comment checklist |
+| `issue REF [NUMBER]` | `owner/repo#123`, a URL, or `owner/repo` plus a number; `--track` saves it to your progress | Linked PRs, claims with dates, approvals, caveats, and a before-you-comment checklist |
 
 `repos` resolves a GSoC organization to its GitHub organizations and reads its ideas page when possible. `repo` samples recent closed pull requests to compute merge rates excluding bots, and separately for outside contributors; it needs about six API calls.
 

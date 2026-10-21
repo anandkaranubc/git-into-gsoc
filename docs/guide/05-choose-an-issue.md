@@ -29,7 +29,7 @@ Expect a grade from A to F, the evidence behind it, and setup hints. The signals
 "Getting set up" lists the toolchain files found in the repository root, whether a dev container exists (one click in Codespaces or VS Code gets you a working environment), the CONTRIBUTING link, and the chat channels it mentions. Read the README and CONTRIBUTING on GitHub before writing code. A high grade does not guarantee mentoring, and a missing file can mean the guide lives elsewhere. If the repository is archived, look for the project's current repository before continuing.
 
 ```bash
-git-into-gsoc progress track_repo --value sympy/sympy
+git-into-gsoc repo sympy/sympy --track          # same check, and saves the repo to your progress
 ```
 
 ## Find an issue that is actually free
@@ -80,7 +80,7 @@ approach fit, or is there a direction you would prefer?
 Replace the brackets with real observations. Do not post the template unchanged, and never post a bare "can I work on this?". If someone is already working on it, find another issue or ask whether they welcome help.
 
 ```bash
-git-into-gsoc progress track_issue --value https://github.com/sympy/sympy/issues/12345
+git-into-gsoc issue sympy/sympy#12345 --track   # same check, and saves the issue to your progress
 ```
 
 **Ready to move on:** you can explain the problem, have checked the discussion, and know the project's contribution process.

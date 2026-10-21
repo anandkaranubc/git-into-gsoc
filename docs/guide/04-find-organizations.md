@@ -38,7 +38,7 @@ For each interesting result:
 Start with two or three organizations. It is fine to keep only one if you already have a clear fit. Previous participation is useful context, not a guarantee that the organization will return.
 
 ```bash
-git-into-gsoc progress shortlist_org --value "SymPy"
+git-into-gsoc org "SymPy" --shortlist           # same details, and adds it to your shortlist
 ```
 
 ```text
