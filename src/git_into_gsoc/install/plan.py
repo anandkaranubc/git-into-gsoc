@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -23,6 +22,7 @@ from git_into_gsoc.install.clients import (
     unregister_json,
 )
 from git_into_gsoc.install.skill import InstallError, copy_skill, remove_skill, skill_source
+from git_into_gsoc.programs import find_program
 
 
 @dataclass
@@ -130,7 +130,7 @@ def _unregister(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Chan
     rel = target.project_path if plan.scope == "project" else target.user_path
     if rel is None:
         if plan.scope == "user" and target.cli_remove and plan.use_cli:
-            executable = shutil.which(target.cli_remove[0])
+            executable = find_program(target.cli_remove[0])
             if executable and plan.home.resolve() == Path.home().resolve():
                 if dry_run:
                     return Change(assistant.label, "mcp", Path(executable), "removed", "via cli")
@@ -195,7 +195,7 @@ def _register_via_cli(
     different home (GIG_HOME in tests, demos, or sandboxes) it is skipped and
     the manual command is printed instead of mutating the user's real config.
     """
-    executable = shutil.which(cli[0])
+    executable = find_program(cli[0])
     if not executable or plan.home.resolve() != Path.home().resolve():
         return None
     where = Path(executable)

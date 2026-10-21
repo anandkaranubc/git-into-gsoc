@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 import logging
 import os
-import shutil
 import subprocess
 from functools import lru_cache
 from pathlib import Path
@@ -20,6 +19,7 @@ from pydantic_settings import (
 )
 
 from git_into_gsoc import __version__
+from git_into_gsoc.programs import find_program
 
 DEFAULT_TARGET_YEAR = 2027
 LATEST_ARCHIVED_YEAR = 2026
@@ -154,7 +154,7 @@ def resolve_token(settings: Settings) -> tuple[str | None, str | None]:
 
 @lru_cache(maxsize=1)
 def _gh_cli_token() -> str | None:
-    gh = shutil.which("gh")
+    gh = find_program("gh")
     if not gh:
         return None
     try:

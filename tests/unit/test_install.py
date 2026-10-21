@@ -129,7 +129,7 @@ def test_cli_registration_is_skipped_for_a_redirected_home(
     import git_into_gsoc.install.plan as plan_module
 
     calls: list[list[str]] = []
-    monkeypatch.setattr(plan_module.shutil, "which", lambda name: f"/fake/bin/{name}")
+    monkeypatch.setattr(plan_module, "find_program", lambda name: f"/fake/bin/{name}")
     monkeypatch.setattr(
         plan_module, "register_via_cli", lambda exe, argv, **kw: calls.append(argv) or (True, "")
     )

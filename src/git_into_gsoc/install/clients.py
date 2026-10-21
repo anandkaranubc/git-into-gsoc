@@ -21,6 +21,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
+from git_into_gsoc.programs import find_program
+
 SERVER_NAME = "git-into-gsoc"
 Scope = Literal["user", "project"]
 
@@ -63,7 +65,7 @@ class Assistant:
     def present(self, home: Path) -> bool:
         if any((home / d).exists() for d in self.detect_dirs):
             return True
-        return any(shutil.which(c) for c in self.detect_commands)
+        return any(find_program(c) for c in self.detect_commands)
 
 
 ASSISTANTS: dict[str, Assistant] = {
@@ -178,7 +180,7 @@ def server_command() -> list[str]:
             candidate = bindir / name
             if candidate.is_file():
                 return [str(candidate), "mcp"]
-    on_path = shutil.which("git-into-gsoc")
+    on_path = find_program("git-into-gsoc")
     if on_path:
         return [str(Path(on_path)), "mcp"]
     return [sys.executable, "-m", "git_into_gsoc", "mcp"]
