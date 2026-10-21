@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.6.1...v0.7.0) (2026-10-21)
+
+
+### Features
+
+* **issues:** point to an earlier closed pull request as a guide, and let stricter organization rules govern; code-search census ([#76](https://github.com/anandkaranubc/git-into-gsoc/issues/76)) ([218c692](https://github.com/anandkaranubc/git-into-gsoc/commit/218c692345520f5756317a07c09ab472a38dcd4e))
+* **orient:** list the gates GitHub enforces but CONTRIBUTING leaves out, from branch rules and gate workflows ([#71](https://github.com/anandkaranubc/git-into-gsoc/issues/71)) ([9cd9809](https://github.com/anandkaranubc/git-into-gsoc/commit/9cd9809d074fafb5da22ec45dc67ccc623cbcb9f))
+
+
+### Bug Fixes
+
+* **site:** show all ten journey phases and the real issue output ([#75](https://github.com/anandkaranubc/git-into-gsoc/issues/75)) ([3f288c5](https://github.com/anandkaranubc/git-into-gsoc/commit/3f288c5b3911e870b2960b34401933027ecd7ad6))
+
+
+### Documentation
+
+* keep research working notes and the audit record out of the public docs ([#70](https://github.com/anandkaranubc/git-into-gsoc/issues/70)) ([b353e9d](https://github.com/anandkaranubc/git-into-gsoc/commit/b353e9dd21d3af4ce63a1d213a60a3fb42521766))
+* list ideas and mentors in the command table and count ten phases everywhere ([#77](https://github.com/anandkaranubc/git-into-gsoc/issues/77)) ([f0f16e2](https://github.com/anandkaranubc/git-into-gsoc/commit/f0f16e274252f54967bec433b1033935e9b0821e))
+
 ## [0.6.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.6.0...v0.6.1) (2026-10-21)
 
 
