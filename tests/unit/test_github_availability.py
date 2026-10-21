@@ -504,3 +504,35 @@ def test_a_claim_typed_with_a_curly_apostrophe_counts() -> None:
         _issue(), [_comment("aadi", f"I{C}d like to take this one. Plan: ...", 10)], now=NOW
     )
     assert found.availability == Availability.CLAIMED
+
+
+# Phrasings from real comments on beginner issues in GSoC organizations
+# (2026-10-21, usernames removed). The older patterns caught 69% of the claims in a
+# held-out half of 280 labelled comments; these forms were among the misses.
+REAL_CLAIMS = [
+    "Hi! I'm a new contributor and would like to work on this issue.",
+    "I would like to be assigned to this issue",
+    "Working on this",
+    "I'm actively working on it.",
+    "Can you please assign the issue to me",
+    "I am interested in working on this issue.",
+    "Is this issue still open for contribution",
+    "I would love to take a stab at this issue",
+    "can i try to add this along with its tutorial?",
+    "I'd also like to work on this issue.",
+    "id like to work on this",
+    "please assign #826 to me",
+]
+NOT_CLAIMS = [
+    "@someone let us know if u r still working on this issue",
+    "Currently @someone is working on this issue. If anything changes, we will let you know!",
+    "@someone let us know if you're still interested in working on this",
+    "so you are open to work on this once the fix lands",
+    "> I would like to work on this issue, if it is still available.\nThanks, merged.",
+    "I can reproduce this on Linux too.",
+]
+
+
+def test_real_claim_phrasings_count_and_others_do_not() -> None:
+    assert [text for text in REAL_CLAIMS if not is_claim(text)] == []
+    assert [text for text in NOT_CLAIMS if is_claim(text)] == []
