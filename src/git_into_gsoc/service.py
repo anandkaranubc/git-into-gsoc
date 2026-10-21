@@ -83,7 +83,7 @@ from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.matching.concepts import resolve as resolve_concept
 from git_into_gsoc.matching.ideas import ideas_for
-from git_into_gsoc.matching.issues import personalize
+from git_into_gsoc.matching.issues import is_event_repo, personalize
 from git_into_gsoc.matching.path import learning_path
 from git_into_gsoc.matching.profile import (
     EXPERIENCE_HELP,
@@ -1133,8 +1133,12 @@ class GSoCToolkit:
                     if (o.get("participation") or {}).get("status") == "not_taking_part"
                     for owner in o.get("github_orgs") or []
                 }
+                # Nor from a repository for an event rather than code.
                 candidates = [
-                    i for i in candidates if str(i["repo"]).split("/")[0].lower() not in sitting_out
+                    i
+                    for i in candidates
+                    if str(i["repo"]).split("/")[0].lower() not in sitting_out
+                    and not is_event_repo(str(i["repo"]))
                 ]
                 unique = list({(i["repo"], i["number"]): i for i in candidates}.values())
                 issues = personalize([i for i in unique if _open(i)], person)[:5]

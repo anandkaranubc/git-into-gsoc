@@ -29,6 +29,20 @@ _GENTLE_WORDS = ("documentation", "docs", "typo", "readme", "test", "tests")
 _UNTICKED = re.compile(r"[-*]?\s*\[ \]\s*[^\s\[\]]+(?:[ \t]+[^\s\[\]*-]+){0,2}")
 
 
+# Repositories for an event or its notes ("disc-unconference-2023-projects",
+# "hackathon-2024"), not code a contributor can build on.
+_EVENT_REPO = re.compile(
+    r"(?:^|[-_.])(?:unconference|hackathon|conference|summit|meetup|workshop|sprints?|"
+    r"events?|talks|slides)(?:$|[-_.])|(?:^|[-_.])20\d\d(?:$|[-_.])",
+    re.I,
+)
+
+
+def is_event_repo(full_name: str) -> bool:
+    """True for a repository named after an event or a year, rather than a project."""
+    return bool(_EVENT_REPO.search(str(full_name).split("/")[-1]))
+
+
 def issue_fit(issue: dict[str, Any], person: ContributorProfile) -> tuple[float, list[str]]:
     """Extra points and plain reasons for one issue (a dict as find_issues returns)."""
     labels = [str(lab) for lab in issue.get("labels") or []]

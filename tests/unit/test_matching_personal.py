@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 from git_into_gsoc.github.repos import repo_lead_score
 from git_into_gsoc.gsoc.project_ideas import rank_ideas
 from git_into_gsoc.matching.ideas import ideas_for, required_skills
-from git_into_gsoc.matching.issues import issue_fit, personalize
+from git_into_gsoc.matching.issues import is_event_repo, issue_fit, personalize
 from git_into_gsoc.matching.path import learning_path
 from git_into_gsoc.matching.profile import build_profile
 from git_into_gsoc.matching.signals import language_concepts, summarize_ideas, summarize_repos
@@ -293,3 +293,16 @@ def test_required_skills_need_the_capital_letter_for_short_names() -> None:
     assert required_skills("You are required to go through the docs first.") == []
     assert required_skills("Knowledge of Go is required. Python helps.") == ["go"]
     assert set(required_skills("Required skills: C and C++")) == {"c", "c++"}
+
+
+def test_event_repositories_are_not_projects() -> None:
+    # recommend offered numfocus/disc-unconference-2023-projects#25 as a starter issue.
+    for name in (
+        "numfocus/disc-unconference-2023-projects",
+        "org/hackathon",
+        "org/gsoc-2026",
+        "x/talks",
+    ):
+        assert is_event_repo(name), name
+    for name in ("zulip/zulip-terminal", "sympy/sympy", "org/eventlet", "org/py2026parser"):
+        assert not is_event_repo(name), name
