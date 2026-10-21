@@ -99,7 +99,55 @@ def test_org_accepts_a_gsoc_name_and_its_ideas_page_projects(monkeypatch: Any) -
     assert seen["org"] is None
     assert seen["orgs"] == ["openrobotics", "osrf", "ros2", "open-rmf"]
     assert "Open Robotics" in data["note"] and "ros2" in data["note"]
-    assert seen["org_names"]["ros2"] == "Open Robotics"
+    assert seen["org_names"]["osrf"] == "Open Robotics"
+    assert seen["org_names"]["ros2"] == "named on the Open Robotics ideas page"
+
+
+def test_the_organizations_own_issues_come_before_linked_projects(monkeypatch: Any) -> None:
+    from git_into_gsoc.models import Availability
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
+    monkeypatch.setattr(
+        toolkit, "_gsoc_owners", lambda *a, **k: (["zulip"], ["readthedocs"], "Searching Zulip.")
+    )
+    free = {"availability": Availability.AVAILABLE}
+    linked = _issue("readthedocs/sphinx-autoapi", 312).model_copy(
+        update={**free, "beginner_score": 70}
+    )
+    own = _issue("zulip/zulip-flutter", 1727).model_copy(update={**free, "beginner_score": 60})
+    taken = _issue("zulip/zulip", 9).model_copy(
+        update={"beginner_score": 90, "availability": Availability.LIKELY_TAKEN}
+    )
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: [taken, linked, own])
+    data = toolkit.find_issues(org="Zulip", max_results=5)
+    assert [i["repo"] for i in data["issues"]] == [
+        "zulip/zulip-flutter",
+        "readthedocs/sphinx-autoapi",
+        "zulip/zulip",
+    ]
+
+
+def test_a_pull_request_linked_on_an_ideas_page_is_not_a_project(monkeypatch: Any) -> None:
+    # Zulip's ideas page links a flutter/flutter pull request as an example; flutter
+    # issues were then listed under "Zulip".
+    toolkit = GSoCToolkit()
+    looked_up: list[str] = []
+
+    def get_repo(owner: str, name: str) -> dict[str, Any]:
+        looked_up.append(f"{owner}/{name}")
+        return {"full_name": f"{owner}/{name}", "owner": {"type": "Organization"}}
+
+    monkeypatch.setattr(toolkit.github, "get_repo", get_repo)
+    page = (
+        "Like https://github.com/flutter/flutter/pull/129802 did, see "
+        "https://github.com/flutter/devtools/commit/abc123 and the theme at "
+        "https://github.com/readthedocs/sphinx_rtd_theme or "
+        "https://github.com/colcon/colcon-mixin/issues/39."
+    )
+    leads = toolkit._repos_named_on_page(page, ["zulip"], language=None)
+    assert looked_up == ["readthedocs/sphinx_rtd_theme", "colcon/colcon-mixin"]
+    assert [lead.full_name for lead in leads] == looked_up
 
 
 def test_org_still_takes_a_plain_github_login(monkeypatch: Any) -> None:

@@ -452,14 +452,17 @@ class GSoCToolkit:
             "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
         }
 
-    def _gsoc_owners(self, name: str, *, language: str | None) -> tuple[list[str], str]:
-        """GitHub owners to search for a GSoC organization's name, with a note; [] if none."""
+    def _gsoc_owners(self, name: str, *, language: str | None) -> tuple[list[str], list[str], str]:
+        """A GSoC organization's own GitHub owners, the ones its ideas page links to, and a note.
+
+        Both lists are empty when the name is not a GSoC organization with GitHub owners.
+        """
         try:
             gsoc_org = self.gsoc.get_organization(name)
         except GigError:
-            return [], ""
+            return [], [], ""
         if gsoc_org is None or not gsoc_org.github_orgs:
-            return [], ""
+            return [], [], ""
         owners = list(gsoc_org.github_orgs[:3])
         ideas = fetch_ideas_text(self.http, gsoc_org.ideas_url, self.settings.archive_ttl_seconds)
         linked: list[str] = []
@@ -470,7 +473,7 @@ class GSoCToolkit:
         note = f"Searching {gsoc_org.name}: {', '.join(owners)}"
         if linked:
             note += f", and {', '.join(linked[:4])} (named on its ideas page)"
-        return [*owners, *linked[:4]], note + "."
+        return owners, linked[:4], note + "."
 
     def _repos_named_on_page(
         self, text: str, searched: list[str], *, language: str | None, limit: int = 6
@@ -486,6 +489,10 @@ class GSoCToolkit:
         for match in _GITHUB_PROJECT_RE.finditer(text):
             owner, repo = match.group(1), match.group(2)
             if not repo or owner.lower() in skip or repo.lower() in _NOT_REPOS:
+                continue
+            # A link to someone's pull request or commit is an example to follow,
+            # not a project to work on: Zulip's page links a flutter/flutter PR.
+            if _CHANGE_LINK_RE.match(text, match.end()):
                 continue
             full = f"{owner}/{repo.removesuffix('.git')}"
             if full not in named:
@@ -548,12 +555,19 @@ class GSoCToolkit:
         # organizations whose repositories its ideas page names (Open Robotics lists
         # only openrobotics and osrf; its ROS work is under ros2 and open-rmf).
         gsoc_owners: list[str] = []
+        linked: list[str] = []
         if org and not repo:
-            gsoc_owners, owners_note = self._gsoc_owners(org, language=language)
+            own_owners, linked, owners_note = self._gsoc_owners(org, language=language)
+            gsoc_owners = [*own_owners, *linked]
             if gsoc_owners:
                 shortlist, org = gsoc_owners, None
                 gsoc_name = owners_note.removeprefix("Searching ").split(":", 1)[0]
-                owner_names = {**owner_names, **{o.lower(): gsoc_name for o in gsoc_owners}}
+                # A linked project is not the organization's own: say where it came from.
+                owner_names = {
+                    **owner_names,
+                    **{o.lower(): gsoc_name for o in own_owners},
+                    **{o.lower(): f"named on the {gsoc_name} ideas page" for o in linked},
+                }
         use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
         if gsoc_owners:
             note = owners_note
@@ -583,6 +597,17 @@ class GSoCToolkit:
             max_results=max_results,
             org_names=owner_names,
         )
+        if gsoc_owners and linked:
+            # Free issues first; among them, the organization's own before linked projects.
+            linked_owners = {o.lower() for o in linked}
+            issues.sort(
+                key=lambda i: (
+                    i.availability != Availability.AVAILABLE,
+                    i.repo.split("/", 1)[0].lower() in linked_owners,
+                    -i.beginner_score,
+                )
+            )
+            note += " Its own repositories come first, then the linked ones."
         if use_gsoc and narrowed and not gsoc_owners and len(issues) < 3:
             # Too few in the organizations that fit the interests: keep those first and
             # fill the list from every organization that uses the language.
@@ -1851,6 +1876,7 @@ _GITHUB_PROJECT_RE = re.compile(
 )
 _NOT_OWNERS = {"orgs", "topics", "search", "features", "apps", "settings", "marketplace"}
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
+_CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
 
 
 def _github_links(text: str) -> list[dict[str, str]]:
