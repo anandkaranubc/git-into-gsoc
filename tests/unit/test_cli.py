@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import httpx
+import respx
 from typer.testing import CliRunner
 
 from git_into_gsoc.cli import app
@@ -33,7 +35,13 @@ def test_cli_invalid_repo_is_a_friendly_error() -> None:
     assert "Traceback" not in result.output
 
 
-def test_cli_program_mentions_disclaimer() -> None:
+@respx.mock
+def test_cli_program_shows_estimate_and_phase() -> None:
+    respx.get("https://summerofcode.withgoogle.com/api/program/2027/").mock(
+        return_value=httpx.Response(404, json={})
+    )
     result = runner.invoke(app, ["program", "--year", "2027"])
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
     assert "2027" in result.stdout
+    assert "estimate" in result.stdout
+    assert "Now:" in result.stdout

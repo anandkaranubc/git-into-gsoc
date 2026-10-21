@@ -7,9 +7,10 @@ from typing import Any
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.gsoc.client import GSoCClient
+from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
-from git_into_gsoc.http_client import CachedHttpClient
+from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.progress.store import ProgressStore
 
 
@@ -19,11 +20,19 @@ class GSoCToolkit:
         self.http = CachedHttpClient(self.settings)
         self.github = GitHubClient(self.settings, self.http)
         self.gsoc = GSoCClient(self.settings, self.http)
+        self.official = OfficialGSoCClient(self.settings, self.http)
         self.progress = ProgressStore()
 
-    def program_info(self, year: int | None = None) -> dict[str, Any]:
+    def program_info(self, year: int | None = None, project_size: str = "medium") -> dict[str, Any]:
         year = year or self.settings.target_year
-        status = program_status(year)
+        offline = False
+        try:
+            official = self.official.program(year)
+        except HttpError:
+            official, offline = None, True
+        status = program_status(
+            year, official_program=official, project_size=project_size, offline=offline
+        )
         overview = journey_overview()
         return {
             **status,

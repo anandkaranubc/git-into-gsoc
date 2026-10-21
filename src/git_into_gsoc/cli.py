@@ -80,31 +80,54 @@ def main_callback(
     del version
 
 
+class ProjectSize(StrEnum):
+    small = "small"
+    medium = "medium"
+    large = "large"
+
+
+def _relative(days: int) -> str:
+    if days == 0:
+        return "today"
+    if days > 0:
+        return f"in {days}d"
+    return f"{-days}d ago"
+
+
 @app.command("program")
 def program_cmd(
     year: int = typer.Option(2027, help="Program year"),
+    size: ProjectSize = typer.Option(
+        ProjectSize.medium, "--size", help="Project size for evaluation deadlines"
+    ),
     output: Output = Output.rich,
 ) -> None:
-    """Show program timeline, official links, and anti-spam rules."""
-    data = _toolkit().program_info(year)
+    """Show the program timeline, current phase, and what to do now."""
+    data = _toolkit().program_info(year, project_size=size.value)
     if output == Output.json:
         _emit(data, output)
         return
+    phase = data["phase"]
+    badge = "[green]official[/green]" if data["dates_are_official"] else "[yellow]estimate[/yellow]"
     console.print(
         Panel.fit(
-            f"[bold]GSoC {year}[/bold]\n{data['disclaimer']}\n\n"
-            f"Official: {data['official_home']}\n"
-            f"Program page: {data['program_page']}",
+            f"[bold]GSoC {year}[/bold]  dates: {badge}\n"
+            f"[bold cyan]Now:[/bold cyan] {phase['title']}\n{phase['advice']}\n\n"
+            f"[dim]{data['source']}[/dim]\n"
+            f"Verify: {data['official_timeline']}",
             title="git-into-gsoc",
         )
     )
-    table = Table(title="Timeline")
-    table.add_column("Date")
+    table = Table(title=f"Timeline ({size.value} projects)")
+    table.add_column("Date (UTC)")
     table.add_column("Milestone")
-    table.add_column("Status")
-    table.add_column("Notes")
+    table.add_column("When", justify="right")
     for event in data["timeline"]:
-        table.add_row(event["date"], event["name"], event["status"], event.get("notes") or "")
+        date = event["at"][:10]
+        if event.get("window_days"):
+            date = f"~{date} ±{event['window_days']}d"
+        style = "dim" if event["status"] == "past" else ""
+        table.add_row(date, event["label"], _relative(event["days_until"]), style=style)
     console.print(table)
     console.print("\n[bold]Anti-spam rules[/bold]")
     for rule in ANTI_SPAM_RULES:

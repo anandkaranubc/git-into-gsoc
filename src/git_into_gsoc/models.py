@@ -120,11 +120,21 @@ class ProgressState(BaseModel):
     updated_at: datetime | None = None
 
 
-class TimelineEvent(BaseModel):
-    name: str
-    date: str
+class Milestone(BaseModel):
+    key: str
+    label: str
+    at: datetime
+    project_size: str | None = None
+    official: bool
     status: str
-    notes: str = ""
+    days_until: int
+    window_days: int | None = None
+
+
+class ProgramPhase(BaseModel):
+    id: str
+    title: str
+    advice: str
 
 
 class OfficialSource(BaseModel):

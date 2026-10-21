@@ -1,90 +1,224 @@
-"""GSoC program timeline helpers.
+"""GSoC program timelines.
 
-Dates for completed years come from the official program pages.
-GSoC 2027 dates are not published yet — we expose planning phases
-and clearly mark estimates vs official facts.
+Official milestones come from the GSoC site when Google has published them.
+For unpublished years we project the latest official year forward by 52 weeks
+(milestones keep their weekday) and attach an uncertainty window measured from
+how much each milestone moved between the two most recent official years.
 """
 
 from __future__ import annotations
 
-from datetime import date
+import json
+from datetime import UTC, datetime, timedelta
+from functools import lru_cache
+from importlib import resources
+from typing import Any
 
-from git_into_gsoc.config import DEFAULT_TARGET_YEAR, OFFICIAL_GSOC_HOME
-from git_into_gsoc.models import TimelineEvent
+from git_into_gsoc.config import OFFICIAL_GSOC_HOME, OFFICIAL_TIMELINE
+from git_into_gsoc.models import Milestone, ProgramPhase
 
-# Official 2026 milestones (America/New_York), from summerofcode.withgoogle.com
-GSOC_2026_EVENTS: list[tuple[str, str, str]] = [
-    ("Program announced", "2025-12-03", "Organizations and contributors can start preparing"),
-    ("Org applications open", "2026-01-19", "Mentoring orgs apply"),
-    ("Org applications deadline", "2026-02-03", ""),
-    ("Accepted orgs announced", "2026-02-19", "Contributor exploration intensifies"),
-    ("Contributor proposals open", "2026-03-16", "Submit via official GSoC site only"),
-    ("Proposal deadline", "2026-03-31", ""),
-    ("Accepted projects announced", "2026-04-30", "Community bonding begins after this"),
-    ("Program end", "2026-11-11", ""),
+MIN_WINDOW_DAYS = 14
+_YEAR = timedelta(weeks=52)
+
+# (milestone that starts the phase, phase id, title, advice)
+_PHASES: list[tuple[str, str, str, str]] = [
+    (
+        "prog_announce",
+        "announced",
+        "Program announced",
+        "Read the rules and FAQ. The org list is not out yet, so keep contributing to "
+        "orgs that participated last year.",
+    ),
+    (
+        "org_application_start",
+        "org_applications",
+        "Organizations are applying",
+        "Orgs are being selected. Past participants are the safest bets; deepen one or "
+        "two contributions there.",
+    ),
+    (
+        "org_announce_public",
+        "org_exploration",
+        "Accepted organizations announced",
+        "Shortlist accepted orgs, read their ideas pages, introduce yourself publicly, "
+        "and land a first meaningful PR.",
+    ),
+    (
+        "contributor_proposals_open",
+        "proposal_window",
+        "Proposal window is open",
+        "Share a draft with mentors early, revise from feedback, and submit on the "
+        "official site before the deadline.",
+    ),
+    (
+        "proposal_deadline",
+        "proposal_review",
+        "Proposals under review",
+        "Keep contributing and stay responsive in public channels; mentors notice.",
+    ),
+    (
+        "project_announce_public",
+        "community_bonding",
+        "Community bonding",
+        "Meet your mentor, agree on milestones, and get the dev environment solid.",
+    ),
+    (
+        "project_work_start",
+        "coding",
+        "Coding period",
+        "Ship weekly, surface blockers early, and keep evaluation deliverables visible.",
+    ),
+    (
+        "program_end",
+        "complete",
+        "Program complete",
+        "Write up your work and plan your next step: keep contributing, mentor, or "
+        "apply again next year.",
+    ),
 ]
 
-# Planning scaffold for 2027 — NOT official until Google publishes dates.
-GSOC_2027_PLANNING: list[tuple[str, str, str]] = [
-    ("Watch for program announcement", "2026-11-01", "ESTIMATE — confirm on official site"),
-    ("Study 2026 orgs & contribute early", "2026-11-01", "Best predictor of 2027 org continuity"),
-    ("Org list expected (typical window)", "2027-02-01", "ESTIMATE — do not treat as official"),
-    ("Proposal window (typical)", "2027-03-01", "ESTIMATE — submit only on official site"),
-    ("Coding period (typical summer)", "2027-06-01", "ESTIMATE — length varies by project"),
-]
+_BEFORE = ProgramPhase(
+    id="before_announcement",
+    title="Before the program is announced",
+    advice=(
+        "The best time to start. Pick orgs that participated last year, contribute "
+        "steadily, and treat every date as an estimate until Google publishes it."
+    ),
+)
 
 
-def build_timeline(year: int = DEFAULT_TARGET_YEAR) -> list[TimelineEvent]:
-    today = date.today()
-    events: list[TimelineEvent] = []
+@lru_cache(maxsize=1)
+def load_history() -> dict[int, dict[str, Any]]:
+    """Embedded snapshot of official program data (offline fallback + estimates)."""
+    raw = resources.files("git_into_gsoc").joinpath("data/program_history.json").read_text("utf-8")
+    payload = json.loads(raw)
+    return {int(year): program for year, program in payload["programs"].items()}
 
-    if year == 2026:
-        source = GSOC_2026_EVENTS
-        official = True
-    elif year == 2027:
-        source = GSOC_2027_PLANNING
-        official = False
-    else:
-        return [
-            TimelineEvent(
-                name=f"No embedded timeline for {year}",
-                date="unknown",
-                status="unknown",
-                notes=f"Check {OFFICIAL_GSOC_HOME}/programs/{year}",
+
+def _parse(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+
+
+def _key(item: dict[str, Any]) -> tuple[str, str | None]:
+    return str(item.get("name")), item.get("project_size")
+
+
+def estimate_program(year: int, history: dict[int, dict[str, Any]]) -> dict[str, Any] | None:
+    """Project the latest official year before `year` forward to `year`."""
+    earlier = sorted(y for y in history if y < year)
+    if not earlier:
+        return None
+    base_year = earlier[-1]
+    shift = _YEAR * (year - base_year)
+    previous = {
+        _key(m): _parse(m["datetime"]) for m in history.get(base_year - 1, {}).get("milestones", [])
+    }
+    milestones = []
+    for item in history[base_year]["milestones"]:
+        base_at = _parse(item["datetime"])
+        window = MIN_WINDOW_DAYS
+        prior = previous.get(_key(item))
+        if prior is not None:
+            drift = abs((base_at - (prior + _YEAR)).days)
+            window = max(MIN_WINDOW_DAYS, drift)
+        milestones.append(
+            {
+                **item,
+                "datetime": (base_at + shift).isoformat(),
+                "window_days": window,
+            }
+        )
+    return {"milestones": milestones, "estimated_from": base_year}
+
+
+def build_timeline(
+    program: dict[str, Any],
+    *,
+    official: bool,
+    project_size: str = "medium",
+    now: datetime | None = None,
+) -> list[Milestone]:
+    now = now or datetime.now(UTC)
+    items: list[Milestone] = []
+    for raw in program.get("milestones", []):
+        size = raw.get("project_size")
+        if size and size != project_size:
+            continue
+        at = _parse(raw["datetime"])
+        days = (at.date() - now.date()).days
+        status = "today" if days == 0 else ("upcoming" if days > 0 else "past")
+        items.append(
+            Milestone(
+                key=str(raw.get("name")),
+                label=str(raw.get("label") or raw.get("name")),
+                at=at,
+                project_size=size,
+                official=official,
+                status=status,
+                days_until=days,
+                window_days=None if official else raw.get("window_days", MIN_WINDOW_DAYS),
             )
-        ]
-
-    for name, iso, notes in source:
-        try:
-            event_date = date.fromisoformat(iso)
-            if event_date < today:
-                status = "past"
-            elif event_date == today:
-                status = "today"
-            else:
-                status = "upcoming"
-        except ValueError:
-            status = "unknown"
-        if not official and "ESTIMATE" in notes:
-            status = f"estimate/{status}"
-        events.append(TimelineEvent(name=name, date=iso, status=status, notes=notes))
-    return events
+        )
+    items.sort(key=lambda m: m.at)
+    return items
 
 
-def program_status(year: int = DEFAULT_TARGET_YEAR) -> dict[str, object]:
-    timeline = build_timeline(year)
-    upcoming = [e for e in timeline if "upcoming" in e.status or e.status == "today"]
+def current_phase(timeline: list[Milestone], now: datetime | None = None) -> ProgramPhase:
+    now = now or datetime.now(UTC)
+    reached = {m.key for m in timeline if m.project_size is None and m.at <= now}
+    phase = _BEFORE
+    for key, phase_id, title, advice in _PHASES:
+        if key in reached:
+            phase = ProgramPhase(id=phase_id, title=title, advice=advice)
+    return phase
+
+
+def program_status(
+    year: int,
+    *,
+    official_program: dict[str, Any] | None,
+    history: dict[int, dict[str, Any]] | None = None,
+    project_size: str = "medium",
+    now: datetime | None = None,
+    offline: bool = False,
+) -> dict[str, Any]:
+    """Assemble timeline, current phase, and provenance for one program year."""
+    now = now or datetime.now(UTC)
+    history = load_history() if history is None else history
+    official = official_program is not None
+    program = official_program
+    source_note: str
+    if program is None and offline and year in history:
+        program, official = history[year], True
+        source_note = "Embedded snapshot of official dates (live site unreachable)."
+    elif program is None:
+        program = estimate_program(year, history)
+        source_note = (
+            f"ESTIMATE projected from official {program['estimated_from']} dates. "
+            "Google has not published this timeline yet."
+            if program
+            else "No official or estimated timeline available."
+        )
+    else:
+        source_note = "Official dates from summerofcode.withgoogle.com."
+
+    timeline = build_timeline(program or {}, official=official, project_size=project_size, now=now)
+    upcoming = [m for m in timeline if m.status in {"upcoming", "today"}]
     return {
         "year": year,
+        "dates_are_official": official,
+        "source": source_note,
         "official_home": OFFICIAL_GSOC_HOME,
+        "official_timeline": OFFICIAL_TIMELINE,
         "program_page": f"{OFFICIAL_GSOC_HOME}/programs/{year}",
-        "dates_are_official": year == 2026,
+        "phase": current_phase(timeline, now).model_dump(),
+        "project_size": project_size,
+        "next_milestones": [m.model_dump(mode="json") for m in upcoming[:3]],
+        "timeline": [m.model_dump(mode="json") for m in timeline],
+        "stats": (official_program or {}).get("stats") if official else None,
         "disclaimer": (
-            "GSoC 2027 dates are not officially published yet. "
-            "Use 2026 archive data for org research and verify all dates on the official site."
-            if year >= 2027
-            else "Dates sourced from the official GSoC 2026 program page."
+            source_note
+            if official
+            else f"{source_note} Verify every date on {OFFICIAL_GSOC_HOME} before acting."
         ),
-        "next_milestones": [e.model_dump() for e in upcoming[:3]],
-        "timeline": [e.model_dump() for e in timeline],
     }
