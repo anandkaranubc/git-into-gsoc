@@ -30,9 +30,13 @@ def _grade(score: float) -> str:
 
 
 def score_repo_health(health: RepoHealth) -> RepoHealth:
-    """Weights sum to 100. Outsider merge rate is the strongest newcomer signal.
+    """Score how likely a newcomer's pull request is to land, out of 100.
 
-    Stars add nothing: larger projects reject a higher share of newcomer PRs.
+    The points add up to 108 and the total is capped at 100, so a repository can
+    miss one minor signal and still score 100. The outside merge rate is the
+    strongest newcomer signal: when it is scored and low, it caps the grade (see
+    OUTSIDER_CAPS). Stars add nothing: larger projects reject a higher share of
+    newcomer PRs.
     """
     score = 0.0
     signals: list[str] = []
