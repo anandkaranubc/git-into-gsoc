@@ -1107,6 +1107,10 @@ class GSoCToolkit:
             # Nothing in the issue names a file: search the code for its title words.
             try:
                 hits = self.github.search_code(f"{' '.join(words)} repo:{full}", per_page=8)
+                if not hits and len(words) > 1:
+                    # Both words together found nothing; the longest one alone may.
+                    words = words[:1]
+                    hits = self.github.search_code(f"{words[0]} repo:{full}", per_page=8)
             except HttpError as exc:
                 hits, code_search_note = [], f"Code search stopped: {exc}"
             paths = [str(h.get("path")) for h in hits if h.get("path")]

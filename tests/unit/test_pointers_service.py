@@ -170,3 +170,29 @@ def test_an_issue_that_names_no_file_gets_a_title_word_search(
     assert queries == ["undo redo repo:OWASP/threat-dragon"]
     first = data["files_likely_involved"][0]
     assert first["path"].endswith("keys.js") and first["confidence"] == "title words"
+
+
+def test_title_word_search_falls_back_to_the_longest_word(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    toolkit = GSoCToolkit()
+    gh = toolkit.github
+    monkeypatch.setattr(gh, "token", "t")
+    issue = {"number": 4274, "title": "upload file - exceeded 250mb", "body": ""}
+    monkeypatch.setattr(gh, "get_issue", lambda *a: issue)
+    monkeypatch.setattr(gh, "get_repo", lambda *a: {"default_branch": "main"})
+    monkeypatch.setattr(gh, "git_tree", lambda *a: {"sha": "abc", "tree": []})
+    monkeypatch.setattr(gh, "list_labels", lambda *a: [])
+    queries: list[str] = []
+
+    def search_code(query: str, per_page: int = 8) -> list[dict[str, str]]:
+        queries.append(query)
+        return [] if len(queries) == 1 else [{"path": "server/utils/fileUtils.js"}]
+
+    monkeypatch.setattr(gh, "search_code", search_code)
+    data = toolkit.issue_pointers("processing/p5.js-web-editor#4274")
+    assert queries == [
+        "exceeded upload repo:processing/p5.js-web-editor",
+        "exceeded repo:processing/p5.js-web-editor",
+    ]
+    assert data["files_likely_involved"][0]["path"] == "server/utils/fileUtils.js"
