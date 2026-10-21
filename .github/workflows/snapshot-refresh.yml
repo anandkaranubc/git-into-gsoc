@@ -1,0 +1,53 @@
+name: Refresh organization snapshot
+
+# The package embeds a compact copy of the official organization list and every
+# organization's history so `orgs` works offline. Keep it fresh without a human
+# remembering to run the refresher before each release.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1"  # Mondays 06:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    name: Refresh snapshot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: |
+          python -m pip install -U pip
+          pip install -e .
+
+      - name: Refresh from live sources
+        run: python -m git_into_gsoc.gsoc.snapshot
+
+      - name: Open a pull request when the data changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet -- src/git_into_gsoc/data; then
+            echo "snapshot unchanged"
+            exit 0
+          fi
+          branch="chore/snapshot-$(date -u +%Y-%m-%d)"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add src/git_into_gsoc/data
+          git commit -m "chore(data): refresh the organization snapshot"
+          git push -f origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore(data): refresh the organization snapshot" \
+            --body "Weekly refresh of the embedded organization list and history from the official site and the community archive. Close and reopen this pull request to run CI (bot-created pull requests do not trigger workflows), then squash-merge." \
+            || echo "pull request already open"

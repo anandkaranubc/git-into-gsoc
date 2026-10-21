@@ -105,6 +105,19 @@ jobs:
           GIG_HOME="$RUNNER_TEMP/home" "$(uv tool dir --bin)/git-into-gsoc" setup --assistant gemini --output json | grep -q '"created"'
           test -f "$RUNNER_TEMP/home/.gemini/skills/git-into-gsoc/SKILL.md"
 
+      - name: One-line installer (curl path, no clone)
+        run: |
+          # Run install.sh from outside the checkout so it takes the remote path; point
+          # the Git source at this checkout so the pull request's own code is installed.
+          mkdir -p "$RUNNER_TEMP/remote" "$RUNNER_TEMP/home2"
+          cp install.sh "$RUNNER_TEMP/remote/install.sh"
+          cd "$RUNNER_TEMP/remote"
+          # CI checks out a detached merge commit; pin it so the Git clone needs no default branch.
+          GIG_REPO_URL="file://$GITHUB_WORKSPACE@$(git -C "$GITHUB_WORKSPACE" rev-parse HEAD)" \
+            GIG_HOME="$RUNNER_TEMP/home2" bash install.sh --assistant gemini
+          "$(uv tool dir --bin)/git-into-gsoc" --version
+          test -f "$RUNNER_TEMP/home2/.gemini/skills/git-into-gsoc/SKILL.md"
+
   smoke-windows:
     name: Installer smoke (Windows)
     runs-on: windows-latest

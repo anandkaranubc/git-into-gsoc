@@ -21,7 +21,9 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$RepoUrl = "https://github.com/anandkaranubc/git-into-gsoc"
+$RepoUrl = if ($env:GIG_REPO_URL) { $env:GIG_REPO_URL } else { "https://github.com/anandkaranubc/git-into-gsoc" }
+# An explicit GIG_REPO_URL means "install exactly this source", so PyPI is skipped.
+$TryPyPI = -not $env:GIG_REPO_URL
 $DocsUrl = "$RepoUrl/blob/main/docs"
 
 function Log($msg) { Write-Host "==> $msg" }
@@ -61,13 +63,15 @@ if (-not $SkillOnly) {
   } elseif (Get-Command uv -ErrorAction SilentlyContinue) {
     Log "Installing git-into-gsoc with uv"
     # Prefer the PyPI release when it exists; fall back to the Git main branch.
-    uv tool install -q --force "git-into-gsoc" 2>$null
-    if ($LASTEXITCODE -ne 0) { uv tool install -q --force "git+$RepoUrl" }
+    $ok = $false
+    if ($TryPyPI) { uv tool install -q --force "git-into-gsoc" 2>$null; $ok = ($LASTEXITCODE -eq 0) }
+    if (-not $ok) { uv tool install -q --force "git+$RepoUrl" }
     $GigBin = Join-Path (uv tool dir --bin) "git-into-gsoc.exe"
   } elseif (Get-Command pipx -ErrorAction SilentlyContinue) {
     Log "Installing git-into-gsoc with pipx"
-    pipx install --force "git-into-gsoc" 2>$null | Out-Null
-    if ($LASTEXITCODE -ne 0) { pipx install --force "git+$RepoUrl" | Out-Null }
+    $ok = $false
+    if ($TryPyPI) { pipx install --force "git-into-gsoc" 2>$null | Out-Null; $ok = ($LASTEXITCODE -eq 0) }
+    if (-not $ok) { pipx install --force "git+$RepoUrl" | Out-Null }
     $GigBin = "git-into-gsoc"
   } else {
     $py = Find-Python
@@ -77,8 +81,9 @@ if (-not $SkillOnly) {
     if (-not (Test-Path $venv)) { & $py[0] @($py[1..($py.Length)] | Where-Object { $_ }) -m venv $venv }
     $venvPy = Join-Path $venv "Scripts\python.exe"
     & $venvPy -m pip install -q -U pip
-    & $venvPy -m pip install -q "git-into-gsoc" 2>$null
-    if ($LASTEXITCODE -ne 0) { & $venvPy -m pip install -q "git+$RepoUrl" }
+    $ok = $false
+    if ($TryPyPI) { & $venvPy -m pip install -q "git-into-gsoc" 2>$null; $ok = ($LASTEXITCODE -eq 0) }
+    if (-not $ok) { & $venvPy -m pip install -q "git+$RepoUrl" }
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
     Write-Host "Add $(Join-Path $venv 'Scripts') to your PATH to run git-into-gsoc from any folder."
   }
