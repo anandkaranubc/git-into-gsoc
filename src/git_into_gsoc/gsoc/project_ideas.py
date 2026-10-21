@@ -149,6 +149,14 @@ _NON_IDEA_HEADINGS = (
     "ai policy",
     "ai usage policy",
     "draft ideas",
+    "see also",
+    "footnotes",
+    "references",
+    "notes",
+    "project sizes",
+    "sizes",
+    "what you should know",
+    "how do we judge",
 )
 _COMMENT_RE = re.compile(r"^\s*(?:\[//\]:\s*#|#(?!#*\s)|<!--)")
 _BULLET_RE = re.compile(r"^\s*(?:[-*+•]|\d+[.)])\s+")
@@ -223,6 +231,19 @@ class _LineParser(HTMLParser):
     _SKIP: ClassVar[frozenset[str]] = frozenset(
         {"script", "style", "noscript", "svg", "head", "nav", "footer"}
     )
+    # Real content starts here even when a page omits </head> (allowed in HTML)
+    # or never closes a nav; otherwise the whole page would be skipped.
+    _CONTENT: ClassVar[frozenset[str]] = frozenset({"body", "main", "article"})
+    # Hand-written sites mark titles with styled divs instead of heading tags.
+    _DIV_HEADING: ClassVar[tuple[tuple[str, int], ...]] = (
+        ("subsubsection", 3),
+        ("subsection", 3),
+        ("sectiontitle", 2),
+        ("section-title", 2),
+        ("section_title", 2),
+        ("heading", 2),
+        ("title", 2),
+    )
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
@@ -233,6 +254,7 @@ class _LineParser(HTMLParser):
         self._bold = 0
         self._href: str | None = None
         self._li = False
+        self._divs: list[int | None] = []
 
     def _flush(self) -> None:
         text = re.sub(r"[ \t]+", " ", "".join(self._buf)).strip()
@@ -247,6 +269,10 @@ class _LineParser(HTMLParser):
             self.lines.append(text)
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in self._CONTENT:
+            self._skip = 0
+            self._flush()
+            return
         if tag in self._SKIP:
             self._skip += 1
             return
@@ -258,6 +284,12 @@ class _LineParser(HTMLParser):
         elif tag == "li":
             self._flush()
             self._li = True
+        elif tag == "div":
+            self._flush()
+            level = self._div_level(attrs)
+            self._divs.append(level)
+            if level:
+                self._heading = level
         elif tag in self._BLOCK:
             self._flush()
         elif tag in {"b", "strong"}:
@@ -265,6 +297,15 @@ class _LineParser(HTMLParser):
             self._buf.append("**")
         elif tag == "a":
             self._href = dict(attrs).get("href") or None
+
+    def _div_level(self, attrs: list[tuple[str, str | None]]) -> int | None:
+        classes = str(dict(attrs).get("class") or "").lower()
+        if not classes or "page" in classes or "container" in classes:
+            return None
+        for marker, level in self._DIV_HEADING:
+            if marker in classes:
+                return level
+        return None
 
     def handle_endtag(self, tag: str) -> None:
         if tag in self._SKIP:
@@ -278,6 +319,10 @@ class _LineParser(HTMLParser):
         elif tag == "li":
             self._flush()
             self._li = False
+        elif tag == "div":
+            self._flush()
+            if self._divs and self._divs.pop():
+                self._heading = None
         elif tag in self._BLOCK:
             self._flush()
         elif tag in {"b", "strong"} and self._bold:
@@ -304,19 +349,45 @@ def html_to_lines(raw: str) -> list[str]:
     return [html.unescape(line) for line in parser.lines]
 
 
+_UNDERLINE_RE = re.compile(r"^\s*([=\-~^\"'`+*]{3,})\s*$")
+# Markdown setext uses = and -; reStructuredText uses any of these, deeper levels
+# usually ~ or ^ or " in that order of appearance.
+_UNDERLINE_LEVEL = {"=": 1, "-": 2, "~": 3, "^": 3, '"': 3, "'": 3, "`": 3, "+": 3}
+_FRONT_MATTER_RE = re.compile(r"\A\s*---\n.*?\n---\n", re.S)
+
+
+def _promotable(line: str) -> bool:
+    text = line.strip()
+    return (
+        3 <= len(text) <= 120
+        and not _heading(line)
+        and not text.startswith("|")
+        and not _BULLET_RE.match(text)
+        and not _LABEL_LINE_RE.match(text)
+    )
+
+
 def markdown_to_lines(raw: str) -> list[str]:
-    lines = []
-    text = re.sub(r"<!--.*?-->", " ", raw[:MAX_CHARS], flags=re.S)
+    lines: list[str] = []
+    text = _FRONT_MATTER_RE.sub("", raw[:MAX_CHARS], count=1)
+    text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)
+    prev_blank = True
     for line in text.splitlines():
         stripped = line.rstrip()
         if not stripped.strip():
+            prev_blank = True
             continue
-        if _COMMENT_RE.match(stripped):
+        underline = _UNDERLINE_RE.match(stripped)
+        if underline:
+            # A line of = or - (or an rst adornment) right under a plain text line
+            # underlines a heading; after a blank line it is a horizontal rule.
+            level = _UNDERLINE_LEVEL.get(underline.group(1)[0])
+            if level and not prev_blank and lines and _promotable(lines[-1]):
+                lines[-1] = "#" * level + " " + lines[-1].strip()
+            prev_blank = True
             continue
-        if re.match(r"^\s*(?:---+|===+|\*\*\*+)\s*$", stripped):
-            continue
-        setext = re.match(r"^(={3,}|-{3,})\s*$", stripped)
-        if setext:
+        prev_blank = False
+        if _COMMENT_RE.match(stripped) or stripped.startswith(".. "):
             continue
         lines.append(stripped)
     return lines
@@ -342,13 +413,40 @@ def _heading(line: str) -> tuple[int, str] | None:
     return len(match.group(1)), text
 
 
+# When a label is not in the vocabulary, one of these words inside it decides
+# the field ("Skills required/preferred", "Confirmed Mentor", "Description of
+# the project"). Order matters: the first match wins.
+_LABEL_KEYWORDS = (
+    ("difficult", "difficulty"),
+    ("mentor", "mentors"),
+    ("skill", "skills"),
+    ("outcome", "expected_outcome"),
+    ("deliverable", "expected_outcome"),
+    ("description", "description"),
+    ("hours", "size"),
+    ("size", "size"),
+    ("length", "size"),
+    ("duration", "size"),
+)
+
+
+def _field_for_label(label: str) -> str | None:
+    field = _LABEL_LOOKUP.get(label)
+    if field is not None:
+        return field
+    for word, candidate in _LABEL_KEYWORDS:
+        if word in label and candidate in LABELS:
+            return candidate
+    return None
+
+
 def _label(line: str) -> tuple[str, str, str] | None:
     """(field, label, value) when a line is `Label: value` for a known label."""
     match = _LABEL_LINE_RE.match(line)
     if not match:
         return None
     label = _norm_label(match.group("label"))
-    field = _LABEL_LOOKUP.get(label)
+    field = _field_for_label(label)
     if field is None:
         return None
     return field, label, match.group("value").strip()
@@ -370,6 +468,8 @@ def _split_list(value: str) -> list[str]:
 
 def _split_people(value: str) -> list[str]:
     value = _clean(value)
+    # A linked name renders as "Name (https://...)"; the link is kept in idea.links.
+    value = re.sub(r"\s*\(\s*(?:https?:)?//[^)]*\)", "", value)
     parts = re.split(r"\s*(?:,|;| and |&)\s*(?![^()]*\))", value)
     return [p.strip(" .") for p in parts if p.strip(" .")]
 
@@ -499,9 +599,7 @@ def _is_non_idea(title: str) -> bool:
 def _parse_block(
     title: str, body: list[str], *, section: str | None, source_url: str
 ) -> ProjectIdea:
-    idea = ProjectIdea(
-        title=clean_untrusted(title, limit=200), section=section, source_url=source_url
-    )
+    idea = ProjectIdea(title=_clean(title)[:200], section=section, source_url=source_url)
     free_text: list[str] = []
     current: str | None = None
     for line in body:
@@ -644,9 +742,17 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         # section heading (intro, collaborations, how to apply), not an idea.
         ideas = [i for i in ideas if i.labelled_fields or i.links]
     with_links = sum(1 for i in ideas if i.links)
-    if ideas and labelled_blocks == 0 and with_links >= max(1, len(ideas) // 2):
+    high_blocks = sum(1 for i in ideas if i.confidence == "high")
+    if ideas and high_blocks == 0 and with_links >= max(1, len(ideas) // 2):
+        # No block is clearly an idea and most link elsewhere: an index of other
+        # pages. A stray label in prose does not change that.
         doc.layout = "index"
         doc.sub_pages = _sub_pages(lines)
+        # Blocks with some labels or paragraphs of prose may still be the ideas
+        # themselves; keep them for when the links lead nowhere.
+        prose = sum(len(i.description) for i in ideas) / len(ideas) >= 240
+        if labelled_blocks or prose:
+            doc.fallback_ideas = ideas
         return doc
     if not ideas:
         doc.layout = "unstructured"

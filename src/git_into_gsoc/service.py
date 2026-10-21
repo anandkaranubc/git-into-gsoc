@@ -1049,6 +1049,10 @@ class GSoCToolkit:
                 doc.ideas.extend(child.ideas)
                 doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
                 followed.append(page)
+        if doc.layout == "index" and not followed and doc.fallback_ideas:
+            # The links led to no ideas, so the page's own prose blocks are the ideas.
+            doc.ideas = list(doc.fallback_ideas)
+            doc.layout = "headings"
         wanted = list(skills or []) or list(self.progress.profile().get("technologies") or [])
         ranked = rank_ideas(doc.ideas, skills=wanted or None, size=size, difficulty=difficulty)
         proposals = proposal_folders(

@@ -103,6 +103,106 @@ def test_ai_policy_ignores_links_and_survives_wrapped_lines() -> None:
     ]
 
 
+def test_html_without_head_close_or_nav_close_is_still_read() -> None:
+    doc = extract_ideas(html_to_lines(_read("no_head_close.html")), source_url="https://x")
+    assert doc.layout == "headings"
+    assert [i.title for i in doc.ideas] == ["Faster indexer", "Terminal interface"]
+    assert doc.ideas[0].skills == ["Python", "SQL"] and doc.ideas[0].hours == 175
+    assert not any("Home" in line for line in html_to_lines(_read("no_head_close.html")))
+
+
+def test_restructuredtext_underlines_become_headings() -> None:
+    lines = markdown_to_lines(_read("rst_underlines.rst"))
+    assert lines[0] == "# Ideas List"
+    assert "## Projects Ideas" in lines and "### Mobile version (350hrs)" in lines
+    assert not any(line.startswith("..") for line in lines)
+    doc = extract_ideas(lines, source_url="https://x")
+    assert doc.layout == "headings"
+    assert [i.title for i in doc.ideas] == [
+        "Mobile version (350hrs)",
+        "Exporter for a new format (175hrs)",
+    ]
+    assert doc.ideas[0].hours == 350 and doc.ideas[1].difficulty == "easy"
+    assert "C++" in doc.ideas[0].skills
+
+
+def test_rules_and_front_matter_are_not_headings() -> None:
+    text = "---\ntitle: Ideas\n---\n\nIntro paragraph.\n\n---\n\n## Real heading\nBody\n"
+    lines = markdown_to_lines(text)
+    assert lines == ["Intro paragraph.", "## Real heading", "Body"]
+
+
+def test_styled_div_titles_and_keyword_labels_are_read() -> None:
+    doc = extract_ideas(html_to_lines(_read("div_titles.html")), source_url="https://x")
+    assert doc.layout == "headings"
+    assert [i.title for i in doc.ideas] == [
+        "Improving the test runner",
+        "Better documentation generator",
+    ]
+    first = doc.ideas[0]
+    assert first.mentors == ["Mentor One"] and first.difficulty == "medium"
+    assert first.description.startswith("Make the test runner faster")
+    assert doc.ideas[1].size == "large"
+
+
+def test_prose_index_keeps_its_blocks_as_fallback_ideas() -> None:
+    body = " ".join(["This idea needs a long explanation of the goal and the steps."] * 6)
+    lines = ["# Projects"]
+    for name in ("Alpha", "Beta", "Gamma"):
+        lines += [
+            f"### {name} project",
+            body,
+            f"See https://example.org/{name.lower()} for context.",
+        ]
+    doc = extract_ideas(lines, source_url="https://x")
+    assert doc.layout == "index" and doc.ideas == []
+    titles = [i.title for i in doc.fallback_ideas]
+    assert titles == ["Alpha project", "Beta project", "Gamma project"]
+    assert all(i.confidence == "low" for i in doc.fallback_ideas)
+    short = ["# Projects"]
+    for name in ("Alpha", "Beta", "Gamma"):
+        short += [f"### {name}", f"Ideas: https://example.org/{name.lower()}/ideas"]
+    short_doc = extract_ideas(short, source_url="https://x")
+    assert short_doc.layout == "index" and short_doc.fallback_ideas == []
+
+
+def test_getting_started_page_with_a_stray_label_is_still_an_index() -> None:
+    lines = [
+        "# Summer of Code - Getting Started",
+        "## What you should know about Octave",
+        "Read the manual first (https://example.org/manual).",
+        "## How do we judge your application?",
+        "Mentors: see the mentor guide (https://example.org/guide) for what we look for.",
+        "## Suggested projects",
+        "The list of projects lives at https://example.org/wiki/Project_Ideas for this year.",
+        "## See also",
+        "Last year's ideas (https://example.org/wiki/Project_Ideas_2025).",
+    ]
+    doc = extract_ideas(lines, source_url="https://x")
+    assert doc.layout == "index" and doc.ideas == []
+    assert any(p["url"] == "https://example.org/wiki/Project_Ideas" for p in doc.sub_pages)
+    assert not any(p["url"].endswith("/guide") for p in doc.sub_pages)
+
+
+def test_anchor_tags_are_stripped_from_titles() -> None:
+    lines = [
+        "# Ideas",
+        "## <a name='project-1.1'></a> Project 1.1: Faster parser",
+        "Mentors: Ada",
+        "Skills: C++",
+        "Difficulty: medium",
+        "## <a name='project-1.2'></a> Project 1.2: New backend",
+        "Mentors: Grace",
+        "Skills: Rust",
+        "Difficulty: hard",
+    ]
+    doc = extract_ideas(lines, source_url="https://x")
+    assert [i.title for i in doc.ideas] == [
+        "Project 1.1: Faster parser",
+        "Project 1.2: New backend",
+    ]
+
+
 def test_ai_policy_sentences() -> None:
     text = _read("wiki_headings.md")
     found = ai_policy_sentences(text)

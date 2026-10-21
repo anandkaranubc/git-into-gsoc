@@ -82,6 +82,21 @@ def test_org_ideas_follows_umbrella_sub_pages(api: respx.MockRouter) -> None:
     assert "Umbrella" in data["note"]
 
 
+def test_org_ideas_uses_prose_blocks_when_links_lead_nowhere(api: respx.MockRouter) -> None:
+    body = " ".join(["The goal is a faster importer that handles broken files gracefully."] * 5)
+    page = "# Projects\n\n"
+    for name in ("Importer", "Exporter", "Indexer"):
+        page += f"### {name} rewrite\n\n{body}\n\n"
+        page += f"Discussion: https://forum.example.org/{name.lower()}\n\n"
+    api.get(PG_PAGE).mock(return_value=httpx.Response(200, text=page))
+    api.get(url__regex=r"https://forum\.example\.org/.*").mock(return_value=httpx.Response(404))
+    data = GSoCToolkit().org_ideas("PostgreSQL")
+    assert data["layout"] == "headings"
+    titles = {i["title"] for i in data["ideas"]}
+    assert titles == {"Importer rewrite", "Exporter rewrite", "Indexer rewrite"}
+    assert data["followed"] == [] and data["sub_pages"] == []
+
+
 def test_org_ideas_unreachable_is_honest(api: respx.MockRouter) -> None:
     api.get(SYMPY_RAW).mock(return_value=httpx.Response(403))
     data = GSoCToolkit().org_ideas("SymPy")

@@ -236,6 +236,9 @@ class IdeasDocument(BaseModel):
     fetched_url: str
     layout: str = "unstructured"  # headings | index | unstructured | issues
     ideas: list[ProjectIdea] = Field(default_factory=list)
+    # On an index page whose blocks are prose, the blocks themselves, used when
+    # the links lead to no ideas.
+    fallback_ideas: list[ProjectIdea] = Field(default_factory=list)
     sub_pages: list[dict[str, str]] = Field(default_factory=list)
     headings: list[str] = Field(default_factory=list)
     ai_policy: list[str] = Field(default_factory=list)
