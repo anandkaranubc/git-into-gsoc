@@ -178,6 +178,14 @@ class GitHubClient:
         data = self._api(f"repos/{owner}/{repo}/issues/{int(number)}", ttl=300)
         return data if isinstance(data, dict) else {}
 
+    def get_pull(self, owner: str, repo: str, number: int) -> dict[str, Any] | None:
+        owner, repo = parse_repo(f"{owner}/{repo}")
+        try:
+            data = self._api(f"repos/{owner}/{repo}/pulls/{int(number)}", ttl=900)
+        except HttpError:
+            return None
+        return data if isinstance(data, dict) else None
+
     def get_issue_timeline(self, owner: str, repo: str, number: int) -> list[dict[str, Any]] | None:
         """Timeline events for an issue, or None when GitHub could not be reached."""
         owner, repo = parse_repo(f"{owner}/{repo}")

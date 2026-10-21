@@ -317,6 +317,31 @@ class GSoCToolkit:
             ),
         }
 
+    def check_proposal(
+        self,
+        text: str,
+        *,
+        github: str | None = None,
+        verify: bool = True,
+        ideas_text: str | None = None,
+    ) -> dict[str, Any]:
+        """Structural and evidence checks on a draft proposal (never rewrites it)."""
+        from git_into_gsoc.proposal import check_proposal
+
+        def lookup(repo: str, number: int) -> dict[str, Any] | None:
+            owner, name = repo.split("/", 1)
+            return self.github.get_pull(owner, name, number)
+
+        report = check_proposal(
+            text,
+            github_user=github,
+            lookup=lookup if verify else None,
+            ideas_text=ideas_text,
+        )
+        report["links_verified"] = verify
+        report["checklist"] = [i.model_dump() for i in proposal_checklist()]
+        return report
+
     def proposal_help(self) -> dict[str, Any]:
         return {
             "checklist": [i.model_dump() for i in proposal_checklist()],
