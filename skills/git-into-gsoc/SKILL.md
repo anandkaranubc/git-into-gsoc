@@ -37,12 +37,14 @@ dashes.
 
 Use what they have already told you. If you need more, ask at most three
 things: what they know (languages or tools), what they care about, and how much
-time they have each week. Then find their phase below and work on that one
+time they have each week. Whether they have contributed to open source before
+also helps; pass it as `experience` (new, some, or experienced). Then find their phase below and work on that one
 phase. Community participation and note-taking fit anywhere.
 
 For someone brand new, ask those questions in one short message, pass the
 answers to `gsoc_recommend_path` (it saves their profile on their computer), and
-show three organizations with a reason each plus one next step. The
+show three organizations with a reason each, quoted from their `evidence`, plus
+the first step of `learning_path`. The
 `get_started` MCP prompt runs exactly this. In a terminal, `git-into-gsoc start`
 asks the same questions itself.
 
@@ -124,7 +126,7 @@ actions with commands.
 ## Read results carefully
 
 - **Program dates.** `program` shows the current phase and what to do now. Until Google publishes a year, its dates are estimates projected from the previous year, shown with `~` and a window in days. Always point to the [official timeline](https://developers.google.com/open-source/gsoc/timeline).
-- **Organizations.** The list is the official set of accepted organizations for the latest announced year. When the target year is not announced, the result says so. Past participation suggests, but does not promise, that an organization returns. `--tech` and `--topics` decide which organizations appear; continuity and project counts decide the order. `org` also lists the organization's own issues about the coming GSoC (`gsoc_posts`). When a maintainer says it will not take part or has not decided, tell the person before they invest more time, and link the post.
+- **Organizations.** The list is the official set of accepted organizations for the latest announced year. When the target year is not announced, the result says so (`program.confirmed` is false in `recommend`): say plainly that none of them is confirmed yet. Past participation suggests, but does not promise, that an organization returns. Each organization has a `fit` (strong, good, or partial) and `evidence` lines that name their source (the official listing, the ideas page, or GitHub repositories); explain a recommendation by quoting them, and mention its `caveats` and `skills_to_learn`. Fit and `match_score` say how well the work matches the person, never a chance of selection, so never turn them into odds. `recommend` moves an organization that says it will not take part to the end (`participation.status` is `not_taking_part`); tell the person and link the post. `ideas_that_fit` comes from last year's ideas page until the new one appears, so present it as the kind of work the organization does. `org` also lists the organization's own issues about the coming GSoC (`gsoc_posts`). When a maintainer says it will not take part or has not decided, tell the person before they invest more time, and link the post.
 - **Repository grades.** `repo` samples recent pull requests and common files. Pay most attention to whether outside contributors' pull requests get merged, and to review speed. A low grade is a reason to look closer, not a verdict on the people.
 - **Issues.** `issues` searches open, unassigned issues without a linked pull request, labeled `good first issue` or `help wanted` (with `good first issue` ranked first), in repositories of GSoC organizations that use the language. Use `--scope all` for all of GitHub or `--repo` for one project. Issues filed by a maintainer are marked, since they reflect real priorities. Statuses: `available`, `claimed` (someone asked recently, a maintainer approved them, or a label such as `in progress` or `claimed` reserves it), `contested` (three or more people asked within 60 days), `likely_taken` (an open pull request references it, or a comment points at an open one that covers it), `not_open` (held for discussion or on hold; never help post a claim on it), `assigned`, `stale` (no activity for over a year and no maintainer in the thread; ask whether it is still wanted before working on it), `closed`, `unknown`. An `available` issue can still carry a caveat, such as someone who asked months ago with no pull request; read the caveats to the person and suggest asking in the thread first.
 - **Before commenting.** Run `issue` on the exact issue, read the whole thread, and follow the project's rules for claiming work. The tool reads comments and linked pull requests, but it can miss coordination that happens in chat.

@@ -875,18 +875,43 @@ def rank_ideas(
     skills: list[str] | None = None,
     size: str | None = None,
     difficulty: str | None = None,
+    interests: list[str] | None = None,
+    experience: str | None = None,
+    hours_per_week: int | None = None,
 ) -> list[ProjectIdea]:
-    """Order ideas by fit; never drops any, so the user sees the whole page."""
-    wanted = {s.strip().lower() for s in skills or [] if s.strip()}
+    """Order ideas by fit; never drops any, so the user sees the whole page.
+
+    Skills are matched as concepts ("reactjs" is React, "C/C++" counts once), and
+    each idea says which skills it would teach.
+    """
+    from git_into_gsoc.matching.ideas import fit_idea, idea_concepts
+    from git_into_gsoc.matching.profile import build_profile
+
+    person = build_profile(
+        technologies=skills,
+        interests=interests,
+        experience=experience,
+        hours_per_week=hours_per_week,
+    )
     ranked = []
     for idea in ideas:
         score = 0.0
         reasons: list[str] = []
-        have = {s.lower() for s in idea.skills}
-        hits = sorted(w for w in wanted if any(w == h or w in h or h in w for h in have))
-        if hits:
-            score += 10 * len(hits)
-            reasons.append("Skills match: " + ", ".join(hits))
+        learn: list[str] = []
+        if not person.empty:
+            skill_keys, domain_keys = idea_concepts(
+                skills=idea.skills, text=f"{idea.title} {idea.description}"
+            )
+            fit = fit_idea(person, skill_keys=skill_keys, domain_keys=domain_keys)
+            if fit.have:
+                score += 10 * len(fit.have)
+                reasons.append("Skills match: " + ", ".join(fit.have))
+            if fit.topics:
+                score += 6
+                reasons.append("About " + ", ".join(fit.topics))
+            learn = fit.to_learn
+            # Each skill to learn makes the idea a little harder to start.
+            score -= 2 * len(learn)
         if size and idea.size == size:
             score += 6
             reasons.append(f"{idea.hours or ''}h size fits".replace(" h ", " "))
@@ -897,7 +922,11 @@ def rank_ideas(
             score += 2
         if idea.mentors:
             score += 1
-        ranked.append(idea.model_copy(update={"match_score": score, "match_reasons": reasons}))
+        ranked.append(
+            idea.model_copy(
+                update={"match_score": score, "match_reasons": reasons, "skills_to_learn": learn}
+            )
+        )
     ranked.sort(key=lambda i: (-i.match_score, i.title))
     return ranked
 

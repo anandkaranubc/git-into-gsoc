@@ -1,0 +1,112 @@
+"""The skill and domain vocabulary: what people and organizations mean by their words."""
+
+from __future__ import annotations
+
+import pytest
+
+from git_into_gsoc.matching.concepts import (
+    CONCEPTS,
+    find_concepts,
+    find_tag_concepts,
+    resolve,
+)
+from git_into_gsoc.matching.profile import (
+    build_profile,
+    effective_experience,
+    experience_from_merged,
+)
+
+
+@pytest.mark.parametrize(
+    ("typed", "concept"),
+    [
+        ("healthcare", "health"),
+        ("web dev", "web"),
+        ("AI", "machine learning"),
+        ("LLMs", "large language models"),
+        ("node.js", "nodejs"),
+        ("Golang", "go"),
+        ("k8s", "kubernetes"),
+        ("ci/cd", "devops"),
+        ("maps", "geospatial"),
+        ("music", "audio"),
+        ("command line tools", "developer tools"),
+        ("genomics", "bioinformatics"),
+    ],
+)
+def test_peoples_words_reach_the_concept_they_mean(typed: str, concept: str) -> None:
+    assert concept in resolve(typed).concepts
+
+
+def test_a_compound_skill_names_both_parts() -> None:
+    assert set(resolve("c/c++").concepts) == {"c", "c++"}
+
+
+def test_misspellings_are_read_and_reported() -> None:
+    known = resolve("pyhton")
+    assert known.concepts == ("python",) and known.corrected_from == "python"
+    close = resolve("data viz")
+    assert close.concepts == ("data visualization",) and close.corrected_from
+    assert resolve("python").corrected_from is None
+    assert resolve("zzqx").concepts == ()
+
+
+def test_ambiguous_words_are_not_trusted_in_free_text() -> None:
+    text = (
+        "Set up a development environment, fix the genome assembly parser, design the API, "
+        "react to events, and read about game theory and angular momentum."
+    )
+    found = find_concepts(text)
+    for wrong in ("climate", "assembly", "design", "react", "games", "angular", "compilers"):
+        assert wrong not in found, wrong
+    assert "mathematics" in found  # "game theory" is mathematics, not games
+    # The usual capital letter is enough: "Written in Go and React".
+    assert {"go", "react"} <= set(find_concepts("Written in Go and React"))
+
+
+def test_a_generic_word_counts_as_a_whole_tag_but_not_inside_a_longer_one() -> None:
+    assert "systems programming" not in find_tag_concepts("systems management")
+    assert "systems programming" in find_tag_concepts("performance")
+    assert "science" in find_tag_concepts("science and medicine")
+    assert "health" not in find_tag_concepts("science and medicine")
+    assert "health" in find_tag_concepts("heathcare")  # an organization's own typo
+
+
+def test_every_link_points_at_a_known_concept() -> None:
+    for concept in CONCEPTS.values():
+        for other in (*concept.broader, *concept.related):
+            assert other in CONCEPTS, (concept.key, other)
+
+
+def test_a_domain_typed_as_a_skill_becomes_an_interest() -> None:
+    person = build_profile(technologies=["python", "robotics"], interests=["rust"])
+    assert [w.concepts for w in person.skills] == [("python",), ("rust",)]
+    assert [w.concepts for w in person.interests] == [("robotics",)]
+
+
+def test_skills_imply_interests_only_when_none_are_given_explicitly() -> None:
+    person = build_profile(technologies=["pytorch"])
+    assert ("machine learning",) in [w.concepts for w in person.implied_interests]
+    stated = build_profile(technologies=["pytorch"], interests=["machine learning"])
+    assert stated.implied_interests == []
+
+
+def test_profile_reads_levels_and_hours_and_drops_nonsense() -> None:
+    person = build_profile(technologies=["a little python"], experience="NEW", hours_per_week=8)
+    assert person.skills[0].raw == "python" and person.experience == "new"
+    assert person.hours_per_week == 8
+    assert build_profile(experience="guru", hours_per_week=0).experience is None
+
+
+def test_experience_comes_from_the_person_first_then_merged_pull_requests() -> None:
+    assert experience_from_merged(0) == "new"
+    assert experience_from_merged(3) == "some"
+    assert experience_from_merged(25) == "experienced"
+    assert experience_from_merged(None) is None
+    level, source = effective_experience({"merged_prs_elsewhere": 1})
+    assert level == "some" and source and "1 merged pull request in" in source
+    assert effective_experience({"experience": "new", "merged_prs_elsewhere": 40}) == (
+        "new",
+        "you said so",
+    )
+    assert effective_experience({}) == (None, None)

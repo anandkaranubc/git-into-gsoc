@@ -100,8 +100,23 @@ class OrgSummary(BaseModel):
     github_repos: list[str] = Field(default_factory=list)
     channels: list[ContactChannel] = Field(default_factory=list)
     official: bool = False
+    # Orders results only; not a probability of anything.
     match_score: float = 0.0
     match_reasons: list[str] = Field(default_factory=list)
+    # How well it fits what the person asked for: strong, good, or partial.
+    fit: str | None = None
+    # From 0 to 1: how well its work covers the interests, and how much of it uses the
+    # skills. None when the person gave none.
+    interest_fit: float | None = None
+    skill_fit: float | None = None
+    # Why, with the source of each claim ("Topic Astronomy: topic tag 'astronomy' ...").
+    evidence: list[str] = Field(default_factory=list)
+    # Facts about how ready it is for a newcomer (ideas, years, capacity).
+    readiness: list[str] = Field(default_factory=list)
+    # Things to know before choosing it (all ideas hard, sizes that do not fit).
+    caveats: list[str] = Field(default_factory=list)
+    # Skills its ideas often ask for that the person did not list.
+    skills_to_learn: list[str] = Field(default_factory=list)
     recent_projects: list[PastProject] = Field(default_factory=list)
 
 
@@ -237,6 +252,8 @@ class ProjectIdea(BaseModel):
     source_url: str = ""
     match_score: float = 0.0
     match_reasons: list[str] = Field(default_factory=list)
+    # Skills the idea names that the person did not list: what it would teach.
+    skills_to_learn: list[str] = Field(default_factory=list)
 
 
 class IdeasDocument(BaseModel):

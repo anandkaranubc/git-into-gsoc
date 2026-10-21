@@ -39,5 +39,15 @@ def hermetic_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[No
         raise _NetworkBlocked("Network access is disabled in tests; mock with respx.")
 
     monkeypatch.setattr(socket.socket, "connect", _blocked)
+    # The shipped ideas-page and repository evidence is refreshed weekly; tests
+    # that rank fixture organizations must not change when it does. Tests of
+    # that evidence pass their own (see tests/unit/test_matching*.py).
+    from git_into_gsoc.gsoc import client as gsoc_client
+
+    monkeypatch.setattr(
+        gsoc_client,
+        "load_signals",
+        lambda: {"generated": None, "year": None, "organizations": {}},
+    )
     yield
     config.get_settings.cache_clear()

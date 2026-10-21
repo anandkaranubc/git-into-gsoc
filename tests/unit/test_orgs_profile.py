@@ -38,6 +38,8 @@ def test_orgs_without_filters_use_the_saved_profile(api: Any) -> None:
         "technologies": ["python"],
         "topics": ["astronomy"],
         "from_profile": True,
+        "experience": None,
+        "hours_per_week": None,
     }
     assert data["organizations"][0]["name"] == "OpenAstronomy"
     explicit = GSoCToolkit().match_orgs(technologies=["c++"])

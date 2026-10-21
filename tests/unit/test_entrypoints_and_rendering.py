@@ -93,7 +93,7 @@ def test_orgs_table_renders_from_the_embedded_snapshot() -> None:
     result = runner.invoke(app, ["orgs", "--tech", "python", "--topics", "science", "-n", "3"])
     assert result.exit_code == 0, result.output
     assert "snapshot" in result.output
-    assert "Uses python" in result.output
+    assert "Skill Python: tech tag 'python'" in result.output  # evidence, with its source
     detail = runner.invoke(app, ["org", "SymPy"])
     assert detail.exit_code == 0, detail.output
     assert "Ideas:" in detail.output

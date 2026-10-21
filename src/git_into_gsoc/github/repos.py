@@ -10,6 +10,10 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from git_into_gsoc.matching.concepts import find_concepts, find_tag_concepts
+from git_into_gsoc.matching.concepts import label as concept_label
+from git_into_gsoc.matching.ideas import known_skills, wanted_domains
+from git_into_gsoc.matching.profile import ContributorProfile
 from git_into_gsoc.scoring.org_match import canonical
 
 KNOWN_BOTS = {
@@ -427,6 +431,9 @@ def channels_in(text: str) -> list[str]:
     return list(dict.fromkeys(name for needle, name in _CHANNEL_NEEDLES.items() if needle in lower))
 
 
+LARGE_REPO_KB = 1_000_000  # about 1 GB on GitHub's own count
+
+
 def repo_lead_score(
     repo: dict[str, Any],
     *,
@@ -434,7 +441,13 @@ def repo_lead_score(
     ideas_mention: bool,
     language: str | None,
     now: datetime | None = None,
+    person: ContributorProfile | None = None,
 ) -> tuple[float, list[str]]:
+    """Points for a first contribution here, and the reasons.
+
+    With a contributor profile, a repository whose language, topics, or
+    description match what the person knows or cares about ranks higher.
+    """
     now = now or datetime.now(UTC)
     score = 0.0
     reasons: list[str] = []
@@ -454,10 +467,39 @@ def repo_lead_score(
             score += 8
             reasons.append(f"Pushed {days}d ago")
     stars = int(repo.get("stargazers_count") or 0)
-    score += min(12.0, 1.5 * math.log2(1 + stars))
-    if language and canonical(str(repo.get("language") or "")) == canonical(language):
+    score += min(8.0, 1.0 * math.log2(1 + stars))
+    repo_language = str(repo.get("language") or "")
+    credited = False
+    if language and canonical(repo_language) == canonical(language):
         score += 10
-        reasons.append(f"Written in {repo.get('language')}")
+        reasons.append(f"Written in {repo_language}")
+        credited = True
+    if person is not None and not person.empty:
+        topics = " ".join(str(t).replace("-", " ") for t in repo.get("topics") or [])
+        named = set(find_tag_concepts(repo_language)) if repo_language else set()
+        named.update(find_tag_concepts(topics) if topics else {})
+        named.update(find_concepts(str(repo.get("description") or "")))
+        skills = sorted(c for c in named if c in known_skills(person))
+        if skills and not credited:
+            score += 10
+            reasons.append(
+                "Uses " + ", ".join(concept_label(c) for c in skills[:3]) + ", which you know"
+            )
+        wanted = sorted(c for c in named if c in wanted_domains(person))
+        if wanted:
+            score += 8
+            reasons.append(
+                "About "
+                + ", ".join(concept_label(c) for c in wanted[:2])
+                + ", which you care about"
+            )
+    size_kb = int(repo.get("size") or 0)
+    if size_kb >= LARGE_REPO_KB:
+        score -= 3
+        reasons.append(
+            f"Large repository (about {size_kb / 1_000_000:.1f} GB): cloning and building take "
+            "longer, so set it up early"
+        )
     return round(score, 1), reasons
 
 

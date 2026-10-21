@@ -1,0 +1,3912 @@
+{
+ "about": "Profiles written, without seeing the organization, from real GSoC 2026 accepted projects. See evals/README.md.",
+ "source": "https://api.gsocorganizations.dev/organizations.json (2026 projects)",
+ "cases": [
+  {
+   "case": "p26-000",
+   "split": "dev",
+   "org": "GNOME Foundation",
+   "title": "Pitivi Timeline Ruler: Native GTK4/Rust Rewrite",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/IS6rBPhP",
+   "technologies": [
+    "rust",
+    "python",
+    "gtk"
+   ],
+   "interests": [
+    "video editing",
+    "user interfaces",
+    "graphics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-001",
+   "split": "dev",
+   "org": "Jitsi",
+   "title": "Document Picture-in-Picture for browser meetings",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/DrgSMJPQ",
+   "technologies": [
+    "javascript",
+    "react",
+    "typescript"
+   ],
+   "interests": [
+    "video conferencing",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-002",
+   "split": "dev",
+   "org": "preCICE",
+   "title": "System Tests Improvements for preCICE",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/geaBE2Hg",
+   "technologies": [
+    "python",
+    "docker"
+   ],
+   "interests": [
+    "scientific computing",
+    "testing",
+    "simulation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-003",
+   "split": "dev",
+   "org": "German Center for Open Source AI",
+   "title": "On-line, Stream/Update Functionality for Regression",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/gnjq9ALp",
+   "technologies": [
+    "python",
+    "scikit-learn"
+   ],
+   "interests": [
+    "machine learning",
+    "statistics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-004",
+   "split": "dev",
+   "org": "The OpenROAD Initiative",
+   "title": "Incremental Global Routing on CUGR",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/vnr10ygM",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "chip design",
+    "electronic design automation",
+    "algorithms"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-005",
+   "split": "dev",
+   "org": "OpenAFS",
+   "title": "Adding cell creation support to afsio",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/22zPYekQ",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "file systems",
+    "system administration",
+    "distributed systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-006",
+   "split": "dev",
+   "org": "Open Food Facts",
+   "title": "Open Food Facts Explorer - a new generation Frontend",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/KFCaNXs9",
+   "technologies": [
+    "javascript",
+    "svelte",
+    "typescript"
+   ],
+   "interests": [
+    "food",
+    "web development",
+    "open data"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-007",
+   "split": "dev",
+   "org": "AOSSIE",
+   "title": "Engineering i18n and l10n ready, WCAG 2.2 compliant and optimized landing pages for AOSSIE",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/19Upjrdb",
+   "technologies": [
+    "javascript",
+    "react",
+    "typescript"
+   ],
+   "interests": [
+    "web accessibility",
+    "internationalization",
+    "web design"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-008",
+   "split": "dev",
+   "org": "Meshery",
+   "title": "Graph Database Integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/2sVTWiuM",
+   "technologies": [
+    "go",
+    "kubernetes"
+   ],
+   "interests": [
+    "cloud native",
+    "databases",
+    "infrastructure"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-009",
+   "split": "dev",
+   "org": "Jitsi",
+   "title": "Jitsi Chat Moderation and Editing System (XMPP-based Implementation)",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Aet96xCc",
+   "technologies": [
+    "javascript",
+    "react",
+    "typescript"
+   ],
+   "interests": [
+    "chat",
+    "real-time communication",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-010",
+   "split": "dev",
+   "org": "CGAL Project",
+   "title": "Spatial Searching on GPU for CGAL",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/8PoqEVF0",
+   "technologies": [
+    "c++",
+    "cuda"
+   ],
+   "interests": [
+    "computational geometry",
+    "gpu computing",
+    "graphics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-011",
+   "split": "dev",
+   "org": "SageMath",
+   "title": "Improve and Polish the Generation of Structures of Combinatorial Species",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/y7PP4TYV",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "mathematics",
+    "combinatorics",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-012",
+   "split": "dev",
+   "org": "JabRef e.V.",
+   "title": "Improved LibreOffice-JabRef integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Aj2w4sr7",
+   "technologies": [
+    "java"
+   ],
+   "interests": [
+    "academic writing",
+    "research tools",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-013",
+   "split": "dev",
+   "org": "FreeCAD",
+   "title": "3D Constraint driven sketcher/wireframe workbench",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Ls1lJhGB",
+   "technologies": [
+    "c++",
+    "python",
+    "qt"
+   ],
+   "interests": [
+    "cad",
+    "engineering",
+    "3d modeling"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-014",
+   "split": "dev",
+   "org": "GNOME Foundation",
+   "title": "Gitg moving to GTK4",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/NXbUqrGT",
+   "technologies": [
+    "c",
+    "gtk"
+   ],
+   "interests": [
+    "developer tools",
+    "version control",
+    "user interfaces"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-015",
+   "split": "dev",
+   "org": "Swift",
+   "title": "Qualified Name Lookup for swift-syntax",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/eRaEOB44",
+   "technologies": [
+    "swift"
+   ],
+   "interests": [
+    "compilers",
+    "developer tools",
+    "programming languages"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-016",
+   "split": "dev",
+   "org": "Joplin",
+   "title": "Interactive Sync Conflict Resolution for Joplin Desktop and Mobile",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PopnfR3x",
+   "technologies": [
+    "typescript",
+    "react",
+    "react native"
+   ],
+   "interests": [
+    "note taking",
+    "productivity",
+    "mobile apps"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-017",
+   "split": "dev",
+   "org": "RTEMS Project",
+   "title": "Add Support for C11 Annex K Bounds-Checking Functions in RTEMS",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/kffP1OQ6",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "embedded systems",
+    "real-time systems",
+    "security"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-018",
+   "split": "dev",
+   "org": "The Honeynet Project",
+   "title": "Improving the DICOMHawk Medical Honeypot: Profile-Driven Deception with Fingerprinting & Sandbox",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/nodrqwrt",
+   "technologies": [
+    "python",
+    "flask",
+    "docker"
+   ],
+   "interests": [
+    "cybersecurity",
+    "healthcare",
+    "networking"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-019",
+   "split": "dev",
+   "org": "Open Science Initiative for Perfusion Imaging",
+   "title": "Strengthening pyaslreport reliability through automated testing and CI",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ogeyaWWx",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "neuroimaging",
+    "testing",
+    "healthcare"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-020",
+   "split": "dev",
+   "org": "The FreeBSD Project",
+   "title": "Reimplement udmabuf to FreeBSD",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/KiQz59hz",
+   "technologies": [
+    "c",
+    "c++"
+   ],
+   "interests": [
+    "operating systems",
+    "virtualization",
+    "graphics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-021",
+   "split": "dev",
+   "org": "Open Transit Software Foundation",
+   "title": "Wayfinder: Feature Development, Accessibility & Quality",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/5ci9G7Pv",
+   "technologies": [
+    "javascript",
+    "svelte",
+    "typescript"
+   ],
+   "interests": [
+    "public transit",
+    "web accessibility",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-022",
+   "split": "dev",
+   "org": "National Resource for Network Biology (NRNB)",
+   "title": "openPIP 2 Modernizing the Open Source Protein Interaction Platform",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/o7J0WIL6",
+   "technologies": [
+    "python",
+    "react",
+    "django",
+    "postgresql"
+   ],
+   "interests": [
+    "bioinformatics",
+    "data visualization",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-023",
+   "split": "dev",
+   "org": "AboutCode",
+   "title": "VulnerableCode Insights",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/nlwOImQP",
+   "technologies": [
+    "python",
+    "django"
+   ],
+   "interests": [
+    "security",
+    "data visualization",
+    "open source software"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-024",
+   "split": "dev",
+   "org": "The P4 Language Consortium",
+   "title": "Improving The Traffic Manager of the P4Sim Switch",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/mIjAcBVg",
+   "technologies": [
+    "c++",
+    "python"
+   ],
+   "interests": [
+    "networking",
+    "simulation",
+    "research"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-025",
+   "split": "dev",
+   "org": "GNU Image Manipulation Program",
+   "title": "Working on new GEGL ops and porting existing filters as GEGL ops",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/93YKgzUh",
+   "technologies": [
+    "c",
+    "c++"
+   ],
+   "interests": [
+    "image editing",
+    "graphics",
+    "creative tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-026",
+   "split": "dev",
+   "org": "rocket.chat",
+   "title": "High-Performance Message Parser Rewrite",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/2LvZl7YI",
+   "technologies": [
+    "typescript",
+    "javascript"
+   ],
+   "interests": [
+    "chat",
+    "parsing",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-027",
+   "split": "dev",
+   "org": "KDE Community",
+   "title": "Plasma Mobile:  Make network related KCMs feature complete with desktop equivalent",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/oyJMgU3S",
+   "technologies": [
+    "c++",
+    "qt",
+    "qml"
+   ],
+   "interests": [
+    "mobile",
+    "linux desktop",
+    "networking"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-028",
+   "split": "dev",
+   "org": "Invesalius",
+   "title": "SimNIBS TMS Electric Field Simulation and Head Modeling Integration in InVesalius",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/eVXJ7eUt",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "neuroscience",
+    "medical imaging",
+    "simulation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-029",
+   "split": "dev",
+   "org": "Drupal Association",
+   "title": "One-Click AI Translation Assistant",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/mV10OJWD",
+   "technologies": [
+    "php",
+    "drupal"
+   ],
+   "interests": [
+    "translation",
+    "content management",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-030",
+   "split": "dev",
+   "org": "Mixxx",
+   "title": "Canonical Master Release Track (CMRT) based on the Complete Chromaprint Fingerprint",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/yj85UCzW",
+   "technologies": [
+    "c++",
+    "qt"
+   ],
+   "interests": [
+    "music",
+    "audio",
+    "dj software"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-031",
+   "split": "dev",
+   "org": "SW360",
+   "title": "GSoC 2026 Proposal: Remove Apache Thrift and Migrate to Direct Spring Service Calls",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/pcEhsFhD",
+   "technologies": [
+    "java",
+    "spring"
+   ],
+   "interests": [
+    "software supply chain",
+    "open source compliance",
+    "backend development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-032",
+   "split": "dev",
+   "org": "MDAnalysis",
+   "title": "Interface for post-simulation analysis (“crawling”) of WESTPA simulations",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/VJMrp2UW",
+   "technologies": [
+    "python",
+    "hdf5"
+   ],
+   "interests": [
+    "molecular dynamics",
+    "scientific computing",
+    "data analysis"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-033",
+   "split": "dev",
+   "org": "AnkiDroid",
+   "title": "Redesign Deck Picker",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/pJlzPbuC",
+   "technologies": [
+    "kotlin",
+    "android"
+   ],
+   "interests": [
+    "mobile apps",
+    "education",
+    "user interface design"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-034",
+   "split": "dev",
+   "org": "GeomScale",
+   "title": "Dynamic Volume Updating of Convex Polytopes via Random-Walk Sampling",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ciDSr4zE",
+   "technologies": [
+    "c++",
+    "python"
+   ],
+   "interests": [
+    "computational geometry",
+    "systems biology",
+    "statistics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-035",
+   "split": "dev",
+   "org": "LabLua",
+   "title": "Improve the Pallene Installer",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/LJlrW9TY",
+   "technologies": [
+    "lua",
+    "c"
+   ],
+   "interests": [
+    "programming languages",
+    "build tools",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-036",
+   "split": "dev",
+   "org": "Dart",
+   "title": "Inspect native memory in Dart DevTools",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/lH8t9v3H",
+   "technologies": [
+    "dart",
+    "c"
+   ],
+   "interests": [
+    "developer tools",
+    "debugging",
+    "programming languages"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-037",
+   "split": "dev",
+   "org": "Machine Learning for Science (ML4SCI)",
+   "title": "Physics-Aware Super-Resolution of CMS Jet Images Using Transformer - Diffusion Architectures",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/fCroA1AB",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "particle physics",
+    "machine learning",
+    "computer vision"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-038",
+   "split": "dev",
+   "org": "stdlib",
+   "title": "Add batch machine learning algorithms in Javascript and C",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/UpnxnHuL",
+   "technologies": [
+    "javascript",
+    "c"
+   ],
+   "interests": [
+    "machine learning",
+    "scientific computing",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-039",
+   "split": "dev",
+   "org": "omegaUp",
+   "title": "Cronjob Optimization",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/jEkK4rDg",
+   "technologies": [
+    "python",
+    "sql"
+   ],
+   "interests": [
+    "competitive programming",
+    "education",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-040",
+   "split": "dev",
+   "org": "St. Jude Children's Research Hospital",
+   "title": "WDL Python Bindings",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/BNPmlzOg",
+   "technologies": [
+    "rust",
+    "python"
+   ],
+   "interests": [
+    "bioinformatics",
+    "developer tools",
+    "workflows"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-041",
+   "split": "dev",
+   "org": "Machine Learning for Science (ML4SCI)",
+   "title": "Hybrid Quantum-Classical Representation Learning for Dark Matter Substructure Classification",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/xtWKvQN6",
+   "technologies": [
+    "python",
+    "qiskit",
+    "pytorch"
+   ],
+   "interests": [
+    "quantum computing",
+    "astrophysics",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-042",
+   "split": "dev",
+   "org": "IOOS",
+   "title": "Enhancing noaa_coops: Bringing Software Engineering Best Practices to Ocean Data Access",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/OuJRe5Av",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "oceanography",
+    "data access",
+    "environmental science"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-043",
+   "split": "dev",
+   "org": "The Honeynet Project",
+   "title": "GreedyBear: Dashboard Modularization",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/9CLNdcdS",
+   "technologies": [
+    "python",
+    "django",
+    "react"
+   ],
+   "interests": [
+    "cybersecurity",
+    "web development",
+    "data visualization"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-044",
+   "split": "dev",
+   "org": "CERN-HSF",
+   "title": "Parallel Processing Improvements in Julia Jet Reconstruction",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/cWU70vlI",
+   "technologies": [
+    "julia",
+    "c++"
+   ],
+   "interests": [
+    "high-energy physics",
+    "parallel computing",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-045",
+   "split": "dev",
+   "org": "The Rust Foundation",
+   "title": "Implementing impl and mut restrictions",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/xFrskRCv",
+   "technologies": [
+    "rust"
+   ],
+   "interests": [
+    "compilers",
+    "programming languages",
+    "systems programming"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-046",
+   "split": "dev",
+   "org": "Ruby",
+   "title": "Ruby Vulnerability Warnings on RubyGems",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/UujmjFyZ",
+   "technologies": [
+    "ruby",
+    "rails"
+   ],
+   "interests": [
+    "security",
+    "package management",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-047",
+   "split": "dev",
+   "org": "LabLua",
+   "title": "Add Support for Prepared Statements in LuaSQL",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/CybN2mc4",
+   "technologies": [
+    "lua",
+    "c"
+   ],
+   "interests": [
+    "databases",
+    "programming languages",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-048",
+   "split": "dev",
+   "org": "The Linux Foundation",
+   "title": "KDE Print Manager – Completing CUPS 3.x Support and Printer Application Integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/tmG5Q3X8",
+   "technologies": [
+    "c++",
+    "qt"
+   ],
+   "interests": [
+    "linux desktop",
+    "printing",
+    "user interfaces"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-049",
+   "split": "dev",
+   "org": "omegaUp",
+   "title": "Performance monitoring and Alerting Dashboard",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/3UbBdLxp",
+   "technologies": [
+    "go",
+    "php",
+    "kubernetes"
+   ],
+   "interests": [
+    "monitoring",
+    "devops",
+    "competitive programming"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-050",
+   "split": "dev",
+   "org": "LibreHealth",
+   "title": "Automated Security Assessment Infrastructure for LibreHealth EHR Workflows",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/B0KA82Dk",
+   "technologies": [
+    "php",
+    "python"
+   ],
+   "interests": [
+    "healthcare",
+    "security",
+    "devops"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-051",
+   "split": "dev",
+   "org": "DBpedia",
+   "title": "Neural Extraction Framework: Enhancing Knowledge Graph Extraction via Neuro-Symbolic Integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/JUH1W3j3",
+   "technologies": [
+    "python",
+    "redis"
+   ],
+   "interests": [
+    "knowledge graphs",
+    "natural language processing",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-052",
+   "split": "dev",
+   "org": "VideoLAN",
+   "title": "Qt Integration Tests",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/M1LjyZDM",
+   "technologies": [
+    "c++",
+    "qt"
+   ],
+   "interests": [
+    "media players",
+    "testing",
+    "multimedia"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-053",
+   "split": "dev",
+   "org": "cBioPortal for Cancer Genomics",
+   "title": "Automated Clinical Metadata Harmonization Dashboard",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/G7jxmBDW",
+   "technologies": [
+    "python",
+    "react",
+    "fastapi"
+   ],
+   "interests": [
+    "cancer research",
+    "healthcare",
+    "data curation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-054",
+   "split": "dev",
+   "org": "Open Science Labs",
+   "title": "Django to Python Cloudflare Workers Migration and AI Powered Personalised Learning Lab",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ht2WBljH",
+   "technologies": [
+    "python",
+    "cloudflare workers",
+    "javascript"
+   ],
+   "interests": [
+    "education",
+    "serverless",
+    "artificial intelligence"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-055",
+   "split": "dev",
+   "org": "Haskell.org",
+   "title": "Restoring Typeclass Refinement Support in LiquidHaskell",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/lnBMUfdU",
+   "technologies": [
+    "haskell"
+   ],
+   "interests": [
+    "formal verification",
+    "programming languages",
+    "type systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-056",
+   "split": "dev",
+   "org": "checkstyle",
+   "title": "Improve Google Style coverage on false negatives",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/NDqLGMlI",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "code quality",
+    "linting",
+    "developer tools"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-057",
+   "split": "dev",
+   "org": "Oppia Foundation",
+   "title": "3.1. Improve acceptance test infrastructure",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/yadlPijj",
+   "technologies": [
+    "javascript",
+    "typescript",
+    "angular"
+   ],
+   "interests": [
+    "education",
+    "testing",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-058",
+   "split": "dev",
+   "org": "OpenWISP",
+   "title": "Automatic Extraction of OpenWrt Firmware Image Metadata",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/N7h4TqNT",
+   "technologies": [
+    "python",
+    "django",
+    "celery"
+   ],
+   "interests": [
+    "networking",
+    "embedded systems",
+    "firmware"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-059",
+   "split": "dev",
+   "org": "CGAL Project",
+   "title": "Ray Marching for Mesh Generation",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/dRG95XCt",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "computational geometry",
+    "mesh generation",
+    "graphics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-060",
+   "split": "dev",
+   "org": "BRL-CAD",
+   "title": "Geometry Verification and Validation GUI in Qt",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/3DJH0uIr",
+   "technologies": [
+    "c++",
+    "qt"
+   ],
+   "interests": [
+    "cad",
+    "3d modeling",
+    "user interfaces"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-061",
+   "split": "dev",
+   "org": "Data for the Common Good",
+   "title": "Building a Multi-Provider SMART on FHIR Backend for Patient Health Record Access",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/A7jQyiS2",
+   "technologies": [
+    "python",
+    "fhir",
+    "docker"
+   ],
+   "interests": [
+    "healthcare",
+    "interoperability",
+    "patient data"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-062",
+   "split": "dev",
+   "org": "FOSSology",
+   "title": "Enhancing Nirjas & Atarashi for Accurate, Scalable License Intelligence",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/GY4LO3iv",
+   "technologies": [
+    "python",
+    "machine learning"
+   ],
+   "interests": [
+    "open source compliance",
+    "licensing",
+    "natural language processing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-063",
+   "split": "dev",
+   "org": "DeepChem",
+   "title": "Implement RFDiffusion and RFDiffusion All-Atom in DeepChem",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/VuaVP0ST",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "drug discovery",
+    "protein design",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-064",
+   "split": "dev",
+   "org": "CNCF",
+   "title": "kpt: Build e-commerce example kpt package",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/WOgXdhMZ",
+   "technologies": [
+    "go",
+    "kubernetes"
+   ],
+   "interests": [
+    "cloud native",
+    "e-commerce",
+    "devops"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-065",
+   "split": "dev",
+   "org": "OpenAstronomy",
+   "title": "PyArrow Improvements for Astronomy",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/v6LNwOJt",
+   "technologies": [
+    "python",
+    "c++"
+   ],
+   "interests": [
+    "astronomy",
+    "data engineering",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-066",
+   "split": "dev",
+   "org": "Learning Equality",
+   "title": "Implement an accessible, multi-select dropdown component",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/8sKsJQg7",
+   "technologies": [
+    "vue",
+    "javascript"
+   ],
+   "interests": [
+    "web accessibility",
+    "education",
+    "user interfaces"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-067",
+   "split": "dev",
+   "org": "API Dash",
+   "title": "Git Support, UI Workflow Builder & Collection Dashboard",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Qnk4Mkow",
+   "technologies": [
+    "dart",
+    "flutter"
+   ],
+   "interests": [
+    "developer tools",
+    "api testing",
+    "version control"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-068",
+   "split": "dev",
+   "org": "UC OSPO",
+   "title": "StaR: A Stability-Aware Representation Learning Framework for Spatial Domain Identification",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/A9rraw4C",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "bioinformatics",
+    "genomics",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-069",
+   "split": "dev",
+   "org": "MetaBrainz Foundation Inc",
+   "title": "Compose Multiplatform Migration of ListenBrainz-Android",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/R5i56XqC",
+   "technologies": [
+    "kotlin",
+    "kotlin multiplatform"
+   ],
+   "interests": [
+    "music",
+    "mobile apps",
+    "cross-platform development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-070",
+   "split": "dev",
+   "org": "MIT App Inventor",
+   "title": "Internationalization Support for Applications Built with MIT App Inventor",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/HDaxXVBH",
+   "technologies": [
+    "java",
+    "javascript",
+    "blockly"
+   ],
+   "interests": [
+    "education",
+    "mobile apps",
+    "internationalization"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-071",
+   "split": "dev",
+   "org": "C2SI",
+   "title": "Tarunya Webiu Propsal",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/zuLPFjoe",
+   "technologies": [
+    "typescript",
+    "nestjs"
+   ],
+   "interests": [
+    "web development",
+    "cloud",
+    "open source ecosystem"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-072",
+   "split": "dev",
+   "org": "INCF",
+   "title": "Integrating velocity modelling into PCNToolkit package",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/la6M6A71",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "neuroscience",
+    "statistics",
+    "healthcare"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-073",
+   "split": "dev",
+   "org": "GeomScale",
+   "title": "A Benchmarking Framework for Geometric Random Walks",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/psrE3mJN",
+   "technologies": [
+    "c++",
+    "python"
+   ],
+   "interests": [
+    "statistics",
+    "sampling",
+    "benchmarking"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-074",
+   "split": "dev",
+   "org": "OSGeo (Open Source Geospatial Foundation)",
+   "title": "Implementing Planar Face Extraction and K-Core Decomposition Algorithms for pgRouting",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Dd4a2hsK",
+   "technologies": [
+    "c++",
+    "sql"
+   ],
+   "interests": [
+    "maps",
+    "graph algorithms",
+    "databases"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-075",
+   "split": "dev",
+   "org": "52°North Spatial Information Research GmbH",
+   "title": "Weather Routing Tool - QGIS Plugin",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/GrdiADk8",
+   "technologies": [
+    "python",
+    "qgis"
+   ],
+   "interests": [
+    "maritime",
+    "maps",
+    "climate"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-076",
+   "split": "dev",
+   "org": "LibreOffice",
+   "title": "LibreOffice OpenType MATH",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/QcZIdqyr",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "math typesetting",
+    "office software",
+    "typography"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-077",
+   "split": "dev",
+   "org": "INCF",
+   "title": "BreathState: A Cross Platform App for HRV Biofeedback and Resonance Breathing Protocols",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/axPxPpBS",
+   "technologies": [
+    "dart",
+    "flutter",
+    "python"
+   ],
+   "interests": [
+    "health",
+    "biofeedback",
+    "mobile apps"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-078",
+   "split": "dev",
+   "org": "Open Genome Informatics",
+   "title": "Patient-Facing Clinical Trial Chatbot with Interactive Map",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/wW6p678Z",
+   "technologies": [
+    "python",
+    "react",
+    "fastapi",
+    "postgresql"
+   ],
+   "interests": [
+    "healthcare",
+    "cancer research",
+    "chatbots"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-079",
+   "split": "dev",
+   "org": "AnkiDroid",
+   "title": "Open LLM Flashcard Generator and Importer for AnkiDroid",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/XGTDRLdf",
+   "technologies": [
+    "python",
+    "kotlin"
+   ],
+   "interests": [
+    "education",
+    "large language models",
+    "flashcards"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-080",
+   "split": "dev",
+   "org": "API Dash",
+   "title": "Multi-Protocol Support (WS, MQTT, gRPC) + CLI",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/8mOJR8XY",
+   "technologies": [
+    "dart",
+    "flutter"
+   ],
+   "interests": [
+    "developer tools",
+    "networking",
+    "api testing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-081",
+   "split": "dev",
+   "org": "JdeRobot",
+   "title": "PerceptionMetrics: GUI extension and support for standard datasets and models",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/1lzN79bZ",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "computer vision",
+    "robotics",
+    "autonomous vehicles"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-082",
+   "split": "dev",
+   "org": "CRIU",
+   "title": "Enabling Checkpoint/Restore of Rootless Containers",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/xk3R6xhq",
+   "technologies": [
+    "c",
+    "go"
+   ],
+   "interests": [
+    "containers",
+    "linux",
+    "operating systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-083",
+   "split": "dev",
+   "org": "OpenMRS",
+   "title": "A Native O3 Frontend for the Audit Trail",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/7hshi4A5",
+   "technologies": [
+    "typescript",
+    "react"
+   ],
+   "interests": [
+    "healthcare",
+    "medical records",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-084",
+   "split": "dev",
+   "org": "Gambit: The package for computation in game theory",
+   "title": "Gambit Interoperability with SageMath",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/5bi4nB7H",
+   "technologies": [
+    "python",
+    "sagemath"
+   ],
+   "interests": [
+    "game theory",
+    "mathematics",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-085",
+   "split": "dev",
+   "org": "Metaflow",
+   "title": "Agent-Friendly Client + Metadata Service Foundation",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/gcqp54nN",
+   "technologies": [
+    "python",
+    "fastapi"
+   ],
+   "interests": [
+    "machine learning",
+    "data engineering",
+    "ai agents"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-086",
+   "split": "dev",
+   "org": "Liquid Galaxy project",
+   "title": "Liquid Galaxy: Ubuntu LTS System Migration - Ubuntu 16.04 to Ubuntu 24.04",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/bEqrTjq3",
+   "technologies": [
+    "bash",
+    "linux"
+   ],
+   "interests": [
+    "geospatial visualization",
+    "operating systems",
+    "devops"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-087",
+   "split": "dev",
+   "org": "Kiwix",
+   "title": "Architectural Refactoring of MWoffliner: Improving Maintainability, Modularity, and Performance",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/TJcJrzUC",
+   "technologies": [
+    "typescript",
+    "node.js"
+   ],
+   "interests": [
+    "offline access",
+    "web scraping",
+    "software architecture"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-088",
+   "split": "dev",
+   "org": "MalariaGEN",
+   "title": "Building a machine-learning taxon classifier for genomic classification in malaria mosquitoes",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/jvqBoHfQ",
+   "technologies": [
+    "python",
+    "scikit-learn"
+   ],
+   "interests": [
+    "genomics",
+    "malaria",
+    "bioinformatics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-089",
+   "split": "dev",
+   "org": "OpenVINO Toolkit",
+   "title": "Optimize a VLA Model for Embodied Intelligence: OpenVINO Toolkit (Intel) Project #21",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/UOQx8K8e",
+   "technologies": [
+    "python",
+    "openvino",
+    "pytorch"
+   ],
+   "interests": [
+    "robotics",
+    "model optimization",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-090",
+   "split": "dev",
+   "org": "Python Software Foundation",
+   "title": "Open World Holidays Framework Generate l10n file on per locale basis",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/H6IOW84K",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "internationalization",
+    "translation",
+    "calendar data"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-091",
+   "split": "dev",
+   "org": "Free and Open Source Silicon Foundation",
+   "title": "Surfer Memory and Wide Array Support",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/8olpOqGa",
+   "technologies": [
+    "rust"
+   ],
+   "interests": [
+    "hardware design",
+    "debugging",
+    "data visualization"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-092",
+   "split": "dev",
+   "org": "Tiled",
+   "title": "Tiled: New Hardware Renderer",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/BahR0KDx",
+   "technologies": [
+    "c++",
+    "qt",
+    "qml"
+   ],
+   "interests": [
+    "game development",
+    "graphics",
+    "level editors"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-093",
+   "split": "dev",
+   "org": "Project Mesa",
+   "title": "Modernizing Mesa-Geo: PropertyLayer Refactor, Cell/Agent Decoupling & Visualization Overhaul",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/yzrhCVTm",
+   "technologies": [
+    "python",
+    "numpy"
+   ],
+   "interests": [
+    "geospatial",
+    "agent-based modeling",
+    "simulation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-094",
+   "split": "dev",
+   "org": "GNU Radio",
+   "title": "GSOC’26: OOT Module for web-based monitoring of running flow graphs in GNU Radio 4",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/002sQ2Ri",
+   "technologies": [
+    "c++",
+    "python"
+   ],
+   "interests": [
+    "software defined radio",
+    "signal processing",
+    "web monitoring"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-095",
+   "split": "dev",
+   "org": "Processing Foundation",
+   "title": "Native SVG Import/Export for p5.js via p5.Shape System (custom Project)",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/YvQfPALD",
+   "technologies": [
+    "javascript",
+    "p5.js"
+   ],
+   "interests": [
+    "creative coding",
+    "graphics",
+    "education"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-096",
+   "split": "dev",
+   "org": "Wagtail",
+   "title": "Scaling translation operations in wagtail-localize",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/wmfuUxir",
+   "technologies": [
+    "python",
+    "django"
+   ],
+   "interests": [
+    "web development",
+    "internationalization",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-097",
+   "split": "dev",
+   "org": "OSGeo (Open Source Geospatial Foundation)",
+   "title": "istSOS Metadata Connector for Data Spaces and STAC",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/UmLEBaWM",
+   "technologies": [
+    "python",
+    "postgresql"
+   ],
+   "interests": [
+    "sensors",
+    "geospatial",
+    "open data"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-098",
+   "split": "dev",
+   "org": "Haiku",
+   "title": "Modernizing Haiku's Bluetooth Stack: HCI Completion and HID Profile Implementation",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/r1c2esYR",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "operating systems",
+    "bluetooth",
+    "device drivers"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-099",
+   "split": "dev",
+   "org": "KubeVirt",
+   "title": "Adapting k8s.io/apiserver in KubeVirt",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/6mDtvgRu",
+   "technologies": [
+    "go",
+    "kubernetes"
+   ],
+   "interests": [
+    "virtualization",
+    "cloud native",
+    "infrastructure"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-100",
+   "split": "dev",
+   "org": "D Language Foundation",
+   "title": "Ninja Build Backend for DUB",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/lBSttJH4",
+   "technologies": [
+    "d",
+    "c++"
+   ],
+   "interests": [
+    "build tools",
+    "package management",
+    "programming languages"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-101",
+   "split": "dev",
+   "org": "Open Technologies Alliance - GFOSS",
+   "title": "GSoC 2026 Fine-tuning AI Transcription for Greek Municipal Councils",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/7XBJb5i7",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "speech recognition",
+    "local government",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-102",
+   "split": "dev",
+   "org": "Gemini CLI",
+   "title": "Long Context Coding Evaluation Dataset for Gemini CLI",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/QJ9zsb8n",
+   "technologies": [
+    "python",
+    "llm"
+   ],
+   "interests": [
+    "ai agents",
+    "benchmarking",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-103",
+   "split": "dev",
+   "org": "Sugar Labs",
+   "title": "Music Blocks 4 Program Builder",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/HFDtyMr8",
+   "technologies": [
+    "typescript",
+    "javascript"
+   ],
+   "interests": [
+    "music",
+    "visual programming",
+    "education"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-104",
+   "split": "dev",
+   "org": "Fortran-lang",
+   "title": "Compile M_intrinsics, fman, and gtk-fortran packages with LFortran",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ze6dneXy",
+   "technologies": [
+    "fortran",
+    "c++"
+   ],
+   "interests": [
+    "compilers",
+    "scientific computing",
+    "programming languages"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-105",
+   "split": "dev",
+   "org": "Open Transit Software Foundation",
+   "title": "Maglev: Production Readiness and Native GTFS Pipeline",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/StTVAp8t",
+   "technologies": [
+    "go",
+    "sql"
+   ],
+   "interests": [
+    "public transit",
+    "backend development",
+    "apis"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-106",
+   "split": "dev",
+   "org": "Debian",
+   "title": "Debusine: live log streaming",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/MEfbLvfZ",
+   "technologies": [
+    "python",
+    "django",
+    "redis"
+   ],
+   "interests": [
+    "debian",
+    "build systems",
+    "devops"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-107",
+   "split": "dev",
+   "org": "FFmpeg",
+   "title": "Modernizing LibTorch Backend with Zero Copy and Batching",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PalUZxqz",
+   "technologies": [
+    "c",
+    "c++",
+    "pytorch"
+   ],
+   "interests": [
+    "video",
+    "machine learning",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-108",
+   "split": "dev",
+   "org": "OWASP Foundation",
+   "title": "Intelligent Execution Engine, Adaptive Scheduling & Advanced Tooling Integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/3HBgXzPB",
+   "technologies": [
+    "python",
+    "go",
+    "kubernetes"
+   ],
+   "interests": [
+    "security",
+    "performance",
+    "scheduling"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-109",
+   "split": "dev",
+   "org": "Internet Archive",
+   "title": "AI-Assisted Wayback Machine Extension Using Client-Side Prompt API",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/jUneSe5v",
+   "technologies": [
+    "javascript",
+    "chrome extension"
+   ],
+   "interests": [
+    "web archiving",
+    "browser extensions",
+    "artificial intelligence"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-110",
+   "split": "dev",
+   "org": "Konflux",
+   "title": "zstd:chunked compression",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/EnejDA6z",
+   "technologies": [
+    "go",
+    "docker"
+   ],
+   "interests": [
+    "containers",
+    "ci/cd",
+    "devops"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-111",
+   "split": "dev",
+   "org": "CircuitVerse.org",
+   "title": "Assignment Suite & Classroom Workflow Enhancement",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/JI2PN30m",
+   "technologies": [
+    "ruby",
+    "javascript",
+    "rails"
+   ],
+   "interests": [
+    "education",
+    "hardware design",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-112",
+   "split": "dev",
+   "org": "GNU Mailman Project",
+   "title": "Per List Backup and Restore",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/RtybMqww",
+   "technologies": [
+    "python",
+    "sqlalchemy"
+   ],
+   "interests": [
+    "mailing lists",
+    "email",
+    "backups"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-113",
+   "split": "dev",
+   "org": "Global Alliance for Genomics and Health",
+   "title": "Workflow Clinic",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/AWHWIvlO",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "bioinformatics",
+    "workflows",
+    "cloud computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-114",
+   "split": "dev",
+   "org": "FOSSology",
+   "title": "Enhanced Reuse Agent for Intelligent  License Reuse",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/XkcJNZJt",
+   "technologies": [
+    "php",
+    "python"
+   ],
+   "interests": [
+    "open source compliance",
+    "licensing",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-115",
+   "split": "dev",
+   "org": "The ns-3 Network Simulator Project",
+   "title": "Integrating 5G NR module with ns-3-ai",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/G2dYeVu6",
+   "technologies": [
+    "c++",
+    "python"
+   ],
+   "interests": [
+    "wireless networking",
+    "simulation",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-116",
+   "split": "dev",
+   "org": "Sugar Labs",
+   "title": "Music Blocks Performance",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/BzjL6hic",
+   "technologies": [
+    "javascript"
+   ],
+   "interests": [
+    "music",
+    "education",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-117",
+   "split": "dev",
+   "org": "OpenMS Inc",
+   "title": "Unify Development Dependencies using Vcpkg",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/kLHenMf3",
+   "technologies": [
+    "c++",
+    "cmake",
+    "python"
+   ],
+   "interests": [
+    "mass spectrometry",
+    "build systems",
+    "bioinformatics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-118",
+   "split": "dev",
+   "org": "MDAnalysis",
+   "title": "Dashboard for tracking MD simulation progress with the new streaming interface",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/DzTMshtu",
+   "technologies": [
+    "python",
+    "javascript"
+   ],
+   "interests": [
+    "molecular dynamics",
+    "data visualization",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-119",
+   "split": "dev",
+   "org": "TARDIS RT Collaboration",
+   "title": "Improving Test Coverage for the TARDIS Plasma Module",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/LIZ3ldjS",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "astrophysics",
+    "testing",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-120",
+   "split": "test",
+   "org": "DBpedia",
+   "title": "Databus Python Client: Manifest-Driven Reproducible Workflow Orchestration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/kebLcDis",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "data engineering",
+    "linked data"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-121",
+   "split": "test",
+   "org": "FFmpeg",
+   "title": "Improve WHIP(WebRTC-HTTP Ingest Protocol) Support",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/M9U6VFDD",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "video streaming",
+    "web real-time communication"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-122",
+   "split": "test",
+   "org": "Uramaki LAB",
+   "title": "Unified Logging and Traceability System for Usability Studies",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/mTtZZ2Lq",
+   "technologies": [
+    "javascript",
+    "vue"
+   ],
+   "interests": [
+    "usability research",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-123",
+   "split": "test",
+   "org": "Neovim",
+   "title": "Support WASM as a Neovim Build Target",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ulvAb2rQ",
+   "technologies": [
+    "c",
+    "lua"
+   ],
+   "interests": [
+    "text editors",
+    "webassembly"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-124",
+   "split": "test",
+   "org": "The Libreswan Project",
+   "title": "Add HOST-TO-HOST Support on BSD",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/yW1PFL6D",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "networking",
+    "operating systems",
+    "security"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-125",
+   "split": "test",
+   "org": "OpenStreetMap",
+   "title": "Make closures.osm.ch Production Ready",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/6WS8O5PX",
+   "technologies": [
+    "python",
+    "javascript"
+   ],
+   "interests": [
+    "maps",
+    "routing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-126",
+   "split": "test",
+   "org": "Neutralinojs",
+   "title": "Neutralinojs Builder",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/uGXZeO73",
+   "technologies": [
+    "c++",
+    "javascript"
+   ],
+   "interests": [
+    "desktop apps",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-127",
+   "split": "test",
+   "org": "PEcAn Project",
+   "title": "Increasing PEcAn Modularity - Refactoring the Trait-Meta-analysis-Configuration Pipeline",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ji7y6Llg",
+   "technologies": [
+    "r"
+   ],
+   "interests": [
+    "ecology",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-128",
+   "split": "test",
+   "org": "ScummVM",
+   "title": "Finishing implementation of incomplete engines",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Cf3O9rfG",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "game engines",
+    "retro games"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-129",
+   "split": "test",
+   "org": "NixOS Foundation",
+   "title": "Remove the Build Hook Mechanism, Store Extensions",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/fnPvwYYw",
+   "technologies": [
+    "c++",
+    "nix"
+   ],
+   "interests": [
+    "build systems",
+    "distributed systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-130",
+   "split": "test",
+   "org": "KolibriOS Project Team",
+   "title": "Native Matrix Client for KolibriOS",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/pYuVzwap",
+   "technologies": [
+    "c",
+    "assembly"
+   ],
+   "interests": [
+    "operating systems",
+    "messaging"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-131",
+   "split": "test",
+   "org": "Unikraft",
+   "title": "Expanding the Unikraft Software Support Ecosystem",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/9nXXVox5",
+   "technologies": [
+    "c",
+    "c++"
+   ],
+   "interests": [
+    "unikernels",
+    "operating systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-132",
+   "split": "test",
+   "org": "Metaflow",
+   "title": "Non-Breaking Pagination & Tag Filtering for Metaflow Metadata Service",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/CHPHErXK",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "data engineering",
+    "apis"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-133",
+   "split": "test",
+   "org": "CRIU",
+   "title": "Forensic Checkpointing Framework for Kubernetes",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/67c1nTmK",
+   "technologies": [
+    "go",
+    "kubernetes"
+   ],
+   "interests": [
+    "cloud security",
+    "containers"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-134",
+   "split": "test",
+   "org": "GNU Project",
+   "title": "GnuCOBOL: Implement Initial Object-Oriented Programming Support",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/fJwXhksl",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "compilers",
+    "programming languages"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-135",
+   "split": "test",
+   "org": "Joomla!",
+   "title": "Multicategory Support for Joomla Items",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/fcmjILkz",
+   "technologies": [
+    "php",
+    "javascript"
+   ],
+   "interests": [
+    "content management",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-136",
+   "split": "test",
+   "org": "libssh",
+   "title": "Improve configuration compatibility with OpenSSH",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Ot39Kd2J",
+   "technologies": [
+    "go"
+   ],
+   "interests": [
+    "networking",
+    "security"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-137",
+   "split": "test",
+   "org": "GNU Radio",
+   "title": "Hardware in the loop CI",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/XtWlavcb",
+   "technologies": [
+    "python",
+    "c++"
+   ],
+   "interests": [
+    "software defined radio",
+    "testing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-138",
+   "split": "test",
+   "org": "Graphite",
+   "title": "Text Improvement",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/pZMifaTq",
+   "technologies": [
+    "rust"
+   ],
+   "interests": [
+    "graphics",
+    "design tools"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-139",
+   "split": "test",
+   "org": "EROFS filesystem",
+   "title": "Porting EROFS to FreeBSD Kernel",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/DgKC7AQZ",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "file systems",
+    "operating systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-140",
+   "split": "test",
+   "org": "MetaCall",
+   "title": "Code Coverage and Memory Tracking Improvements for MetaCall Core",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/75QwoVXe",
+   "technologies": [
+    "c",
+    "c++"
+   ],
+   "interests": [
+    "programming languages",
+    "testing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-141",
+   "split": "test",
+   "org": "OpenELIS Global",
+   "title": "Modernizing OpenELIS Frontend with TypeScript and Performance Optimization",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/uP87dqd9",
+   "technologies": [
+    "typescript",
+    "react"
+   ],
+   "interests": [
+    "healthcare",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-142",
+   "split": "test",
+   "org": "Debian",
+   "title": "Linux Livepatching",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/hwdmjPwn",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "operating systems",
+    "security"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-143",
+   "split": "test",
+   "org": "Pharo Consortium",
+   "title": "Decoupled implementation of  social norms in CORMAS",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/aTW8KjSB",
+   "technologies": [
+    "smalltalk"
+   ],
+   "interests": [
+    "simulation",
+    "social science"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-144",
+   "split": "test",
+   "org": "MariaDB",
+   "title": "Optimize INFORMATION_SCHEMA Queries (MDEV-31342 & MDEV-31535)",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/oDTq1At7",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "databases",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-145",
+   "split": "test",
+   "org": "Graphite",
+   "title": "Feature-complete SVG import and rendering support",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/xmzkZBJD",
+   "technologies": [
+    "rust",
+    "typescript"
+   ],
+   "interests": [
+    "graphics",
+    "design tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-146",
+   "split": "test",
+   "org": "OpenVINO Toolkit",
+   "title": "Demonstrating integration of openhands with OpenVINO Model Server",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ThQKKcq2",
+   "technologies": [
+    "python",
+    "docker"
+   ],
+   "interests": [
+    "machine learning",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-147",
+   "split": "test",
+   "org": "IOOS",
+   "title": "Add sex structure to FIMS statistical-catch-at-age model",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/I8uSWyXY",
+   "technologies": [
+    "r",
+    "c++"
+   ],
+   "interests": [
+    "fisheries",
+    "statistics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-148",
+   "split": "test",
+   "org": "Ruby",
+   "title": "Event Transparency Logs",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/hb6aCL4h",
+   "technologies": [
+    "ruby"
+   ],
+   "interests": [
+    "security",
+    "package management"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-149",
+   "split": "test",
+   "org": "Fortran-lang",
+   "title": "Compiling benchmark.f and feq-parse packages with LFortran",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/pJIfGlBB",
+   "technologies": [
+    "fortran",
+    "c++"
+   ],
+   "interests": [
+    "compilers",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-150",
+   "split": "test",
+   "org": "preCICE",
+   "title": "Website Modernization Migration from Jekyll to Hugo",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/aOVmweGe",
+   "technologies": [
+    "html",
+    "javascript"
+   ],
+   "interests": [
+    "web development",
+    "documentation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-151",
+   "split": "test",
+   "org": "FLARE",
+   "title": "Extend FLOSS to use the rendering techniques pioneered by QUANTUMSTRAND",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/vORTUrPS",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "malware analysis",
+    "security"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-152",
+   "split": "test",
+   "org": "MalariaGEN",
+   "title": "Development of Accurate Relatedness Estimation for Malaria Vectors",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ar0jqOKO",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "genomics",
+    "epidemiology"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-153",
+   "split": "test",
+   "org": "JabRef e.V.",
+   "title": "JabRef Native Image Support",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/WpfCv7KA",
+   "technologies": [
+    "java"
+   ],
+   "interests": [
+    "developer tools",
+    "desktop apps"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-154",
+   "split": "test",
+   "org": "JBoss Community",
+   "title": "JBoss Web Server Diagnostic Configuration Validation Toolkit",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/7mN5BuP3",
+   "technologies": [
+    "go",
+    "java"
+   ],
+   "interests": [
+    "devops",
+    "developer tools"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-155",
+   "split": "test",
+   "org": "The Mifos Initiative",
+   "title": "Mifos X Smart Contract & Loan Agreement Summarization with LLMs",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/wtjcAbhF",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "finance",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-156",
+   "split": "test",
+   "org": "MLLAM",
+   "title": "Generalizing to Probabilistic Forecasting Models",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ancIRkdm",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "weather",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-157",
+   "split": "test",
+   "org": "Joomla!",
+   "title": "Translator Feedback Loop for Joomla (Inspired by RLHF)",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/VBXfqNqD",
+   "technologies": [
+    "php",
+    "javascript"
+   ],
+   "interests": [
+    "machine translation",
+    "content management"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-158",
+   "split": "test",
+   "org": "Tiled",
+   "title": "Enhanced World Editing",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PAg4ulYo",
+   "technologies": [
+    "c++",
+    "qt"
+   ],
+   "interests": [
+    "game development",
+    "design tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-159",
+   "split": "test",
+   "org": "RTEMS Project",
+   "title": "Controller Area Network (CAN) Stack Improvement: BeagleBone Black D-CAN Driver Implementation",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/4nKcLIiO",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "embedded systems",
+    "networking"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-160",
+   "split": "test",
+   "org": "The JPF team",
+   "title": "Support for Java 17 in jpf-core",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/8rNFgFox",
+   "technologies": [
+    "java"
+   ],
+   "interests": [
+    "program analysis",
+    "programming languages"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-161",
+   "split": "test",
+   "org": "Metasploit",
+   "title": "CertificateTrace and KerberosTicketTrace Support",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/7MfS5bHy",
+   "technologies": [
+    "ruby"
+   ],
+   "interests": [
+    "security",
+    "networking"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-162",
+   "split": "test",
+   "org": "GNU Project",
+   "title": "Port parts of GNU libcdio to Rust",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Q2pKYmUp",
+   "technologies": [
+    "rust",
+    "c"
+   ],
+   "interests": [
+    "multimedia",
+    "systems programming"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-163",
+   "split": "test",
+   "org": "Synfig",
+   "title": "Per-Character Text Animation Layer",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/nDSe18rH",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "animation",
+    "graphics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-164",
+   "split": "test",
+   "org": "HumanAI",
+   "title": "ISSR - AI-Powered Funding Intelligence (FOA Ingestion + Semantic Tagging)",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/JtL7hkvd",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "machine learning",
+    "research funding"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-165",
+   "split": "test",
+   "org": "dora-rs",
+   "title": "dora-studio: Web GUI for Dataflow Management in Dora",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/qQnX0Sl1",
+   "technologies": [
+    "rust",
+    "typescript",
+    "react"
+   ],
+   "interests": [
+    "robotics",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-166",
+   "split": "test",
+   "org": "The FreeBSD Project",
+   "title": "Add Networking Support to kboot",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/RNVGFK81",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "operating systems",
+    "networking"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-167",
+   "split": "test",
+   "org": "Jenkins",
+   "title": "Jenkins email notifications using Outlook SMTP with OAuth",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/EKPXcFjp",
+   "technologies": [
+    "java"
+   ],
+   "interests": [
+    "devops",
+    "security"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-168",
+   "split": "test",
+   "org": "Qubes OS",
+   "title": "Graphical package manager support in templates",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/3das9C5i",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "security",
+    "operating systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-169",
+   "split": "test",
+   "org": "Kotlin Foundation",
+   "title": "Tail call support in the Kotlin/Wasm backend",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/sJkheg4K",
+   "technologies": [
+    "kotlin",
+    "webassembly"
+   ],
+   "interests": [
+    "compilers",
+    "programming languages"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-170",
+   "split": "test",
+   "org": "HumanAI",
+   "title": "Late Antiquity Model Projection - LAMP",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/f73EjLd9",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "history",
+    "archaeology",
+    "geospatial"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-171",
+   "split": "test",
+   "org": "Data for the Common Good",
+   "title": "Data Density Heatmap Application",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/SaPA4689",
+   "technologies": [
+    "javascript",
+    "react",
+    "graphql"
+   ],
+   "interests": [
+    "data visualization",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-172",
+   "split": "test",
+   "org": "DeepChem",
+   "title": "Machine Learning Interatomic Potentials (MLIP) in DeepChem using E(3)-Equivariant Neural Networks",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/VzYAsPDu",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "chemistry",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-173",
+   "split": "test",
+   "org": "LibreHealth",
+   "title": "Automated Artifact Detection And Annotation",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/hnKarRtf",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "healthcare",
+    "medical imaging"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-174",
+   "split": "test",
+   "org": "OWASP Foundation",
+   "title": "OWASP OpenCRE Module A: Incremental Information Harvesting Pipeline",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/uKmYKXpd",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "security",
+    "data engineering"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-175",
+   "split": "test",
+   "org": "BRL-CAD",
+   "title": "IfcOpenShell C API, Improved WASM builds, and migration of high-level APIs from Python",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/D7BhEmva",
+   "technologies": [
+    "c++",
+    "python",
+    "webassembly"
+   ],
+   "interests": [
+    "architecture",
+    "engineering software"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-176",
+   "split": "test",
+   "org": "C2SI",
+   "title": "CodeLabz GSoC 2026",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/vfO7BcDX",
+   "technologies": [
+    "javascript",
+    "react",
+    "firebase"
+   ],
+   "interests": [
+    "education",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-177",
+   "split": "test",
+   "org": "The Linux Foundation",
+   "title": "Implement IPP-Scan Support in go-mfp",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/tvPbQm4Q",
+   "technologies": [
+    "go"
+   ],
+   "interests": [
+    "printing",
+    "networking"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-178",
+   "split": "test",
+   "org": "Open Science Labs",
+   "title": "Integrate IRx with Apache Arrow (C Data Interface)",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/nL3y0QpV",
+   "technologies": [
+    "c++",
+    "python"
+   ],
+   "interests": [
+    "data science",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-179",
+   "split": "test",
+   "org": "The NetBSD Foundation",
+   "title": "Port the Enlightenment desktop environment to NetBSD",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/mifwPqCq",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "desktop environments",
+    "operating systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-180",
+   "split": "test",
+   "org": "Zulip",
+   "title": "Cluster of priority features focused on message feed, compose, and channel settings",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/43OugB9J",
+   "technologies": [
+    "typescript"
+   ],
+   "interests": [
+    "web development",
+    "communication"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-181",
+   "split": "test",
+   "org": "Eclipse Foundation",
+   "title": "Test Suite for Type Management Refactorings in 4diac IDE",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/yuMveNWN",
+   "technologies": [
+    "java"
+   ],
+   "interests": [
+    "developer tools",
+    "industrial automation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-182",
+   "split": "test",
+   "org": "Metasploit",
+   "title": "Automated Vulnerable Environment Provisioning for Metasploit",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/2ejvuiQh",
+   "technologies": [
+    "ruby",
+    "docker"
+   ],
+   "interests": [
+    "security",
+    "testing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-183",
+   "split": "test",
+   "org": "JSON Schema",
+   "title": "Drop-in replacement for vscode-json-languageservice",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/nFcPOwLX",
+   "technologies": [
+    "typescript"
+   ],
+   "interests": [
+    "developer tools",
+    "text editors"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-184",
+   "split": "test",
+   "org": "Learning Unlimited",
+   "title": "New Module Management UI",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/lpULfSR3",
+   "technologies": [
+    "python",
+    "django"
+   ],
+   "interests": [
+    "education",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-185",
+   "split": "test",
+   "org": "The ns-3 Network Simulator Project",
+   "title": "Switched Ethernet",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Wl61Gzov",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "networking",
+    "simulation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-186",
+   "split": "test",
+   "org": "JdeRobot",
+   "title": "Robotics Academy: Palletizing with an Industrial Robot Exercise",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/iinIsP1L",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "robotics",
+    "education"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-187",
+   "split": "test",
+   "org": "Dart",
+   "title": "Android JCA Backend for package:webcrypto",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/hXF55vKW",
+   "technologies": [
+    "dart",
+    "java"
+   ],
+   "interests": [
+    "security",
+    "mobile development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-188",
+   "split": "test",
+   "org": "Haiku",
+   "title": "Modernizing Haiku’s Bluetooth stack: Implementing support for HFP profile",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/SVaJO4T2",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "operating systems",
+    "bluetooth"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-189",
+   "split": "test",
+   "org": "OpenELIS Global",
+   "title": "Improve Integration Tests Coverage for OpenELIS",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PhS18qoP",
+   "technologies": [
+    "java"
+   ],
+   "interests": [
+    "healthcare",
+    "testing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-190",
+   "split": "test",
+   "org": "MoganLab",
+   "title": "GSoC 2026 - Tianyou Liu - Julia Plugin with Virtual Environment Support",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/XXFVIs2W",
+   "technologies": [
+    "c++",
+    "scheme"
+   ],
+   "interests": [
+    "scientific editors",
+    "education"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-191",
+   "split": "test",
+   "org": "Kiwix",
+   "title": "Combinator Builder for WP1",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/OfYnIfAD",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "data science",
+    "machine learning"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-192",
+   "split": "test",
+   "org": "Learning Equality",
+   "title": "Editing of QTI Question types",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/LXjNTcGk",
+   "technologies": [
+    "typescript",
+    "react"
+   ],
+   "interests": [
+    "education",
+    "assessment"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-193",
+   "split": "test",
+   "org": "Meshery",
+   "title": "Scaling the Meshery Ecosystem",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/cDDDPOD5",
+   "technologies": [
+    "javascript",
+    "react",
+    "go"
+   ],
+   "interests": [
+    "cloud native",
+    "web development"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-194",
+   "split": "test",
+   "org": "GNU Octave",
+   "title": "Add LinearModel and CompactLinearModel objects to the statistics package",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/YKFoacXh",
+   "technologies": [
+    "octave"
+   ],
+   "interests": [
+    "statistics",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-195",
+   "split": "test",
+   "org": "Open Genome Informatics",
+   "title": "AI System for Real-Time Detection of Pediatric ENT Health Trends on Social Media",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/i4pgqs94",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "healthcare",
+    "machine learning",
+    "social media"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-196",
+   "split": "test",
+   "org": "CCExtractor Development",
+   "title": "CCExtractor: TaskWarrior Mobile App",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/QS4A6pNj",
+   "technologies": [
+    "dart",
+    "flutter",
+    "rust"
+   ],
+   "interests": [
+    "productivity",
+    "mobile development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-197",
+   "split": "test",
+   "org": "D Language Foundation",
+   "title": "GSoC 2026 Proposal: DCompute Vulkan Backend",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/tAUNtJAl",
+   "technologies": [
+    "d",
+    "c++"
+   ],
+   "interests": [
+    "gpu computing",
+    "compilers"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-198",
+   "split": "test",
+   "org": "QEMU",
+   "title": "Observability Support for COCONUT-SVSM",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/1Q3qWHfa",
+   "technologies": [
+    "rust"
+   ],
+   "interests": [
+    "virtualization",
+    "security"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-199",
+   "split": "test",
+   "org": "ScummVM",
+   "title": "Finishing implementation of incomplete engines",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/RRNaaGFC",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "game engines",
+    "retro games"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-200",
+   "split": "test",
+   "org": "Global Alliance for Genomics and Health",
+   "title": "GA4GH ServiceInfo Sidecar",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/yWbLMrnl",
+   "technologies": [
+    "go"
+   ],
+   "interests": [
+    "bioinformatics",
+    "apis"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-201",
+   "split": "test",
+   "org": "Python Software Foundation",
+   "title": "Adding New Similarity Metrics for DIPY’s Image Registration Frameworks",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/wtuoFjpU",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "medical imaging",
+    "neuroscience"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-202",
+   "split": "test",
+   "org": "FOSSASIA",
+   "title": "Modernizing eventyay-flowspace: Migrating to Vue 3 with Modern Jitsi Integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/QFuYMrw2",
+   "technologies": [
+    "javascript",
+    "vue"
+   ],
+   "interests": [
+    "events",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-203",
+   "split": "test",
+   "org": "Genome Assembly and Annotation",
+   "title": "Building a Perturbation-Aware LLM for Multimodal In Silico Perturbation Modelling",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/pdFOyIjl",
+   "technologies": [
+    "python",
+    "pytorch"
+   ],
+   "interests": [
+    "bioinformatics",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-204",
+   "split": "test",
+   "org": "GNU Compiler Collection (GCC)",
+   "title": "Extending C++ Support in GCC Static Analyzer",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/iiWwmSYh",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "static analysis",
+    "compilers"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-205",
+   "split": "test",
+   "org": "Kubeflow",
+   "title": "OptimizationJob CRD for Hyperparameter Optimization in Kubeflow Katib",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/ooUv0Oe8",
+   "technologies": [
+    "go",
+    "kubernetes",
+    "python"
+   ],
+   "interests": [
+    "machine learning",
+    "cloud native"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-206",
+   "split": "test",
+   "org": "Internet Archive",
+   "title": "From Messy Subjects to First-Class Genre Tags",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/kyV10UAf",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "libraries",
+    "data cleaning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-207",
+   "split": "test",
+   "org": "SageMath",
+   "title": "Gabow Arborescence Packing In SageMath",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/pDzlmkKR",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "graph theory",
+    "mathematics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-208",
+   "split": "test",
+   "org": "OpenStreetMap",
+   "title": "DuckDB Backend for Martin TileServer",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/n1dwnwQY",
+   "technologies": [
+    "rust"
+   ],
+   "interests": [
+    "maps",
+    "databases"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-209",
+   "split": "test",
+   "org": "SymPy",
+   "title": "Extending Rule-Based Symbolic Integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PTyd6ZXi",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "mathematics",
+    "symbolic computation"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-210",
+   "split": "test",
+   "org": "Invesalius",
+   "title": "Robust 3D Mask Engine Performance and Interactive Stability",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/WqyjtNKE",
+   "technologies": [
+    "python",
+    "cython"
+   ],
+   "interests": [
+    "medical imaging",
+    "3d graphics"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-211",
+   "split": "test",
+   "org": "QC-Devs",
+   "title": "Electrostatics Beyond Atomic Charges: A High-Performance Multipole Engine for FFprime",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/oEZWlRnx",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "computational chemistry",
+    "scientific computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-212",
+   "split": "test",
+   "org": "Boa",
+   "title": "Garbage Collector Redesign and Integration",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/3Td1SaQr",
+   "technologies": [
+    "rust"
+   ],
+   "interests": [
+    "programming languages",
+    "memory management"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-213",
+   "split": "test",
+   "org": "FreeCAD",
+   "title": "TechDraw UX Overhaul",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/lne1ugHq",
+   "technologies": [
+    "c++",
+    "python"
+   ],
+   "interests": [
+    "cad",
+    "design tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-214",
+   "split": "test",
+   "org": "Alaska",
+   "title": "Dynamic DICOM Endpoints for Diomede",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/XFenGo3E",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "healthcare",
+    "medical imaging"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-215",
+   "split": "test",
+   "org": "Open Technologies Alliance - GFOSS",
+   "title": "Visual Studio Code plugin for CScout",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/cTncP3Km",
+   "technologies": [
+    "typescript",
+    "c"
+   ],
+   "interests": [
+    "developer tools",
+    "code analysis"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-216",
+   "split": "test",
+   "org": "JSON Schema",
+   "title": "Comprehensive Test Suite for Format Validation",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PSUr4vgB",
+   "technologies": [
+    "json"
+   ],
+   "interests": [
+    "testing",
+    "standards"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-217",
+   "split": "test",
+   "org": "Open Food Facts",
+   "title": "Canadian OLAP Integrated Database",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/5VCJ3qDe",
+   "technologies": [
+    "python",
+    "sql"
+   ],
+   "interests": [
+    "food",
+    "data engineering"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-218",
+   "split": "test",
+   "org": "Gemini CLI",
+   "title": "Behavioral evals, Quality, and the OSS Community",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/gbBxNmxJ",
+   "technologies": [
+    "typescript"
+   ],
+   "interests": [
+    "ai agents",
+    "testing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-219",
+   "split": "test",
+   "org": "Learning Unlimited",
+   "title": "Systematic Regression Test Expansion for ESP",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/w2lfRbJ0",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "testing",
+    "scientific computing"
+   ],
+   "confidence": "low"
+  },
+  {
+   "case": "p26-220",
+   "split": "test",
+   "org": "Joplin",
+   "title": "AI-Generated Note Graphs",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/qvspDcVq",
+   "technologies": [
+    "typescript"
+   ],
+   "interests": [
+    "note taking",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-221",
+   "split": "test",
+   "org": "Jenkins",
+   "title": "Continue AI-Powered Chatbot for Quick Access to Jenkins Resources",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/JQbe7wML",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "developer tools",
+    "ai"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-222",
+   "split": "test",
+   "org": "Unikraft",
+   "title": "Expanding the Unikraft Software Catalog",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/IM5uB3Gy",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "unikernels",
+    "cloud"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-223",
+   "split": "test",
+   "org": "Eclipse Foundation",
+   "title": "Eclipse ThreadX Getting Started: A Modern Board Enablement Framework",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/oQuTkW08",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "embedded systems",
+    "iot"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-224",
+   "split": "test",
+   "org": "GNU Image Manipulation Program",
+   "title": "New Shortcuts Editing Dialog",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/FOTN5k6d",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "design tools",
+    "user interfaces"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-225",
+   "split": "test",
+   "org": "Submitty",
+   "title": "AI/ML to Enhance and Streamline Manual/TA Grading",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/e3YU9deG",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "education",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-226",
+   "split": "test",
+   "org": "Typelevel",
+   "title": "A Faster Immutable List",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/WLcIITzr",
+   "technologies": [
+    "scala"
+   ],
+   "interests": [
+    "data structures",
+    "performance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-227",
+   "split": "test",
+   "org": "Wagtail",
+   "title": "Wagtail Starter Kit Upgrade Stabilization Modernization Developer Experience",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/hkP5QbW8",
+   "technologies": [
+    "python",
+    "django"
+   ],
+   "interests": [
+    "web development",
+    "developer tools"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-228",
+   "split": "test",
+   "org": "Ceph Foundation",
+   "title": "Kafka Security Project",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/vYB7JYWk",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "cloud storage",
+    "security"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-229",
+   "split": "test",
+   "org": "KolibriOS Project Team",
+   "title": "ExtX File System Improvement",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/XFZ3f9xX",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "file systems",
+    "operating systems"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-230",
+   "split": "test",
+   "org": "NumFOCUS",
+   "title": "Reduced Order Modelling with Neural Operators in Gridap.jl",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/MBivzW0z",
+   "technologies": [
+    "julia"
+   ],
+   "interests": [
+    "scientific computing",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-231",
+   "split": "test",
+   "org": "gprMax",
+   "title": "Building a Comprehensive Test Suite for gprMax",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/uGyoXWw9",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "physics simulation",
+    "testing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-232",
+   "split": "test",
+   "org": "ArduPilot",
+   "title": "ArduHumanoid: MAVLink - Controlled Humanoid Locomotion via ArduPilot SITL",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/sdJAUfpM",
+   "technologies": [
+    "python",
+    "c++"
+   ],
+   "interests": [
+    "robotics",
+    "drones"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-233",
+   "split": "test",
+   "org": "Blender Foundation",
+   "title": "Improved Mesh Smoothing for Blender",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/PAbcUvME",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "3d graphics",
+    "geometry"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-234",
+   "split": "test",
+   "org": "International Catrobat Association",
+   "title": "Multiplayer, IoT, and Home Assistant support via two MQTT bricks",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/Hy1Nuf2c",
+   "technologies": [
+    "kotlin",
+    "java"
+   ],
+   "interests": [
+    "education",
+    "iot"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-235",
+   "split": "test",
+   "org": "Ste||ar group",
+   "title": "Scalable Tracy Integration for HPX: Unified Task Lifecycle and Causal Tracing",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/g5NclTGx",
+   "technologies": [
+    "c++"
+   ],
+   "interests": [
+    "performance",
+    "parallel computing"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-236",
+   "split": "test",
+   "org": "CNCF",
+   "title": "OSCAL Document Signing and Verification in compliance-trestle",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/8Jn2MtsT",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "security",
+    "compliance"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-237",
+   "split": "test",
+   "org": "MetaBrainz Foundation Inc",
+   "title": "Integrate MusicBrainz events into ListenBrainz",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/zxdS1mT4",
+   "technologies": [
+    "python",
+    "typescript"
+   ],
+   "interests": [
+    "music",
+    "web development"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-238",
+   "split": "test",
+   "org": "Genome Assembly and Annotation",
+   "title": "Expand genome metadata in Ensembl with AI tools",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/TG4YNQYK",
+   "technologies": [
+    "python"
+   ],
+   "interests": [
+    "genomics",
+    "machine learning"
+   ],
+   "confidence": "high"
+  },
+  {
+   "case": "p26-239",
+   "split": "test",
+   "org": "PostgreSQL",
+   "title": "Reducing pg stat statements LWLock Contention",
+   "project_url": "https://summerofcode.withgoogle.com/programs/2026/projects/3bhCx5P6",
+   "technologies": [
+    "c"
+   ],
+   "interests": [
+    "databases",
+    "performance"
+   ],
+   "confidence": "high"
+  }
+ ]
+}

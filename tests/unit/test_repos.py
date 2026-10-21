@@ -125,6 +125,9 @@ def test_ideas_fetch_url_handles_google_docs() -> None:
     )
     assert ideas_fetch_url("javascript:alert(1)") is None
     assert ideas_fetch_url("https://example.org/ideas#top") == "https://example.org/ideas"
+    # A published document: `repos` read nothing for Learning Unlimited while `ideas` did.
+    published = "https://docs.google.com/document/d/e/2PACX-1vQHE4/pub"
+    assert ideas_fetch_url(published + "#h.x") == published
 
 
 def test_ideas_fetch_url_prefers_raw_github_content() -> None:

@@ -172,7 +172,14 @@ def test_recommend_path_asks_the_client_only_when_it_can_and_must(monkeypatch) -
 
     tools = _run(mcp_server.mcp.list_tools())
     schema = next(t.input_schema for t in tools if t.name == "gsoc_recommend_path")
-    assert set(schema["properties"]) == {"github_username", "technologies", "interests"}
+    assert set(schema["properties"]) == {
+        "github_username",
+        "technologies",
+        "interests",
+        "experience",
+        "hours_per_week",
+    }
+    assert calls["experience"] is None and calls["hours_per_week"] is None
 
 
 def test_http_request_lines_stay_out_of_the_mcp_log() -> None:

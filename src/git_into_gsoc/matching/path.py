@@ -1,0 +1,91 @@
+"""A short, ordered plan from where a contributor is to a first useful pull request.
+
+The steps change with experience: someone new to open source practises the
+pull request routine first and starts with documentation or tests, which the
+onboarding research finds is how most newcomers learn a codebase; someone
+experienced goes straight to the ideas and the mentors. Hours per week set
+the pace. Each step names the command that does it.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+from git_into_gsoc.matching.profile import ContributorProfile
+
+GUIDE = "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide"
+
+
+def _quote(name: str) -> str:
+    return '"' + name.replace('"', "") + '"'
+
+
+def learning_path(person: ContributorProfile, orgs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Steps for this person, built around their best-fitting organization."""
+    top = orgs[0] if orgs else None
+    name = _quote(top["name"]) if top else '"ORG"'
+    level = person.experience or "some"
+    learn = list((top or {}).get("skills_to_learn") or [])
+    steps: list[dict[str, Any]] = []
+
+    def add(step: str, why: str, command: str | None = None) -> None:
+        steps.append({"step": step, "why": why, "command": command})
+
+    if level == "new":
+        add(
+            "Practise the pull request routine once: fork, branch, commit, push, open a pull request.",
+            "Learning Git and a new codebase at the same time is the most common early stumble.",
+            f"Read {GUIDE}/06-first-contribution.md",
+        )
+    add(
+        f"Read the contributor guide and ideas page of {top['name'] if top else 'your top pick'}, "
+        "and join its chat.",
+        "Organizations look for people they have already seen in their community.",
+        f"git-into-gsoc org {name}",
+    )
+    add(
+        "Pick its most active repository, set it up, and run the tests.",
+        "Getting the project to build is the first real barrier; solve it before choosing an issue.",
+        f"git-into-gsoc repos {name}, then git-into-gsoc orient OWNER/REPO",
+    )
+    if level == "new":
+        add(
+            "Start with a documentation, test, or small bug issue nobody has claimed.",
+            "Small changes teach the review process without the risk of a large rewrite.",
+            f"git-into-gsoc issues --org {name}",
+        )
+    elif level == "some":
+        add(
+            "Take a good first issue, then a medium one in the area of an idea you like.",
+            "A second, larger change in the same area shows mentors you can grow there.",
+            f"git-into-gsoc issues --org {name}",
+        )
+    else:
+        add(
+            "Choose an idea, ask its mentors which issue would show you can do it, and review an "
+            "open pull request.",
+            "Reviews and a well-chosen issue show judgement as well as code.",
+            f"git-into-gsoc ideas {name}",
+        )
+    if learn:
+        add(
+            f"Learn {learn[0].split(' (')[0]} from the code that uses it in this project.",
+            f"Its ideas often ask for it: {', '.join(learn)}.",
+            "git-into-gsoc pointers OWNER/REPO#ISSUE",
+        )
+    add(
+        "Before proposals open, talk with a mentor about one idea in your own words.",
+        "A proposal built on earlier contact and merged work is what reviewers score.",
+        f"git-into-gsoc ideas {name}",
+    )
+    hours = person.hours_per_week
+    if hours and hours <= 8:
+        add(
+            f"At {hours} hours a week, aim for one small pull request every two weeks and a small "
+            "(about 90 hour) project.",
+            "Steady small changes beat a rushed large one.",
+            None,
+        )
+    for number, step in enumerate(steps, start=1):
+        step["n"] = number
+    return steps

@@ -33,6 +33,21 @@ jobs:
       - name: Refresh from live sources
         run: python -m git_into_gsoc.gsoc.snapshot
 
+      # Ideas pages and repository languages, used to explain and rank matches.
+      # Monthly (the first Monday, or when run by hand), so the data pull request
+      # does not open every week. The token only lists public repositories; ideas
+      # pages are fetched without it. Failed pages keep last month's evidence.
+      - name: Refresh ideas-page and repository evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ] || [ "$(date -u +%d)" -le 7 ]; then
+            python -m git_into_gsoc.matching.signals
+          else
+            echo "evidence refresh runs on the first Monday of the month"
+          fi
+
       - name: Open a pull request when the data changed
         env:
           GH_TOKEN: ${{ github.token }}
@@ -46,9 +61,9 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$branch"
           git add src/git_into_gsoc/data
-          git commit -m "chore(data): refresh the organization snapshot"
+          git commit -m "chore(data): refresh the organization snapshot and evidence"
           git push -f origin "$branch"
           gh pr create --base main --head "$branch" \
-            --title "chore(data): refresh the organization snapshot" \
-            --body "Weekly refresh of the embedded organization list and history from the official site and the community archive. Close and reopen this pull request to run CI (bot-created pull requests do not trigger workflows), then squash-merge." \
+            --title "chore(data): refresh the organization snapshot and evidence" \
+            --body "Weekly refresh of the embedded organization list and history from the official site and the community archive, and (on the first Monday of each month) the ideas-page and repository evidence used to rank matches. Close and reopen this pull request to run CI (bot-created pull requests do not trigger workflows); CI also runs the ranking benchmark (tests/unit/test_match_benchmark.py), so a red benchmark means the new data made recommendations worse. Then squash-merge." \
             || echo "pull request already open"

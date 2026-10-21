@@ -585,28 +585,58 @@ def orgs_cmd(
             + "; ".join(", ".join(matched[k]) for k in ("technologies", "topics") if matched[k])
             + ". Pass --tech or --topics to search differently."
         )
+    for note in data.get("read_as") or []:
+        console.print(f"[dim]{escape(note)}[/dim]")
     table = Table(title="GSoC organizations", caption=catalog["note"], show_lines=False)
-    table.add_column("Score", justify="right")
+    table.add_column("Fit", no_wrap=True)
     table.add_column("Organization", overflow="fold", max_width=28)
-    table.add_column("Fit", overflow="fold")
+    table.add_column("Why it fits", overflow="fold")
     table.add_column("Years", justify="right")
     table.add_column("Slots", no_wrap=True)
     for org in data["organizations"]:
-        fit = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
+        why = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
         table.add_row(
-            f"{org['match_score']:.0f}",
+            _fit_cell(org.get("fit")),
             org["name"],
-            "; ".join(fit) or "(no specific match)",
+            "; ".join(why) or "(no specific match)",
             str(len(org.get("years_active") or [])),
             _trend(org.get("projects_by_year") or {}),
         )
     console.print(table)
     if not data["organizations"]:
-        console.print("[yellow]No organizations matched.[/yellow] Try broader --tech/--topics.")
-    else:
-        console.print(
-            '[dim]Next: git-into-gsoc org "<name>" for ideas page, channels, and repos.[/dim]'
-        )
+        hint = data.get("hint") or "Try broader --tech or --topics."
+        console.print(f"[yellow]No organizations matched.[/yellow] {escape(hint)}")
+        return
+    _print_org_evidence(data["organizations"][:3])
+    if data.get("how_ranked"):
+        console.print(f"[dim]{data['how_ranked']}[/dim]")
+    console.print(
+        '[dim]Next: git-into-gsoc org "<name>" for ideas page, channels, and repos.[/dim]'
+    )
+
+
+_FIT_STYLE = {"strong": "green", "good": "cyan", "partial": "yellow"}
+
+
+def _fit_cell(fit: str | None) -> str:
+    return f"[{_FIT_STYLE[fit]}]{fit}[/]" if fit in _FIT_STYLE else ""
+
+
+def _print_org_evidence(orgs: list[dict[str, Any]]) -> None:
+    """Where each claim about the top organizations comes from, and what to watch for."""
+    for org in orgs:
+        lines = [*(org.get("evidence") or [])[:3], *(org.get("readiness") or [])[:2]]
+        cautions = list(org.get("caveats") or [])[:2]
+        learn = org.get("skills_to_learn") or []
+        if not (lines or cautions):
+            continue
+        console.print(f"\n[bold]{escape(org['name'])}[/bold]")
+        for line in lines:
+            console.print(f"  • {escape(line)}")
+        if learn:
+            console.print(f"  • Its ideas also ask for: {escape(', '.join(learn))}")
+        for line in cautions:
+            console.print(f"  [yellow]![/yellow] {escape(line)}")
 
 
 @app.command("org", rich_help_panel="Find an organization")
@@ -1193,17 +1223,25 @@ def profile_cmd(
     ),
     hours: int | None = typer.Option(None, "--hours", help="Hours per week you can give"),
     tz: str | None = typer.Option(None, "--tz", help="Your timezone, for example Asia/Kolkata"),
+    experience: str | None = typer.Option(
+        None,
+        "--experience",
+        "-e",
+        help="Your open source experience: new, some, or experienced. With --github and no "
+        "--experience, it is read from your merged pull requests.",
+    ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Show or save your profile. recommend and next use it when you give no flags."""
     toolkit = _toolkit()
-    if any([github, tech, interests, hours is not None, tz]):
+    if any([github, tech, interests, hours is not None, tz, experience]):
         data = toolkit.save_profile(
             github=github,
             technologies=split_csv(tech) or None,
             interests=split_csv(interests) or None,
             hours_per_week=hours,
             timezone=tz,
+            experience=experience,
         )
     else:
         data = toolkit.progress.profile()
@@ -1228,10 +1266,17 @@ def profile_cmd(
         ("interests", "Interests"),
         ("hours_per_week", "Hours per week"),
         ("timezone", "Timezone"),
+        ("experience", "Open source experience"),
     ):
         value = data.get(key)
         if value:
             lines.append(f"{label}: {', '.join(value) if isinstance(value, list) else value}")
+    inferred = data.get("experience_inferred") or {}
+    if inferred.get("level"):
+        lines.append(
+            f"Open source experience: {inferred['level']} (from {inferred['from']}; "
+            "set it with --experience)"
+        )
     console.print(Panel(Text.from_markup("\n".join(lines)), title="Your profile"))
     if data.get("warning"):
         console.print(f"[yellow]![/yellow] {data['warning']}")
@@ -1442,34 +1487,74 @@ def recommend_cmd(
     interests: str | None = typer.Option(
         None, "--interests", "-i", help="Topics you care about, comma-separated"
     ),
+    experience: str | None = typer.Option(
+        None,
+        "--experience",
+        "-e",
+        help="Your open source experience: new, some, or experienced (default: your profile)",
+    ),
+    hours: int | None = typer.Option(
+        None, "--hours", min=1, help="Hours a week you can give (default: your profile)"
+    ),
     output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Suggest organizations and starter issues from your saved profile or flags."""
+    """Suggest organizations, ideas, starter issues, and a learning path, with evidence."""
     data = _toolkit().recommend_path(
         username=github,
         technologies=split_csv(tech) or None,
         interests=split_csv(interests) or None,
+        experience=experience,
+        hours_per_week=hours,
     )
     if output == Output.json:
         _emit(data, output)
         return
     data = _markup_safe(data)
-    console.print(Panel.fit(data["evidence_note"], title="Recommendations"))
+    console.print(Panel.fit(data["program"]["note"], title="Recommendations"))
     if data.get("profile"):
         console.print(
             f"Profile: [bold]{data['profile'].get('login')}[/bold] "
             f"top={data['profile'].get('top_language')}"
         )
     used = ", ".join(data["technologies_used"] + data["interests_used"]) or "none"
-    console.print(f"Matching on: {escape(used)} ({data['profile_source']})")
+    level = data.get("experience") or {}
+    about = [f"Matching on: {escape(used)} ({data['profile_source']})"]
+    if level.get("level"):
+        about.append(f"experience: {level['level']} ({escape(str(level.get('from') or ''))})")
+    if data.get("hours_per_week"):
+        about.append(f"{data['hours_per_week']} hours a week")
+    console.print("; ".join(about))
+    for note in data.get("read_as") or []:
+        console.print(f"[dim]{escape(note)}[/dim]")
+    if data.get("hours_note"):
+        console.print(f"[yellow]![/yellow] {data['hours_note']}")
     table = Table(title="Organizations")
-    table.add_column("Score", justify="right")
+    table.add_column("Fit", no_wrap=True)
     table.add_column("Organization", overflow="fold", max_width=28)
-    table.add_column("Fit", overflow="fold")
+    table.add_column("Why it fits", overflow="fold")
     for org in data["recommended_orgs"][:8]:
-        fit = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
-        table.add_row(f"{org['match_score']:.0f}", org["name"], "; ".join(fit))
+        why = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
+        status = (org.get("participation") or {}).get("status")
+        name = org["name"] + (" [red](sitting out)[/red]" if status == "not_taking_part" else "")
+        table.add_row(_fit_cell(org.get("fit")), name, "; ".join(why[:4]))
     console.print(table)
+    _print_org_evidence(data["recommended_orgs"][:3])
+    if data.get("ideas_that_fit"):
+        console.print("\n[bold]Ideas that fit you[/bold]")
+        for group in data["ideas_that_fit"]:
+            console.print(f"[bold]{escape(group['org'])}[/bold] [dim]{escape(group['note'])}[/dim]")
+            for idea in group["ideas"]:
+                parts = []
+                if idea["you_have"]:
+                    parts.append("you know " + ", ".join(idea["you_have"]))
+                if idea["matches_interests"]:
+                    parts.append("about " + ", ".join(idea["matches_interests"]))
+                if idea["you_would_learn"]:
+                    parts.append("you would learn " + ", ".join(idea["you_would_learn"]))
+                parts += idea["stated"]
+                console.print(
+                    f"  • {escape(idea['title'])} [dim]({escape('; '.join(parts))})[/dim]"
+                )
     if data["starter_issues"]:
         caption = f"From {data['starter_issue_scope']}." if data.get("starter_issue_scope") else ""
         if data.get("starter_issues_hidden"):
@@ -1481,12 +1566,14 @@ def recommend_cmd(
         issues.add_column("Status")
         issues.add_column("Issue", overflow="fold")
         issues.add_column("Title", overflow="fold")
+        issues.add_column("Fits you", overflow="fold")
         for issue in data["starter_issues"]:
             status = issue["availability"]
             issues.add_row(
                 f"[{_STATUS_STYLE.get(status, '')}]{status}[/]",
                 f"{issue['repo']}#{issue['number']}",
                 escape(issue["title"]),
+                escape("; ".join(issue.get("fits_you") or [])),
             )
         console.print(issues)
     elif data.get("starter_issue_error"):
@@ -1498,9 +1585,14 @@ def recommend_cmd(
             "[dim]No free starter issue found right now in "
             f"{data['starter_issue_scope']}. Try `git-into-gsoc repos ORG` for one of them.[/dim]"
         )
-    console.print("\n[bold]Next steps[/bold]")
-    for step in data["next_steps"]:
-        console.print(f"  → {step}")
+    if data.get("learning_path"):
+        console.print("\n[bold]Your path from here[/bold]")
+        for step in data["learning_path"]:
+            console.print(f"  {step['n']}. {escape(step['step'])}")
+            console.print(f"     [dim]{escape(step['why'])}[/dim]")
+            if step.get("command"):
+                console.print(f"     → {escape(step['command'])}")
+    console.print(f"\n[dim]{data['evidence_note']}[/dim]")
 
 
 _FINDING_MARK = {"pass": "[green]✓[/green]", "warn": "[yellow]![/yellow]", "fail": "[red]✗[/red]"}

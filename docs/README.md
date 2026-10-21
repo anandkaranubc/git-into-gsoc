@@ -30,6 +30,7 @@ Start with [installation](guide/02-install.md), run `git-into-gsoc start`, then 
 - [Configuration and local data](configuration.md): tokens, settings, cache, and progress files.
 - [Troubleshooting](troubleshooting.md): common errors and what to try next.
 - [Sources and limitations](sources.md): where results come from and what they cannot tell you.
+- [How recommendations work](recommendations.md): how fit is decided, the evidence behind it, and how well it works.
 - [Use it in your AI assistant](assistants.md): the plugin or extension for each assistant, one-click buttons, updates, and removal.
 - [MCP reference](mcp.md): tools available to assistants.
 - [Privacy](privacy.md): what the tool reads, what it saves on your computer, and what it never sends.

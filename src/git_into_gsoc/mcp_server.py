@@ -191,12 +191,18 @@ def gsoc_search_orgs(
 ) -> str:
     """Rank GSoC mentoring organizations by fit with a contributor's skills and interests.
 
-    technologies/topics: comma-separated (e.g. "python,rust"; aliases like js/golang/ml work).
-    With no filters at all, the saved profile's languages and interests are used and
-    `matched_on.from_profile` is true.
+    technologies/topics: comma-separated, in the person's own words ("python,rust",
+    "healthcare", "web dev"); synonyms and common misspellings are understood and
+    `read_as` says when a word was corrected. With no filters at all, the saved profile is
+    used and `matched_on.from_profile` is true; saved experience and hours always apply.
     year: target program year (default: configured target, 2027). If that year's orgs are not
-    announced yet, the latest official list is used and `catalog.note` says so.
-    Each org includes ideas_url, guide_url, github_orgs, channels, and slot history.
+    announced yet, the latest official list is used and `catalog.note` says so: say clearly
+    that these organizations are not confirmed for the coming year.
+    Each org has `fit` (strong, good, or partial), `evidence` (why, each line naming its
+    source: official listing, ideas page, or GitHub repositories), `readiness`, `caveats`,
+    and `skills_to_learn`, plus ideas_url, guide_url, github_orgs, channels, and slot
+    history. `match_score` only orders results: never present it as a chance of acceptance.
+    When nothing matches, `hint` says why (for example, the org took part in earlier years).
     """
     return _dump(
         toolkit().match_orgs(
@@ -437,6 +443,10 @@ class PathAnswers(BaseModel):
     technologies: str = Field("", description="Languages or tools you know, comma-separated")
     interests: str = Field("", description="Topics you care about, comma-separated")
     github_username: str = Field("", description="Your GitHub username (optional)")
+    experience: str = Field(
+        "", description="Open source experience: new, some, or experienced (optional)"
+    )
+    hours_per_week: int = Field(0, description="Hours a week you can give (optional)")
 
 
 def _client_can_elicit(ctx: Any) -> bool:
@@ -457,10 +467,23 @@ async def gsoc_recommend_path(
     github_username: str = "",
     technologies: str = "",
     interests: str = "",
+    experience: str = "",
+    hours_per_week: int = 0,
     ctx: Context[Any, Any] | None = None,
 ) -> str:
-    """Personalized starting path: profile languages, matching orgs, starter issues.
+    """Personalized starting path: matching orgs with evidence, ideas that fit, starter
+    issues, and a learning path.
 
+    experience: new, some, or experienced (default: the saved profile, else read from the
+    person's merged pull requests when a GitHub username is known).
+    hours_per_week: hours a week they can give (default: the saved profile).
+    Returns `program` (whether the organizations are confirmed for the target year or only
+    took part last year), `recommended_orgs` (each with fit, evidence naming its source,
+    caveats, skills_to_learn, and `participation` when the org posted that it will or will
+    not take part), `ideas_that_fit` (from each top org's latest ideas page: what the person
+    already knows and what they would learn), `starter_issues` (each with `fits_you`), and
+    `learning_path` (ordered steps, each with the command that does it). Quote the evidence;
+    never turn fit into a chance of acceptance.
     With no arguments and no saved profile, asks the person what they know and care
     about through the client (MCP elicitation) when the client supports it; otherwise
     it falls back to the saved profile or GitHub languages.
@@ -475,6 +498,8 @@ async def gsoc_recommend_path(
             technologies = answer.data.technologies
             interests = answer.data.interests
             github_username = answer.data.github_username
+            experience = answer.data.experience or experience
+            hours_per_week = answer.data.hours_per_week or hours_per_week
     tech = [t.strip() for t in technologies.split(",") if t.strip()]
     interests_list = [t.strip() for t in interests.split(",") if t.strip()]
     return _call(
@@ -482,6 +507,8 @@ async def gsoc_recommend_path(
         username=github_username or None,
         technologies=tech or None,
         interests=interests_list or None,
+        experience=experience or None,
+        hours_per_week=hours_per_week if hours_per_week and hours_per_week > 0 else None,
     )
 
 

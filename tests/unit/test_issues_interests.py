@@ -9,11 +9,24 @@ from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.service import GSoCToolkit
 
 ORGS = [
-    OrgSummary(name="Apache", github_orgs=["apache"], match_reasons=["Uses c++"]),
-    OrgSummary(name="ArduPilot", github_orgs=["ArduPilot"], match_reasons=["Topic: robotics"]),
-    OrgSummary(name="Open Robotics", github_orgs=["osrf"], match_reasons=["Topic: robotics"]),
+    OrgSummary(name="Apache", github_orgs=["apache"], match_reasons=["Uses C++"], interest_fit=0.0),
     OrgSummary(
-        name="JdeRobot", github_orgs=["JdeRobot"], match_reasons=["Related topic: robotics"]
+        name="ArduPilot",
+        github_orgs=["ArduPilot"],
+        match_reasons=["Topic: Robotics"],
+        interest_fit=1.0,
+    ),
+    OrgSummary(
+        name="Open Robotics",
+        github_orgs=["osrf"],
+        match_reasons=["Topic: Robotics"],
+        interest_fit=1.0,
+    ),
+    OrgSummary(
+        name="JdeRobot",
+        github_orgs=["JdeRobot"],
+        match_reasons=["Related topic: Robotics"],
+        interest_fit=0.6,
     ),
 ]
 

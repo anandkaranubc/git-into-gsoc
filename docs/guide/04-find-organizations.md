@@ -70,10 +70,14 @@ Next thing to investigate:
 ## Optional recommendations
 
 ```bash
-git-into-gsoc recommend --tech python --interests science
+git-into-gsoc recommend --tech python --interests science --experience new --hours 10
 ```
 
-Adding `--github YOUR_USERNAME` uses your recent public repositories to infer your main language and saves a profile locally. A new or empty GitHub profile is fine; supplying `--tech` yourself is enough. The starter issues it lists come from repositories owned by GSoC organizations that use your language.
+Each organization comes with a fit (strong, good, or partial) and the evidence for it, such as "topic tag 'astronomy' on its official GSoC listing" or "main language of 17 of its 28 GitHub repositories". Read the caveats too: an ideas page where nearly every idea is hard, or ideas too big for your hours. You also get ideas from each top organization's latest ideas page that fit what you know, with the skills each would teach you, starter issues with what in them fits you, and a short path with a command for each step.
+
+Adding `--github YOUR_USERNAME` uses your recent public repositories to infer your main language, and your merged pull requests to estimate your experience, and saves a profile locally. A new or empty GitHub profile is fine; supplying `--tech` yourself is enough. `--experience` is `new`, `some`, or `experienced`. The starter issues it lists come from repositories owned by the recommended organizations, then other GSoC organizations that use your language.
+
+Fit says how well the work matches you, not your chance of being selected. Until Google announces the coming year's organizations, the list shows last year's participants, and none is confirmed. See [how recommendations work](../recommendations.md).
 
 ## If results are missing or unhelpful
 

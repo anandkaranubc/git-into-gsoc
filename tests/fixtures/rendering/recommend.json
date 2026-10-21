@@ -83,7 +83,25 @@
         "Accepted in 2026",
         "Veteran mentoring org (11 years)",
         "27 projects in 2026"
-      ]
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
+      ],
+      "participation": {
+        "status": "not_taking_part",
+        "url": "https://example.org/post",
+        "title": "No GSoC 2027"
+      }
     },
     {
       "name": "MDAnalysis",
@@ -155,6 +173,19 @@
         "Accepted in 2026",
         "Mentored 5 of the last 5 years",
         "3 projects in 2026"
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
       ]
     },
     {
@@ -223,6 +254,19 @@
         "Accepted in 2026",
         "Mentored 4 of the last 5 years",
         "3 projects in 2026"
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
       ]
     },
     {
@@ -293,6 +337,19 @@
         "Accepted in 2026",
         "Veteran mentoring org (10 years)",
         "26 projects in 2026"
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
       ]
     },
     {
@@ -373,6 +430,19 @@
         "Accepted in 2026",
         "Veteran mentoring org (11 years)",
         "23 projects in 2026"
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
       ]
     },
     {
@@ -443,6 +513,19 @@
         "Accepted in 2026",
         "Mentored 5 of the last 5 years",
         "33 projects in 2026"
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
       ]
     },
     {
@@ -510,6 +593,19 @@
         "Accepted in 2026",
         "Mentored 4 of the last 5 years",
         "15 projects in 2026"
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
       ]
     },
     {
@@ -594,6 +690,19 @@
         "Accepted in 2026",
         "Veteran mentoring org (11 years)",
         "7 projects in 2026"
+      ],
+      "fit": "strong",
+      "evidence": [
+        "Topic Astronomy and space: topic tag 'astronomy' on its official GSoC listing"
+      ],
+      "readiness": [
+        "12 ideas on its 2026 ideas page"
+      ],
+      "caveats": [
+        "Its ideas page could not be read automatically; open it to see the work"
+      ],
+      "skills_to_learn": [
+        "C++ (3 of 9 ideas)"
       ]
     }
   ],
@@ -605,5 +714,58 @@
     "Make one meaningful contribution before writing a proposal",
     "Read Google's AI guidance and each organization's AI policy"
   ],
-  "evidence_note": "Organization rankings use the latest official list plus archive history. Next year's organizations are not final until Google announces them."
+  "evidence_note": "Organization rankings use the latest official list plus archive history. Next year's organizations are not final until Google announces them.",
+  "read_as": [
+    "Read 'pyhton' as 'python'."
+  ],
+  "experience": {
+    "level": "new",
+    "from": "you said so"
+  },
+  "hours_per_week": 8,
+  "hours_note": "At 8 hours a week, a small project takes about 12 weeks.",
+  "program": {
+    "target_year": 2027,
+    "list_year": 2026,
+    "confirmed": false,
+    "note": "Google has not announced the GSoC 2027 organizations yet."
+  },
+  "ideas_that_fit": [
+    {
+      "org": "NumFOCUS",
+      "ideas_url": "https://example.org/ideas",
+      "year": 2026,
+      "note": "From its GSoC 2026 ideas page.",
+      "ideas": [
+        {
+          "title": "Improve the docs site",
+          "year": 2026,
+          "source": "https://example.org/ideas",
+          "you_have": [
+            "CSS"
+          ],
+          "you_would_learn": [
+            "React"
+          ],
+          "matches_interests": [
+            "Accessibility"
+          ],
+          "stated": [
+            "stated difficulty: easy",
+            "small (90 hours)"
+          ]
+        }
+      ]
+    }
+  ],
+  "learning_path": [
+    {
+      "n": 1,
+      "step": "Read the contributor guide.",
+      "why": "Organizations look for people they have seen.",
+      "command": "git-into-gsoc org \"X\""
+    }
+  ],
+  "starter_issue_scope": "the recommended organizations above",
+  "starter_issues_hidden": 0
 }

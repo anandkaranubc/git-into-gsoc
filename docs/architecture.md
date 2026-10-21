@@ -28,7 +28,20 @@ skills/git-into-gsoc/SKILL.md     mcp_server.py          cli.py
                                  http_client.py  (one pooled, cached, retrying client)
 ```
 
-Scoring lives in `scoring/` and is pure Python with no network, so it is easy to test and adjust.
+Scoring lives in `scoring/` and `matching/` and is pure Python with no network, so it is easy to test and adjust.
+
+`matching/` decides how well an organization, repository, issue, or idea fits one person ([how recommendations work](recommendations.md)):
+
+| Module | What it does |
+|---|---|
+| `concepts.py` | The vocabulary: about 150 skills and subjects, their spellings, broader and related concepts |
+| `profile.py` | Reads what a person typed into concepts, with experience and hours |
+| `signals.py` | Builds `data/org_signals.json` (ideas pages and repository languages) once a month, and loads it offline |
+| `orgs.py` | Each organization's concepts, each with a strength and the evidence behind it |
+| `rank.py` | Fit, ordering, caveats, and diversity across interests |
+| `ideas.py`, `issues.py`, `path.py` | Ideas that fit, personal issue order, and the learning path |
+
+`scripts/eval_matching.py` measures the ranking against the datasets in `evals/`, and `tests/unit/test_match_benchmark.py` keeps it from getting worse.
 
 ### Entry points
 
@@ -83,7 +96,8 @@ Scoring lives in `scoring/` and is pure Python with no network, so it is easy to
 | Choice | Why |
 |---|---|
 | One facade for CLI and MCP | A fix or feature reaches both at once; the docs describe one behavior. |
-| Rules-based scoring, not machine learning | Scores are explainable. Every result lists its reasons, and tests can pin them. |
+| Rules-based scoring, not machine learning | Scores are explainable. Every result lists its reasons, and tests can pin them. Weights are tuned on the dev half of a benchmark and checked on the test half. |
+| A vocabulary, not embeddings | A hand-kept concept list explains every match ("healthcare" found "radiology") and adds no model download; the assistant reading the output can still judge the text. |
 | Disk cache with revalidation | Assistants retry and loop. Caching keeps the GitHub rate limit usable and makes repeated commands fast. |
 | Official list first, archive second | The official site is authoritative for a year; the archive adds history and project titles. The `catalog.note` field always says which one you got. |
 | Estimates are labeled | Future program dates are projections. The data says `dates_are_official: false` and the CLI shows a window. |
@@ -94,7 +108,9 @@ Scoring lives in `scoring/` and is pure Python with no network, so it is easy to
 
 **A command or MCP tool.** Add a method to `GSoCToolkit` in `service.py` that returns a dictionary. Expose it in `mcp_server.py` with a docstring that explains the parameters, because assistants read that text. Add a CLI command in `cli.py` with help text on every option. Write tests with fixtures, then update `docs/cli.md`, `docs/mcp.md`, and the skill references.
 
-**A scoring signal.** Edit the relevant function in `scoring/` (`org_match.py`, `health.py`, `issues.py`) or the helpers in `github/repos.py`. Append a human-readable reason whenever you change a score, and add a unit test for the new case.
+**A scoring signal.** Edit the relevant function in `scoring/` (`health.py`, `issues.py`), `matching/`, or the helpers in `github/repos.py`. Append a human-readable reason whenever you change a score, and add a unit test for the new case. For organization ranking, run `python scripts/eval_matching.py --split dev` before and after; keep the test half for a final check.
+
+**A word or subject.** Add a spelling to an existing concept in `matching/concepts.py`, or a new concept with its broader and related ones. Put words that are also ordinary English in `tag_only`, so they never match inside a description.
 
 **A journey phase.** Add it to `JourneyPhase` in `models.py` and `PHASE_GUIDES` in `guidance.py`, then update the phase table in the skill and the docs.
 

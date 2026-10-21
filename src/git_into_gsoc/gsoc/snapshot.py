@@ -7,8 +7,8 @@ source is down, and never needs the 15 MB archive just to rank organizations:
 * ``org_history.json``: every organization that ever participated, with its
   archive slug and the number of accepted projects per year.
 * ``official_orgs.json``: the most recent official accepted-organization list
-  (name, tags, links, channels), used only when the live site and the
-  archive are both unavailable.
+  (name, tags, description, links, channels), used when the live site and the
+  archive are both unavailable, and by ranking for the description text.
 
 Refresh before a release with ``python -m git_into_gsoc.gsoc.snapshot``.
 """
@@ -29,6 +29,7 @@ _OFFICIAL_FIELDS = (
     "name",
     "slug",
     "tagline",
+    "description",
     "categories",
     "topic_tags",
     "tech_tags",
@@ -89,10 +90,21 @@ def build_history(archive: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return out
 
 
+# Descriptions are matched against what people say they care about; the first
+# part says what an organization works on, so the rest is not needed offline.
+DESCRIPTION_LIMIT = 1200
+
+
 def build_official(raw_orgs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     # The official API lists organizations in a different order on every call; sorting
     # keeps an unchanged list byte-identical.
     kept = [{k: org.get(k) for k in _OFFICIAL_FIELDS if org.get(k) is not None} for org in raw_orgs]
+    for org in kept:
+        text = " ".join(str(org.get("description") or "").split())
+        if len(text) > DESCRIPTION_LIMIT:
+            text = text[:DESCRIPTION_LIMIT].rsplit(" ", 1)[0] + " …"
+        if text:
+            org["description"] = text
     return sorted(kept, key=lambda org: (str(org.get("slug") or ""), str(org.get("name") or "")))
 
 

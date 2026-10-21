@@ -42,6 +42,10 @@ def api() -> respx.MockRouter:
         router.get("https://api.github.com/search/issues").mock(
             return_value=httpx.Response(200, json={"items": []})
         )
+        # recommend checks its top organizations' wiki home pages for posts about the year.
+        router.get(url__regex=r"https://api\.github\.com/(orgs|users)/[^/]+/repos").mock(
+            return_value=httpx.Response(200, json=[])
+        )
         yield router
 
 

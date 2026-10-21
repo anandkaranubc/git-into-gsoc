@@ -81,6 +81,17 @@ from git_into_gsoc.gsoc.project_ideas import (
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
+from git_into_gsoc.matching.ideas import ideas_for
+from git_into_gsoc.matching.issues import personalize
+from git_into_gsoc.matching.path import learning_path
+from git_into_gsoc.matching.profile import (
+    EXPERIENCE_HELP,
+    EXPERIENCE_LEVELS,
+    ContributorProfile,
+    build_profile,
+    effective_experience,
+)
+from git_into_gsoc.matching.signals import load_signals, signals_for
 from git_into_gsoc.models import (
     Availability,
     ContactChannel,
@@ -123,9 +134,6 @@ BEFORE_YOU_COMMENT = [
 # Project files that say how to install and test, in the order they are trusted.
 _MANIFESTS = ("package.json", "pyproject.toml", "setup.py", "Cargo.toml", "go.mod", "Gemfile")
 
-# Match reasons from an organization's own topic tags or category; a passing mention in
-# its description (LLVM mentions "embedded") is too weak to count as an interest match.
-_TOPIC_REASONS = ("Topic", "Related topic", "Category")
 # Beginner labels GSoC organizations use under other names ("Starter" at Learning
 # Unlimited), searched when --org names a few organizations.
 _COMMON_BEGINNER_LABELS = (
@@ -136,6 +144,22 @@ _COMMON_BEGINNER_LABELS = (
     "easy",
     "first-timers-only",
 )
+# An organization counts as matching someone's interests from this interest fit up; a
+# passing mention in its description (LLVM mentions "embedded") stays below it.
+INTEREST_MATCH = 0.5
+HOW_RANKED = (
+    "Fit compares your skills and interests with each organization's official listing, its "
+    "ideas page, and its GitHub repositories; every reason names its source. It says how well "
+    "the work matches you, not your chance of being accepted. See docs/recommendations.md."
+)
+
+
+def _int_or_none(value: Any) -> int | None:
+    try:
+        number = int(value)
+    except (TypeError, ValueError):
+        return None
+    return number if number > 0 else None
 
 
 # Where a newcomer should say hello, best first. A contact email reaches the
@@ -267,17 +291,19 @@ class GSoCToolkit:
         limit: int = 10,
     ) -> dict[str, Any]:
         from_profile = False
+        saved = self.progress.profile()
         if not (query or technologies or topics or category):
             # No filters: rank for the person, as recommend and next do.
-            saved = self.progress.profile()
             technologies = list(saved.get("technologies") or []) or None
             topics = list(saved.get("interests") or []) or None
             from_profile = bool(technologies or topics)
-        catalog, results = self.gsoc.search_organizations(
+        catalog, results, person = self.gsoc.rank_organizations(
             query=query,
             technologies=technologies,
             topics=topics,
             category=category,
+            experience=effective_experience(saved)[0],
+            hours_per_week=_int_or_none(saved.get("hours_per_week")),
             year=year,
             limit=limit,
         )
@@ -287,10 +313,42 @@ class GSoCToolkit:
                 "technologies": list(technologies or []),
                 "topics": list(topics or []),
                 "from_profile": from_profile,
+                "experience": person.experience,
+                "hours_per_week": person.hours_per_week,
             },
+            "read_as": person.notes,
             "count": len(results),
             "organizations": [r.model_dump(exclude={"recent_projects"}) for r in results],
+            "how_ranked": HOW_RANKED,
+            "hint": self._empty_search_hint(query, catalog.year) if not results else None,
         }
+
+    def _empty_search_hint(self, query: str | None, list_year: int) -> str:
+        """Why nothing matched: often the name is an organization from an earlier year."""
+        default = "Try broader --tech or --topics, or fewer words in --query."
+        if not query:
+            return default
+        try:
+            name = self.gsoc.resolve_org_name(query)
+        except GigError:
+            return default
+        current = {o.name for o in self.gsoc.catalog(None)[1]}
+        if not name or name in current:
+            return default
+        years = sorted(
+            int(y)
+            for y in ((self.gsoc._history_for(name) or {}).get("years") or {})
+            if str(y).isdigit()
+        )
+        if not years:
+            return default
+        shown = ", ".join(str(y) for y in years[-5:])
+        return (
+            f"{name} took part in GSoC in {shown}, but it is not on the official {list_year} "
+            "list. Organizations apply again every year; check "
+            "https://summerofcode.withgoogle.com when the next list is published, and run "
+            f'`git-into-gsoc org "{name}"` to see its history.'
+        )
 
     def org_details(self, name: str, year: int | None = None) -> dict[str, Any]:
         org = self.gsoc.get_organization(name, year=year)
@@ -455,16 +513,8 @@ class GSoCToolkit:
             return {}, [], "GSoC org data unavailable; searched all of GitHub."
         owner_names = {gh.lower(): org.name for org in orgs for gh in org.github_orgs}
         if topics:
-            # Only organizations that match an interest, when there are enough of them.
-            wanted = [t.lower() for t in topics]
-            fitting = [
-                o
-                for o in ranked
-                if any(
-                    r.startswith(_TOPIC_REASONS) and any(t in r.lower() for t in wanted)
-                    for r in o.match_reasons
-                )
-            ]
+            # Only organizations whose work matches the interests, when there are enough.
+            fitting = [o for o in ranked if (o.interest_fit or 0.0) >= INTEREST_MATCH]
             if len([o for o in fitting if o.github_orgs]) >= 3:
                 ranked = fitting
             else:
@@ -528,6 +578,7 @@ class GSoCToolkit:
             )
 
         cutoff = datetime.now(UTC) - timedelta(days=365)
+        person = self._saved_person(technologies=[language] if language else None)
         leads: list[RepoLead] = []
         for owner, via in [*((o, None) for o in owners), *linked_owners]:
             try:
@@ -551,7 +602,11 @@ class GSoCToolkit:
                 beginner = counts.get(full.lower(), 0)
                 in_ideas = full.lower() in mentioned or full.lower() in linked_repos
                 score, reasons = repo_lead_score(
-                    repo, beginner_issues=beginner, ideas_mention=in_ideas, language=language
+                    repo,
+                    beginner_issues=beginner,
+                    ideas_mention=in_ideas,
+                    language=language,
+                    person=person,
                 )
                 if via:
                     reasons.append(f"Linked from the umbrella ideas page ({via})")
@@ -832,7 +887,8 @@ class GSoCToolkit:
             "labels_used": labels_used,
             "note": note,
             "count": len(issues),
-            "issues": [_issue_dict(i) for i in issues],
+            # What in each issue fits the saved profile; free issues stay first.
+            "issues": personalize([_issue_dict(i) for i in issues], self._saved_person()),
             "before_you_comment": BEFORE_YOU_COMMENT,
             "next_steps": [] if issues else _when_no_issues(language, org=asked_org, repo=repo),
         }
@@ -888,8 +944,15 @@ class GSoCToolkit:
 
     def profile_from_github(self, username: str) -> dict[str, Any]:
         profile = self.github.infer_profile_languages(username)
+        merged = self.github.merged_pull_requests_elsewhere(username)
+        if merged is not None:
+            profile["merged_prs_elsewhere"] = merged
         self.progress.set_profile(
-            github=username, **{k: profile.get(k) for k in ("top_language", "languages", "bio")}
+            github=username,
+            **{
+                k: profile.get(k)
+                for k in ("top_language", "languages", "bio", "merged_prs_elsewhere")
+            },
         )
         return profile
 
@@ -901,6 +964,7 @@ class GSoCToolkit:
         interests: list[str] | None = None,
         hours_per_week: int | None = None,
         timezone: str | None = None,
+        experience: str | None = None,
     ) -> dict[str, Any]:
         """Save the self-profile that personalises recommendations and `next`.
 
@@ -909,6 +973,11 @@ class GSoCToolkit:
         that does not exist is still an error.
         """
         warning = None
+        if experience is not None and experience.strip().lower() not in EXPERIENCE_LEVELS:
+            raise InputError(
+                f"Unknown experience level '{experience}'.",
+                hint="Use one of: " + ", ".join(EXPERIENCE_LEVELS) + f" ({EXPERIENCE_HELP}).",
+            )
         if github:
             login = validate_login(github)
             try:
@@ -926,13 +995,34 @@ class GSoCToolkit:
             interests=[plain_skill(t) for t in interests or []] or None,
             hours_per_week=hours_per_week,
             timezone=timezone,
+            experience=experience.strip().lower() if experience else None,
         )
         profile = self.progress.profile()
+        level, source = effective_experience(profile)
+        if level and not profile.get("experience"):
+            profile["experience_inferred"] = {"level": level, "from": source}
         if warning:
             profile["warning"] = warning
         if hours_per_week is not None and hours_note(hours_per_week):
             profile["hours_note"] = hours_note(hours_per_week)
         return profile
+
+    def _saved_person(
+        self,
+        *,
+        technologies: list[str] | None = None,
+        interests: list[str] | None = None,
+        experience: str | None = None,
+        hours_per_week: int | None = None,
+    ) -> ContributorProfile:
+        """The person as saved, with any of the given values in place of the saved ones."""
+        saved = self.progress.profile()
+        return build_profile(
+            technologies=technologies or list(saved.get("technologies") or []),
+            interests=interests or list(saved.get("interests") or []),
+            experience=experience or effective_experience(saved)[0],
+            hours_per_week=hours_per_week or _int_or_none(saved.get("hours_per_week")),
+        )
 
     def recommend_path(
         self,
@@ -940,7 +1030,21 @@ class GSoCToolkit:
         username: str | None = None,
         technologies: list[str] | None = None,
         interests: list[str] | None = None,
+        experience: str | None = None,
+        hours_per_week: int | None = None,
+        check_posts: bool = True,
     ) -> dict[str, Any]:
+        """Organizations, ideas, starter issues, and a learning path for one person.
+
+        Every organization comes with its fit, the evidence for it, and caveats.
+        With `check_posts`, the top five are checked for posts saying they will not
+        take part in the coming year (one search each).
+        """
+        if experience is not None and experience.strip().lower() not in EXPERIENCE_LEVELS:
+            raise InputError(
+                f"Unknown experience level '{experience}'.",
+                hint="Use one of: " + ", ".join(EXPERIENCE_LEVELS) + f" ({EXPERIENCE_HELP}).",
+            )
         saved = self.progress.profile()
         technologies = [plain_skill(t) for t in technologies or []] or None
         interests = [plain_skill(t) for t in interests or []] or None
@@ -960,18 +1064,41 @@ class GSoCToolkit:
             top = profile.get("top_language")
             if top and top.lower() not in {t.lower() for t in techs}:
                 techs.insert(0, top)
+            saved = self.progress.profile()
         if not (techs or wants):
             source = "none"
+        level, level_source = (
+            (experience.strip().lower(), "you said so")
+            if experience
+            else effective_experience(saved)
+        )
+        hours = hours_per_week or _int_or_none(saved.get("hours_per_week"))
 
-        orgs = self.match_orgs(technologies=techs or None, topics=wants or None, limit=8)[
-            "organizations"
+        target = self.settings.target_year
+        catalog, ranked, person = self.gsoc.rank_organizations(
+            technologies=techs or None,
+            topics=wants or None,
+            experience=level,
+            hours_per_week=hours,
+            limit=8,
+        )
+        orgs = [o.model_dump(exclude={"recent_projects"}) for o in ranked]
+        if check_posts and orgs:
+            # One search each; without a token GitHub allows ten a minute, shared with
+            # the issue search below.
+            checked = 5 if self.settings.resolve_github_token() else 3
+            orgs = self.check_participation(orgs, year=target, check=checked)
+        taking_part = [
+            o for o in orgs if (o.get("participation") or {}).get("status") != "not_taking_part"
         ]
+        ideas = self._ideas_that_fit(taking_part[:3], person)
+
         issue_language = techs[0] if techs else None
         issues: list[dict[str, Any]] = []
         issue_error: dict[str, str] | None = None
         issue_scope = None
         hidden = 0
-        owners = {o["github_orgs"][0]: o["name"] for o in orgs if o.get("github_orgs")}
+        owners = {o["github_orgs"][0]: o["name"] for o in taking_part if o.get("github_orgs")}
         if issue_language or owners:
             try:
                 if owners:
@@ -994,16 +1121,38 @@ class GSoCToolkit:
                         if issue_scope
                         else f"GSoC organizations that use {issue_language}"
                     )
+                # Not from an organization that said it sits out, even through the
+                # wider language search.
+                sitting_out = {
+                    owner.lower()
+                    for o in orgs
+                    if (o.get("participation") or {}).get("status") == "not_taking_part"
+                    for owner in o.get("github_orgs") or []
+                }
+                candidates = [
+                    i for i in candidates if str(i["repo"]).split("/")[0].lower() not in sitting_out
+                ]
                 unique = list({(i["repo"], i["number"]): i for i in candidates}.values())
-                issues = [i for i in unique if _open(i)][:5]
+                issues = personalize([i for i in unique if _open(i)], person)[:5]
                 hidden = sum(1 for i in unique if not _open(i))
             except GigError as exc:
                 issue_error = exc.to_dict()
 
-        note = (
-            "Organization rankings use the latest official list plus archive history. "
-            "Next year's organizations are not final until Google announces them."
+        confirmed = catalog.year >= target
+        program_note = (
+            f"These organizations are on Google's official GSoC {catalog.year} list."
+            if confirmed
+            else f"Google has not announced the GSoC {target} organizations yet. These "
+            f"took part in {catalog.year}, which is the best guide to who returns, but "
+            "none is confirmed until the official list is published."
         )
+        program = {
+            "target_year": target,
+            "list_year": catalog.year,
+            "confirmed": confirmed,
+            "note": program_note,
+        }
+        note = HOW_RANKED + " " + program_note
         if source == "none":
             note = (
                 "No technologies or interests given and no saved profile. Run "
@@ -1014,11 +1163,18 @@ class GSoCToolkit:
             "profile_source": source,
             "technologies_used": techs,
             "interests_used": wants,
+            "read_as": person.notes,
+            "experience": {"level": level, "from": level_source},
+            "hours_per_week": hours,
+            "hours_note": hours_note(hours) if hours else None,
+            "program": program,
             "recommended_orgs": orgs,
+            "ideas_that_fit": ideas,
             "starter_issues": issues,
             "starter_issue_scope": issue_scope,
             "starter_issues_hidden": hidden,
             "starter_issue_error": issue_error,
+            "learning_path": learning_path(person, taking_part),
             "next_steps": [
                 "Shortlist three organizations and join their community channels",
                 "Check one or two of their main repositories for health and a contributing guide",
@@ -1027,6 +1183,39 @@ class GSoCToolkit:
             ],
             "evidence_note": note,
         }
+
+    def _ideas_that_fit(
+        self, orgs: list[dict[str, Any]], person: ContributorProfile
+    ) -> list[dict[str, Any]]:
+        """Ideas from each organization's last ideas page that match the person (offline)."""
+        signals = load_signals()
+        year = signals.get("year")
+        target = self.settings.target_year
+        out = []
+        for org in orgs:
+            ideas = (signals_for(org.get("slug")).get("ideas") or {}) if org.get("slug") else {}
+            picked = ideas_for(
+                list(ideas.get("ideas") or []),
+                person,
+                year=year,
+                source_url=org.get("ideas_url") or ideas.get("url"),
+            )
+            if picked:
+                out.append(
+                    {
+                        "org": org["name"],
+                        "ideas_url": org.get("ideas_url") or ideas.get("url"),
+                        "year": year,
+                        "note": (
+                            f"From its GSoC {year} ideas page. {target} ideas usually appear "
+                            "in January or February; use these to see the kind of work."
+                            if year and year < target
+                            else f"From its GSoC {year} ideas page."
+                        ),
+                        "ideas": picked,
+                    }
+                )
+        return out
 
     def check_proposal(
         self,
@@ -1868,7 +2057,16 @@ class GSoCToolkit:
             doc.ideas = list(doc.fallback_ideas)
             doc.layout = "headings"
         wanted = list(skills or []) or list(self.progress.profile().get("technologies") or [])
-        ranked = rank_ideas(doc.ideas, skills=wanted or None, size=size, difficulty=difficulty)
+        saved = self.progress.profile()
+        ranked = rank_ideas(
+            doc.ideas,
+            skills=wanted or None,
+            size=size,
+            difficulty=difficulty,
+            interests=list(saved.get("interests") or []) or None,
+            experience=effective_experience(saved)[0],
+            hours_per_week=_int_or_none(saved.get("hours_per_week")),
+        )
         idea_dicts = [i.model_dump(mode="json") for i in ranked]
         hours_note = _mark_ideas_too_big(idea_dicts, self.progress.profile().get("hours_per_week"))
         proposals = proposal_folders(

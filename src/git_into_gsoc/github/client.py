@@ -237,6 +237,24 @@ class GitHubClient:
         )
         return data.get("items", []) if isinstance(data, dict) else []
 
+    def merged_pull_requests_elsewhere(self, username: str) -> int | None:
+        """How many of this person's pull requests were merged in repositories they do not own.
+
+        One search call; None when the search is unavailable (no token and the
+        search limit is used up, for example).
+        """
+        login = validate_login(username)
+        try:
+            data = self._api(
+                "search/issues",
+                params={"q": f"is:pr is:merged author:{login} -user:{login}", "per_page": 1},
+            )
+        except HttpError:
+            return None
+        if not isinstance(data, dict) or "total_count" not in data:
+            return None
+        return int(data.get("total_count") or 0)
+
     def gsoc_year_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
         """Issues in these owners' repositories whose title names GSoC and `year` (one search)."""
         logins = [validate_login(o, kind="organization") for o in dict.fromkeys(owners)]

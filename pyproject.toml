@@ -87,6 +87,8 @@ include = [
   "/src",
   "/skills",
   "/tests",
+  "/evals",
+  "/scripts/eval_matching.py",
   "/docs",
   "/examples",
   "/install.sh",

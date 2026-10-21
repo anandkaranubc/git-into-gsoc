@@ -31,8 +31,11 @@ from git_into_gsoc.gsoc.names import core_key, resolve_name, same_org, suggest_n
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.snapshot import load_history, load_official
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
+from git_into_gsoc.matching.profile import ContributorProfile, build_profile
+from git_into_gsoc.matching.rank import OrgIndex
+from git_into_gsoc.matching.signals import load_signals
 from git_into_gsoc.models import ContactChannel, OrgCatalog, OrgSummary, PastProject
-from git_into_gsoc.scoring.org_match import canonical, mentions, score_org_match
+from git_into_gsoc.scoring.org_match import canonical, mentions
 from git_into_gsoc.validation import validate_year
 
 _GITHUB_RESERVED = {
@@ -114,6 +117,7 @@ class GSoCClient:
         self._history: dict[str, dict[str, Any]] | None = None
         self._catalogs: dict[int, tuple[OrgCatalog, list[OrgSummary]]] = {}
         self._search_text: dict[str, str] = {}
+        self._indexes: dict[int, OrgIndex] = {}
 
     # ------------------------------------------------------------- raw sources
 
@@ -324,6 +328,63 @@ class GSoCClient:
 
     # ------------------------------------------------------------------ search
 
+    def org_index(self, year: int | None = None) -> tuple[OrgCatalog, OrgIndex]:
+        """The ranking index for a year's list, built once per client."""
+        catalog, orgs = self.catalog(year)
+        if catalog.year not in self._indexes:
+            self._indexes[catalog.year] = OrgIndex.build(
+                orgs,
+                descriptions=self._search_text,
+                signals=load_signals(),
+                reference_year=catalog.year,
+            )
+        return catalog, self._indexes[catalog.year]
+
+    def rank_organizations(
+        self,
+        *,
+        query: str | None = None,
+        technologies: list[str] | None = None,
+        topics: list[str] | None = None,
+        category: str | None = None,
+        experience: str | None = None,
+        hours_per_week: int | None = None,
+        year: int | None = None,
+        limit: int = 15,
+    ) -> tuple[OrgCatalog, list[OrgSummary], ContributorProfile]:
+        """Organizations ranked for one person, each with its fit and evidence.
+
+        Also returns how the person's words were read, so callers can say when a
+        misspelling was corrected.
+        """
+        catalog, index = self.org_index(year)
+        person = build_profile(
+            technologies=technologies,
+            interests=topics,
+            experience=experience,
+            hours_per_week=hours_per_week,
+        )
+        matches = index.rank(
+            person, query=query or "", category=category or "", limit=max(1, limit)
+        )
+        ranked = [
+            m.org.model_copy(
+                update={
+                    "match_score": m.score,
+                    "match_reasons": m.reasons(),
+                    "fit": m.fit,
+                    "interest_fit": m.interest_fit,
+                    "skill_fit": m.skill_fit,
+                    "evidence": m.evidence(),
+                    "readiness": m.readiness,
+                    "caveats": m.caveats,
+                    "skills_to_learn": m.skills_to_learn,
+                }
+            )
+            for m in matches
+        ]
+        return catalog, ranked, person
+
     def search_organizations(
         self,
         *,
@@ -331,32 +392,22 @@ class GSoCClient:
         technologies: list[str] | None = None,
         topics: list[str] | None = None,
         category: str | None = None,
+        experience: str | None = None,
+        hours_per_week: int | None = None,
         year: int | None = None,
         limit: int = 15,
     ) -> tuple[OrgCatalog, list[OrgSummary]]:
-        catalog, orgs = self.catalog(year)
-        ranked: list[OrgSummary] = []
-        for org in orgs:
-            result = score_org_match(
-                org,
-                query=query or "",
-                technologies=technologies,
-                topics=topics,
-                category=category or "",
-                reference_year=catalog.year,
-                search_text=self._search_text.get(org.name, ""),
-            )
-            if not result.relevant:
-                continue
-            ranked.append(
-                org.model_copy(
-                    update={"match_score": result.score, "match_reasons": result.reasons}
-                )
-            )
-        ranked.sort(
-            key=lambda o: (-o.match_score, -o.num_projects_latest, -len(o.years_active), o.name)
+        catalog, ranked, _ = self.rank_organizations(
+            query=query,
+            technologies=technologies,
+            topics=topics,
+            category=category,
+            experience=experience,
+            hours_per_week=hours_per_week,
+            year=year,
+            limit=limit,
         )
-        return catalog, ranked[: max(1, limit)]
+        return catalog, ranked
 
     def resolve_org_name(self, name: str, *, year: int | None = None) -> str | None:
         """The full name of the organization `name` means: current list, then history.

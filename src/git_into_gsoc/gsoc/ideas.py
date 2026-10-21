@@ -25,6 +25,10 @@ def ideas_fetch_url(url: str) -> str | None:
     host = parsed.netloc.lower().removeprefix("www.")
     parts = [p for p in parsed.path.split("/") if p]
     if host == "docs.google.com":
+        # A published document (/document/d/e/<id>/pub) has no export link; its
+        # public page is the readable form. Its "e" is not a document id.
+        if parsed.path.startswith("/document/d/e/") and parts[-1:] == ["pub"]:
+            return url.split("#", 1)[0]
         match = _GDOC.match(parsed.path)
         return (
             f"https://docs.google.com/document/d/{match.group(1)}/export?format=txt"

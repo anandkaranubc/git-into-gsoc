@@ -1,0 +1,1652 @@
+{
+ "about": "Contributor personas with graded organization judgments. See evals/README.md.",
+ "org_list": "official GSoC 2026 accepted organizations",
+ "personas": [
+  {
+   "id": "py-ml-cv",
+   "split": "dev",
+   "about": "Third-year CS student. Has trained image classifiers in PyTorch for coursework. Wants to work on machine learning, ideally computer vision. Has opened two small pull requests on GitHub before.",
+   "profile": {
+    "technologies": [
+     "python",
+     "pytorch"
+    ],
+    "interests": [
+     "machine learning",
+     "computer vision"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "HumanAI": 3,
+    "Machine Learning for Science (ML4SCI)": 3,
+    "Neuroinformatics Unit": 3,
+    "OpenVINO Toolkit": 3,
+    "Alaska": 2,
+    "CERN-HSF": 2,
+    "DeepChem": 2,
+    "German Center for Open Source AI": 2,
+    "INCF": 2,
+    "JdeRobot": 2,
+    "Kornia": 2,
+    "MLLAM": 2,
+    "NumFOCUS": 2,
+    "Open Science Initiative for Perfusion Imaging": 2,
+    "UC OSPO": 2,
+    "AOSSIE": 1,
+    "C2SI": 1,
+    "DBpedia": 1,
+    "Genome Assembly and Annotation": 1,
+    "Invesalius": 1,
+    "Kubeflow": 1,
+    "LibreHealth": 1,
+    "MetaBrainz Foundation Inc": 1,
+    "Metaflow": 1,
+    "Open Food Facts": 1,
+    "Open Robotics": 1,
+    "Open Technologies Alliance - GFOSS": 1,
+    "OpenAstronomy": 1,
+    "OpenMS Inc": 1,
+    "Uramaki LAB": 1,
+    "dora-rs": 1
+   },
+   "wrong_top5": [
+    "Python Software Foundation",
+    "Django Software Foundation",
+    "Mixxx",
+    "Kubeflow",
+    "Metaflow",
+    "DBpedia",
+    "MetaBrainz Foundation Inc",
+    "Genome Assembly and Annotation"
+   ],
+   "judge_notes": "Ranked orgs whose GSoC work is image or vision modelling in Python and PyTorch highest. Kornia is the closest domain match, but its 2026 ideas are Rust (kornia-rs), so it drops to 2. ML infrastructure and non-vision ML domains are partial."
+  },
+  {
+   "id": "js-web-new",
+   "split": "dev",
+   "about": "Self-taught web developer who builds small sites with plain JavaScript, HTML and CSS. Never contributed to open source.",
+   "profile": {
+    "technologies": [
+     "javascript",
+     "html",
+     "css"
+    ],
+    "interests": [
+     "web"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "Processing Foundation": 3,
+    "Wikimedia Foundation": 3,
+    "CircuitVerse.org": 2,
+    "Drupal Association": 2,
+    "Joomla!": 2,
+    "Learning Unlimited": 2,
+    "Sugar Labs": 2,
+    "United Nations Office of Information Communication Technology": 2,
+    "Zulip": 2,
+    "AOSSIE": 1,
+    "Cuneiform Digital Library Initiative (CDLI)": 1,
+    "Data for the Common Good": 1,
+    "FOSSASIA": 1,
+    "Internet Archive": 1,
+    "JSON Schema": 1,
+    "Jitsi": 1,
+    "Joplin": 1,
+    "Kiwix": 1,
+    "Learning Equality": 1,
+    "National Resource for Network Biology (NRNB)": 1,
+    "Neutralinojs": 1,
+    "Open Food Facts": 1,
+    "OpenStreetMap": 1,
+    "Oppia Foundation": 1,
+    "Submitty": 1,
+    "Uramaki LAB": 1,
+    "Wagtail": 1,
+    "omegaUp": 1,
+    "rocket.chat": 1,
+    "stdlib": 1,
+    "webpack": 1
+   },
+   "wrong_top5": [
+    "Boa",
+    "Jenkins",
+    "Meshery",
+    "GRAME",
+    "Django Software Foundation",
+    "Ruby",
+    "Typelevel",
+    "webpack"
+   ],
+   "judge_notes": "A newcomer with plain JS, HTML and CSS and 10 hours a week needs web front ends with gentle onboarding: p5.js, MediaWiki gadgets and front ends, CMS front ends, and plain-JS education apps such as Music Blocks. JS engines, bundler internals and Kubernetes UIs are keyword traps."
+  },
+  {
+   "id": "cpp-robotics",
+   "split": "dev",
+   "about": "Mechatronics student who writes C++ and some Python for a university drone team, uses ROS 2.",
+   "profile": {
+    "technologies": [
+     "c++",
+     "python",
+     "ros"
+    ],
+    "interests": [
+     "robotics",
+     "drones"
+    ],
+    "experience": "some",
+    "hours_per_week": 25
+   },
+   "grades": {
+    "ArduPilot": 3,
+    "JdeRobot": 3,
+    "Open Robotics": 3,
+    "LibreCube Initiative": 2,
+    "dora-rs": 2,
+    "Eclipse Foundation": 1,
+    "FOSSASIA": 1,
+    "FreeCAD": 1,
+    "Kornia": 1,
+    "Open Technologies Alliance - GFOSS": 1,
+    "OpenVINO Toolkit": 1,
+    "RTEMS Project": 1,
+    "Stichting SU2": 1,
+    "The Linux Foundation": 1
+   },
+   "wrong_top5": [
+    "CERN-HSF",
+    "KDE Community",
+    "LLVM Compiler Infrastructure",
+    "Blender Foundation",
+    "The OpenROAD Initiative",
+    "Ste||ar group",
+    "GNU Radio",
+    "Eclipse Foundation"
+   ],
+   "judge_notes": "Drone autopilot and ROS 2 or Gazebo orgs are clear 3s. dora-rs is ROS-adjacent robotics middleware but mostly Rust. Generic C++ orgs outside robotics are traps."
+  },
+  {
+   "id": "rust-systems",
+   "split": "dev",
+   "about": "Backend developer who learned Rust in the last year and enjoys low-level systems work and command-line tools.",
+   "profile": {
+    "technologies": [
+     "rust"
+    ],
+    "interests": [
+     "systems programming",
+     "command line tools"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "CCExtractor Development": 3,
+    "The Rust Foundation": 3,
+    "Boa": 2,
+    "Git": 2,
+    "QEMU": 2,
+    "St. Jude Children's Research Hospital": 2,
+    "dora-rs": 2,
+    "CRIU": 1,
+    "Debian": 1,
+    "EROFS filesystem": 1,
+    "GNOME Foundation": 1,
+    "Graphite": 1,
+    "Kornia": 1,
+    "LLVM Compiler Infrastructure": 1,
+    "MetaCall": 1,
+    "MoFA Org": 1,
+    "Neovim": 1,
+    "NixOS Foundation": 1,
+    "Rizin": 1,
+    "The FreeBSD Project": 1,
+    "The Linux Foundation": 1,
+    "The NetBSD Foundation": 1,
+    "Unikraft": 1,
+    "openSUSE Project": 1
+   },
+   "wrong_top5": [
+    "AnkiDroid",
+    "AboutCode",
+    "Global Alliance for Genomics and Health",
+    "GRAME",
+    "Graphite",
+    "Kornia",
+    "MoFA Org",
+    "LibreCube Initiative"
+   ],
+   "judge_notes": "Rewarded Rust in systems or CLI work: Rust toolchain projects, CCExtractor's Rust port and Rust desktop and system components, QEMU's Rust work, and St. Jude's Sprocket WDL CLI. C-only OS orgs are partial. Orgs that list Rust only for an app backend are traps."
+  },
+  {
+   "id": "py-astro-new",
+   "split": "dev",
+   "about": "First-year physics student who learned Python and NumPy in a lab course. Loves astronomy. Never contributed to open source.",
+   "profile": {
+    "technologies": [
+     "python",
+     "numpy"
+    ],
+    "interests": [
+     "astronomy",
+     "space"
+    ],
+    "experience": "new",
+    "hours_per_week": 12
+   },
+   "grades": {
+    "OpenAstronomy": 3,
+    "TARDIS RT Collaboration": 3,
+    "LibreCube Initiative": 2,
+    "Machine Learning for Science (ML4SCI)": 2,
+    "CERN-HSF": 1,
+    "MLLAM": 1,
+    "NumFOCUS": 1,
+    "RTEMS Project": 1,
+    "SymPy": 1,
+    "gprMax": 1
+   },
+   "wrong_top5": [
+    "DeepChem",
+    "Invesalius",
+    "Neuroinformatics Unit",
+    "MLLAM",
+    "Python Software Foundation",
+    "SymPy",
+    "QC-Devs",
+    "MDAnalysis"
+   ],
+   "judge_notes": "Only a few orgs do astronomy or space in Python. OpenAstronomy and TARDIS are the realistic starts. ML4SCI has astronomy projects but needs ML. Other physics and numerical Python orgs are partial. NumPy-tagged orgs in biology, medicine or chemistry are traps."
+  },
+  {
+   "id": "html-css-new",
+   "split": "dev",
+   "about": "Design student who knows HTML and CSS only, cares about accessible design, has never used Git with others.",
+   "profile": {
+    "technologies": [
+     "html",
+     "css"
+    ],
+    "interests": [
+     "accessibility",
+     "design"
+    ],
+    "experience": "new",
+    "hours_per_week": 8
+   },
+   "grades": {
+    "Processing Foundation": 3,
+    "Wagtail": 3,
+    "Drupal Association": 2,
+    "Joomla!": 2,
+    "Uramaki LAB": 2,
+    "Wikimedia Foundation": 2,
+    "CircuitVerse.org": 1,
+    "GNU Image Manipulation Program": 1,
+    "Graphite": 1,
+    "Learning Equality": 1,
+    "Learning Unlimited": 1,
+    "Oppia Foundation": 1,
+    "Sugar Labs": 1,
+    "United Nations Office of Information Communication Technology": 1,
+    "Zulip": 1,
+    "omegaUp": 1
+   },
+   "wrong_top5": [
+    "Meshery",
+    "The OpenROAD Initiative",
+    "Free and Open Source Silicon Foundation",
+    "National Resource for Network Biology (NRNB)",
+    "Liquid Galaxy project",
+    "Zulip",
+    "GNU Image Manipulation Program",
+    "Graphite"
+   ],
+   "judge_notes": "No org is HTML and CSS only, so the best fits pair accessibility or design with web templates and docs a newcomer can touch: Wagtail (accessibility team), p5.js (accessibility and design), and CMS or MediaWiki front ends. 'Design' in chip design, infrastructure design or desktop graphics editors is a trap."
+  },
+  {
+   "id": "android-java",
+   "split": "dev",
+   "about": "Has published two Android apps written in Java and is learning Kotlin.",
+   "profile": {
+    "technologies": [
+     "java",
+     "kotlin",
+     "android"
+    ],
+    "interests": [
+     "mobile apps"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "AnkiDroid": 3,
+    "International Catrobat Association": 3,
+    "Open Transit Software Foundation": 3,
+    "The Mifos Initiative": 3,
+    "Kiwix": 2,
+    "LibreHealth": 2,
+    "MIT App Inventor": 2,
+    "52°North Spatial Information Research GmbH": 1,
+    "AOSSIE": 1,
+    "C2SI": 1,
+    "FOSSASIA": 1,
+    "JabRef e.V.": 1,
+    "Jitsi": 1,
+    "Kotlin Foundation": 1,
+    "Liquid Galaxy project": 1,
+    "Open Food Facts": 1,
+    "OpenMRS": 1
+   },
+   "wrong_top5": [
+    "EROFS filesystem",
+    "The JPF team",
+    "checkstyle",
+    "Jenkins",
+    "JBoss Community",
+    "Eclipse Foundation",
+    "Kotlin Foundation",
+    "SW360"
+   ],
+   "judge_notes": "Strong fits ship native Android apps in Java or Kotlin: AnkiDroid, the Mifos mobile apps, OneBusAway, Pocket Code. Java server or tooling orgs and the Kotlin compiler are keyword traps for a mobile developer."
+  },
+  {
+   "id": "health-web",
+   "split": "dev",
+   "about": "Nursing-informatics graduate turned developer. Writes JavaScript and React, and wants software that helps hospitals and clinics.",
+   "profile": {
+    "technologies": [
+     "javascript",
+     "react"
+    ],
+    "interests": [
+     "healthcare"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "Open HealthCare Network": 3,
+    "OpenELIS Global": 3,
+    "OpenMRS": 3,
+    "Data for the Common Good": 2,
+    "LibreHealth": 2,
+    "cBioPortal for Cancer Genomics": 2,
+    "Alaska": 1,
+    "Global Alliance for Genomics and Health": 1,
+    "Invesalius": 1,
+    "MalariaGEN": 1,
+    "Open Food Facts": 1,
+    "Open Genome Informatics": 1,
+    "Open Science Initiative for Perfusion Imaging": 1
+   },
+   "wrong_top5": [
+    "St. Jude Children's Research Hospital",
+    "Joplin",
+    "Accord Project",
+    "Jitsi",
+    "rocket.chat",
+    "JBoss Community",
+    "SW360",
+    "Open Food Facts"
+   ],
+   "judge_notes": "Clinical systems with React front ends (OpenMRS, CARE, OpenELIS) are the clear 3s. cBioPortal fits the stack but is research genomics, not clinics. St. Jude is a hospital by name, but its GSoC work is Rust genomics tooling."
+  },
+  {
+   "id": "go-cloud-exp",
+   "split": "dev",
+   "about": "Works as an SRE. Writes Go daily, runs Kubernetes clusters, has merged pull requests into several open source projects.",
+   "profile": {
+    "technologies": [
+     "go",
+     "kubernetes",
+     "docker"
+    ],
+    "interests": [
+     "cloud native",
+     "devops"
+    ],
+    "experience": "experienced",
+    "hours_per_week": 30
+   },
+   "grades": {
+    "CNCF": 3,
+    "Konflux": 3,
+    "KubeVirt": 3,
+    "Kubeflow": 3,
+    "Meshery": 3,
+    "CRIU": 2,
+    "Data for the Common Good": 2,
+    "Jenkins": 2,
+    "Unikraft": 2,
+    "openSUSE Project": 2,
+    "Apache Software Foundation": 1,
+    "C2SI": 1,
+    "Ceph": 1,
+    "Debian": 1,
+    "EROFS filesystem": 1,
+    "JBoss Community": 1,
+    "MetaCall": 1,
+    "Metaflow": 1,
+    "NixOS Foundation": 1,
+    "Open Science Labs": 1
+   },
+   "wrong_top5": [
+    "Open Transit Software Foundation",
+    "PostgreSQL",
+    "FOSSology",
+    "The Honeynet Project",
+    "Rizin",
+    "Internet Archive",
+    "Genome Assembly and Annotation",
+    "C2SI"
+   ],
+   "judge_notes": "An experienced SRE fits Go and Kubernetes orgs directly: CNCF, Kubeflow, KubeVirt, Meshery, Konflux. Container runtime and CI orgs come next. Orgs that list Go or Docker for an unrelated app are traps."
+  },
+  {
+   "id": "c-kernel-exp",
+   "split": "dev",
+   "about": "Embedded C developer with a few patches accepted into small projects; wants to work on operating systems and kernels.",
+   "profile": {
+    "technologies": [
+     "c",
+     "assembly"
+    ],
+    "interests": [
+     "operating systems",
+     "kernel"
+    ],
+    "experience": "experienced",
+    "hours_per_week": 30
+   },
+   "grades": {
+    "EROFS filesystem": 3,
+    "KolibriOS Project Team": 3,
+    "RTEMS Project": 3,
+    "The FreeBSD Project": 3,
+    "The Linux Foundation": 3,
+    "The NetBSD Foundation": 3,
+    "Unikraft": 3,
+    "CRIU": 2,
+    "GNU Project": 2,
+    "Haiku": 2,
+    "LabLua": 2,
+    "OpenAFS": 2,
+    "QEMU": 2,
+    "Qubes OS": 2,
+    "Debian": 1,
+    "Eclipse Foundation": 1,
+    "FFmpeg": 1,
+    "Free and Open Source Silicon Foundation": 1,
+    "GNU Compiler Collection (GCC)": 1,
+    "The Libreswan Project": 1,
+    "The P4 Language Consortium": 1,
+    "openSUSE Project": 1
+   },
+   "wrong_top5": [
+    "FFmpeg",
+    "VideoLAN",
+    "Metasploit",
+    "GNU Image Manipulation Program",
+    "D Language Foundation",
+    "GNOME Foundation",
+    "ScummVM",
+    "libssh"
+   ],
+   "judge_notes": "Many good fits: kernels, BSDs, RTOS (good for an embedded developer), unikernels and kernel filesystems. C and assembly orgs in media, security or desktop apps are traps, even though the language matches."
+  },
+  {
+   "id": "py-bio",
+   "split": "dev",
+   "about": "Biology master's student who analyses sequencing data in Python and R.",
+   "profile": {
+    "technologies": [
+     "python",
+     "r"
+    ],
+    "interests": [
+     "bioinformatics",
+     "genomics"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "Genome Assembly and Annotation": 3,
+    "Global Alliance for Genomics and Health": 3,
+    "MalariaGEN": 3,
+    "Open Genome Informatics": 3,
+    "DeepChem": 2,
+    "National Resource for Network Biology (NRNB)": 2,
+    "OpenMS Inc": 2,
+    "R project for statistical computing": 2,
+    "St. Jude Children's Research Hospital": 2,
+    "UC OSPO": 2,
+    "cBioPortal for Cancer Genomics": 2,
+    "GeomScale": 1,
+    "IOOS": 1,
+    "MDAnalysis": 1,
+    "NumFOCUS": 1,
+    "PEcAn Project": 1
+   },
+   "wrong_top5": [
+    "MDAnalysis",
+    "QC-Devs",
+    "PEcAn Project",
+    "IOOS",
+    "NumFOCUS",
+    "Python Software Foundation",
+    "GeomScale",
+    "Neuroinformatics Unit"
+   ],
+   "judge_notes": "Genomics orgs with Python or R pipelines are 3s. cBioPortal (Java and TS), network biology, proteomics and drug discovery are adjacent 2s. St. Jude is genomics workflow tooling, mostly Rust plus one Python bindings idea."
+  },
+  {
+   "id": "ts-a11y-edu",
+   "split": "dev",
+   "about": "Frontend developer using TypeScript and React who wants to make learning tools accessible.",
+   "profile": {
+    "technologies": [
+     "typescript",
+     "react"
+    ],
+    "interests": [
+     "accessibility",
+     "education"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "Oppia Foundation": 3,
+    "Processing Foundation": 3,
+    "Sugar Labs": 3,
+    "CircuitVerse.org": 2,
+    "Learning Equality": 2,
+    "Wagtail": 2,
+    "omegaUp": 2,
+    "AnkiDroid": 1,
+    "International Catrobat Association": 1,
+    "Joplin": 1,
+    "KDE Community": 1,
+    "Kiwix": 1,
+    "Learning Unlimited": 1,
+    "MIT App Inventor": 1,
+    "Submitty": 1,
+    "Uramaki LAB": 1,
+    "Wikimedia Foundation": 1,
+    "Zulip": 1
+   },
+   "wrong_top5": [
+    "JSON Schema",
+    "Gemini CLI",
+    "rocket.chat",
+    "webpack",
+    "cBioPortal for Cancer Genomics",
+    "Open HealthCare Network",
+    "API Dash",
+    "KDE Community"
+   ],
+   "judge_notes": "Education platforms with TypeScript front ends and a care for accessibility rank highest: Oppia, Music Blocks 4 (TS and React), p5.js. Orgs that only share the TypeScript or React stack, with no education or accessibility focus, are traps."
+  },
+  {
+   "id": "kotlin-new",
+   "split": "dev",
+   "about": "Second-year student who just finished an online Kotlin course. Never contributed.",
+   "profile": {
+    "technologies": [
+     "kotlin"
+    ],
+    "interests": [
+     "mobile"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "AnkiDroid": 3,
+    "The Mifos Initiative": 3,
+    "International Catrobat Association": 2,
+    "Kiwix": 2,
+    "Open Transit Software Foundation": 2,
+    "52°North Spatial Information Research GmbH": 1,
+    "AOSSIE": 1,
+    "C2SI": 1,
+    "FOSSASIA": 1,
+    "Jitsi": 1,
+    "Kotlin Foundation": 1,
+    "LibreHealth": 1,
+    "Liquid Galaxy project": 1,
+    "MIT App Inventor": 1,
+    "Open Food Facts": 1
+   },
+   "wrong_top5": [
+    "Kotlin Foundation",
+    "EROFS filesystem",
+    "The JPF team",
+    "Typelevel",
+    "JBoss Community",
+    "Dart",
+    "CCExtractor Development",
+    "Eclipse Foundation"
+   ],
+   "judge_notes": "A new Kotlin learner fits Kotlin Android apps with lots of starter issues (AnkiDroid, Mifos). The Kotlin language org is a compiler and tooling stretch, so it is only partial. JVM or Android-tagged systems orgs are traps."
+  },
+  {
+   "id": "py-edu-games",
+   "split": "dev",
+   "about": "High-school computer science teacher who writes Python and wants to build learning games for kids.",
+   "profile": {
+    "technologies": [
+     "python"
+    ],
+    "interests": [
+     "education",
+     "games"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "Sugar Labs": 3,
+    "International Catrobat Association": 2,
+    "Learning Equality": 2,
+    "Learning Unlimited": 2,
+    "Oppia Foundation": 2,
+    "CircuitVerse.org": 1,
+    "JdeRobot": 1,
+    "KDE Community": 1,
+    "MIT App Inventor": 1,
+    "Processing Foundation": 1,
+    "SageMath": 1,
+    "ScummVM": 1,
+    "Submitty": 1,
+    "Tiled": 1,
+    "UC OSPO": 1,
+    "omegaUp": 1
+   },
+   "wrong_top5": [
+    "Gambit: The package for computation in game theory",
+    "Blender Foundation",
+    "Zulip",
+    "UC OSPO",
+    "Python Software Foundation",
+    "AnkiDroid",
+    "JdeRobot",
+    "ScummVM"
+   ],
+   "judge_notes": "Sugar Labs (Python learning activities and games for children) is the one strong fit. Other Python education platforms are good. Game orgs are C++ and not about education. Gambit is a game-theory keyword trap."
+  },
+  {
+   "id": "llm-agents",
+   "split": "dev",
+   "about": "Data science student who builds LLM apps and agents in Python and wants GSoC work on generative AI.",
+   "profile": {
+    "technologies": [
+     "python"
+    ],
+    "interests": [
+     "large language models",
+     "ai agents"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "MoFA Org": 3,
+    "OpenVINO Toolkit": 3,
+    "API Dash": 2,
+    "DBpedia": 2,
+    "Gemini CLI": 2,
+    "Project Mesa": 2,
+    "Sugar Labs": 2,
+    "AOSSIE": 1,
+    "Accord Project": 1,
+    "German Center for Open Source AI": 1,
+    "HumanAI": 1,
+    "JabRef e.V.": 1,
+    "Kubeflow": 1,
+    "Metaflow": 1,
+    "National Resource for Network Biology (NRNB)": 1,
+    "UC OSPO": 1,
+    "rocket.chat": 1
+   },
+   "wrong_top5": [
+    "checkstyle",
+    "Neovim",
+    "Joomla!",
+    "Kotlin Foundation",
+    "Meshery",
+    "The OpenROAD Initiative",
+    "Typelevel",
+    "JabRef e.V."
+   ],
+   "judge_notes": "Agent frameworks and GenAI tooling in Python rank highest (MoFA, OpenVINO GenAI and agentic work). API Dash has Python agent and MCP ideas. Mesa has Mesa-LLM. Many orgs add an 'ai' tag to unrelated work, and those are traps."
+  },
+  {
+   "id": "security-fuzz",
+   "split": "dev",
+   "about": "Plays CTFs, writes Python and C, interested in application security and fuzzing.",
+   "profile": {
+    "technologies": [
+     "python",
+     "c"
+    ],
+    "interests": [
+     "security",
+     "fuzzing"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "FLARE": 3,
+    "OWASP Foundation": 3,
+    "Rizin": 3,
+    "AboutCode": 2,
+    "Metasploit": 2,
+    "Qubes OS": 2,
+    "The Honeynet Project": 2,
+    "The Linux Foundation": 2,
+    "libssh": 2,
+    "C2SI": 1,
+    "Konflux": 1,
+    "Python Software Foundation": 1,
+    "QEMU": 1,
+    "The JPF team": 1,
+    "The Libreswan Project": 1,
+    "openSUSE Project": 1
+   },
+   "wrong_top5": [
+    "FOSSology",
+    "SW360",
+    "Global Alliance for Genomics and Health",
+    "Ruby",
+    "Joplin",
+    "GNU Radio",
+    "Python Software Foundation",
+    "C2SI"
+   ],
+   "judge_notes": "Application security (OWASP) and reverse-engineering tools a CTF player knows (FLARE, Rizin) are 3s. Kernel fuzzing at the Linux Foundation and offensive or defensive tools are 2s. License-compliance and 'security'-tagged app orgs are traps."
+  },
+  {
+   "id": "julia-sci",
+   "split": "dev",
+   "about": "Applied maths student who writes Julia for numerical simulations.",
+   "profile": {
+    "technologies": [
+     "julia"
+    ],
+    "interests": [
+     "scientific computing",
+     "mathematics"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "The Julia Language": 3,
+    "NumFOCUS": 2,
+    "CGAL Project": 1,
+    "Fortran-lang": 1,
+    "GNU Octave": 1,
+    "Gambit: The package for computation in game theory": 1,
+    "GeomScale": 1,
+    "OpenAstronomy": 1,
+    "QC-Devs": 1,
+    "R project for statistical computing": 1,
+    "SageMath": 1,
+    "Ste||ar group": 1,
+    "Stichting SU2": 1,
+    "SymPy": 1,
+    "gprMax": 1,
+    "preCICE": 1,
+    "stdlib": 1
+   },
+   "wrong_top5": [
+    "OpenAstronomy",
+    "QC-Devs",
+    "MoganLab",
+    "Gambit: The package for computation in game theory",
+    "Project Mesa",
+    "CERN-HSF",
+    "D Language Foundation",
+    "stdlib"
+   ],
+   "judge_notes": "Only The Julia Language uses Julia as its main stack, and NumFOCUS lists Julia among its sponsored projects. Other scientific-computing and maths orgs fit the domain but use Python, C++ or Fortran, so they are partial."
+  },
+  {
+   "id": "flutter-new",
+   "split": "dev",
+   "about": "Has built one Flutter app with Dart in a bootcamp. Never contributed.",
+   "profile": {
+    "technologies": [
+     "dart",
+     "flutter"
+    ],
+    "interests": [
+     "mobile apps"
+    ],
+    "experience": "new",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "AOSSIE": 3,
+    "API Dash": 3,
+    "CCExtractor Development": 3,
+    "Liquid Galaxy project": 3,
+    "International Catrobat Association": 2,
+    "LibreHealth": 2,
+    "Open Food Facts": 2,
+    "Zulip": 2,
+    "AnkiDroid": 1,
+    "C2SI": 1,
+    "Dart": 1,
+    "FOSSASIA": 1,
+    "MIT App Inventor": 1,
+    "Open Transit Software Foundation": 1,
+    "The Mifos Initiative": 1
+   },
+   "wrong_top5": [
+    "Dart",
+    "The Mifos Initiative",
+    "AnkiDroid",
+    "MIT App Inventor",
+    "Kotlin Foundation",
+    "Open Transit Software Foundation",
+    "Kiwix",
+    "The JPF team"
+   ],
+   "judge_notes": "Orgs that ship Flutter apps with starter issues are 3s: API Dash, AOSSIE, CCExtractor's Flutter apps, Liquid Galaxy tablet apps. The Dart org matches the language but its 2026 ideas are hard DevTools, FFI and IDE tooling, so it is only partial for a newcomer."
+  },
+  {
+   "id": "php-cms-new",
+   "split": "test",
+   "about": "Freelancer who builds WordPress-style sites in PHP and JavaScript. Never contributed to open source.",
+   "profile": {
+    "technologies": [
+     "php",
+     "javascript"
+    ],
+    "interests": [
+     "web",
+     "content management"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "Drupal Association": 3,
+    "Joomla!": 3,
+    "Wikimedia Foundation": 3,
+    "Cuneiform Digital Library Initiative (CDLI)": 2,
+    "Submitty": 2,
+    "Wagtail": 2,
+    "omegaUp": 2,
+    "CircuitVerse.org": 1,
+    "Django Software Foundation": 1,
+    "FOSSASIA": 1,
+    "FOSSology": 1,
+    "Jitsi": 1,
+    "Joplin": 1,
+    "Learning Equality": 1,
+    "Learning Unlimited": 1,
+    "Processing Foundation": 1,
+    "rocket.chat": 1,
+    "webpack": 1
+   },
+   "wrong_top5": [
+    "FOSSology",
+    "Boa",
+    "stdlib",
+    "webpack",
+    "Neutralinojs",
+    "Ruby",
+    "Jitsi",
+    "OWASP Foundation"
+   ],
+   "judge_notes": "PHP content platforms (Joomla, Drupal, MediaWiki) come first, then PHP or JavaScript web apps and a Python CMS. JavaScript-only orgs outside web content, and orgs where PHP is a small side part, rank low."
+  },
+  {
+   "id": "r-stats",
+   "split": "test",
+   "about": "Statistics student who writes R packages for coursework and likes data visualisation.",
+   "profile": {
+    "technologies": [
+     "r"
+    ],
+    "interests": [
+     "statistics",
+     "data visualization"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "R project for statistical computing": 3,
+    "GeomScale": 2,
+    "NumFOCUS": 2,
+    "PEcAn Project": 2,
+    "German Center for Open Source AI": 1,
+    "INCF": 1,
+    "IOOS": 1,
+    "Open Genome Informatics": 1,
+    "The Julia Language": 1,
+    "UC OSPO": 1,
+    "cBioPortal for Cancer Genomics": 1,
+    "stdlib": 1
+   },
+   "wrong_top5": [
+    "Liquid Galaxy project",
+    "TARDIS RT Collaboration",
+    "Python Software Foundation",
+    "Submitty",
+    "Gambit: The package for computation in game theory",
+    "INCF",
+    "Open Genome Informatics",
+    "IOOS"
+   ],
+   "judge_notes": "The R project is the clear first choice. After that come orgs that ship R code or statistics and visualization tools (GeomScale, PEcAn, NumFOCUS). Orgs that only list visualization as a tag, or use R only a little, rank low."
+  },
+  {
+   "id": "cpp-graphics-exp",
+   "split": "test",
+   "about": "Game developer with years of C++ and OpenGL who wants to work on 3D graphics or game engines.",
+   "profile": {
+    "technologies": [
+     "c++",
+     "opengl"
+    ],
+    "interests": [
+     "computer graphics",
+     "games",
+     "3d"
+    ],
+    "experience": "experienced",
+    "hours_per_week": 30
+   },
+   "grades": {
+    "BRL-CAD": 3,
+    "Blender Foundation": 3,
+    "ScummVM": 3,
+    "CGAL Project": 2,
+    "FreeCAD": 2,
+    "Synfig": 2,
+    "Tiled": 2,
+    "GNU Image Manipulation Program": 1,
+    "Graphite": 1,
+    "International Catrobat Association": 1,
+    "Invesalius": 1,
+    "KDE Community": 1,
+    "Open Robotics": 1,
+    "Processing Foundation": 1,
+    "VideoLAN": 1
+   },
+   "wrong_top5": [
+    "LLVM Compiler Infrastructure",
+    "GNOME Foundation",
+    "R project for statistical computing",
+    "NumFOCUS",
+    "Ste||ar group",
+    "GNU Octave",
+    "Sugar Labs",
+    "OpenStreetMap"
+   ],
+   "judge_notes": "Strong fits are 3D renderers and game engines with C++ and OpenGL code (Blender, BRL-CAD, ScummVM). CAD, geometry and 2D graphics tools in C++ are good fits. C++ orgs outside graphics, and orgs that only use the word graphics, are not fits."
+  },
+  {
+   "id": "gis-maps",
+   "split": "test",
+   "about": "Geography student who makes web maps with Python and JavaScript.",
+   "profile": {
+    "technologies": [
+     "python",
+     "javascript"
+    ],
+    "interests": [
+     "maps",
+     "geospatial"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "OSGeo (Open Source Geospatial Foundation)": 3,
+    "OpenStreetMap": 3,
+    "52°North Spatial Information Research GmbH": 2,
+    "IOOS": 2,
+    "Liquid Galaxy project": 1,
+    "MLLAM": 1,
+    "Open Transit Software Foundation": 1,
+    "PEcAn Project": 1,
+    "Project Mesa": 1
+   },
+   "wrong_top5": [
+    "Python Software Foundation",
+    "AOSSIE",
+    "FOSSASIA",
+    "Django Software Foundation",
+    "Data for the Common Good",
+    "Accord Project",
+    "Uramaki LAB",
+    "Open Science Labs"
+   ],
+   "judge_notes": "OSGeo and OpenStreetMap are the core geospatial orgs, and both use Python and JavaScript. 52North and IOOS are good fits for spatial and earth data. General Python and JavaScript web orgs are what a keyword match would show, but they have no map work."
+  },
+  {
+   "id": "compilers-exp",
+   "split": "test",
+   "about": "Compiler engineer who has worked with LLVM in C++ and wants to contribute to compilers and language tooling.",
+   "profile": {
+    "technologies": [
+     "c++",
+     "llvm"
+    ],
+    "interests": [
+     "compilers",
+     "programming languages"
+    ],
+    "experience": "experienced",
+    "hours_per_week": 30
+   },
+   "grades": {
+    "Fortran-lang": 3,
+    "GNU Compiler Collection (GCC)": 3,
+    "LLVM Compiler Infrastructure": 3,
+    "Swift": 3,
+    "The P4 Language Consortium": 3,
+    "CERN-HSF": 2,
+    "D Language Foundation": 2,
+    "GRAME": 2,
+    "The Julia Language": 2,
+    "The Rust Foundation": 2,
+    "Boa": 1,
+    "Dart": 1,
+    "Free and Open Source Silicon Foundation": 1,
+    "GNU Octave": 1,
+    "GNU Project": 1,
+    "Haskell.org": 1,
+    "Kotlin Foundation": 1,
+    "LabLua": 1,
+    "MetaCall": 1,
+    "Open Science Labs": 1,
+    "Pharo Consortium": 1,
+    "QEMU": 1,
+    "St. Jude Children's Research Hospital": 1,
+    "The JPF team": 1,
+    "checkstyle": 1
+   },
+   "wrong_top5": [
+    "Graphite",
+    "The FreeBSD Project",
+    "Python Software Foundation",
+    "Ste||ar group",
+    "NixOS Foundation",
+    "Sugar Labs",
+    "Accord Project",
+    "International Catrobat Association"
+   ],
+   "judge_notes": "Compiler orgs with C++ and LLVM code rank highest (LLVM, GCC, Swift, P4, LFortran). Language orgs built on LLVM, and CERN-HSF's Clang-based tools, come next. Orgs that only list compilers or LLVM as a tag, or are an OS or a graphics app, are poor fits."
+  },
+  {
+   "id": "music-audio",
+   "split": "test",
+   "about": "Musician who programs audio plugins in C++ and scripts in Python.",
+   "profile": {
+    "technologies": [
+     "c++",
+     "python"
+    ],
+    "interests": [
+     "music",
+     "audio"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "GRAME": 3,
+    "Mixxx": 3,
+    "FFmpeg": 2,
+    "GNU Radio": 2,
+    "MetaBrainz Foundation Inc": 2,
+    "VideoLAN": 2,
+    "Pharo Consortium": 1,
+    "Sugar Labs": 1
+   },
+   "wrong_top5": [
+    "OpenVINO Toolkit",
+    "CERN-HSF",
+    "Machine Learning for Science (ML4SCI)",
+    "HumanAI",
+    "Gambit: The package for computation in game theory",
+    "Stichting SU2",
+    "FreeCAD",
+    "Jitsi"
+   ],
+   "judge_notes": "Mixxx (a C++ DJ app) and GRAME (the Faust audio DSP language) fit an audio plugin developer best. Music data, audio codecs and signal processing orgs follow. Many orgs list C++ and Python but do no audio work."
+  },
+  {
+   "id": "haskell-fp",
+   "split": "test",
+   "about": "Student who loves Haskell and functional programming.",
+   "profile": {
+    "technologies": [
+     "haskell"
+    ],
+    "interests": [
+     "functional programming",
+     "compilers"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "Haskell.org": 3,
+    "NixOS Foundation": 2,
+    "Typelevel": 2,
+    "GNU Compiler Collection (GCC)": 1,
+    "GNU Project": 1,
+    "GRAME": 1,
+    "Graphite": 1,
+    "Kotlin Foundation": 1,
+    "LLVM Compiler Infrastructure": 1,
+    "LabLua": 1,
+    "MoganLab": 1,
+    "Pharo Consortium": 1,
+    "The Rust Foundation": 1
+   },
+   "wrong_top5": [
+    "Fortran-lang",
+    "D Language Foundation",
+    "The P4 Language Consortium",
+    "Swift",
+    "Dart",
+    "Boa",
+    "The Julia Language",
+    "GNU Compiler Collection (GCC)"
+   ],
+   "judge_notes": "Haskell.org is the only strong fit. Typelevel (functional Scala) and NixOS (a lazy functional language) are close, and other compiler orgs are partial fits because their code is not functional. Orgs that only match on the word compilers rank low."
+  },
+  {
+   "id": "devops-new",
+   "split": "test",
+   "about": "IT support worker learning DevOps: Python scripts, shell, Docker, GitHub Actions. Never contributed.",
+   "profile": {
+    "technologies": [
+     "python",
+     "shell",
+     "docker"
+    ],
+    "interests": [
+     "devops",
+     "ci/cd"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "Konflux": 3,
+    "CNCF": 2,
+    "Debian": 2,
+    "Jenkins": 2,
+    "Meshery": 2,
+    "Open Science Labs": 2,
+    "openSUSE Project": 2,
+    "AboutCode": 1,
+    "CRIU": 1,
+    "Data for the Common Good": 1,
+    "Git": 1,
+    "Kubeflow": 1,
+    "Metaflow": 1,
+    "NixOS Foundation": 1,
+    "OWASP Foundation": 1,
+    "OpenWISP": 1
+   },
+   "wrong_top5": [
+    "The Honeynet Project",
+    "Genome Assembly and Annotation",
+    "LibreCube Initiative",
+    "MetaCall",
+    "OpenStreetMap",
+    "preCICE",
+    "GeomScale",
+    "Processing Foundation"
+   ],
+   "judge_notes": "I ranked CI/CD and pipeline orgs first, mainly those whose code uses Python, shell and Docker (Konflux, Debian CI, Open Science Labs), and those with a welcoming cloud native community. Orgs that merely list docker, shell or github-actions but work in an unrelated field are not fits for a newcomer."
+  },
+  {
+   "id": "ruby-rails",
+   "split": "test",
+   "about": "Junior Ruby on Rails developer.",
+   "profile": {
+    "technologies": [
+     "ruby",
+     "rails"
+    ],
+    "interests": [
+     "web"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "CircuitVerse.org": 3,
+    "Ruby": 3,
+    "openSUSE Project": 2,
+    "Django Software Foundation": 1,
+    "Learning Unlimited": 1,
+    "Metasploit": 1,
+    "OpenStreetMap": 1,
+    "Wagtail": 1,
+    "Zulip": 1
+   },
+   "wrong_top5": [
+    "Boa",
+    "Typelevel",
+    "PostgreSQL",
+    "stdlib",
+    "JSON Schema",
+    "webpack",
+    "Apache Software Foundation",
+    "Processing Foundation"
+   ],
+   "judge_notes": "CircuitVerse is a Rails app, and the Ruby org lists Rails and runs rubygems.org. openSUSE's Open Build Service is also Rails. Metasploit is Ruby but security work. Python web frameworks are partial fits, and orgs that only share the web tag are not fits."
+  },
+  {
+   "id": "data-eng",
+   "split": "test",
+   "about": "Data engineer who writes Python and SQL against PostgreSQL and wants to work on databases.",
+   "profile": {
+    "technologies": [
+     "python",
+     "sql",
+     "postgresql"
+    ],
+    "interests": [
+     "databases",
+     "big data"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "PostgreSQL": 3,
+    "DBpedia": 2,
+    "MariaDB": 2,
+    "MetaBrainz Foundation Inc": 2,
+    "AboutCode": 1,
+    "Apache Software Foundation": 1,
+    "CERN-HSF": 1,
+    "Ceph": 1,
+    "FOSSology": 1,
+    "Genome Assembly and Annotation": 1,
+    "Global Alliance for Genomics and Health": 1,
+    "IOOS": 1,
+    "Internet Archive": 1,
+    "Learning Equality": 1,
+    "MalariaGEN": 1,
+    "Metaflow": 1,
+    "NumFOCUS": 1,
+    "OSGeo (Open Source Geospatial Foundation)": 1,
+    "OpenStreetMap": 1,
+    "cBioPortal for Cancer Genomics": 1
+   },
+   "wrong_top5": [
+    "Submitty",
+    "OpenELIS Global",
+    "Metasploit",
+    "TARDIS RT Collaboration",
+    "Genome Assembly and Annotation",
+    "cBioPortal for Cancer Genomics",
+    "Global Alliance for Genomics and Health",
+    "CERN-HSF"
+   ],
+   "judge_notes": "Database engine orgs come first (PostgreSQL, then MariaDB), followed by data-heavy orgs that use Python, Postgres or Spark (MetaBrainz, DBpedia). Orgs that only use PostgreSQL as a backend, or say big data about science work, are weak fits."
+  },
+  {
+   "id": "climate-new",
+   "split": "test",
+   "about": "Environmental science student who knows some Python and wants to help climate and environmental projects.",
+   "profile": {
+    "technologies": [
+     "python"
+    ],
+    "interests": [
+     "climate",
+     "environment",
+     "open data"
+    ],
+    "experience": "new",
+    "hours_per_week": 10
+   },
+   "grades": {
+    "IOOS": 3,
+    "MLLAM": 2,
+    "Open Food Facts": 2,
+    "52°North Spatial Information Research GmbH": 1,
+    "Alaska": 1,
+    "NumFOCUS": 1,
+    "OSGeo (Open Source Geospatial Foundation)": 1,
+    "OpenStreetMap": 1,
+    "PEcAn Project": 1,
+    "UC OSPO": 1,
+    "United Nations Office of Information Communication Technology": 1,
+    "gprMax": 1
+   },
+   "wrong_top5": [
+    "MetaBrainz Foundation Inc",
+    "Machine Learning for Science (ML4SCI)",
+    "CERN-HSF",
+    "DeepChem",
+    "INCF",
+    "Python Software Foundation",
+    "Genome Assembly and Annotation",
+    "OpenAstronomy"
+   ],
+   "judge_notes": "IOOS (ocean and coastal open data in Python) is the best fit for a beginner. MLLAM (weather) and Open Food Facts (environmental impact, open data) come next. PEcAn is the most climate-focused org but uses R, so it is a partial fit. Few orgs are both environmental and easy for a newcomer."
+  },
+  {
+   "id": "embedded-iot",
+   "split": "test",
+   "about": "Electronics hobbyist who programs microcontrollers in C and MicroPython.",
+   "profile": {
+    "technologies": [
+     "c",
+     "micropython"
+    ],
+    "interests": [
+     "embedded",
+     "iot",
+     "hardware"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "LibreCube Initiative": 3,
+    "RTEMS Project": 3,
+    "The Linux Foundation": 3,
+    "ArduPilot": 2,
+    "Eclipse Foundation": 2,
+    "FOSSASIA": 2,
+    "CircuitVerse.org": 1,
+    "Debian": 1,
+    "Free and Open Source Silicon Foundation": 1,
+    "GNU Radio": 1,
+    "Open Robotics": 1,
+    "Open Technologies Alliance - GFOSS": 1,
+    "OpenWISP": 1,
+    "QEMU": 1,
+    "The FreeBSD Project": 1,
+    "The NetBSD Foundation": 1,
+    "The OpenROAD Initiative": 1
+   },
+   "wrong_top5": [
+    "JBoss Community",
+    "CCExtractor Development",
+    "libssh",
+    "GNOME Foundation",
+    "FFmpeg",
+    "The Libreswan Project",
+    "Git",
+    "KolibriOS Project Team"
+   ],
+   "judge_notes": "Strong fits are embedded RTOS and hardware orgs in C or MicroPython (RTEMS, Zephyr and IIO under the Linux Foundation, LibreCube). Firmware and flight-controller work (FOSSASIA PSLab, ArduPilot) comes next. Many C orgs do desktop or network software and are not fits."
+  },
+  {
+   "id": "vague-typo",
+   "split": "test",
+   "about": "Absolute beginner who typed a misspelt language and a vague interest.",
+   "profile": {
+    "technologies": [
+     "pyhton"
+    ],
+    "interests": [
+     "ai"
+    ],
+    "experience": "new",
+    "hours_per_week": 5
+   },
+   "grades": {
+    "German Center for Open Source AI": 3,
+    "DeepChem": 2,
+    "HumanAI": 2,
+    "Machine Learning for Science (ML4SCI)": 2,
+    "OpenVINO Toolkit": 2,
+    "Sugar Labs": 2,
+    "AOSSIE": 1,
+    "API Dash": 1,
+    "Accord Project": 1,
+    "Alaska": 1,
+    "C2SI": 1,
+    "CERN-HSF": 1,
+    "DBpedia": 1,
+    "Gemini CLI": 1,
+    "INCF": 1,
+    "JdeRobot": 1,
+    "Kornia": 1,
+    "Kubeflow": 1,
+    "MLLAM": 1,
+    "Metaflow": 1,
+    "MoFA Org": 1,
+    "National Resource for Network Biology (NRNB)": 1,
+    "Open Science Initiative for Perfusion Imaging": 1,
+    "Open Science Labs": 1,
+    "Oppia Foundation": 1,
+    "Python Software Foundation": 1,
+    "UC OSPO": 1,
+    "Uramaki LAB": 1,
+    "dora-rs": 1
+   },
+   "wrong_top5": [
+    "checkstyle",
+    "JabRef e.V.",
+    "Joomla!",
+    "Meshery",
+    "Neovim",
+    "Debian",
+    "The Linux Foundation",
+    "Kotlin Foundation"
+   ],
+   "judge_notes": "I read this as Python plus AI or machine learning, for an absolute beginner with 5 hours a week. Python-first ML orgs with friendly on-ramps (the sktime ecosystem at GC.OS, DeepChem, Sugar Labs' AI projects) rank above research-heavy or infrastructure orgs. Orgs that only add an ai tag to a Java, PHP, C or Go codebase are not fits."
+  },
+  {
+   "id": "node-backend",
+   "split": "test",
+   "about": "Backend developer writing Node.js and TypeScript APIs who likes developer tools.",
+   "profile": {
+    "technologies": [
+     "nodejs",
+     "typescript"
+    ],
+    "interests": [
+     "developer tools",
+     "apis"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "Gemini CLI": 3,
+    "JSON Schema": 3,
+    "webpack": 3,
+    "API Dash": 2,
+    "Neutralinojs": 2,
+    "rocket.chat": 2,
+    "Accord Project": 1,
+    "Boa": 1,
+    "Git": 1,
+    "Jenkins": 1,
+    "Jitsi": 1,
+    "Joplin": 1,
+    "Meshery": 1,
+    "MetaCall": 1,
+    "OWASP Foundation": 1,
+    "Processing Foundation": 1,
+    "Zulip": 1,
+    "stdlib": 1
+   },
+   "wrong_top5": [
+    "Liquid Galaxy project",
+    "Typelevel",
+    "C2SI",
+    "Open Technologies Alliance - GFOSS",
+    "Kubeflow",
+    "Kiwix",
+    "cBioPortal for Cancer Genomics",
+    "Open HealthCare Network"
+   ],
+   "judge_notes": "Developer tools written in TypeScript or Node.js rank highest (Gemini CLI, webpack, JSON Schema tooling). API Dash fits the API interest but is mostly Flutter. Orgs that list nodejs or typescript only for a side part, in an unrelated field, are not fits."
+  },
+  {
+   "id": "rust-devtools-cloud",
+   "split": "test",
+   "about": "Rust developer who wants to build developer tools and cloud infrastructure.",
+   "profile": {
+    "technologies": [
+     "rust"
+    ],
+    "interests": [
+     "developer tools",
+     "cloud"
+    ],
+    "experience": "some",
+    "hours_per_week": 20
+   },
+   "grades": {
+    "St. Jude Children's Research Hospital": 3,
+    "The Rust Foundation": 3,
+    "Boa": 2,
+    "CNCF": 2,
+    "MetaCall": 2,
+    "NixOS Foundation": 2,
+    "QEMU": 2,
+    "API Dash": 1,
+    "AboutCode": 1,
+    "CRIU": 1,
+    "Ceph": 1,
+    "Data for the Common Good": 1,
+    "EROFS filesystem": 1,
+    "Gemini CLI": 1,
+    "Git": 1,
+    "Graphite": 1,
+    "JSON Schema": 1,
+    "Jenkins": 1,
+    "Konflux": 1,
+    "KubeVirt": 1,
+    "Kubeflow": 1,
+    "LLVM Compiler Infrastructure": 1,
+    "Meshery": 1,
+    "MoFA Org": 1,
+    "Neovim": 1,
+    "Unikraft": 1,
+    "dora-rs": 1,
+    "openSUSE Project": 1,
+    "webpack": 1
+   },
+   "wrong_top5": [
+    "Graphite",
+    "AnkiDroid",
+    "CCExtractor Development",
+    "Kornia",
+    "LibreCube Initiative",
+    "dora-rs",
+    "GNOME Foundation",
+    "Debian"
+   ],
+   "judge_notes": "Rust developer tooling ranks highest: the Rust toolchain itself, and St. Jude's Sprocket, a Rust language server and workflow runner that also runs in the cloud. Cloud and virtualization orgs with some Rust work (CNCF, QEMU, MetaCall, Nix tooling) come next. Orgs that use Rust for graphics, mobile, robotics or video match the language only."
+  },
+  {
+   "id": "py-js-science-data",
+   "split": "test",
+   "about": "Research assistant who writes Python and some JavaScript and wants to work on scientific and data tools.",
+   "profile": {
+    "technologies": [
+     "python",
+     "javascript"
+    ],
+    "interests": [
+     "science",
+     "data"
+    ],
+    "experience": "some",
+    "hours_per_week": 15
+   },
+   "grades": {
+    "INCF": 3,
+    "IOOS": 3,
+    "MDAnalysis": 3,
+    "National Resource for Network Biology (NRNB)": 3,
+    "Neuroinformatics Unit": 3,
+    "NumFOCUS": 3,
+    "OpenAstronomy": 3,
+    "UC OSPO": 3,
+    "CERN-HSF": 2,
+    "DBpedia": 2,
+    "DeepChem": 2,
+    "Genome Assembly and Annotation": 2,
+    "GeomScale": 2,
+    "German Center for Open Source AI": 2,
+    "Invesalius": 2,
+    "MLLAM": 2,
+    "Machine Learning for Science (ML4SCI)": 2,
+    "MalariaGEN": 2,
+    "Metaflow": 2,
+    "OSGeo (Open Source Geospatial Foundation)": 2,
+    "Open Genome Informatics": 2,
+    "Open Science Initiative for Perfusion Imaging": 2,
+    "Open Science Labs": 2,
+    "OpenMS Inc": 2,
+    "Project Mesa": 2,
+    "QC-Devs": 2,
+    "SageMath": 2,
+    "SymPy": 2,
+    "TARDIS RT Collaboration": 2,
+    "gprMax": 2,
+    "stdlib": 2,
+    "52°North Spatial Information Research GmbH": 1,
+    "Alaska": 1,
+    "Data for the Common Good": 1,
+    "FOSSASIA": 1,
+    "GNU Octave": 1,
+    "GNU Radio": 1,
+    "Gambit: The package for computation in game theory": 1,
+    "Global Alliance for Genomics and Health": 1,
+    "HumanAI": 1,
+    "Internet Archive": 1,
+    "JSON Schema": 1,
+    "JabRef e.V.": 1,
+    "Kubeflow": 1,
+    "LibreHealth": 1,
+    "MetaBrainz Foundation Inc": 1,
+    "Open Food Facts": 1,
+    "OpenStreetMap": 1,
+    "PEcAn Project": 1,
+    "Python Software Foundation": 1,
+    "R project for statistical computing": 1,
+    "Stichting SU2": 1,
+    "The Julia Language": 1,
+    "The ns-3 Network Simulator Project": 1,
+    "cBioPortal for Cancer Genomics": 1,
+    "preCICE": 1
+   },
+   "wrong_top5": [
+    "Liquid Galaxy project",
+    "OpenELIS Global",
+    "OpenMRS",
+    "RTEMS Project",
+    "CircuitVerse.org",
+    "ArduPilot",
+    "Open HealthCare Network",
+    "Python Software Foundation"
+   ],
+   "judge_notes": "Grade 3 goes to broad scientific data tools written mainly in Python, where JavaScript also helps (NumFOCUS, OpenAstronomy, MDAnalysis, IOOS, NRNB, INCF, the Neuroinformatics Unit, UC OSPO). Narrower science fields, or Python science work that needs deep domain knowledge, are grade 2. Orgs filed under Science and medicine whose code is Java, Rails or embedded C are not fits."
+  }
+ ]
+}
