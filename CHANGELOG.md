@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.9.0...v0.10.0) (2026-10-21)
+
+
+### Features
+
+* diagnose names the likely cause of a failed setup or test run, compared with what CI sets up ([#104](https://github.com/anandkaranubc/git-into-gsoc/issues/104)) ([9fe3257](https://github.com/anandkaranubc/git-into-gsoc/commit/9fe3257681e7f82f97fbfda65db6fb90d7eacd0d))
+* **draft:** check a message you wrote against the rules for its kind before you post it ([#98](https://github.com/anandkaranubc/git-into-gsoc/issues/98)) ([07b2a8c](https://github.com/anandkaranubc/git-into-gsoc/commit/07b2a8cfb6e0db3de2a0ddd44ae13e98eae612cd))
+* pr-check applies the repository's own rules to your pull request before review ([#96](https://github.com/anandkaranubc/git-into-gsoc/issues/96)) ([a52d6fa](https://github.com/anandkaranubc/git-into-gsoc/commit/a52d6fad3c0ec8031f10ff64ea0b8cfdd35b3729))
+* **progress:** show progress as a readable checklist instead of raw JSON ([#109](https://github.com/anandkaranubc/git-into-gsoc/issues/109)) ([7846b16](https://github.com/anandkaranubc/git-into-gsoc/commit/7846b1678a28258714bf0069f8106c8b9b4eaf39))
+* **repo:** count closed outside pull requests that a maintainer committed another way ([#87](https://github.com/anandkaranubc/git-into-gsoc/issues/87)) ([f93a6d4](https://github.com/anandkaranubc/git-into-gsoc/commit/f93a6d400419f0d93daa63023d8f3aa753cbebe4))
+
+
+### Bug Fixes
+
+* **cache:** delete old entries and cap the HTTP cache size ([#93](https://github.com/anandkaranubc/git-into-gsoc/issues/93)) ([82a85e4](https://github.com/anandkaranubc/git-into-gsoc/commit/82a85e4ba08bc0b07dd76c0f3fcbf5abfe9d4c6b))
+* **cli:** survive legacy Windows encodings in output and in draft files ([#97](https://github.com/anandkaranubc/git-into-gsoc/issues/97)) ([e2e7b9d](https://github.com/anandkaranubc/git-into-gsoc/commit/e2e7b9d91a5e7543ee9e457a823e649254abaafe))
+* **config:** a .env in the current folder cannot redirect requests or data ([#103](https://github.com/anandkaranubc/git-into-gsoc/issues/103)) ([a01df72](https://github.com/anandkaranubc/git-into-gsoc/commit/a01df72892c89fcc898a3ea8a2889f735ee80601))
+* **draft:** read --check messages saved as UTF-16, cp1252, or with a byte-order mark ([#106](https://github.com/anandkaranubc/git-into-gsoc/issues/106)) ([ec71814](https://github.com/anandkaranubc/git-into-gsoc/commit/ec718145c11869377d9aa18bf20db0d8965545e7))
+* **http:** never fetch local or private network addresses ([#89](https://github.com/anandkaranubc/git-into-gsoc/issues/89)) ([941aca3](https://github.com/anandkaranubc/git-into-gsoc/commit/941aca30985c591fb848bff2e5d4107a3d41c019))
+* **http:** stop reading a response past 64 MB, counted after decompression ([#108](https://github.com/anandkaranubc/git-into-gsoc/issues/108)) ([cef96f8](https://github.com/anandkaranubc/git-into-gsoc/commit/cef96f80bcabd65a05902a6714d81cc5d0cbb35c))
+* **install:** use PyPI only for a release this repository published ([#101](https://github.com/anandkaranubc/git-into-gsoc/issues/101)) ([c0209d7](https://github.com/anandkaranubc/git-into-gsoc/commit/c0209d7af4b1a6670307b8af504a914177eb435e))
+* **mcp:** exact write hints, guarded weekly note, validated progress input ([#88](https://github.com/anandkaranubc/git-into-gsoc/issues/88)) ([95a2ddc](https://github.com/anandkaranubc/git-into-gsoc/commit/95a2ddcc05e330d6df068b1e50ff0f4aecabef47))
+* never run gh or an assistant's command from the current folder ([#105](https://github.com/anandkaranubc/git-into-gsoc/issues/105)) ([d6f154a](https://github.com/anandkaranubc/git-into-gsoc/commit/d6f154a667d56ca12384cfe3071491f3c1e7a5fe))
+* **progress:** wait out Windows sharing violations and never reset an unreadable file ([#107](https://github.com/anandkaranubc/git-into-gsoc/issues/107)) ([2f37ab7](https://github.com/anandkaranubc/git-into-gsoc/commit/2f37ab7a07d818b5810e0d20208c3f9f4f197d77))
+* **repos:** find repositories for umbrellas that list no GitHub organization ([#99](https://github.com/anandkaranubc/git-into-gsoc/issues/99)) ([538ea53](https://github.com/anandkaranubc/git-into-gsoc/commit/538ea53437370e7f9e551f8c114d5f3492cffb2c))
+* **setup:** read configs with a byte-order mark, explain ones with comments, write atomically ([#95](https://github.com/anandkaranubc/git-into-gsoc/issues/95)) ([a7c8657](https://github.com/anandkaranubc/git-into-gsoc/commit/a7c865703035b97b2364a74940fa2a21c96125bf))
+* **snapshot:** make an unchanged refresh byte-identical ([#111](https://github.com/anandkaranubc/git-into-gsoc/issues/111)) ([2031f31](https://github.com/anandkaranubc/git-into-gsoc/commit/2031f31b5a76d355f29f2be4d013c4c77ac4a21b))
+* strip hidden and terminal-control characters from all output ([#92](https://github.com/anandkaranubc/git-into-gsoc/issues/92)) ([43ea10c](https://github.com/anandkaranubc/git-into-gsoc/commit/43ea10ce8e90309d8884bc4b344247c588bc6a21))
+
+
+### Performance Improvements
+
+* **archive:** fetch archive years side by side and cache them for a week ([#100](https://github.com/anandkaranubc/git-into-gsoc/issues/100)) ([e24f299](https://github.com/anandkaranubc/git-into-gsoc/commit/e24f2996a292c6a734f4c34f06f2dfbfd3736dcb))
+
+
+### Documentation
+
+* a final beginner pass over every user-facing file ([#94](https://github.com/anandkaranubc/git-into-gsoc/issues/94)) ([1364d71](https://github.com/anandkaranubc/git-into-gsoc/commit/1364d712e1b6aeb77e14f93c173be0137235f857))
+* **research:** full-README scan of the low-signal census repositories and two more rejected ideas ([#91](https://github.com/anandkaranubc/git-into-gsoc/issues/91)) ([47d6c59](https://github.com/anandkaranubc/git-into-gsoc/commit/47d6c59a0fc7d5e9b2bfc5524bcfca432cb7037d))
+
 ## [0.9.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.8.0...v0.9.0) (2026-10-21)
 
 
