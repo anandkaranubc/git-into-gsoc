@@ -88,6 +88,19 @@ class CachedHttpClient:
         data = self._get(url, dict(headers or {}), params, use_cache, ttl, kind="text")
         return str(data)
 
+    def post_json(
+        self,
+        url: str,
+        body: dict[str, Any],
+        *,
+        headers: dict[str, str] | None = None,
+        use_cache: bool = True,
+        ttl: int | None = None,
+    ) -> Any:
+        """POST a JSON body (GraphQL queries); responses are cached by URL + body."""
+        merged = {"Accept": "application/json", **(headers or {})}
+        return self._get(url, merged, None, use_cache, ttl, kind="json", json_body=body)
+
     def clear_cache(self) -> int:
         removed = 0
         for path in self._cache_root.glob("*.json"):
@@ -113,9 +126,11 @@ class CachedHttpClient:
         ttl: int | None,
         *,
         kind: str,
+        json_body: dict[str, Any] | None = None,
     ) -> Any:
         ttl = self.settings.cache_ttl_seconds if ttl is None else ttl
-        cache_path = self._cache_path(kind, url, params, "Authorization" in headers)
+        cache_key = params if json_body is None else {"body": json_body}
+        cache_path = self._cache_path(kind, url, cache_key, "Authorization" in headers)
         entry = self._read_cache(cache_path) if use_cache else None
         if entry is not None and time.time() - entry.get("ts", 0) <= ttl:
             self.stats["cache_hits"] += 1
@@ -129,7 +144,7 @@ class CachedHttpClient:
                 request_headers["If-Modified-Since"] = entry["last_modified"]
 
         try:
-            response = self._send(url, request_headers, params)
+            response = self._send(url, request_headers, params, json_body=json_body)
         except (RateLimitError, HttpError) as exc:
             if isinstance(exc, NotFoundError) or entry is None:
                 raise
@@ -159,16 +174,24 @@ class CachedHttpClient:
         return data
 
     def _send(
-        self, url: str, headers: dict[str, str], params: dict[str, Any] | None
+        self,
+        url: str,
+        headers: dict[str, str],
+        params: dict[str, Any] | None,
+        *,
+        json_body: dict[str, Any] | None = None,
     ) -> httpx.Response:
         authenticated = "Authorization" in headers
+        method = "GET" if json_body is None else "POST"
         attempts = self.settings.http_max_retries + 1
         last_error: Exception | None = None
         for attempt in range(attempts):
             self._throttle(url)
             try:
                 self.stats["requests"] += 1
-                response = self._client.get(url, headers=headers, params=params)
+                response = self._client.request(
+                    method, url, headers=headers, params=params, json=json_body
+                )
             except httpx.TransportError as exc:
                 last_error = exc
                 if attempt + 1 < attempts:
