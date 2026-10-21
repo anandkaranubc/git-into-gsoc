@@ -362,6 +362,57 @@ def ideas_cmd(
         )
 
 
+@app.command("mentors")
+def mentors_cmd(
+    org: str = typer.Argument(..., help="GSoC organization name, full or partial"),
+    years: int = typer.Option(3, "--years", help="How many archived years to read"),
+    limit: int = typer.Option(25, "--limit", "-n", help="How many mentors to show"),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Who has mentored this organization's completed projects, and which repositories they touched."""
+    data = _toolkit().org_mentors(org, years=years, limit=limit)
+    if output == Output.json or not data.get("found"):
+        _emit(data, Output.json)
+        return
+    per_year = ", ".join(f"{y}: {n}" for y, n in data["mentors_per_year"].items())
+    console.print(
+        Panel(
+            Text.from_markup(
+                f"[bold]{escape(data['org'])}[/bold]  {data['projects']} completed projects in "
+                f"{', '.join(str(y) for y in data['years_covered']) or 'no archived year'}\n"
+                f"Mentors: {data['mentors_total']} named, {data['returning_mentors']} mentored in "
+                f"two or more years  [dim]({per_year})[/dim]\n[dim]{escape(data['note'])}[/dim]"
+            ),
+            title="Mentors from the official archive",
+        )
+    )
+    if data["mentors"]:
+        table = Table(title="Mentors")
+        table.add_column("Mentor", overflow="fold")
+        table.add_column("Years")
+        table.add_column("Projects", justify="right")
+        table.add_column("Most recent project", overflow="fold")
+        for mentor in data["mentors"]:
+            recent = mentor["recent_projects"][0] if mentor["recent_projects"] else None
+            table.add_row(
+                escape(mentor["name"]),
+                ", ".join(str(y) for y in mentor["years"]),
+                str(mentor["projects"]),
+                f"{recent['year']}: {escape(recent['title'])}" if recent else "",
+            )
+        console.print(table)
+    if data["repos_touched"]:
+        console.print(
+            "[bold]Repositories past projects touched:[/bold] "
+            + ", ".join(f"{r['repo']} ({r['projects']})" for r in data["repos_touched"][:8])
+        )
+    if data["top_tech_tags"]:
+        console.print(
+            "[bold]Tags on past projects:[/bold] "
+            + ", ".join(f"{t['tag']} ({t['projects']})" for t in data["top_tech_tags"][:8])
+        )
+
+
 @app.command("repos")
 def repos_cmd(
     org: str = typer.Argument(

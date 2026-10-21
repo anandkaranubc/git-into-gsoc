@@ -191,6 +191,17 @@ def gsoc_past_projects(query: str = "", org: str = "", since: int = 0, limit: in
     )
 
 
+@mcp.tool(title="Org mentors from the archive", annotations=READ_ONLY, structured_output=False)
+def gsoc_org_mentors(name: str, years: int = 3, limit: int = 25) -> str:
+    """Who has mentored a GSoC organization's completed projects in recent archived years,
+    from the official archive: each mentor with years, project count and recent project
+    titles; how many mentors return; the GitHub repositories past projects touched; and the
+    technology tags on past projects. Use it to find who to talk to in the public channel
+    and which repository past work lives in. Names show past mentors, not next year's.
+    """
+    return _call(toolkit().org_mentors, name, years=years, limit=limit)
+
+
 @mcp.tool(title="Org ideas page", annotations=READ_ONLY, structured_output=False)
 def gsoc_org_ideas(
     name: str,

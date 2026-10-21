@@ -41,6 +41,8 @@ from git_into_gsoc.github.repos import (
     pick_beginner_label,
     repo_lead_score,
 )
+from git_into_gsoc.github.search import build_issue_query, or_group
+from git_into_gsoc.gsoc.archive import ArchiveClient, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
@@ -83,6 +85,7 @@ class GSoCToolkit:
         self.github = GitHubClient(self.settings, self.http)
         self.official = OfficialGSoCClient(self.settings, self.http)
         self.gsoc = GSoCClient(self.settings, self.http, self.official)
+        self.archive = ArchiveClient(self.settings, self.http)
         self.progress = ProgressStore()
 
     def program_info(self, year: int | None = None, project_size: str = "medium") -> dict[str, Any]:
@@ -928,6 +931,30 @@ class GSoCToolkit:
             )
         return draft
 
+    # ---------------------------------------------------------------- mentors
+
+    def org_mentors(self, name: str, *, years: int = 3, limit: int = 25) -> dict[str, Any]:
+        """Who mentored this org's completed projects in recent years, from the archive."""
+        org = self.gsoc.get_organization(name)
+        if org is None:
+            return {
+                "found": False,
+                "error": f"No organization matched '{name}'",
+                "hint": "Try a partial name, or search with `orgs --query`.",
+            }
+        projects = self.archive.projects_by_year(years=years)
+        summary = summarize_mentors(projects, org_slug=org.slug, org_name=org.name, limit=limit)
+        return {
+            "found": True,
+            **summary,
+            "source": "Official GSoC archive (completed projects only)",
+            "note": (
+                "Mentor names come from the public archive of completed projects, so they "
+                "show who has mentored before, not who will mentor next year. Contact people "
+                "in the organization's public channel, never by private message."
+            ),
+        }
+
     # ------------------------------------------------------------ project ideas
 
     def org_ideas(
@@ -1056,15 +1083,21 @@ class GSoCToolkit:
         scope = list(dict.fromkeys(scope))
         if not scope:
             return []
-        base = (
-            'is:issue is:open no:assignee -linked:pr archived:false label:"good first issue" '
-            f"created:>={since.date().isoformat()}"
+        repos_scope = [q.split(":", 1)[1] for q in scope if q.startswith("repo:")]
+        orgs_scope = [q.split(":", 1)[1] for q in scope if q.startswith("org:")]
+        query = build_issue_query(
+            base=[
+                "is:issue",
+                "is:open",
+                "no:assignee",
+                "-linked:pr",
+                "archived:false",
+                f"created:>={since.date().isoformat()}",
+            ],
+            labels=["good first issue"],
+            orgs=orgs_scope,
+            extra=[or_group("repo", repos_scope)] if repos_scope else None,
         )
-        query = base
-        for qualifier in scope:
-            if len(query) + len(qualifier) + 1 > 250:
-                break
-            query += f" {qualifier}"
         try:
             items = self.github.search_issues(query, per_page=20, sort="created")
         except HttpError:
