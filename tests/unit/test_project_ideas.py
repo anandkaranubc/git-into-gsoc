@@ -188,3 +188,15 @@ def test_prose_index_is_detected_as_index() -> None:
     titles = [p["title"] for p in doc.sub_pages]
     assert "pocketpy" in titles and "DIPY" in titles
     assert "Getting started" not in titles
+
+
+def test_values_drop_markdown_links_html_and_inline_template_notes() -> None:
+    lines = markdown_to_lines(
+        "## Idea A\n- Mentor(s): #For GSoC, two mentors are required.\n"
+        "  - [@alice](https://github.com/alice)\n- Skills: Python, Type Systems<br>\n"
+        "- Expected project size: 175h\n## Idea B\n- Skills: Go\n- Expected project size: 90h\n"
+    )
+    doc = extract_ideas(lines, source_url="https://x")
+    idea = doc.ideas[0]
+    assert idea.mentors == ["@alice"]
+    assert idea.skills == ["Python", "Type Systems"]

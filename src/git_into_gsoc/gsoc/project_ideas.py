@@ -354,6 +354,8 @@ def _label(line: str) -> tuple[str, str, str] | None:
 
 def _clean(value: str) -> str:
     value = _BULLET_RE.sub("", value)
+    value = re.sub(r"<[^>]+>", " ", value)
+    value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
     value = re.sub(r"\*\*|__|`", "", value)
     return re.sub(r"\s+", " ", value).strip()
 
@@ -487,6 +489,8 @@ def _parse_block(
         labelled = _label(line)
         if labelled:
             field, _, value = labelled
+            if value.startswith("#"):  # inline template note, not a value
+                value = ""
             current = field if not value else None
             if value:
                 _assign(idea, field, value)
@@ -516,7 +520,7 @@ def _parse_block(
 
 def _assign(idea: ProjectIdea, field: str, value: str) -> None:
     value = value.strip()
-    if not value:
+    if not value or value.startswith("#"):  # "#" starts an inline template instruction
         return
     idea.labelled_fields += 1
     if field == "difficulty":
