@@ -37,6 +37,10 @@ log = logging.getLogger(__name__)
 
 STALE_IF_ERROR_SECONDS = 7 * 86400
 PRUNE_INTERVAL_SECONDS = 86400
+# The largest real response is the full organization list (about 15 MB). Pages that
+# strangers can edit are linked from ideas pages, so a body (after decompression)
+# larger than this is refused instead of filling memory.
+MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 # Left by a write that was interrupted; a live write finishes in well under this.
 STALE_TMP_SECONDS = 3600
 _PRUNE_MARKER = ".last-pruned"
@@ -256,9 +260,7 @@ class CachedHttpClient:
             self._throttle(url)
             try:
                 self.stats["requests"] += 1
-                response = self._client.request(
-                    method, url, headers=headers, params=params, json=json_body
-                )
+                response = self._request_capped(method, url, headers, params, json_body)
             except httpx.TransportError as exc:
                 last_error = exc
                 if attempt + 1 < attempts:
@@ -307,6 +309,56 @@ class CachedHttpClient:
                 hint="git-into-gsoc reads only public pages; links to private addresses "
                 "are skipped.",
             )
+
+    def _request_capped(
+        self,
+        method: str,
+        url: str,
+        headers: dict[str, str],
+        params: dict[str, Any] | None,
+        json_body: dict[str, Any] | None,
+    ) -> httpx.Response:
+        """Like ``client.request``, but stop reading once the body passes the cap.
+
+        The body is counted after decompression, so a small compressed bomb is caught
+        too. The returned response holds the decoded body, without encoding headers.
+        """
+        request = self._client.build_request(
+            method, url, headers=headers, params=params, json=json_body
+        )
+        undecodable = f"The response from {_host(url)} could not be decompressed."
+        try:
+            response = self._client.send(request, stream=True)
+        except httpx.DecodingError as exc:
+            raise HttpError(undecodable, url=url) from exc
+        try:
+            chunks: list[bytes] = []
+            size = 0
+            for chunk in response.iter_bytes():
+                size += len(chunk)
+                if size > MAX_RESPONSE_BYTES:
+                    raise HttpError(
+                        f"The response from {_host(url)} is larger than "
+                        f"{MAX_RESPONSE_BYTES // 1_048_576} MB, so it was not read.",
+                        url=url,
+                        hint="Open the page in a browser instead.",
+                    )
+                chunks.append(chunk)
+        except httpx.DecodingError as exc:
+            raise HttpError(undecodable, url=url) from exc
+        finally:
+            response.close()
+        kept = [
+            (key, value)
+            for key, value in response.headers.multi_items()
+            if key.lower() not in {"content-encoding", "content-length", "transfer-encoding"}
+        ]
+        return httpx.Response(
+            response.status_code,
+            headers=kept,
+            content=b"".join(chunks),
+            request=response.request,
+        )
 
     def _throttle(self, url: str) -> None:
         """Space out GitHub search calls; search has its own, much lower, rate limit."""

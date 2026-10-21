@@ -243,3 +243,60 @@ def test_pruning_runs_on_start_at_most_once_a_day(tmp_path: Path) -> None:
     _aged(root / ".last-pruned", 2)
     _client_for(tmp_path)
     assert not second.exists()
+
+
+def test_a_response_larger_than_the_cap_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import git_into_gsoc.http_client as http_module
+
+    monkeypatch.setattr(http_module, "MAX_RESPONSE_BYTES", 1000)
+    client, _ = make_client(tmp_path)
+    with respx.mock:
+        respx.get(URL).mock(return_value=httpx.Response(200, content=b"x" * 5000))
+        with pytest.raises(HttpError, match="larger than"):
+            client.get_text(URL)
+        respx.get(URL).mock(return_value=httpx.Response(200, json={"ok": True}))
+        assert client.get_json(URL) == {"ok": True}
+
+
+def test_a_small_compressed_bomb_is_counted_after_decompression(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import gzip
+
+    import git_into_gsoc.http_client as http_module
+
+    monkeypatch.setattr(http_module, "MAX_RESPONSE_BYTES", 100_000)
+    bomb = gzip.compress(b"\0" * 5_000_000)  # about 5 KB on the wire
+    client, _ = make_client(tmp_path)
+    with respx.mock:
+        respx.get(URL).mock(
+            return_value=httpx.Response(
+                200, stream=httpx.ByteStream(bomb), headers={"Content-Encoding": "gzip"}
+            )
+        )
+        with pytest.raises(HttpError, match="larger than"):
+            client.get_text(URL)
+
+
+def test_compressed_responses_still_decode(tmp_path: Path) -> None:
+    import gzip
+
+    client, _ = make_client(tmp_path)
+    with respx.mock:
+        respx.get(URL).mock(
+            return_value=httpx.Response(
+                200,
+                stream=httpx.ByteStream(gzip.compress(b'{"ok": true}')),
+                headers={"Content-Encoding": "gzip", "Content-Type": "application/json"},
+            )
+        )
+        assert client.get_json(URL) == {"ok": True}
+        respx.get(URL).mock(
+            return_value=httpx.Response(
+                200, stream=httpx.ByteStream(b"not gzip"), headers={"Content-Encoding": "gzip"}
+            )
+        )
+        with pytest.raises(HttpError, match="decompressed"):
+            client.get_text(URL, use_cache=False)
