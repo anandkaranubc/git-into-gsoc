@@ -4,7 +4,7 @@ You will download this repository and install its Python package. A **repository
 
 ## The quick way: one command
 
-You need an internet connection and [Python 3.11 or newer](https://www.python.org/downloads/). Open Terminal on macOS, a terminal on Linux, or your WSL Linux terminal on Windows, and run:
+You need an internet connection, [Git](https://git-scm.com/downloads), and [Python 3.11 or newer](https://www.python.org/downloads/). Open Terminal on macOS, a terminal on Linux, or your WSL Linux terminal on Windows, and run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
@@ -16,7 +16,7 @@ On Windows PowerShell:
 irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
 ```
 
-The script installs the `git-into-gsoc` command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them (otherwise into a private folder under your home directory), then runs `git-into-gsoc setup`. Setup copies the **Agent Skill**, a folder of instructions for AI assistants, into the folders used by Claude Code, Cursor, Codex, Gemini CLI, Windsurf, and VS Code, and registers the tool's **MCP server** with each assistant it finds. It prints a table of exactly what it created or left unchanged, keeps a `.bak` copy of any file it edited, and can be re-run safely. If you have no assistant, that is fine; the command-line tool works on its own.
+The script installs the `git-into-gsoc` command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them (otherwise into a private folder under your home directory), then runs `git-into-gsoc setup`. Setup copies the **Agent Skill**, a folder of instructions for AI assistants, into the folders used by Claude Code, Cursor, Codex, Gemini CLI, Windsurf, and VS Code, and registers the tool's **MCP server**, a small program your assistant starts so it can run these same commands, with each assistant it finds. VS Code is set up only inside a project (`--scope project`); for the home-folder setup the installer uses, setup prints the manual step for it. It prints a table of exactly what it created or left unchanged, keeps a `.bak` copy of any file it edited, and can be re-run safely. If you have no assistant, that is fine; the command-line tool works on its own.
 
 Then open a new terminal and check:
 
@@ -34,13 +34,13 @@ uv tool install git+https://github.com/anandkaranubc/git-into-gsoc    # or: pipx
 git-into-gsoc setup                                                     # add --dry-run to preview
 ```
 
-To install one particular release instead of the latest code, use the wheel attached to that release on the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases). A **wheel** is Python's ready-to-install package file, and its name carries the version:
+To install one particular release instead of the latest code, use the wheel attached to that release on the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases). A **wheel** is Python's ready-to-install package file, and its name carries the version. Replace both `X.Y.Z` with the release you want, for example `0.9.0`:
 
 ```bash
-uv tool install https://github.com/anandkaranubc/git-into-gsoc/releases/download/v0.2.1/git_into_gsoc-0.2.1-py3-none-any.whl
+uv tool install https://github.com/anandkaranubc/git-into-gsoc/releases/download/vX.Y.Z/git_into_gsoc-X.Y.Z-py3-none-any.whl
 ```
 
-`pipx install` accepts the same address. Swap both version numbers for the release you want. Once the package is on PyPI, `uv tool install git-into-gsoc` is the shorter way.
+`pipx install` accepts the same address. Once the package is on PyPI, `uv tool install git-into-gsoc` is the shorter way.
 
 ## From a clone (contributors, or no uv/pipx)
 
@@ -62,7 +62,7 @@ git-into-gsoc --version
 git-into-gsoc program
 ```
 
-`git clone` downloads a copy. `cd` moves into it. From a clone, the installer creates a **virtual environment**, a folder called `.venv` that keeps this tool's Python dependencies separate from other projects, installs the package there, and runs `git-into-gsoc setup --scope project`, which puts the skill and MCP registration inside the repository folder only. Add `--user-skills` to set up your home folder instead, so every project can use it.
+`git clone` downloads a copy. `cd` moves into it. From a clone, the installer creates a **virtual environment**, a folder called `.venv` that keeps this tool's Python dependencies separate from other projects, installs the package there, and runs `git-into-gsoc setup --scope project`, which puts the skill and MCP registration inside the repository folder only. Run `./install.sh --user-skills` instead to set up your home folder, so every project can use it.
 
 The activation step is important: an installer cannot activate the environment in your current terminal. Each time you open a new terminal, return to the downloaded folder and run:
 
@@ -119,6 +119,12 @@ Expect a version, cache and data locations, token status, and your GitHub reques
 Everything after the package install is `git-into-gsoc setup`, so you can re-run that command alone at any time; see the [command reference](../cli.md#setup-and-maintenance). Use `PYTHON=python3.12 ./install.sh` to choose another installed Python before creating `.venv`. For an existing environment with the wrong version, follow [troubleshooting](../troubleshooting.md).
 
 Optional: `git-into-gsoc --install-completion` adds tab completion for your shell.
+
+Now that the tool works, mark the first step of the journey done:
+
+```bash
+git-into-gsoc progress complete_phase --phase learn
+```
 
 **Ready to move on:** `git-into-gsoc program` prints a timeline. If not, use [troubleshooting](../troubleshooting.md).
 

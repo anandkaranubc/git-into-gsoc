@@ -27,13 +27,13 @@ git-into-gsoc doctor                               # shows which assistants have
 
 For Claude Code at user scope, setup runs `claude mcp add` for you when the `claude` command is installed; otherwise it prints the exact command to run. Then restart your assistant.
 
-Skill discovery depends on your assistant version. If it does not find the skill, ask it to read the `SKILL.md` path that `doctor` prints under "skill source".
+Skill discovery depends on your assistant version. If it does not find the skill, ask it to read the `SKILL.md` file inside the folder that `doctor` prints as "skill source".
 
 ## Other ways to connect
 
 You do not have to install anything locally for some assistants:
 
-- **Claude Code plugin**: `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc` installs the skill and the MCP server together. It runs the server with [uv](https://docs.astral.sh/uv/) straight from this repository, so uv must be installed.
+- **Claude Code plugin**: `/plugin marketplace add anandkaranubc/git-into-gsoc`, then `/plugin install git-into-gsoc@git-into-gsoc` installs the skill and the MCP server together. It runs the server with [uv](https://docs.astral.sh/uv/) straight from this repository, so uv must be installed.
 - **Gemini CLI extension**: the repository ships `gemini-extension.json`; install it from the repository URL with Gemini CLI's extension command (see [Gemini CLI's extension documentation](https://geminicli.com/docs/extensions/)).
 - **MCP registry**: clients that browse the public MCP registry can find the server as `io.github.anandkaranubc/git-into-gsoc`; every release publishes an updated entry and a bundle automatically.
 
@@ -52,7 +52,7 @@ You only need this section if setup could not write a file for your assistant, o
 | Windsurf | `~/.codeium/windsurf/mcp_config.json` | Same `mcpServers` shape as Cursor |
 | VS Code | `.vscode/mcp.json` in the project | Run "MCP: Add Server" in VS Code and enter the command |
 
-The skill goes into `~/.claude/skills`, `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.codeium/windsurf/skills`, and the portable `~/.agents/skills` (or the same folders inside the project with `--scope project`). Restart the assistant after any change.
+The skill goes into `~/.claude/skills`, `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, `~/.codeium/windsurf/skills`, and the portable `~/.agents/skills` (or the same folders inside the project with `--scope project`). VS Code is set up only inside a project, where its skill goes into `.github/skills`; Windsurf is set up only in your home folder. Restart the assistant after any change.
 
 ## Verify the connection
 
@@ -70,6 +70,6 @@ The assistant normally starts and stops the server itself. If you run `git-into-
 
 ## GitHub token for the assistant
 
-The server resolves a token the same way the CLI does: `GITHUB_TOKEN` or `GH_TOKEN` in its environment, then `gh auth token` if the GitHub CLI is logged in. Because the assistant launches the server, the GitHub CLI route is the most reliable: it does not depend on which terminal exported a variable. If you must pass a token explicitly, use your assistant's environment-variable settings and never put a real token in a committed file or paste it into chat. Project-scope files such as `.mcp.json` and `.cursor/mcp.json` contain machine-specific paths and are ignored by Git in this repository. See [configuration](../configuration.md).
+The server looks for a token the same way the CLI does: `GIG_GITHUB_TOKEN`, `GITHUB_TOKEN`, or `GH_TOKEN` in its environment, then a `.env` file in the folder it starts in, then `gh auth token` if the GitHub CLI is logged in. Because the assistant launches the server, the GitHub CLI route is the most reliable: it does not depend on which terminal exported a variable. If you must pass a token explicitly, use your assistant's environment-variable settings and never put a real token in a committed file or paste it into chat. Project-scope files such as `.mcp.json` and `.cursor/mcp.json` contain machine-specific paths and are ignored by Git in this repository. See [configuration](../configuration.md).
 
 [Next: find organizations](04-find-organizations.md) · [Troubleshooting](../troubleshooting.md) · [MCP tool reference](../mcp.md) · [Guide contents](../README.md)

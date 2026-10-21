@@ -9,7 +9,7 @@
 
 Find your first open-source contribution and prepare for [Google Summer of Code (GSoC)](https://summerofcode.withgoogle.com), using real evidence instead of guesses.
 
-GSoC season has a familiar failure mode: beginners pick an abandoned repository, comment "can I work on this?" under an issue that five people already claimed, and submit a generic proposal that organizations reject. git-into-gsoc is built to prevent exactly that. It reads the official program site, the GSoC organization archive, and GitHub, and tells you which organizations fit you, which of their repositories mentors actually work in, whether a newcomer's pull request is likely to land there, and which beginner issues are genuinely free.
+Many beginners pick an inactive project, ask to work on a task that others already claimed, or send a generic proposal. git-into-gsoc helps you avoid that. It reads the official program site, the GSoC organization archive, and GitHub, and tells you which organizations fit you, which of their repositories (project folders on GitHub) mentors actually work in, whether a newcomer's pull request (a proposed change) is likely to be accepted there, and which beginner issues (reported bugs or tasks) are still free.
 
 You can use it in a terminal or let an AI assistant use it for you. It never fabricates organizations, issues, or deadlines, and it never helps produce spam contributions.
 
@@ -21,6 +21,11 @@ You need Git and Python 3.11 or newer. These commands work on macOS, Linux, and 
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
+```
+
+Open a new terminal so it can find the new command, then run:
+
+```bash
 git-into-gsoc program
 ```
 
@@ -33,14 +38,16 @@ git-into-gsoc setup
 
 On Windows, run `irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex` in PowerShell. To work from a clone instead, see [installation](docs/guide/02-install.md).
 
-Claude Code users can install the skill and the MCP server together as a plugin: `/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`. It needs [uv](https://docs.astral.sh/uv/) and runs the server straight from this repository.
+Claude Code users can install the skill and the MCP server together as a plugin: `/plugin marketplace add anandkaranubc/git-into-gsoc`, then `/plugin install git-into-gsoc@git-into-gsoc`. It needs [uv](https://docs.astral.sh/uv/) and runs the server straight from this repository.
 
 `program` shows the current GSoC phase and timeline with no GitHub token needed. Then tell the tool about yourself once and ask it what to do:
 
 ```bash
 git-into-gsoc profile --tech python --interests science --hours 10   # saved locally
 git-into-gsoc next                                                   # your next few actions, with the commands to run
-``` If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits. `git-into-gsoc doctor` shows what is configured.
+```
+
+If you use the GitHub CLI and have run `gh auth login`, the tool picks up that token automatically for higher API limits. `git-into-gsoc doctor` shows what is configured.
 
 Then explore:
 
@@ -65,9 +72,9 @@ git-into-gsoc proposal draft.md --github YOUR_USERNAME     # what organizations 
 | **Journey coach** (`profile`, `next`, `log`) | A saved profile, a daily "what should I do now" that re-checks your tracked issues live, and weekly notes |
 | **Progress store** | A local record of your phases, shortlist, tracked repos and issues, and notes |
 
-### Evidence, not vibes
+### Where the results come from
 
-- **Organizations** come from the official accepted-org list for the year, merged with the public archive for multi-year history, slot counts, and past project titles. When next year's list is not out yet, the tool says so and shows the latest official list.
+- **Organizations** come from the official accepted-org list for the year, merged with the public archive for multi-year history, slot counts (how many contributor projects Google funded for the organization), and past project titles. When next year's list is not out yet, the tool says so and shows the latest official list.
 - **Timelines** come from the official site when published. Unpublished years are projected from the last official year and clearly labelled as estimates.
 - **Repository ranking** reads the org's GSoC ideas page and counts open, unassigned beginner issues per repository.
 - **Repository health** measures what matters to newcomers: whether outside contributors' PRs get merged, review speed, open beginner issues, community files, and CI.

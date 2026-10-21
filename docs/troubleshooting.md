@@ -1,10 +1,10 @@
 # Troubleshooting
 
-Start with the symptom below. Run commands from the downloaded repository unless a step says otherwise. If you are still stuck, the last section explains how to ask for help.
+Start with the symptom below. If you installed from a clone, run these commands from that folder; with the one-line installer you can run them from anywhere. If you are still stuck, the last section explains how to ask for help.
 
 ## `git-into-gsoc: command not found`
 
-If you installed with the one-line installer, open a new terminal so your PATH is refreshed; uv puts the command in `~/.local/bin` (run `uv tool update-shell` if it is still missing). If you installed from a clone, activate the environment in the terminal you are using:
+If you installed with the one-line installer, open a new terminal so your PATH is refreshed; uv and pipx put the command in `~/.local/bin`. If it is still missing, run `uv tool update-shell` or `pipx ensurepath`, or add `~/.local/bin` to your PATH (the list of folders your shell searches for commands), then open a new terminal. If you installed from a clone, activate the environment in the terminal you are using:
 
 ```bash
 source .venv/bin/activate
@@ -50,7 +50,7 @@ The message says when the limit resets and which limit it was. A **search rate l
 The token is invalid or expired. Run `gh auth login` again, replace the token, or remove it so the tool falls back to the next source:
 
 ```bash
-unset GITHUB_TOKEN GH_TOKEN
+unset GIG_GITHUB_TOKEN GITHUB_TOKEN GH_TOKEN
 ```
 
 Also remove a token stored in `.env` if you want to stop using it. Restart the assistant's MCP server after changing settings. Do not share the token when asking for help.
@@ -59,7 +59,7 @@ Also remove a token stored in `.env` if you want to stop using it. Restart the a
 
 Check spelling. A repository argument looks like `sympy/sympy` or a GitHub URL. `issues --org` takes a GitHub login; `repos` and `org` take the GSoC organization name or a GitHub login. Private or deleted repositories also return 404. `issue` refuses pull-request numbers and tells you so.
 
-Run `git-into-gsoc doctor` first: it reports whether the official site, the organization archive, and the commit statistics service answer, so you know which source is down. For organization searches, try a broader `--query` or fewer technologies. The tool cannot discover future participants before Google announces them; until then it shows the latest official list and says so. If the official site and the archive are both unavailable, the error names the source; use the [official GSoC directory](https://summerofcode.withgoogle.com) and retry later.
+Run `git-into-gsoc doctor` first: it reports whether the official site, the organization archive, and the commit statistics service answer, so you know which source is down. For organization searches, try a broader `--query` or fewer technologies. The tool cannot discover future participants before Google announces them; until then it shows the latest official list and says so. If the official site and the archive are both unavailable, the error names the source; open the organization list on [summerofcode.withgoogle.com](https://summerofcode.withgoogle.com) in your browser and try again later.
 
 An empty issue search does not mean the project has no useful work. Try `--label` with the repository's own beginner label (shown by `repo`), `--scope all`, or browse the issue tracker and contribution guide. See [how to choose an issue](guide/05-choose-an-issue.md).
 

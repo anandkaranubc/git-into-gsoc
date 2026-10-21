@@ -69,7 +69,13 @@ Adding `--github YOUR_USERNAME` uses your recent public repositories to infer yo
 
 ## If results are missing or unhelpful
 
-Try a broader `--query`, another technology, or omit the topic. Check the official directory directly if both the official site and the archive are unavailable; the error message names the source that failed. Scores help sort research; they do not measure your chances of selection. Read [sources and limitations](../sources.md) for more detail.
+Try a broader `--query`, another technology, or omit the topic. If the tool cannot reach the official site or the archive, the error names the source that failed; open the organization list on [summerofcode.withgoogle.com](https://summerofcode.withgoogle.com) in your browser, or try again later. Scores help sort research; they do not measure your chances of selection. Read [sources and limitations](../sources.md) for more detail.
+
+When you have a short list with a reason for each organization, mark the step done:
+
+```bash
+git-into-gsoc progress complete_phase --phase discover
+```
 
 **Ready to move on:** you have an organization, its current ideas page, and a reason it fits you.
 

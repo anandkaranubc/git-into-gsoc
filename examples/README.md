@@ -1,6 +1,6 @@
 # Examples
 
-Working examples to copy from. Run the terminal examples from the repository folder after installing, with the environment turned on:
+Working examples to copy from. If you installed from a clone, turn on its environment first from the repository folder; with the one-line installer, skip this step:
 
 ```bash
 source .venv/bin/activate

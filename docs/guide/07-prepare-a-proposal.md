@@ -17,7 +17,7 @@ Collect the project idea, required questions, relevant code or documentation, yo
 git-into-gsoc contributions --org "SymPy"
 ```
 
-With your GitHub username saved in your profile, it lists your pull requests, issues, and reviews in the organization's repositories with their state, ready to paste into the "about you" and "prior contributions" sections. The proposal check below verifies those links again. Check the organization's requested project size and your availability. There is no universal requirement for a fixed number of merged PRs; follow the organization's prerequisites.
+It needs your GitHub username: if you did not save it in step 1, run `git-into-gsoc profile --github YOUR_USERNAME` first, or add `--github YOUR_USERNAME` to this command. It lists your pull requests, issues, and reviews in the organization's repositories with their state, ready to paste into the "about you" and "prior contributions" sections. The proposal check below verifies those links again. Check the organization's requested project size and your availability. There is no universal requirement for a fixed number of merged PRs; follow the organization's prerequisites.
 
 To see how big accepted projects have been and what the organization values:
 
@@ -64,6 +64,12 @@ The check never rewrites anything. Fix the failures, then the warnings, in your 
 Sending a document to a mentor is not the formal submission. Verify the deadline and time zone on the [official timeline](https://developers.google.com/open-source/gsoc/timeline); the tool's estimates are not deadlines.
 
 Read [Google's proposal guidance](https://google.github.io/gsocguides/student/writing-a-proposal.html), [AI guidance](https://developers.google.com/open-source/gsoc/resources/ai_guidance), and [advice about low-quality proposals](https://developers.google.com/open-source/gsoc/resources/spam_proposals). Specific evidence and a realistic plan matter more than elaborate wording.
+
+When your draft has had mentor feedback and is ready for the official site, mark the step done:
+
+```bash
+git-into-gsoc progress complete_phase --phase proposal
+```
 
 **Ready to submit:** your proposal follows the organization's instructions, contains only claims you can support, and describes work you understand.
 

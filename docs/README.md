@@ -6,9 +6,9 @@ You do not need to understand the whole project on day one. Work through one ste
 |---|---|
 | [1. Understand GSoC](guide/01-understand-gsoc.md) | The basics, official rules, and a realistic starting goal |
 | [2. Install the tool](guide/02-install.md) | A working command and a way to check your setup |
-| [3. Connect an assistant (optional)](guide/03-connect-your-ai-assistant.md) | An assistant that can use the same tools |
+| [3. Connect your AI assistant (optional)](guide/03-connect-your-ai-assistant.md) | An assistant that can use the same tools |
 | [4. Find organizations](guide/04-find-organizations.md) | A short list of communities you want to learn about |
-| [5. Explore a repository and choose an issue](guide/05-choose-an-issue.md) | One task you understand and can investigate |
+| [5. Pick a repository and an issue](guide/05-choose-an-issue.md) | One task you understand and can investigate |
 | [6. Make your first contribution](guide/06-first-contribution.md) | A change ready for review and a clear explanation of it |
 | [7. Prepare your proposal](guide/07-prepare-a-proposal.md) | A plan based on real project work and feedback |
 | [8. Keep track of your progress](guide/08-track-progress.md) | Notes and a manageable next step |

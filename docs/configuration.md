@@ -10,7 +10,7 @@ GitHub allows 60 unauthenticated API requests per hour and 5,000 with a token. R
 2. The same three names in a `.env` file in the current folder
 3. The [GitHub CLI](https://cli.github.com/): if `gh` is installed and you have run `gh auth login`, the tool runs `gh auth token` for you
 
-The GitHub CLI route is the easiest and works for the MCP server too, because it does not depend on which terminal exported a variable. Set `GIG_USE_GH_CLI=false` to disable it. Besides the higher limit, a token unlocks the GraphQL path in `repo`, which adds the insider set and the time to a first human reply to the grade.
+The GitHub CLI route is the easiest and works for the MCP server too, because it does not depend on which terminal exported a variable. Set `GIG_USE_GH_CLI=false` to disable it. Besides the higher limit, a token lets `repo` use one GraphQL query, which reads each pull request's own timeline for the first human reply instead of estimating it from recent comments, and uses fewer requests.
 
 To use a personal access token instead, create one using [GitHub's instructions](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens). The tool reads public data only, so choose no scopes (or `public_repo` on classic tokens) and an expiration date. One way to supply it is a local `.env` file. From the repository folder:
 

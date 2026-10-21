@@ -1,6 +1,6 @@
 # 5. Pick a repository and an issue
 
-A GitHub **repository**, often shortened to **repo**, holds a project's files and history. An **issue** is a discussion about a bug, question, or requested change. A **pull request (PR)** proposes changes for maintainers to review.
+A GitHub **repository**, often shortened to **repo**, holds a project's files and history. An **issue** is a discussion about a bug, question, or requested change. A **pull request (PR)** proposes changes for maintainers to review. When maintainers accept a pull request they **merge** it (people also say it **lands**). A **commit** is one saved change in the project's history, and **continuous integration (CI)** is the set of automated tests that runs on each pull request.
 
 ## Which of the organization's repositories?
 
@@ -34,6 +34,12 @@ Expect a grade from A to F, the evidence behind it, and setup hints. The signals
 git-into-gsoc repo sympy/sympy --track          # same check, and saves the repo to your progress
 ```
 
+When you have one or two repositories you want to work in, mark the step done:
+
+```bash
+git-into-gsoc progress complete_phase --phase evaluate
+```
+
 ## Get your bearings in the repository
 
 ```bash
@@ -46,6 +52,20 @@ Before you look for an issue, spend one session learning how the project is put 
 git-into-gsoc progress complete_phase --phase orient
 ```
 
+## Introduce yourself to the community
+
+Before you claim an issue, say hello in the organization's public channel: the chat or mailing list that `org` lists. A short introduction that mentions something concrete you read or ran with `orient` makes your later comment on an issue land better, and the [official contributor guide](https://google.github.io/gsocguides/student/) asks for public contact first.
+
+```bash
+git-into-gsoc draft intro --org "SymPy"
+```
+
+`draft intro` and `draft question` give you a short, specific structure for a first message; fill it in with your own words. When you have written your message, `git-into-gsoc draft intro --check my-message.md` checks it before you post: placeholders you forgot to replace, phrases that read as machine-written, or a first message that is only a greeting. Read recent conversations to learn how the project talks and decides. When you ask for help, say what you tried, the exact error without private data, and the relevant versions. Ask in public rather than messaging maintainers privately, do not send the same request to several people, and give volunteers time to reply.
+
+```bash
+git-into-gsoc progress complete_phase --phase community
+```
+
 ## Find an issue that is actually free
 
 ```bash
@@ -53,7 +73,7 @@ git-into-gsoc issues --repo sympy/sympy -n 5
 git-into-gsoc issues --language python -n 10
 ```
 
-Without `--repo` or `--org`, the search covers only repositories owned by GSoC organizations that use your language, and each result shows the organization it belongs to. Add `--scope all` to search every repository on GitHub. The search asks GitHub for open issues labelled "good first issue" (falling back to "help wanted" when results are thin) that have no assignee, no linked PR, are not in archived repositories, and were updated in the last year. The top candidates are then verified against their timelines.
+Without `--repo` or `--org`, the search covers only repositories owned by GSoC organizations that use your language, and each result shows the organization it belongs to. Add `--scope all` to search every repository on GitHub. The search asks GitHub for open issues labelled "good first issue" or "help wanted" (with "good first issue" ranked first) that have no assignee, no linked PR, are not in archived repositories, and were updated in the last year. The top candidates are then verified against their timelines.
 
 Each result has a status:
 
@@ -105,6 +125,12 @@ Replace the brackets with real observations. Do not post the template unchanged,
 git-into-gsoc issue sympy/sympy#12345 --track   # same check, and saves the issue to your progress
 ```
 
-**Ready to move on:** you can explain the problem, have checked the discussion, and know the project's contribution process.
+When you have one issue you can reproduce and explain, mark the step done:
+
+```bash
+git-into-gsoc progress complete_phase --phase find_issues
+```
+
+**Ready to move on:** you can explain the problem, have introduced yourself in the project's channel, have checked the discussion, and know the project's contribution process.
 
 [Next: make your first contribution](06-first-contribution.md) · [Guide contents](../README.md)

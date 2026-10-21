@@ -6,7 +6,7 @@ A few notes help you remember what you learned and choose a next step. Start whe
 git-into-gsoc progress summary
 ```
 
-The summary shows completed phases, saved organizations, repositories, and issues. On a fresh installation the phase count is `0/10`. It is a personal checklist, not an application status or a measure of readiness.
+The summary is printed as JSON (structured text that scripts and assistants read easily). It lists completed phases, saved organizations, repositories, and issues: `completion` shows `0/10` on a fresh installation, and `next_phase` names the first phase you have not marked done. It is a personal checklist, not an application status or a measure of readiness.
 
 ## Save something you want to revisit
 
@@ -17,12 +17,12 @@ git-into-gsoc progress shortlist_org --value "SymPy"
 git-into-gsoc progress track_repo --value sympy/sympy
 git-into-gsoc progress track_issue --value https://github.com/sympy/sympy/issues/12345
 git-into-gsoc progress note --value "Read the setup guide. Next: run the project locally."
-git-into-gsoc progress complete_phase --phase learn
+git-into-gsoc progress complete_phase --phase track
 ```
 
 The tool saves the text you provide; it does not assign the issue to you. Re-run `git-into-gsoc issue <link>` before you start work on a tracked issue, because availability changes daily during GSoC season.
 
-Valid phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`; the [journey map](../journey.md) shows which commands and guide page belong to each. Mark one complete only when its goal is useful and satisfied for you. You can revisit any phase.
+Valid phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`; the [journey map](../journey.md) shows which commands and guide page belong to each. Each guide chapter ends with the command for its own phase; mark `track` once keeping a weekly note is a habit. Mark a phase complete only when its goal is useful and satisfied for you. You can revisit any phase.
 
 ## Keep a weekly note
 
