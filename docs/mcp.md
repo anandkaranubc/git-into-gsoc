@@ -53,7 +53,7 @@ How the parameters work:
 - `scope="gsoc"` searches repositories of GSoC organizations that use the language. `scope="all"` searches every public repository. Giving `org` or `repo` narrows the search to that owner or repository.
 - `gsoc_org_ideas`, `gsoc_orient_repo`, `gsoc_issue_pointers`, `gsoc_contribution_evidence`, and `gsoc_draft` report expected failures (unknown organization, a pull request passed as an issue, an unknown draft kind) as tool errors with a next step rather than as result JSON. `gsoc_next` and `gsoc_log` are the only new tools that write, and only to the local progress file.
 - The server also offers four prompts an assistant can run as commands: `coach_phase(phase)`, `before_you_comment(issue)`, `first_pr_plan(repo, issue)`, and `weekly_checkin()`. Each tells the assistant which tools to call and what not to invent. The `gsoc://progress` resource returns the saved progress summary without a tool call.
-- `gsoc_progress` actions are `summary`, `complete_phase` (needs `phase`), `shortlist_org`, `track_repo`, `track_issue`, and `note` (each needs `value`). Phase names are `learn`, `discover`, `evaluate`, `find_issues`, `contribute`, `community`, `proposal`, and `track`.
+- `gsoc_progress` actions are `summary`, `complete_phase` (needs `phase`), `shortlist_org`, `track_repo`, `track_issue`, and `note` (each needs `value`). Phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`.
 
 ## Example calls
 

@@ -6,7 +6,7 @@ A few notes help you remember what you learned and choose a next step. Start whe
 git-into-gsoc progress summary
 ```
 
-The summary shows completed phases, saved organizations, repositories, and issues. On a fresh installation the phase count is `0/8`. It is a personal checklist, not an application status or a measure of readiness.
+The summary shows completed phases, saved organizations, repositories, and issues. On a fresh installation the phase count is `0/10`. It is a personal checklist, not an application status or a measure of readiness.
 
 ## Save something you want to revisit
 
@@ -22,7 +22,7 @@ git-into-gsoc progress complete_phase --phase learn
 
 The tool saves the text you provide; it does not assign the issue to you. Re-run `git-into-gsoc issue <link>` before you start work on a tracked issue, because availability changes daily during GSoC season.
 
-Valid phase names are `learn`, `discover`, `evaluate`, `community`, `find_issues`, `contribute`, `proposal`, and `track`; the [journey map](../journey.md) shows which commands and guide page belong to each. Mark one complete only when its goal is useful and satisfied for you. You can revisit any phase.
+Valid phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`; the [journey map](../journey.md) shows which commands and guide page belong to each. Mark one complete only when its goal is useful and satisfied for you. You can revisit any phase.
 
 ## Keep a weekly note
 

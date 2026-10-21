@@ -51,9 +51,15 @@ Questions: Is there anything you still need help with?
 
 The project's **continuous integration (CI)** checks are automated tests that run after you push. Open their logs if they fail. A draft PR can be useful for early feedback when the project welcomes drafts. Explain what is unfinished.
 
-## Work with the community
+## See it through review
 
-Reviews often ask for changes. That is a normal part of collaboration. Reply to questions, make the requested updates, and push new commits to the same branch. If you disagree, explain your reasoning with an example.
+Reviews often ask for changes. That is a normal part of collaboration, and how you respond is the strongest predictor of whether your pull request lands. Reply to every review comment within a day, even if only to say when you will get to it. Make the requested updates, push them as new commits to the same branch, and say what changed. If you disagree, explain your reasoning with an example. If you are stuck, ask one focused question instead of going quiet; a pull request that falls silent is usually closed. If the project declines the change, thank them, note what you learned, and choose the next thing. When reviewers know you finish what you start, mark the phase done:
+
+```bash
+git-into-gsoc progress complete_phase --phase iterate
+```
+
+## Work with the community
 
 When stuck, ask in the project's preferred channel (the `org` command lists them) with what you tried, the exact error without private data, and the relevant versions. Avoid sending the same request to several maintainers. Allow time for volunteers to reply, and follow up according to the community's expectations.
 

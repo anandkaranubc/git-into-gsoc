@@ -34,6 +34,18 @@ Expect a grade from A to F, the evidence behind it, and setup hints. The signals
 git-into-gsoc repo sympy/sympy --track          # same check, and saves the repo to your progress
 ```
 
+## Get your bearings in the repository
+
+```bash
+git-into-gsoc orient sympy/sympy
+```
+
+Before you look for an issue, spend one session learning how the project is put together. `orient` prints a code map with entry points, the command CI really runs for tests, who merges pull requests, and the rules you must follow before opening one (sign-offs, commit style, templates, AI disclosure), each with the file it came from. Then clone the repository, build it, run its test suite once, and read the files behind the feature you care about. When you can say where a change would go and how you would test it, mark the phase done:
+
+```bash
+git-into-gsoc progress complete_phase --phase orient
+```
+
 ## Find an issue that is actually free
 
 ```bash
