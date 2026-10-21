@@ -20,6 +20,7 @@ from git_into_gsoc.errors import GigError, InputError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, journey_overview
 from git_into_gsoc.models import LogEntry
 from git_into_gsoc.service import GSoCToolkit
+from git_into_gsoc.text import strip_hidden, strip_hidden_all
 from git_into_gsoc.validation import split_csv
 
 console = Console()
@@ -33,9 +34,10 @@ class _FriendlyErrors(TyperGroup):
         try:
             return super().invoke(ctx)
         except GigError as exc:
-            err_console.print(f"[bold red]error:[/bold red] {exc}")
+            # Messages quote what was typed ("a/b#[/bold]"), so they print literally.
+            err_console.print(f"[bold red]error:[/bold red] {escape(str(exc))}")
             if exc.hint:
-                err_console.print(f"[dim]hint:[/dim] {exc.hint}")
+                err_console.print(f"[dim]hint:[/dim] {escape(exc.hint)}")
             raise typer.Exit(code=1) from exc
 
 
@@ -74,7 +76,8 @@ _MARKUP_TAG = re.compile(r"(?<!\\)(\[[a-z#/@][^\[\]]*\])")
 
 
 def escape(text: str) -> str:
-    escaped = _MARKUP_TAG.sub(r"\\\1", text)
+    """Make text print literally: no markup, no hidden or terminal-control characters."""
+    escaped = _MARKUP_TAG.sub(r"\\\1", strip_hidden(text))
     if escaped.endswith("\\") and not escaped.endswith("\\\\"):
         escaped += "\\"  # a trailing backslash would otherwise escape the next tag
     return escaped
@@ -106,6 +109,7 @@ def _emit_or_fail(data: dict[str, Any], output: Output) -> None:
 
 
 def _emit(data: object, output: Output) -> None:
+    data = strip_hidden_all(data)
     if output == Output.json:
         console.print_json(json.dumps(data, default=str))
     else:
