@@ -72,6 +72,16 @@ def mentions(text: str, term: str) -> bool:
     return bool(term) and bool(_word_pattern(term).search(text))
 
 
+def _term_groups(terms: list[str] | None) -> list[list[str]]:
+    """Each given term with its canonical parts, one group per distinct term."""
+    groups: dict[frozenset[str], list[str]] = {}
+    for term in terms or []:
+        parts = expand_terms([term])
+        if parts:
+            groups.setdefault(frozenset(parts), sorted(parts))
+    return list(groups.values())
+
+
 class MatchResult(NamedTuple):
     score: float
     reasons: list[str]
@@ -98,30 +108,38 @@ def score_org_match(
     relevance = 0.0
     reasons: list[str] = []
 
-    for tech in sorted(wanted_tech):
+    def tech_match(tech: str) -> tuple[float, str]:
         if tech in tech_tags:
-            relevance += 20
-            reasons.append(f"Uses {tech}")
-        elif tech in topic_tags:
-            relevance += 10
-            reasons.append(f"Topic tag {tech}")
-        elif len(tech) > 2 and mentions(text, tech):
-            relevance += 5
-            reasons.append(f"Mentions {tech}")
+            return 20, f"Uses {tech}"
+        if tech in topic_tags:
+            return 10, f"Topic tag {tech}"
+        if len(tech) > 2 and mentions(text, tech):
+            return 5, f"Mentions {tech}"
+        return 0, ""
 
-    for topic in sorted(wanted_topics):
+    def topic_match(topic: str) -> tuple[float, str]:
         if topic in topic_tags or topic in tech_tags:
-            relevance += 16
-            reasons.append(f"Topic: {topic}")
-        elif any(mentions(tag, topic) or mentions(topic, tag) for tag in topic_tags):
-            relevance += 10
-            reasons.append(f"Related topic: {topic}")
-        elif org.category and mentions(org.category, topic):
-            relevance += 8
-            reasons.append(f"Category: {org.category}")
-        elif len(topic) > 2 and mentions(text, topic):
-            relevance += 5
-            reasons.append(f"Mentions {topic}")
+            return 16, f"Topic: {topic}"
+        if any(mentions(tag, topic) or mentions(topic, tag) for tag in topic_tags):
+            return 10, f"Related topic: {topic}"
+        if org.category and mentions(org.category, topic):
+            return 8, f"Category: {org.category}"
+        if len(topic) > 2 and mentions(text, topic):
+            return 5, f"Mentions {topic}"
+        return 0, ""
+
+    # Each term the person gave counts once, by its best part: "C/C++" is one skill,
+    # not three ("c", "c++", and "c/c++").
+    for group in _term_groups(technologies):
+        points, reason = max((tech_match(t) for t in group), key=lambda m: m[0])
+        if points:
+            relevance += points
+            reasons.append(reason)
+    for group in _term_groups(topics):
+        points, reason = max((topic_match(t) for t in group), key=lambda m: m[0])
+        if points:
+            relevance += points
+            reasons.append(reason)
 
     if query.strip():
         tokens = [canonical(t) for t in query.split() if len(t) > 1]

@@ -274,3 +274,15 @@ def test_beginner_label_variants_count_once() -> None:
     one = _candidate(["good first issue"])
     many = _candidate(["good first issue", "beginner", "easy", "starter"])
     assert many.beginner_score == one.beginner_score
+
+
+def test_a_compound_term_counts_once() -> None:
+    # A simulated run typed --tech "C/C++" and saw MariaDB score 137 ("Uses c; Uses c++;
+    # Uses c/c++") against 79 for --tech C++: one skill counted three times.
+    org = _org(name="MariaDB", technologies=["c", "c++", "c/c++"], topics=["databases"])
+    compound = score_org_match(org, technologies=["C/C++"])
+    single = score_org_match(org, technologies=["C++"])
+    assert compound.score == single.score
+    assert sum(r.startswith("Uses") for r in compound.reasons) == 1
+    both = score_org_match(org, technologies=["C", "C++"])  # two skills still count twice
+    assert both.score > single.score
