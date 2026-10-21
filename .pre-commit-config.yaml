@@ -1,6 +1,6 @@
-default_language_version:
-  python: python3.12
-
+# Runs the same formatter, linter, and type checker as CI before each commit.
+# One-time setup after `pip install -e ".[dev]"`:  pre-commit install
+# Run on everything:                                pre-commit run --all-files
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -13,21 +13,23 @@ repos:
       - id: trailing-whitespace
       - id: detect-private-key
 
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.0
+  # Ruff and mypy come from the project's own virtual environment, so the
+  # versions and dependencies always match what CI and pyproject.toml use.
+  - repo: local
     hooks:
       - id: ruff
-        args: [--fix]
+        name: ruff (lint)
+        entry: ruff check --fix
+        language: system
+        types_or: [python, pyi]
       - id: ruff-format
-
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.15.0
-    hooks:
+        name: ruff (format)
+        entry: ruff format
+        language: system
+        types_or: [python, pyi]
       - id: mypy
-        additional_dependencies:
-          - pydantic>=2.7
-          - pydantic-settings>=2.3
-          - types-PyYAML
-        args: [--config-file=pyproject.toml]
-        pass_filenames: false
+        name: mypy
         entry: mypy src
+        language: system
+        pass_filenames: false
+        files: ^(src/.*\.py|pyproject\.toml)$

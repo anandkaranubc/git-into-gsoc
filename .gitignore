@@ -39,6 +39,7 @@ coverage.xml
 # Installer backups
 *.bak
 
-# Installer-generated skill mirrors (canonical skill lives in skills/)
+# Installer-generated skill copies. The tracked skill lives in skills/git-into-gsoc.
+.agents/skills/
 .cursor/skills/
 .claude/skills/

@@ -1,8 +1,11 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Official Google Summer of Code
+  - name: Troubleshooting guide
+    url: https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/troubleshooting.md
+    about: Common setup and connection problems, with fixes to try first
+  - name: Official Google Summer of Code site
     url: https://summerofcode.withgoogle.com
-    about: Canonical program site for dates, orgs, and proposal submission
-  - name: GSoC AI guidance
+    about: Program rules, dates, participating organizations, and proposal submission
+  - name: GSoC guidance on AI tools
     url: https://developers.google.com/open-source/gsoc/resources/ai_guidance
-    about: Official guidance on AI tooling for contributors
+    about: What Google and organizations expect when contributors use AI assistants

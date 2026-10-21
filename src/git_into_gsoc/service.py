@@ -321,17 +321,17 @@ class GSoCToolkit:
         return {
             "checklist": [i.model_dump() for i in proposal_checklist()],
             "structure": [
-                "Synopsis — one paragraph problem + proposed outcome",
+                "Synopsis: one paragraph on the problem and your proposed outcome",
                 "Benefits to the community",
                 "Deliverables and non-goals",
                 "Implementation plan with milestones",
                 "Timeline (weekly) with buffer",
                 "Related prior art / design notes",
-                "About you — relevant experience + links to contributions",
+                "About you: relevant experience and links to your contributions",
                 "AI usage statement aligned to org policy",
             ],
             "warnings": [
-                "Generic LLM essays are frequently rejected — see official spam guidance",
+                "Generic AI-written essays are often rejected. See the official spam guidance",
                 "Submit only through the official GSoC website",
                 "Prior org interaction is often the strongest acceptance signal",
             ],
@@ -343,9 +343,9 @@ class GSoCToolkit:
 
 def _repo_recommendation(score: float, warnings: list[str]) -> str:
     if score >= 80:
-        return "Strong candidate for contribution — proceed with setup and issue selection"
+        return "Strong candidate. Go ahead with setup and pick an issue."
     if score >= 65:
-        return "Promising with caveats — read warnings and confirm mentor responsiveness"
+        return "Promising, with caveats. Read the warnings and check that maintainers reply."
     if score >= 45:
-        return "Risky — only continue if you have a specific mentor contact or strong fit"
-    return "Poor fit for a first GSoC contribution — choose a healthier repository"
+        return "Risky. Only continue if you have a mentor contact or a strong reason."
+    return "Poor fit for a first GSoC contribution. Choose a healthier repository."

@@ -69,7 +69,7 @@ class Settings(BaseSettings):
 
 
 def resolve_token(settings: Settings) -> tuple[str | None, str | None]:
-    """Return (token, source) — explicit setting, env vars, then `gh auth token`."""
+    """Return (token, source): explicit setting, env vars, then `gh auth token`."""
     if settings.github_token:
         return settings.github_token, "environment"
     for key in ("GITHUB_TOKEN", "GH_TOKEN"):

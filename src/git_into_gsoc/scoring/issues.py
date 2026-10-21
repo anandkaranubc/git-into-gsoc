@@ -104,7 +104,7 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
         signals.append("Issue appears well-specified")
     if len(issue.body_excerpt) < 40:
         score -= 5.0
-        signals.append("Very short issue body — clarify with maintainers")
+        signals.append("Very short issue body. Ask maintainers for details")
 
     issue.beginner_score = round(max(0.0, min(score, 100.0)), 1)
     issue.signals = signals

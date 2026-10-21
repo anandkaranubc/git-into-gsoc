@@ -44,12 +44,12 @@ OFFICIAL_SOURCES: list[OfficialSource] = [
 ANTI_SPAM_RULES: list[str] = [
     "Never fabricate organizations, issues, mentors, or deadlines.",
     "Never mass-message mentors or open drive-by PRs without reading CONTRIBUTING.md.",
-    "Do not submit AI-written proposals unless the org explicitly allows it — many auto-reject them.",
+    "Do not submit AI-written proposals unless the org explicitly allows it. Many reject them.",
     "You must understand and be able to explain every line you submit.",
     "Prefer meaningful fixes/tests/docs over trivial typo spam.",
     "Interact in the org's preferred public channels before proposing.",
     "Cite evidence (issue URLs, PR links, docs) for every recommendation.",
-    "If data is missing or uncertain, say so — do not guess.",
+    "If data is missing or uncertain, say so. Do not guess.",
 ]
 
 PHASE_GUIDES: dict[JourneyPhase, dict[str, object]] = {
@@ -138,7 +138,7 @@ def proposal_checklist() -> list[ProposalChecklistItem]:
         ProposalChecklistItem(
             id="prior_contrib",
             title="Link prior contributions to the org",
-            description="Merged PRs, issues, reviews, or docs — with URLs.",
+            description="Merged PRs, issues, reviews, or docs, with links.",
         ),
         ProposalChecklistItem(
             id="community",

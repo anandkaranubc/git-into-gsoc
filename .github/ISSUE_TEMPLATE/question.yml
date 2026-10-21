@@ -1,0 +1,15 @@
+name: Question
+description: Ask about using or contributing to git-into-gsoc
+labels: ["question"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the [troubleshooting guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/troubleshooting.md) first. For GSoC rules and dates, the [official site](https://summerofcode.withgoogle.com) is the source of truth.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What are you trying to do, and what have you tried so far?
+    validations:
+      required: true

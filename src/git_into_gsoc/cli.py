@@ -36,9 +36,14 @@ class _FriendlyErrors(TyperGroup):
             raise typer.Exit(code=1) from exc
 
 
+OUTPUT_HELP = "rich for readable tables and panels, json for scripts and assistants"
+
 app = typer.Typer(
     name="git-into-gsoc",
-    help="AI-native toolkit for aspiring Google Summer of Code contributors.",
+    help=(
+        "Prepare for Google Summer of Code with real data: find organizations, "
+        "check repositories, find beginner issues, and plan your proposal."
+    ),
     no_args_is_help=True,
     rich_markup_mode="rich",
     cls=_FriendlyErrors,
@@ -49,6 +54,9 @@ app = typer.Typer(
 class Output(StrEnum):
     rich = "rich"
     json = "json"
+
+
+OUTPUT_OPTION = typer.Option(Output.rich, "--output", help=OUTPUT_HELP)
 
 
 def _toolkit() -> GSoCToolkit:
@@ -78,7 +86,7 @@ def main_callback(
         is_eager=True,
     ),
 ) -> None:
-    """AI-native toolkit for aspiring Google Summer of Code contributors."""
+    """Prepare for Google Summer of Code with real data."""
     del version
 
 
@@ -98,11 +106,11 @@ def _relative(days: int) -> str:
 
 @app.command("program")
 def program_cmd(
-    year: int = typer.Option(2027, help="Program year"),
+    year: int = typer.Option(2027, help="Program year, for example 2027"),
     size: ProjectSize = typer.Option(
-        ProjectSize.medium, "--size", help="Project size for evaluation deadlines"
+        ProjectSize.medium, "--size", help="Project size; evaluation deadlines differ by size"
     ),
-    output: Output = Output.rich,
+    output: Output = OUTPUT_OPTION,
 ) -> None:
     """Show the program timeline, current phase, and what to do now."""
     data = _toolkit().program_info(year, project_size=size.value)
@@ -155,15 +163,23 @@ def _trend(projects_by_year: dict[str, int]) -> str:
 
 @app.command("orgs")
 def orgs_cmd(
-    query: str | None = typer.Option(None, "--query", "-q", help="Free-text search"),
-    tech: str | None = typer.Option(None, "--tech", "-t", help="Comma-separated technologies"),
-    topics: str | None = typer.Option(None, "--topics", help="Comma-separated topics/interests"),
-    category: str | None = typer.Option(None, "--category", "-c"),
-    year: int | None = typer.Option(
-        None, help="Program year (default: target year; falls back to latest announced)"
+    query: str | None = typer.Option(
+        None, "--query", "-q", help="Words to look for in names and descriptions"
     ),
-    limit: int = typer.Option(10, "--limit", "-n"),
-    output: Output = Output.rich,
+    tech: str | None = typer.Option(
+        None, "--tech", "-t", help="Technologies you know, comma-separated (python,javascript)"
+    ),
+    topics: str | None = typer.Option(
+        None, "--topics", help="Topics you care about, comma-separated (science,education)"
+    ),
+    category: str | None = typer.Option(
+        None, "--category", "-c", help="Organization category, for example 'Science and medicine'"
+    ),
+    year: int | None = typer.Option(
+        None, help="Program year (default: target year; falls back to the latest announced)"
+    ),
+    limit: int = typer.Option(10, "--limit", "-n", help="How many organizations to show"),
+    output: Output = OUTPUT_OPTION,
 ) -> None:
     """Rank mentoring organizations for your skills and interests."""
     data = _toolkit().match_orgs(
@@ -189,7 +205,7 @@ def orgs_cmd(
         table.add_row(
             f"{org['match_score']:.0f}",
             org["name"],
-            "; ".join(fit) or "—",
+            "; ".join(fit) or "(no specific match)",
             str(len(org.get("years_active") or [])),
             _trend(org.get("projects_by_year") or {}),
         )
@@ -204,9 +220,11 @@ def orgs_cmd(
 
 @app.command("org")
 def org_cmd(
-    name: str,
+    name: str = typer.Argument(
+        ..., help="Organization name, part of it, or its slug, for example SymPy"
+    ),
     year: int | None = typer.Option(None, help="Program year"),
-    output: Output = Output.rich,
+    output: Output = OUTPUT_OPTION,
 ) -> None:
     """Show ideas page, channels, GitHub orgs, slot history, and past projects."""
     data = _toolkit().org_details(name, year=year)
@@ -214,7 +232,7 @@ def org_cmd(
         _emit(data, Output.json)
         return
     org = data["organization"]
-    lines = [f"[bold]{org['name']}[/bold] — {org['description']}"]
+    lines = [f"[bold]{org['name']}[/bold]", org["description"]]
     for label, key in (
         ("Ideas", "ideas_url"),
         ("Contributor guide", "guide_url"),
@@ -237,7 +255,7 @@ def org_cmd(
         Panel(Text.from_markup("\n".join(lines)), title=f"{data['catalog']['year']} · {status}")
     )
     if org.get("recent_projects"):
-        table = Table(title="Recent accepted projects (scope reference — never copy)")
+        table = Table(title="Recent accepted projects (for scope reference, never copy)")
         table.add_column("Year")
         table.add_column("Title", overflow="fold")
         for project in org["recent_projects"]:
@@ -250,8 +268,8 @@ def projects_cmd(
     query: str | None = typer.Argument(None, help="Keywords, e.g. 'graph neural networks'"),
     org: str | None = typer.Option(None, "--org", help="Limit to one organization"),
     since: int | None = typer.Option(None, "--since", help="Earliest program year"),
-    limit: int = typer.Option(15, "--limit", "-n"),
-    output: Output = Output.rich,
+    limit: int = typer.Option(15, "--limit", "-n", help="How many projects to show"),
+    output: Output = OUTPUT_OPTION,
 ) -> None:
     """Search past accepted GSoC projects to calibrate scope and find orgs."""
     data = _toolkit().past_projects(query, org=org, since=since, limit=limit)
@@ -291,14 +309,23 @@ def repos_cmd(
     table.add_column("Repository", overflow="fold")
     table.add_column("Why", overflow="fold")
     for repo in data["repos"]:
-        table.add_row(f"{repo['score']:.0f}", repo["full_name"], "; ".join(repo["reasons"]) or "—")
+        table.add_row(
+            f"{repo['score']:.0f}",
+            repo["full_name"],
+            "; ".join(repo["reasons"]) or "(no specific match)",
+        )
     console.print(table)
     console.print(f"[dim]{data['next_step']}[/dim]")
 
 
 @app.command("repo")
-def repo_cmd(full_name: str, output: Output = Output.rich) -> None:
-    """Will a newcomer's PR land here? Health grade, merge behaviour, and setup path."""
+def repo_cmd(
+    full_name: str = typer.Argument(
+        ..., help="Repository as owner/name or a GitHub URL, for example sympy/sympy"
+    ),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Check whether a newcomer's PR can land here: health grade, merge behaviour, setup path."""
     data = _toolkit().evaluate_repo(full_name)
     if output == Output.json:
         _emit(data, output)
@@ -344,19 +371,23 @@ _STATUS_STYLE = {
 
 @app.command("issues")
 def issues_cmd(
-    language: str | None = typer.Option(None, "--language", "-l"),
-    org: str | None = typer.Option(None, "--org", help="GitHub org/user to search"),
-    repo: str | None = typer.Option(None, "--repo", help="owner/repo to search"),
+    language: str | None = typer.Option(
+        None, "--language", "-l", help="Programming language, for example python"
+    ),
+    org: str | None = typer.Option(None, "--org", help="GitHub organization or user to search"),
+    repo: str | None = typer.Option(None, "--repo", help="One repository as owner/name"),
     label: str | None = typer.Option(
         None, "--label", help="Label to require (default: good first issue, then help wanted)"
     ),
     scope: Scope = typer.Option(
-        Scope.gsoc, "--scope", help="gsoc: only GSoC orgs' repos; all: any repository"
+        Scope.gsoc,
+        "--scope",
+        help="gsoc: only repositories of GSoC organizations; all: any repository",
     ),
-    limit: int = typer.Option(10, "--limit", "-n"),
-    output: Output = Output.rich,
+    limit: int = typer.Option(10, "--limit", "-n", help="How many issues to show"),
+    output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Find beginner issues that are actually free: no PR, assignee, or recent claim."""
+    """Find beginner issues that still look free: no PR, assignee, or recent claim."""
     data = _toolkit().find_issues(
         language=language, org=org, repo=repo, label=label, scope=scope.value, max_results=limit
     )
@@ -388,7 +419,7 @@ def issues_cmd(
 def issue_cmd(
     ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
     number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
-    output: Output = Output.rich,
+    output: Output = OUTPUT_OPTION,
 ) -> None:
     """Check whether an issue is free to pick up: PRs, claims, assignees, activity."""
     data = _toolkit().issue_status(ref, number)
@@ -400,14 +431,14 @@ def issue_cmd(
     lines = [
         f"[bold]{data['title']}[/bold]",
         data["url"],
-        f"Status: [{style}]{data['availability']}[/] — {data['reason']}",
+        f"Status: [{style}]{data['availability']}[/] ({data['reason']})",
     ]
     if assessment["maintainer_engaged"]:
         lines.append("Maintainers have commented in this thread.")
     for pr in assessment["linked_prs"]:
         lines.append(f"PR #{pr['number']} ({pr['state']}) by @{pr['author']}")
     for claim in assessment["claims"][:5]:
-        granted = " — approved" if claim["granted"] else ""
+        granted = ", approved by a maintainer" if claim["granted"] else ""
         lines.append(f"Claim: @{claim['login']} {claim['days_ago']}d ago{granted}")
     for caveat in assessment["caveats"]:
         lines.append(f"[yellow]![/yellow] {caveat}")
@@ -421,12 +452,18 @@ def issue_cmd(
 
 @app.command("recommend")
 def recommend_cmd(
-    github: str | None = typer.Option(None, "--github", "-g"),
-    tech: str | None = typer.Option(None, "--tech", "-t"),
-    interests: str | None = typer.Option(None, "--interests", "-i"),
-    output: Output = Output.rich,
+    github: str | None = typer.Option(
+        None, "--github", "-g", help="Your GitHub username, used to infer your main language"
+    ),
+    tech: str | None = typer.Option(
+        None, "--tech", "-t", help="Technologies you know, comma-separated"
+    ),
+    interests: str | None = typer.Option(
+        None, "--interests", "-i", help="Topics you care about, comma-separated"
+    ),
+    output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Personalized org + issue recommendations."""
+    """Suggest organizations and starter issues based on your skills."""
     techs = [x.strip() for x in (tech or "").split(",") if x.strip()]
     ints = [x.strip() for x in (interests or "").split(",") if x.strip()]
     data = _toolkit().recommend_path(
@@ -450,7 +487,7 @@ def recommend_cmd(
 
 
 @app.command("proposal")
-def proposal_cmd(output: Output = Output.rich) -> None:
+def proposal_cmd(output: Output = OUTPUT_OPTION) -> None:
     """Show proposal checklist and structure."""
     data = _toolkit().proposal_help()
     if output == Output.json:
@@ -458,7 +495,7 @@ def proposal_cmd(output: Output = Output.rich) -> None:
         return
     console.print("[bold]Checklist[/bold]")
     for item in data["checklist"]:
-        console.print(f"☐ {item['title']} — {item['description']}")
+        console.print(f"☐ {item['title']}: {item['description']}")
     console.print("\n[bold]Suggested structure[/bold]")
     for i, section in enumerate(data["structure"], 1):
         console.print(f"  {i}. {section}")
@@ -466,12 +503,19 @@ def proposal_cmd(output: Output = Output.rich) -> None:
 
 @app.command("progress")
 def progress_cmd(
-    action: str = typer.Argument("summary"),
-    phase: str | None = typer.Option(None),
-    value: str | None = typer.Option(None, "--value", "-v"),
-    output: Output = Output.rich,
+    action: str = typer.Argument(
+        "summary",
+        help="summary, complete_phase, shortlist_org, track_repo, track_issue, or note",
+    ),
+    phase: str | None = typer.Option(
+        None, help="Phase name for complete_phase; run `journey` to see the names"
+    ),
+    value: str | None = typer.Option(
+        None, "--value", "-v", help="Organization name, owner/name, issue link, or note text"
+    ),
+    output: Output = OUTPUT_OPTION,
 ) -> None:
-    """Track journey progress (summary|complete_phase|shortlist_org|track_repo|...)."""
+    """Save and review your progress, shortlist, and notes on this computer."""
     store = _toolkit().progress
     if action == "summary":
         data = store.summary()
@@ -493,7 +537,7 @@ def progress_cmd(
 
 
 @app.command("journey")
-def journey_cmd(output: Output = Output.rich) -> None:
+def journey_cmd(output: Output = OUTPUT_OPTION) -> None:
     """Print the full contributor journey overview."""
     data = journey_overview()
     if output == Output.json:
@@ -503,14 +547,14 @@ def journey_cmd(output: Output = Output.rich) -> None:
     assert isinstance(phases, dict)
     for phase, guide in phases.items():
         assert isinstance(guide, dict)
-        console.print(f"\n[bold cyan]{phase}[/bold cyan] — {guide['goal']}")
+        console.print(f"\n[bold cyan]{phase}[/bold cyan]: {guide['goal']}")
         for action in guide["actions"]:
             console.print(f"  • {action}")
 
 
 @app.command("mcp")
 def mcp_cmd() -> None:
-    """Run the MCP server on stdio (for Cursor, Claude Code, etc.)."""
+    """Run the MCP server so AI assistants can use these tools. Press Ctrl+C to stop."""
     from git_into_gsoc.mcp_server import main as mcp_main
 
     mcp_main()
@@ -518,7 +562,7 @@ def mcp_cmd() -> None:
 
 @app.command("doctor")
 def doctor_cmd() -> None:
-    """Check environment: Python package, GitHub auth, cache paths."""
+    """Check your setup: version, GitHub token, data locations, and API access."""
     import sys
 
     from git_into_gsoc.config import cache_dir, data_dir, get_settings
@@ -532,7 +576,7 @@ def doctor_cmd() -> None:
         console.print(f"GitHub token: [green]found[/green] via {source}")
     else:
         console.print(
-            "GitHub token: [yellow]missing[/yellow] — 60 req/h limit. "
+            "GitHub token: [yellow]missing[/yellow] (60 requests per hour without one). "
             "Run `gh auth login` or set GITHUB_TOKEN."
         )
     try:
