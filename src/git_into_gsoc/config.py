@@ -56,6 +56,7 @@ class Settings(BaseSettings):
     http_max_retries: int = 2
     http_max_retry_wait_seconds: float = 20.0
     max_concurrency: int = 6
+    search_min_interval_seconds: float = 2.0
     cache_dir: Path | None = None
     data_dir: Path | None = None
     user_agent: str = f"{_APP_NAME}/{__version__} (+{PROJECT_URL})"

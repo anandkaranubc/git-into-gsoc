@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import tempfile
+import threading
 import time
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -58,6 +59,8 @@ class CachedHttpClient:
             follow_redirects=True,
         )
         self.stats = {"requests": 0, "cache_hits": 0, "revalidated": 0, "stale_served": 0}
+        self._throttle_lock = threading.Lock()
+        self._last_search = 0.0
 
     # ------------------------------------------------------------------ public
 
@@ -162,6 +165,7 @@ class CachedHttpClient:
         attempts = self.settings.http_max_retries + 1
         last_error: Exception | None = None
         for attempt in range(attempts):
+            self._throttle(url)
             try:
                 self.stats["requests"] += 1
                 response = self._client.get(url, headers=headers, params=params)
@@ -197,6 +201,17 @@ class CachedHttpClient:
             raise _http_error(response, url)
 
         raise HttpError(f"Request failed: {last_error}", url=url)  # pragma: no cover
+
+    def _throttle(self, url: str) -> None:
+        """Space out GitHub search calls; search has its own, much lower, rate limit."""
+        interval = self.settings.search_min_interval_seconds
+        if interval <= 0 or "/search/" not in url:
+            return
+        with self._throttle_lock:
+            wait = self._last_search + interval - time.monotonic()
+            if wait > 0:
+                self._sleep(wait)
+            self._last_search = time.monotonic()
 
     def _cache_path(self, kind: str, url: str, params: dict[str, Any] | None, authed: bool) -> Path:
         raw = json.dumps({"k": kind, "u": url, "p": params or {}, "a": authed}, sort_keys=True)
@@ -267,8 +282,9 @@ def _rate_limit_error(response: httpx.Response, url: str, authenticated: bool) -
     if reset and reset.isdigit():
         reset_at = datetime.fromtimestamp(int(reset), tz=UTC)
     when = f" (resets {reset_at:%H:%M} UTC)" if reset_at else ""
+    kind = "secondary rate limit" if "secondary" in response.text.lower() else "rate limit"
     return RateLimitError(
-        f"GitHub API rate limit exceeded{when}",
+        f"GitHub API {kind} exceeded{when}",
         reset_at=reset_at,
         status_code=response.status_code,
         url=url,

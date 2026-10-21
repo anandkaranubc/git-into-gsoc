@@ -28,6 +28,7 @@ def hermetic_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[No
         monkeypatch.delenv(key, raising=False)
     monkeypatch.setenv("GIG_USE_GH_CLI", "false")
     monkeypatch.setenv("GIG_HTTP_MAX_RETRIES", "0")
+    monkeypatch.setenv("GIG_SEARCH_MIN_INTERVAL_SECONDS", "0")
     monkeypatch.setenv("GIG_CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setenv("GIG_DATA_DIR", str(tmp_path / "data"))
     monkeypatch.chdir(tmp_path)

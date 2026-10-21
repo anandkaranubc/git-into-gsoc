@@ -52,7 +52,7 @@ class RateLimitError(HttpError):
         authenticated: bool = False,
     ) -> None:
         hint = (
-            "Wait for the reset time or reduce request volume."
+            "Wait a few minutes; cached results keep working meanwhile."
             if authenticated
             else "Run `gh auth login` or set GITHUB_TOKEN to raise the limit from 60 to 5000 req/h."
         )
