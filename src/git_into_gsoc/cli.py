@@ -107,7 +107,7 @@ def _relative(days: int) -> str:
     return f"{-days}d ago"
 
 
-@app.command("program")
+@app.command("program", rich_help_panel="Start here")
 def program_cmd(
     year: int = typer.Option(2027, help="Program year, for example 2027"),
     size: ProjectSize = typer.Option(
@@ -164,7 +164,7 @@ def _trend(projects_by_year: dict[str, int]) -> str:
     return " ".join(f"'{str(year)[2:]}:{count}" for year, count in recent)
 
 
-@app.command("orgs")
+@app.command("orgs", rich_help_panel="Find an organization")
 def orgs_cmd(
     query: str | None = typer.Option(
         None, "--query", "-q", help="Words to look for in names and descriptions"
@@ -221,7 +221,7 @@ def orgs_cmd(
         )
 
 
-@app.command("org")
+@app.command("org", rich_help_panel="Find an organization")
 def org_cmd(
     name: str = typer.Argument(
         ..., help="Organization name, part of it, or its slug, for example SymPy"
@@ -272,7 +272,7 @@ def org_cmd(
         console.print(table)
 
 
-@app.command("projects")
+@app.command("projects", rich_help_panel="Find an organization")
 def projects_cmd(
     query: str | None = typer.Argument(None, help="Keywords, for example 'graph neural networks'"),
     org: str | None = typer.Option(None, "--org", help="Limit to one organization"),
@@ -294,7 +294,7 @@ def projects_cmd(
     console.print(table)
 
 
-@app.command("ideas")
+@app.command("ideas", rich_help_panel="Find an organization")
 def ideas_cmd(
     org: str = typer.Argument(..., help="GSoC organization name, full or partial"),
     skills: str | None = typer.Option(
@@ -366,7 +366,7 @@ def ideas_cmd(
         )
 
 
-@app.command("mentors")
+@app.command("mentors", rich_help_panel="Find an organization")
 def mentors_cmd(
     org: str = typer.Argument(..., help="GSoC organization name, full or partial"),
     years: int = typer.Option(3, "--years", help="How many archived years to read"),
@@ -417,7 +417,7 @@ def mentors_cmd(
         )
 
 
-@app.command("repos")
+@app.command("repos", rich_help_panel="Pick a repository and an issue")
 def repos_cmd(
     org: str = typer.Argument(
         ..., help="GSoC organization name, for example 'GNU Radio', or its GitHub login"
@@ -452,7 +452,7 @@ def repos_cmd(
     console.print(f"[dim]{data['next_step']}[/dim]")
 
 
-@app.command("repo")
+@app.command("repo", rich_help_panel="Pick a repository and an issue")
 def repo_cmd(
     full_name: str = typer.Argument(
         ..., help="Repository as owner/name or a GitHub URL, for example sympy/sympy"
@@ -490,7 +490,7 @@ def repo_cmd(
         console.print(f"  • Channels mentioned: {', '.join(guide['communication_channels'])}")
 
 
-@app.command("orient")
+@app.command("orient", rich_help_panel="Pick a repository and an issue")
 def orient_cmd(
     full_name: str,
     codetour: Path | None = typer.Option(
@@ -617,7 +617,7 @@ _STATUS_STYLE = {
 }
 
 
-@app.command("issues")
+@app.command("issues", rich_help_panel="Pick a repository and an issue")
 def issues_cmd(
     language: str | None = typer.Option(
         None, "--language", "-l", help="Programming language, for example python"
@@ -663,7 +663,7 @@ def issues_cmd(
         console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
 
 
-@app.command("issue")
+@app.command("issue", rich_help_panel="Pick a repository and an issue")
 def issue_cmd(
     ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
     number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
@@ -702,7 +702,7 @@ def issue_cmd(
         console.print(f"  ☐ {step}")
 
 
-@app.command("profile")
+@app.command("profile", rich_help_panel="Start here")
 def profile_cmd(
     github: str | None = typer.Option(None, "--github", "-g", help="Your GitHub username"),
     tech: str | None = typer.Option(
@@ -751,7 +751,7 @@ def profile_cmd(
     console.print(Panel(Text("\n".join(lines)), title="Your profile"))
 
 
-@app.command("pointers")
+@app.command("pointers", rich_help_panel="Pick a repository and an issue")
 def pointers_cmd(
     ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
     number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
@@ -829,7 +829,7 @@ def pointers_cmd(
     console.print(f"\n[dim]{escape(data['next_step'])}[/dim]")
 
 
-@app.command("draft")
+@app.command("draft", rich_help_panel="Contribute and apply")
 def draft_cmd(
     kind: str = typer.Argument(
         ..., help="intro, question, claim, pr, review-reply, status, or final"
@@ -856,7 +856,7 @@ def draft_cmd(
     console.print(f"\n[dim]{escape(data['note'])}[/dim]")
 
 
-@app.command("recommend")
+@app.command("recommend", rich_help_panel="Find an organization")
 def recommend_cmd(
     github: str | None = typer.Option(
         None, "--github", "-g", help="Your GitHub username, used to infer your main language"
@@ -920,7 +920,7 @@ _FINDING_MARK = {"pass": "[green]✓[/green]", "warn": "[yellow]![/yellow]", "fa
 _STRENGTH_STYLE = {"strong": "green", "developing": "cyan", "starting": "yellow", "none": "red"}
 
 
-@app.command("contributions")
+@app.command("contributions", rich_help_panel="Contribute and apply")
 def contributions_cmd(
     github: str = typer.Option(..., "--github", "-g", help="Your GitHub username"),
     org: str | None = typer.Option(None, "--org", help="GSoC org name or GitHub org"),
@@ -958,7 +958,7 @@ def contributions_cmd(
             console.print(f"  [yellow]![/yellow] {escape(gap)}")
 
 
-@app.command("proposal")
+@app.command("proposal", rich_help_panel="Contribute and apply")
 def proposal_cmd(
     file: Path | None = typer.Argument(
         None, help="Draft proposal to check (Markdown or text). Omit for the checklist."
@@ -1016,7 +1016,7 @@ def proposal_cmd(
         console.print(f"  ☐ {check}")
 
 
-@app.command("progress")
+@app.command("progress", rich_help_panel="Track your journey")
 def progress_cmd(
     action: str = typer.Argument(
         "summary",
@@ -1051,7 +1051,7 @@ def progress_cmd(
     _emit(data if output == Output.json else json.dumps(data, indent=2, default=str), output)
 
 
-@app.command("journey")
+@app.command("journey", rich_help_panel="Start here")
 def journey_cmd(output: Output = OUTPUT_OPTION) -> None:
     """Show every phase of the journey with its goal and actions."""
     data = journey_overview()
@@ -1067,7 +1067,7 @@ def journey_cmd(output: Output = OUTPUT_OPTION) -> None:
             console.print(f"  • {action}")
 
 
-@app.command("next")
+@app.command("next", rich_help_panel="Start here")
 def next_cmd(
     year: int | None = typer.Option(None, help="Program year (default: the target year)"),
     no_check: bool = typer.Option(
@@ -1122,7 +1122,7 @@ def next_cmd(
     console.print(f"\n[dim]{data['note']}[/dim]")
 
 
-@app.command("log")
+@app.command("log", rich_help_panel="Track your journey")
 def log_cmd(
     goal: str | None = typer.Option(None, "--goal", help="This week's goal"),
     done: str | None = typer.Option(None, "--done", help="What you tried or finished"),
@@ -1176,12 +1176,32 @@ def log_cmd(
         console.print(Panel(Text.from_markup("\n".join(lines)), title=f"{entry.at:%Y-%m-%d}"))
 
 
-@app.command("mcp")
+@app.command("mcp", rich_help_panel="Maintenance")
 def mcp_cmd() -> None:
     """Run the MCP server so AI assistants can use these tools. Press Ctrl+C to stop."""
     from git_into_gsoc.mcp_server import main as mcp_main
 
     mcp_main()
+
+
+def _reachable(url: str, user_agent: str) -> str:
+    """One quick request per data source so doctor can say which one is down."""
+    import time
+
+    import httpx
+
+    started = time.monotonic()
+    try:
+        with httpx.Client(timeout=6.0, headers={"User-Agent": user_agent}) as client:
+            response = client.head(url, follow_redirects=True)
+            if response.status_code == 405:
+                response = client.get(url, follow_redirects=True)
+    except httpx.HTTPError as exc:
+        return f"[red]unreachable[/red] ({type(exc).__name__})"
+    elapsed = time.monotonic() - started
+    if response.status_code < 400:
+        return f"[green]ok[/green] ({elapsed:.1f}s)"
+    return f"[yellow]HTTP {response.status_code}[/yellow] ({elapsed:.1f}s)"
 
 
 def _short_path(path: Path, home: Path, project: Path | None = None) -> str:
@@ -1200,7 +1220,7 @@ class SetupScope(StrEnum):
     project = "project"
 
 
-@app.command("setup")
+@app.command("setup", rich_help_panel="Start here")
 def setup_cmd(
     assistant: list[str] | None = typer.Option(
         None,
@@ -1296,7 +1316,7 @@ def setup_cmd(
         )
 
 
-@app.command("doctor")
+@app.command("doctor", rich_help_panel="Maintenance")
 def doctor_cmd() -> None:
     """Check your setup: version, GitHub token, data locations, API access, skill, and MCP."""
     import sys
@@ -1322,6 +1342,15 @@ def doctor_cmd() -> None:
         console.print(f"GitHub rate: {rl.get('remaining')}/{rl.get('limit')} remaining")
     except GigError as exc:
         console.print(f"[red]GitHub check failed:[/red] {exc}")
+    for label, url in (
+        ("official GSoC site", f"{settings.gsoc_official_api_url.rstrip('/')}/program/2026/"),
+        ("organization archive", f"{settings.gsoc_orgs_api_url.rstrip('/')}/2026.json"),
+        (
+            "commit statistics",
+            f"{settings.ecosystems_commits_api_url.rstrip('/')}/hosts/GitHub/repositories/sympy/sympy",
+        ),
+    ):
+        console.print(f"{label}: {_reachable(url, settings.user_agent)}")
     try:
         console.print(f"skill source: {skill_source()}")
     except InstallError as exc:
@@ -1341,7 +1370,7 @@ def doctor_cmd() -> None:
         console.print("MCP registered in: [yellow]nowhere yet[/yellow] (run `git-into-gsoc setup`)")
 
 
-@app.command("cache")
+@app.command("cache", rich_help_panel="Maintenance")
 def cache_cmd(
     clear: bool = typer.Option(False, "--clear", help="Delete all cached HTTP responses"),
 ) -> None:

@@ -91,3 +91,32 @@ def test_cli_next_without_live_checks() -> None:
     assert result.exit_code == 0, result.output
     assert "Do next" in result.stdout
     assert "git-into-gsoc" in result.stdout
+
+
+@respx.mock
+def test_doctor_reachability_reports_each_source() -> None:
+    from git_into_gsoc.cli import _reachable
+
+    respx.head("https://up.example/").mock(return_value=httpx.Response(200))
+    respx.head("https://nohead.example/").mock(return_value=httpx.Response(405))
+    respx.get("https://nohead.example/").mock(return_value=httpx.Response(200))
+    respx.head("https://down.example/").mock(side_effect=httpx.ConnectError("boom"))
+    respx.head("https://broken.example/").mock(return_value=httpx.Response(503))
+    assert "ok" in _reachable("https://up.example/", "ua")
+    assert "ok" in _reachable("https://nohead.example/", "ua")
+    assert "unreachable" in _reachable("https://down.example/", "ua")
+    assert "HTTP 503" in _reachable("https://broken.example/", "ua")
+
+
+def test_help_groups_commands_for_beginners() -> None:
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    for panel in (
+        "Start here",
+        "Find an organization",
+        "Pick a repository and an issue",
+        "Contribute and apply",
+        "Track your journey",
+        "Maintenance",
+    ):
+        assert panel in result.output, panel
