@@ -1,8 +1,8 @@
 """Keep project text readable for first-time contributors.
 
 The style rule is simple: plain punctuation, no em dashes. Use a comma, a
-colon, a period, or parentheses instead. Add a directory here once its files
-follow the rule so the check protects it from then on.
+colon, a period, or parentheses instead. Every directory with text for people is
+listed here, so the check protects all of it.
 """
 
 from __future__ import annotations
@@ -20,6 +20,8 @@ CHECKED = [
     ".env.example",
     ".github",
     "docs",
+    "examples",
+    "skills",
     "pyproject.toml",
 ]
 SUFFIXES = {".md", ".yml", ".yaml", ".toml", ".example", ".sh", ".json"}
