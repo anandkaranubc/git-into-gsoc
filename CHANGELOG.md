@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.8.0...v0.9.0) (2026-10-21)
+
+
+### Features
+
+* **next:** show which open pull requests need you and which are waiting ([#82](https://github.com/anandkaranubc/git-into-gsoc/issues/82)) ([9fc46cf](https://github.com/anandkaranubc/git-into-gsoc/commit/9fc46cf60d9e444281f328f774e187b18f66c279))
+* say how long a linked pull request has been idle, and report when a repository expects a changelog entry ([#83](https://github.com/anandkaranubc/git-into-gsoc/issues/83)) ([06b196a](https://github.com/anandkaranubc/git-into-gsoc/commit/06b196ab68a1818d508fbc99c947cf84b40ad813))
+
+
+### Bug Fixes
+
+* **mcp:** keep HTTP request lines out of the assistant's MCP log ([#84](https://github.com/anandkaranubc/git-into-gsoc/issues/84)) ([fc11860](https://github.com/anandkaranubc/git-into-gsoc/commit/fc118609ddcb36980a9ab306d33a10b7e2f4188b))
+* **progress:** atomic, locked saves and recovery from a damaged progress file ([#86](https://github.com/anandkaranubc/git-into-gsoc/issues/86)) ([2cfca8a](https://github.com/anandkaranubc/git-into-gsoc/commit/2cfca8a9b276fbc32b5ea05c2eb7739135f6d71e))
+* robustness from offline and odd-input probes ([#81](https://github.com/anandkaranubc/git-into-gsoc/issues/81)) ([9b995ca](https://github.com/anandkaranubc/git-into-gsoc/commit/9b995ca24342eb5b1f74e1ed41b365cfbc0a358b))
+
 ## [0.8.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.7.0...v0.8.0) (2026-10-21)
 
 
