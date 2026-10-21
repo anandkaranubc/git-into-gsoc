@@ -95,14 +95,18 @@ install_checkout() {
   GIG_BIN="${ROOT}/.venv/bin/git-into-gsoc"
 }
 
+# Prefer the PyPI release when it exists; fall back to the Git main branch.
+PACKAGE="git-into-gsoc"
+GIT_SPEC="git+${REPO_URL}"
+
 install_remote() {
   if command -v uv >/dev/null 2>&1; then
     log "Installing git-into-gsoc with uv"
-    uv tool install -q --force "git+${REPO_URL}"
+    uv tool install -q --force "$PACKAGE" 2>/dev/null || uv tool install -q --force "$GIT_SPEC"
     GIG_BIN="$(uv tool dir --bin)/git-into-gsoc"
   elif command -v pipx >/dev/null 2>&1; then
     log "Installing git-into-gsoc with pipx"
-    pipx install --force "git+${REPO_URL}" >/dev/null
+    pipx install --force "$PACKAGE" >/dev/null 2>&1 || pipx install --force "$GIT_SPEC" >/dev/null
     GIG_BIN="$(pipx environment --value PIPX_BIN_DIR 2>/dev/null || echo "${HOME}/.local/bin")/git-into-gsoc"
   else
     check_python
@@ -111,7 +115,8 @@ install_remote() {
     mkdir -p "$base" "${HOME}/.local/bin"
     [[ -d "${base}/venv" ]] || "$PYTHON" -m venv "${base}/venv"
     "${base}/venv/bin/python" -m pip install -q -U pip
-    "${base}/venv/bin/python" -m pip install -q "git+${REPO_URL}"
+    "${base}/venv/bin/python" -m pip install -q "$PACKAGE" 2>/dev/null \
+      || "${base}/venv/bin/python" -m pip install -q "$GIT_SPEC"
     ln -sf "${base}/venv/bin/git-into-gsoc" "${HOME}/.local/bin/git-into-gsoc"
     GIG_BIN="${HOME}/.local/bin/git-into-gsoc"
   fi
