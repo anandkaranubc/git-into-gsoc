@@ -684,6 +684,8 @@ class GSoCToolkit:
         interests: list[str] | None = None,
     ) -> dict[str, Any]:
         saved = self.progress.profile()
+        technologies = [plain_skill(t) for t in technologies or []] or None
+        interests = [plain_skill(t) for t in interests or []] or None
         techs = list(technologies or [])
         wants = list(interests or [])
         source = "flags" if techs or wants or username else "saved profile"

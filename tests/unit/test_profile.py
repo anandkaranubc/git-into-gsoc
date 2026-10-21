@@ -155,3 +155,10 @@ def test_recommend_starter_issues_come_from_the_recommended_orgs(
     assert [i["number"] for i in data["starter_issues"]] == [1, 4]  # claimed ones left out
     assert data["starter_issues_hidden"] == 2
     assert "recommended" in data["starter_issue_scope"]
+
+
+def test_recommend_saves_plain_skill_names(api: respx.MockRouter) -> None:
+    # Over MCP, gsoc_recommend_path("c++, a little python") kept "a little python".
+    data = GSoCToolkit().recommend_path(technologies=["c++", "a little python"])
+    assert data["technologies_used"] == ["c++", "python"]
+    assert ProgressStore().profile()["technologies"] == ["c++", "python"]
