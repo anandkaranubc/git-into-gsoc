@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.5.0...v0.5.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **ideas:** read pages without a closed head, underlined and styled-div headings, and labels outside the vocabulary; census of all 183 ideas pages ([#60](https://github.com/anandkaranubc/git-into-gsoc/issues/60)) ([0c1a02a](https://github.com/anandkaranubc/git-into-gsoc/commit/0c1a02a4f3ce753f739abe3db68eabf03d8126e0))
+* keep org profiles working offline, widen the reply window, and close the consistency sweep ([#61](https://github.com/anandkaranubc/git-into-gsoc/issues/61)) ([3f14439](https://github.com/anandkaranubc/git-into-gsoc/commit/3f14439fa0ff5dc1308b5e606fd49180636e1b4c))
+
+
+### Documentation
+
+* add the consistency-sweep findings to the audit record ([#62](https://github.com/anandkaranubc/git-into-gsoc/issues/62)) ([840b937](https://github.com/anandkaranubc/git-into-gsoc/commit/840b937e5fc6fb294da3996c0e88b19ec1d112d4))
+* record the October 2026 audit findings and their resolutions ([#58](https://github.com/anandkaranubc/git-into-gsoc/issues/58)) ([1e4a75d](https://github.com/anandkaranubc/git-into-gsoc/commit/1e4a75da31a8bb5cfd442586133b5694ad4cce30))
+
 ## [0.5.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.4.0...v0.5.0) (2026-10-21)
 
 
