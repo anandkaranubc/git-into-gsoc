@@ -61,6 +61,16 @@ and the template. Point out unsupported claims, milestones I cannot demonstrate,
 and schedule problems. Keep my voice; suggest edits rather than rewriting.
 ```
 
+## Check a draft before sharing it
+
+```text
+Run gsoc_proposal_check on the draft below with my GitHub login <username>.
+Explain each fail and warn finding in plain words and tell me what to change.
+Do not rewrite the draft for me.
+
+<paste your draft>
+```
+
 ## Keep track
 
 ```text

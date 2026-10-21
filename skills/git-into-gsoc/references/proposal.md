@@ -34,6 +34,27 @@ Point out specific gaps. Help the person revise in their own words. Do not
 invent experience, mentor conversations, or contribution links, and do not
 make the proposal sound more impressive than the work behind it.
 
+## Check the draft before anyone else reads it
+
+```bash
+git-into-gsoc proposal draft.md --github USER --ideas-file ideas.txt
+```
+
+Replace `USER` with the person's GitHub login and point `--ideas-file` at a
+text copy of the organization's ideas page if they have one. The check reads
+a Markdown or plain-text draft and reports pass, warn, and fail findings with
+reasons: whether the required sections are present, whether linked pull
+requests exist on GitHub and belong to the person, whether the timeline is
+week by week with spare time, whether the text names real files, functions,
+and issues, and whether it contains generic phrases, leftover template
+placeholders, or long passages copied from the ideas page. `--no-verify`
+skips the GitHub lookups. Over MCP the same check is `gsoc_proposal_check`
+with the draft passed as `text`.
+
+Help the person fix failures first, then warnings, in their own words. The
+check never rewrites anything, and a clean result means the skeleton is
+right, not that the plan is good.
+
 ## Common reasons proposals fail
 
 - Generic praise with no detail specific to this project

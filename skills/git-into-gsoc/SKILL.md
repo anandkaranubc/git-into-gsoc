@@ -40,10 +40,10 @@ phase. Community participation and note-taking fit anywhere.
 | `learn` | Understand how GSoC works, check eligibility, write down interests and time | They can explain the program in their own words and know where the rules are |
 | `discover` | Search organizations, read ideas pages, make a short list | Two or three organizations with a reason for each |
 | `evaluate` | Pick a repository, check its health, read its contribution guide | One repository they want to set up |
+| `community` | Introduce themselves and ask informed questions in the project's public channel, before claiming any work | Maintainers recognize their name from useful conversations |
 | `find_issues` | Find an open beginner issue and check whether it is free | One issue they can reproduce and explain |
 | `contribute` | Set up the project, make a small correct change, open a pull request | A pull request they can defend in review |
-| `community` | Introduce themselves and ask informed questions in the project's public channel | Maintainers recognize their name from useful conversations |
-| `proposal` | Draft from the organization's template, grounded in their own work | A draft reviewed by mentors and ready for the official site |
+| `proposal` | Draft from the organization's template, grounded in their own work, and check the draft before sharing it | A draft reviewed by mentors and ready for the official site |
 | `track` | Keep a short weekly log of goals, links, and blockers | A clear next step every week |
 
 A finished phase is a useful outcome, not a score. Do not demand a fixed number
@@ -72,6 +72,7 @@ the person to run the installer. Never invent a result in its place.
 | find_issues | `git-into-gsoc issue sympy/sympy#23161` | `gsoc_issue_status` |
 | any | `git-into-gsoc recommend --tech python --interests science` | `gsoc_recommend_path` |
 | proposal | `git-into-gsoc proposal` | `gsoc_proposal_checklist` |
+| proposal | `git-into-gsoc proposal draft.md --github USER` | `gsoc_proposal_check` |
 | track | `git-into-gsoc progress summary` | `gsoc_progress` |
 | any | `git-into-gsoc journey` | `gsoc_journey_guide` |
 
@@ -87,7 +88,8 @@ issue numbers from search results.
 - **Issues.** `issues` searches open, unassigned issues without a linked pull request, labeled `good first issue` (then `help wanted` when results are thin), in repositories of GSoC organizations that use the language. Use `--scope all` for all of GitHub or `--repo` for one project. Statuses: `available`, `claimed` (someone asked recently or a maintainer approved them), `contested` (three or more people asked within 60 days), `likely_taken` (an open pull request references it), `assigned`, `stale`, `closed`, `unknown`.
 - **Before commenting.** Run `issue` on the exact issue, read the whole thread, and follow the project's rules for claiming work. The tool reads comments and linked pull requests, but it can miss coordination that happens in chat.
 - **Caching.** Results can be up to an hour old (a day for organization lists). Run `git-into-gsoc cache --clear` for a fresh look, and restart the MCP server to refresh organization data it holds in memory.
-- **Local writes.** `progress` and `recommend --github` save to a file on the person's computer. Nothing is ever posted to GitHub or submitted to GSoC.
+- **Draft checks.** `proposal draft.md` reports pass, warn, and fail findings on a draft: required sections, linked pull requests (confirmed on GitHub when `--github` is given), week-by-week timeline detail, concrete references to code and issues, generic phrasing, leftover placeholders, and text copied from an ideas page passed with `--ideas-file`. It never rewrites the draft. A clean check means the skeleton is right, not that the plan is good; only mentors can judge that.
+- **Local writes.** `progress`, `recommend --github`, and the `--shortlist` and `--track` flags on `org`, `repo`, and `issue` save to a file on the person's computer. Nothing is ever posted to GitHub or submitted to GSoC.
 
 ## Contributions and proposals
 
