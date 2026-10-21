@@ -181,7 +181,8 @@ def test_without_python_or_uv_and_no_terminal_the_installer_explains_and_stops(
 ) -> None:
     result = _offer_uv(tmp_path, flag=False)
     assert result.returncode == 1
-    assert "--install-uv" in result.stderr and "python.org" in result.stderr
+    assert "--install-uv" in result.stderr
+    assert "Install Python 3.11 or newer" in result.stderr
     assert not (tmp_path / "calls").exists()
 
 
