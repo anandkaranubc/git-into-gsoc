@@ -61,7 +61,7 @@ def test_archive_client_reads_recent_years(api: respx.MockRouter) -> None:
     client = ArchiveClient()
     assert client.archived_years()[:2] == [2025, 2024]
     projects = client.projects_by_year(years=3)
-    assert set(projects) == {2025, 2024, 2023}
+    assert list(projects) == [2025, 2024, 2023]  # fetched side by side, still newest first
     assert len(projects[2025]) == 2 and projects[2023] == []
 
 

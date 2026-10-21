@@ -12,6 +12,7 @@ from __future__ import annotations
 import re
 from collections import Counter
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from urllib.parse import urlparse
 
@@ -20,6 +21,9 @@ from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.text import clean_untrusted
 
 PROJECTS_TTL_SECONDS = 86400
+# An archived year lists completed projects only, so it no longer changes; after a
+# week the cached copy is revalidated, which costs nothing when it is unchanged.
+ARCHIVED_YEAR_TTL_SECONDS = 7 * 86400
 _RESERVED = {"orgs", "topics", "settings", "features", "sponsors", "apps", "marketplace"}
 
 
@@ -208,12 +212,16 @@ class ArchiveClient:
         """Every completed project of one archived year (about 2 MB, cached for a day)."""
         try:
             data = self.http.get_json(
-                self._url(f"programs/{int(year)}/projects/"), ttl=PROJECTS_TTL_SECONDS
+                self._url(f"programs/{int(year)}/projects/"), ttl=ARCHIVED_YEAR_TTL_SECONDS
             )
         except HttpError:
             return []
         return data if isinstance(data, list) else []
 
     def projects_by_year(self, *, years: int = 3) -> dict[int, list[dict[str, Any]]]:
-        recent = self.archived_years()[:years]
-        return {year: self.projects(year) for year in recent}
+        """Each year is a separate ~2 MB download, so they are fetched side by side."""
+        recent = self.archived_years()[: max(0, years)]
+        if len(recent) <= 1:
+            return {year: self.projects(year) for year in recent}
+        with ThreadPoolExecutor(max_workers=min(len(recent), 4)) as pool:
+            return dict(zip(recent, pool.map(self.projects, recent), strict=True))
