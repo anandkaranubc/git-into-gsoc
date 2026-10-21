@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import shutil
 import subprocess
@@ -109,18 +110,24 @@ def get_settings() -> Settings:
     return Settings()
 
 
+def _private_dir(path: Path) -> Path:
+    """Create ``path`` readable only by the current user (cached API responses and
+    progress notes can include data from private repositories when a token is used)."""
+    path.mkdir(parents=True, exist_ok=True)
+    if os.name == "posix":
+        with contextlib.suppress(OSError):
+            path.chmod(0o700)
+    return path
+
+
 def cache_dir(settings: Settings | None = None) -> Path:
     settings = settings or get_settings()
-    path = settings.cache_dir or Path(user_cache_dir(_APP_NAME, _APP_NAME))
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    return _private_dir(settings.cache_dir or Path(user_cache_dir(_APP_NAME, _APP_NAME)))
 
 
 def data_dir(settings: Settings | None = None) -> Path:
     settings = settings or get_settings()
-    path = settings.data_dir or Path(user_data_dir(_APP_NAME, _APP_NAME))
-    path.mkdir(parents=True, exist_ok=True)
-    return path
+    return _private_dir(settings.data_dir or Path(user_data_dir(_APP_NAME, _APP_NAME)))
 
 
 def progress_path() -> Path:

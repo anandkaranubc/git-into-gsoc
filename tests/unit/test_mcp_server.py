@@ -80,3 +80,19 @@ def test_mcp_tool_errors_are_tool_errors() -> None:
 
     with pytest.raises(ToolError, match="Unknown draft kind"):
         gsoc_draft("poem")
+
+
+def test_program_info_defaults_to_the_configured_target_year(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import json
+
+    import httpx
+    import respx
+
+    from git_into_gsoc.mcp_server import gsoc_program_info
+
+    with respx.mock(assert_all_called=False) as router:
+        router.get(url__startswith="https://summerofcode.withgoogle.com/api/").mock(
+            return_value=httpx.Response(404)
+        )
+        data = json.loads(gsoc_program_info())
+    assert data["year"] == 2027

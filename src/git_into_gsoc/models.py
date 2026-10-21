@@ -8,6 +8,8 @@ from typing import Any
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from git_into_gsoc.config import DEFAULT_TARGET_YEAR
+
 
 class JourneyPhase(StrEnum):
     LEARN = "learn"
@@ -262,7 +264,7 @@ class LogEntry(BaseModel):
 
 class ProgressState(BaseModel):
     version: int = 1
-    target_year: int = 2027
+    target_year: int = DEFAULT_TARGET_YEAR
     profile: dict[str, Any] = Field(default_factory=dict)
     phases: dict[str, bool] = Field(default_factory=dict)
     shortlisted_orgs: list[str] = Field(default_factory=list)

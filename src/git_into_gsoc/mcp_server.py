@@ -111,13 +111,14 @@ def guarded(func: _F) -> _F:
 
 @mcp.tool(title="GSoC program status and timeline", annotations=READ_ONLY, structured_output=False)
 @guarded
-def gsoc_program_info(year: int = 2027) -> str:
+def gsoc_program_info(year: int = 0) -> str:
     """Get GSoC program status, timeline, official links, and anti-spam rules.
 
-    For 2027, dates may be estimates until Google publishes the official timeline.
-    Always verify on summerofcode.withgoogle.com.
+    year: program year; 0 means the configured target year (currently 2027). Dates for a
+    year Google has not published yet are estimates. Always verify on
+    summerofcode.withgoogle.com.
     """
-    return _dump(toolkit().program_info(year))
+    return _dump(toolkit().program_info(year or None))
 
 
 @mcp.tool(title="Journey phase guide", annotations=READ_ONLY, structured_output=False)

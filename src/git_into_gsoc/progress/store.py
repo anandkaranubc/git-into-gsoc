@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextlib
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -43,6 +45,9 @@ class ProgressStore:
         state.phases = phases
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(state.model_dump_json(indent=2), encoding="utf-8")
+        if os.name == "posix":
+            with contextlib.suppress(OSError):
+                self.path.chmod(0o600)
         return state
 
     def complete_phase(self, phase: str | JourneyPhase) -> ProgressState:

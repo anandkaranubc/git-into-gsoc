@@ -71,3 +71,18 @@ def test_old_progress_files_gain_new_phases(tmp_path: Path) -> None:
     assert state.phases["learn"] is True
     assert state.phases["orient"] is False and state.phases["iterate"] is False
     assert store.summary()["completion"] == "1/10"
+
+
+def test_progress_file_and_dirs_are_private(tmp_path: Path) -> None:
+    import os
+    import stat
+
+    from git_into_gsoc import config
+
+    store = ProgressStore(tmp_path / "data" / "progress.json")
+    store.add_note("private")
+    cache = config.cache_dir()
+    if os.name == "posix":
+        assert stat.S_IMODE(store.path.stat().st_mode) == 0o600
+        assert stat.S_IMODE(cache.stat().st_mode) == 0o700
+    assert store.load().target_year == config.DEFAULT_TARGET_YEAR
