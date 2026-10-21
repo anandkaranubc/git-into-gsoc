@@ -1,25 +1,25 @@
 name: Feature request
-description: Suggest an improvement to git-into-gsoc
+description: Suggest an improvement to the CLI, MCP server, skill, or docs
 labels: ["enhancement"]
 body:
   - type: textarea
     id: problem
     attributes:
-      label: Problem
-      description: What contributor pain does this address?
+      label: What problem would this solve?
+      description: Describe the situation a contributor is in and what is hard about it today.
     validations:
       required: true
   - type: textarea
     id: proposal
     attributes:
-      label: Proposal
-      description: How should it work? CLI, MCP tool, and/or skill guidance?
+      label: What would you like to happen?
+      description: A command, an MCP tool, skill guidance, or a doc change. Rough ideas are fine.
     validations:
       required: true
   - type: checkboxes
-    id: ethics
+    id: principles
     attributes:
-      label: Ethics check
+      label: Fit with the project
       options:
-        - label: This does not encourage spammy or fabricated contributions
+        - label: This helps people contribute well, not just more. It does not encourage mass or low-effort contributions.
           required: true

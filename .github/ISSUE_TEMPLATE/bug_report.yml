@@ -1,27 +1,37 @@
 name: Bug report
-description: Report a problem with the CLI, MCP server, or skill
+description: Something did not work as described
 labels: ["bug"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting this. You do not need to know the cause. Describe what you did and what you saw.
   - type: textarea
     id: what
     attributes:
       label: What happened?
-      description: Clear description of the bug.
+      description: Include the exact error text if there is one. Remove tokens and private paths.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
     validations:
       required: true
   - type: textarea
     id: repro
     attributes:
-      label: Steps to reproduce
-      description: Commands, MCP tool calls, or assistant prompts.
+      label: How can we reproduce it?
+      description: The command you ran, the MCP tool call, or the prompt you gave your assistant.
+      placeholder: git-into-gsoc issues --language python
     validations:
       required: true
-  - type: input
-    id: version
-    attributes:
-      label: Version / commit
   - type: textarea
     id: env
     attributes:
-      label: Environment
-      description: OS, Python version, assistant (Cursor/Claude/Codex/etc.)
+      label: Your setup
+      description: Paste the first lines of `git-into-gsoc doctor`, plus your operating system and assistant if relevant.
+      placeholder: |
+        git-into-gsoc 0.1.0 (Python 3.12.4)
+        macOS 15, Cursor
