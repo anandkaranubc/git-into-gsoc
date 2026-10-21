@@ -11,6 +11,8 @@ from urllib.parse import quote
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.github.availability import assess_issue, unverified_assessment
+from git_into_gsoc.github.availability import assess_issue
+from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.repos import (
     channels_in,
     contributing_path,
@@ -478,6 +480,51 @@ class GitHubClient:
             repo = _repo_from_item(item).lower()
             counts[repo] = counts.get(repo, 0) + 1
         return counts
+
+    def user_activity(
+        self,
+        username: str,
+        *,
+        owners: list[str] | None = None,
+        repo: str | None = None,
+        per_query: int = 50,
+    ) -> dict[str, Any]:
+        """A contributor's PRs, issues, threads joined, and reviews in a scope (4 searches)."""
+        login = validate_login(username)
+        scope: list[str] = []
+        if repo:
+            owner_name, repo_name = parse_repo(repo)
+            scope.append(f"repo:{owner_name}/{repo_name}")
+        for owner in dict.fromkeys(validate_login(o, kind="organization") for o in owners or []):
+            scope.append(f"org:{owner}")
+        if not scope:
+            raise InputError(
+                "Contribution evidence needs an org or a repo to search in",
+                hint="Pass a GSoC org name, a GitHub org, or owner/repo.",
+            )
+        base = " ".join(scope)
+        queries = {
+            "prs": f"is:pr author:{login} {base}",
+            "issues": f"is:issue author:{login} {base}",
+            "discussions": f"commenter:{login} -author:{login} {base}",
+            "reviews": f"is:pr reviewed-by:{login} -author:{login} {base}",
+        }
+        results: dict[str, list[dict[str, Any]]] = {}
+        for key, query in queries.items():
+            try:
+                results[key] = self.search_issues(query, per_page=per_query, sort="created")
+            except HttpError as exc:
+                if key in {"discussions", "reviews"}:
+                    results[key] = []
+                    continue
+                raise exc
+        return summarize_activity(
+            login,
+            prs=results["prs"],
+            issues=results["issues"],
+            discussions=results["discussions"],
+            reviews=results["reviews"],
+        )
 
     def infer_profile_languages(self, username: str) -> dict[str, Any]:
         user = self.get_user(username)

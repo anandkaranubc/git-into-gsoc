@@ -9,6 +9,7 @@ from typing import Any
 
 import typer
 from rich.console import Console
+from rich.markup import escape
 from rich.panel import Panel
 from rich.table import Table
 from rich.text import Text
@@ -504,6 +505,45 @@ def recommend_cmd(
 
 
 _FINDING_MARK = {"pass": "[green]✓[/green]", "warn": "[yellow]![/yellow]", "fail": "[red]✗[/red]"}
+_STRENGTH_STYLE = {"strong": "green", "developing": "cyan", "starting": "yellow", "none": "red"}
+
+
+@app.command("contributions")
+def contributions_cmd(
+    github: str = typer.Option(..., "--github", "-g", help="Your GitHub username"),
+    org: str | None = typer.Option(None, "--org", help="GSoC org name or GitHub org"),
+    repo: str | None = typer.Option(None, "--repo", help="owner/repo to scope to"),
+    output: Output = Output.rich,
+) -> None:
+    """Collect your PRs, issues, and reviews in an org's repos as proposal evidence."""
+    if not org and not repo:
+        raise typer.BadParameter("Pass --org or --repo")
+    data = _toolkit().contribution_evidence(github, org=org, repo=repo)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    counts = data["counts"]
+    scope = data["scope"]
+    where = scope["repo"] or ", ".join(scope["github_owners"]) or scope["org"]
+    style = _STRENGTH_STYLE.get(data["strength"], "")
+    console.print(
+        Panel.fit(
+            f"[bold]@{data['username']}[/bold] in {where}\n"
+            f"Standing: [{style}]{data['strength']}[/]\n"
+            f"PRs merged {counts['prs_merged']} · open {counts['prs_open']} · "
+            f"closed {counts['prs_closed_unmerged']} · issues {counts['issues_opened']} · "
+            f"threads joined {counts['threads_joined']} · reviews {counts['reviews_given']}",
+            title="Contribution evidence",
+        )
+    )
+    if data["evidence_markdown"]:
+        console.print("\n[bold]Paste into your proposal[/bold]")
+        for line in data["evidence_markdown"]:
+            console.print(f"  {escape(line)}")
+    if data["gaps"]:
+        console.print("\n[bold]Gaps to close[/bold]")
+        for gap in data["gaps"]:
+            console.print(f"  [yellow]![/yellow] {escape(gap)}")
 
 
 @app.command("proposal")

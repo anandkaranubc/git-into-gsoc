@@ -155,6 +155,22 @@ class IssueCandidate(BaseModel):
     signals: list[str] = Field(default_factory=list)
 
 
+class ContributionItem(BaseModel):
+    """One PR, issue, thread, or review a contributor took part in."""
+
+    kind: str  # pr | issue | discussion | review
+    repo: str
+    number: int
+    title: str
+    url: str
+    state: str  # open | closed | merged
+    author: str | None = None
+    created_at: datetime | None = None
+    closed_at: datetime | None = None
+    comments: int = 0
+    labels: list[str] = Field(default_factory=list)
+
+
 class ContributionGuide(BaseModel):
     repo: str
     contributing_url: str | None = None

@@ -266,6 +266,37 @@ class GSoCToolkit:
             "before_you_comment": BEFORE_YOU_COMMENT,
         }
 
+    def contribution_evidence(
+        self,
+        username: str,
+        *,
+        org: str | None = None,
+        repo: str | None = None,
+        year: int | None = None,
+    ) -> dict[str, Any]:
+        """What `username` has done in an org's repos, as proposal-ready evidence."""
+        owners: list[str] = []
+        gsoc_org = None
+        if org and not repo:
+            gsoc_org = self.gsoc.get_organization(org, year=year)
+            owners = list((gsoc_org.github_orgs if gsoc_org else [])[:3])
+            if not owners:
+                owners = [validate_login(org, kind="GitHub org or GSoC org name")]
+        activity = self.github.user_activity(username, owners=owners or None, repo=repo)
+        return {
+            "scope": {
+                "org": gsoc_org.name if gsoc_org else org,
+                "github_owners": owners,
+                "repo": repo,
+            },
+            **activity,
+            "how_to_use": [
+                "Paste the evidence lines into the 'About you' / prior contributions section.",
+                "Mention what each PR taught you about the codebase, not just that it merged.",
+                "Reviewers can see the same history; never list work you did not do.",
+            ],
+        }
+
     def profile_from_github(self, username: str) -> dict[str, Any]:
         profile = self.github.infer_profile_languages(username)
         self.progress.set_profile(

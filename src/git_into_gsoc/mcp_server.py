@@ -260,6 +260,21 @@ def gsoc_recommend_path(
     )
 
 
+@mcp.tool()
+def gsoc_contribution_evidence(github_username: str, org: str = "", repo: str = "") -> str:
+    """Collect a contributor's real history in an org's repos as proposal evidence.
+
+    Returns merged/open/closed PRs, issues opened, threads joined, reviews given, paste-ready
+    markdown evidence lines, a standing (none/starting/developing/strong), and honest gaps.
+    org: GSoC org name or GitHub org; or scope with repo="owner/repo". One of them is required.
+    """
+    return _dump(
+        toolkit().contribution_evidence(github_username, org=org or None, repo=repo or None)
+    )
+
+
+@mcp.tool()
+@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="Proposal checklist", annotations=READ_ONLY, structured_output=False)
 @guarded
 def gsoc_proposal_checklist() -> str:

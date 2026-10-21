@@ -61,3 +61,18 @@ def test_cli_setup_rejects_unknown_assistant(tmp_path, monkeypatch) -> None:  # 
     result = runner.invoke(app, ["setup", "--assistant", "emacs"])
     assert result.exit_code == 1
     assert "Unknown assistant" in result.output
+@respx.mock
+def test_cli_contributions_repo_scope() -> None:
+    respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(200, json={"items": []})
+    )
+    result = runner.invoke(app, ["contributions", "--github", "alice", "--repo", "acme/lib"])
+    assert result.exit_code == 0, result.output
+    assert "@alice" in result.stdout
+    assert "none" in result.stdout
+    assert "merged" in result.stdout.lower()
+
+
+def test_cli_contributions_requires_scope() -> None:
+    result = runner.invoke(app, ["contributions", "--github", "alice"])
+    assert result.exit_code == 2
