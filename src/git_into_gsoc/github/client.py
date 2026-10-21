@@ -3,13 +3,22 @@
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
+from git_into_gsoc.errors import InputError
+from git_into_gsoc.github.availability import assess_issue
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
-from git_into_gsoc.models import Availability, ContributionGuide, IssueCandidate, RepoHealth
+from git_into_gsoc.models import (
+    Availability,
+    ContributionGuide,
+    IssueAssessment,
+    IssueCandidate,
+    RepoHealth,
+)
 from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.validation import parse_repo, search_term, validate_login
@@ -30,6 +39,8 @@ BEGINNER_LABELS = (
     "gsoc",
     "outreachy",
 )
+
+MAX_QUERY_CHARS = 256
 
 COMMUNITY_FILE_CANDIDATES = (
     "CONTRIBUTING.md",
@@ -56,6 +67,33 @@ def _excerpt(text: str | None, limit: int = 400) -> str:
         return ""
     cleaned = re.sub(r"\s+", " ", text).strip()
     return cleaned if len(cleaned) <= limit else cleaned[: limit - 1] + "…"
+
+
+def _repo_from_item(item: dict[str, Any]) -> str:
+    url = str(item.get("repository_url") or "")
+    parts = url.rstrip("/").split("/")
+    return "/".join(parts[-2:]) if len(parts) >= 2 else ""
+
+
+def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
+    repo_name = _repo_from_item(item)
+    if "/" not in repo_name or not item.get("number"):
+        return None
+    labels = [
+        lab.get("name") if isinstance(lab, dict) else str(lab) for lab in item.get("labels") or []
+    ]
+    return IssueCandidate(
+        repo=repo_name,
+        number=int(item["number"]),
+        title=item.get("title") or "",
+        url=item.get("html_url") or "",
+        labels=[x for x in labels if x],
+        created_at=_parse_dt(item.get("created_at")),
+        updated_at=_parse_dt(item.get("updated_at")),
+        comments=int(item.get("comments") or 0),
+        author=(item.get("user") or {}).get("login"),
+        body_excerpt=_excerpt(item.get("body")),
+    )
 
 
 class GitHubClient:
@@ -272,134 +310,107 @@ class GitHubClient:
         *,
         language: str | None = None,
         org: str | None = None,
+        orgs: list[str] | None = None,
         repo: str | None = None,
-        labels: list[str] | None = None,
-        topics: list[str] | None = None,
-        max_results: int = 15,
-        min_stars: int = 50,
+        label: str | None = None,
+        max_results: int = 10,
+        per_repo: int = 2,
+        org_names: dict[str, str] | None = None,
     ) -> list[IssueCandidate]:
-        label_terms = labels or ["good first issue", "help wanted"]
-        label_query = " ".join(f"label:{search_term(label)}" for label in label_terms[:3])
-        parts = ["is:issue", "is:open", "no:assignee", label_query]
+        """Search open beginner issues, then verify the most promising ones.
+
+        One search call excludes assigned, PR-linked, and archived-repo issues up
+        front; timelines are fetched in parallel only for the top candidates.
+        """
+        owners = [
+            validate_login(o, kind="organization") for o in [*(orgs or []), *([org] if org else [])]
+        ]
+        base = ["is:issue", "is:open", "no:assignee", "-linked:pr", "archived:false"]
         if language:
-            parts.append(f"language:{search_term(language)}")
-        if org:
-            parts.append(f"org:{validate_login(org, kind='organization')}")
+            base.append(f"language:{search_term(language)}")
         if repo:
             owner_name, repo_name = parse_repo(repo)
-            parts.append(f"repo:{owner_name}/{repo_name}")
-        if topics:
-            for topic in topics[:3]:
-                parts.append(f"topic:{search_term(topic)}")
-        if min_stars > 0 and not repo:
-            parts.append(f"stars:>={min_stars}")
+            base.append(f"repo:{owner_name}/{repo_name}")
+        since = (datetime.now(UTC) - timedelta(days=365)).date().isoformat()
+        base.append(f"updated:>={since}")
+        for owner in dict.fromkeys(owners):
+            if len(" ".join(base)) + len(owner) + 5 > MAX_QUERY_CHARS - 30:
+                break
+            base.append(f"org:{owner}")
 
-        items = self.search_issues(" ".join(parts), per_page=min(max_results * 2, 30))
-        candidates: list[IssueCandidate] = []
+        wanted = max(1, min(max_results, 30))
+        items: list[dict[str, Any]] = []
+        for lab in [label] if label else ["good first issue", "help wanted"]:
+            query = " ".join([*base, f"label:{search_term(lab)}"])
+            items.extend(self.search_issues(query, per_page=min(100, wanted * 5)))
+            if len({i.get("id") for i in items}) >= wanted * 3:
+                break
+
+        seen: set[int] = set()
+        prelim: list[IssueCandidate] = []
+        per_repo_count: dict[str, int] = {}
         for item in items:
-            repository_url = item.get("repository_url") or ""
-            repo_name = "/".join(repository_url.rstrip("/").split("/")[-2:])
-            if not repo_name or "/" not in repo_name:
-                # search result may include repository object
-                repo_obj = item.get("repository") or {}
-                repo_name = repo_obj.get("full_name") or ""
-            if not repo_name:
+            if item.get("id") in seen or item.get("pull_request"):
                 continue
-            labels_list = [
-                (lab.get("name") if isinstance(lab, dict) else str(lab))
-                for lab in item.get("labels", [])
-            ]
-            candidate = IssueCandidate(
-                repo=repo_name,
-                number=int(item["number"]),
-                title=item.get("title") or "",
-                url=item.get("html_url") or "",
-                labels=[x for x in labels_list if x],
-                created_at=_parse_dt(item.get("created_at")),
-                updated_at=_parse_dt(item.get("updated_at")),
-                comments=int(item.get("comments") or 0),
-                author=(item.get("user") or {}).get("login"),
-                body_excerpt=_excerpt(item.get("body")),
-            )
-            availability, reason = self.check_issue_availability(repo_name, candidate.number)
-            candidate.availability = availability
-            candidate.availability_reason = reason
-            candidates.append(score_issue(candidate))
+            seen.add(int(item.get("id") or 0))
+            candidate = _candidate_from_search(item)
+            if candidate is None:
+                continue
+            owner_key = candidate.repo.split("/")[0].lower()
+            candidate.gsoc_org = (org_names or {}).get(owner_key)
+            prelim.append(score_issue(candidate))
+        prelim.sort(key=lambda c: -c.beginner_score)
 
-        # Prefer available issues, then score
-        candidates.sort(
-            key=lambda c: (
-                0 if c.availability == Availability.AVAILABLE else 1,
-                -c.beginner_score,
+        shortlist: list[IssueCandidate] = []
+        for candidate in prelim:
+            if per_repo_count.get(candidate.repo, 0) >= per_repo:
+                continue
+            per_repo_count[candidate.repo] = per_repo_count.get(candidate.repo, 0) + 1
+            shortlist.append(candidate)
+            if len(shortlist) >= wanted + 4:
+                break
+
+        raw_by_key = {(c.repo, c.number): c for c in shortlist}
+        issues_by_key = {
+            (_repo_from_item(i), int(i["number"])): i for i in items if i.get("number")
+        }
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            futures = {
+                key: pool.submit(
+                    self.get_issue_timeline, key[0].split("/")[0], key[0].split("/")[1], key[1]
+                )
+                for key in raw_by_key
+            }
+            for key, future in futures.items():
+                candidate = raw_by_key[key]
+                assessment = assess_issue(issues_by_key.get(key, {}), future.result())
+                candidate.assessment = assessment
+                candidate.availability = assessment.availability
+                candidate.availability_reason = assessment.reason
+                score_issue(candidate)
+
+        shortlist.sort(key=lambda c: (c.availability != Availability.AVAILABLE, -c.beginner_score))
+        return shortlist[:wanted]
+
+    def assess(self, full_name: str, number: int) -> tuple[dict[str, Any], IssueAssessment]:
+        owner, repo = parse_repo(full_name)
+        issue = self.get_issue(owner, repo, number)
+        if issue.get("pull_request"):
+            raise InputError(
+                f"{owner}/{repo}#{number} is a pull request, not an issue",
+                hint="Pass the issue number the PR addresses.",
             )
-        )
-        return candidates[:max_results]
+        timeline = self.get_issue_timeline(owner, repo, number)
+        return issue, assess_issue(issue, timeline)
 
     def check_issue_availability(self, full_name: str, number: int) -> tuple[Availability, str]:
-        owner, repo = parse_repo(full_name)
         try:
-            issue = self.get_issue(owner, repo, number)
+            _, assessment = self.assess(full_name, number)
+        except NotFoundError:
+            return Availability.UNKNOWN, "Issue not found"
         except HttpError as exc:
             return Availability.UNKNOWN, f"Could not fetch issue: {exc}"
-
-        if issue.get("state") != "open":
-            return Availability.CLOSED, "Issue is closed"
-
-        if issue.get("assignee") or issue.get("assignees"):
-            logins = [a.get("login") for a in (issue.get("assignees") or []) if a.get("login")]
-            who = ", ".join(logins) if logins else "someone"
-            return Availability.ASSIGNED, f"Assigned to {who}"
-
-        body = (issue.get("body") or "").lower()
-        claim_phrases = (
-            "i am working on this",
-            "i'll take this",
-            "i will take this",
-            "assigned to me",
-            "working on it",
-            "claiming this",
-        )
-        updated = _parse_dt(issue.get("updated_at"))
-        stale_days = None
-        if updated:
-            stale_days = (datetime.now(UTC) - updated.astimezone(UTC)).days
-
-        timeline = self.get_issue_timeline(owner, repo, number)
-        linked_open_prs = 0
-        for event in timeline:
-            event_type = event.get("event")
-            if event_type in {"cross-referenced", "connected", "referenced"}:
-                source = event.get("source", {}).get("issue") or event.get("source", {})
-                # pull_request may be an empty dict - still means it's a PR
-                if (
-                    isinstance(source, dict)
-                    and "pull_request" in source
-                    and source.get("state") == "open"
-                ):
-                    linked_open_prs += 1
-
-        comments = int(issue.get("comments") or 0)
-        if linked_open_prs:
-            return (
-                Availability.LIKELY_TAKEN,
-                f"{linked_open_prs} open linked PR(s) detected",
-            )
-
-        # Lightweight comment claim heuristic via search of recent comment text is limited;
-        # use body + recency signals.
-        if any(p in body for p in claim_phrases):
-            return Availability.LIKELY_TAKEN, "Issue body suggests someone claimed it"
-
-        if stale_days is not None and stale_days > 180 and comments == 0:
-            return Availability.STALE, f"No activity for {stale_days} days"
-
-        if comments >= 8:
-            return (
-                Availability.LIKELY_TAKEN,
-                f"High comment activity ({comments}); verify before starting",
-            )
-
-        return Availability.AVAILABLE, "Open, unassigned, no linked open PR detected"
+        return assessment.availability, assessment.reason
 
     def contribution_guide(self, full_name: str) -> ContributionGuide:
         owner, repo = parse_repo(full_name)

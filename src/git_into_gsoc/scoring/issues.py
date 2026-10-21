@@ -58,11 +58,29 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
     elif issue.availability == Availability.STALE:
         score -= 10.0
         signals.append("Availability: stale")
-    elif issue.availability in {Availability.ASSIGNED, Availability.LIKELY_TAKEN}:
-        score -= 25.0
+    elif issue.availability in {
+        Availability.ASSIGNED,
+        Availability.LIKELY_TAKEN,
+        Availability.CLAIMED,
+    }:
+        score -= 30.0
         signals.append(f"Availability: {issue.availability.value}")
+    elif issue.availability == Availability.CONTESTED:
+        score -= 25.0
+        signals.append("Availability: contested by several people")
     elif issue.availability == Availability.CLOSED:
         score -= 50.0
+
+    assessment = issue.assessment
+    if assessment is not None:
+        if assessment.maintainer_engaged:
+            score += 6.0
+            signals.append("Maintainers active in the thread")
+        if assessment.caveats:
+            score -= 3.0 * len(assessment.caveats)
+    if issue.gsoc_org:
+        score += 5.0
+        signals.append(f"Part of GSoC org {issue.gsoc_org}")
 
     if issue.updated_at:
         days = (datetime.now(UTC) - issue.updated_at.astimezone(UTC)).days

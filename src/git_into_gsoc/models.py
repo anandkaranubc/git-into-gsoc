@@ -22,11 +22,39 @@ class JourneyPhase(StrEnum):
 
 class Availability(StrEnum):
     AVAILABLE = "available"
+    CLAIMED = "claimed"
+    CONTESTED = "contested"
     LIKELY_TAKEN = "likely_taken"
     ASSIGNED = "assigned"
     STALE = "stale"
     CLOSED = "closed"
     UNKNOWN = "unknown"
+
+
+class IssueClaim(BaseModel):
+    login: str
+    at: datetime
+    days_ago: int
+    granted: bool = False
+
+
+class LinkedPullRequest(BaseModel):
+    number: int | None = None
+    url: str | None = None
+    state: str = "unknown"
+    author: str | None = None
+    draft: bool = False
+
+
+class IssueAssessment(BaseModel):
+    availability: Availability
+    reason: str
+    claims: list[IssueClaim] = Field(default_factory=list)
+    linked_prs: list[LinkedPullRequest] = Field(default_factory=list)
+    assignees: list[str] = Field(default_factory=list)
+    maintainer_engaged: bool = False
+    last_activity_days: int | None = None
+    caveats: list[str] = Field(default_factory=list)
 
 
 class ContactChannel(BaseModel):
@@ -113,6 +141,8 @@ class IssueCandidate(BaseModel):
     body_excerpt: str = ""
     availability: Availability = Availability.UNKNOWN
     availability_reason: str = ""
+    assessment: IssueAssessment | None = None
+    gsoc_org: str | None = None
     beginner_score: float = 0.0
     signals: list[str] = Field(default_factory=list)
 
