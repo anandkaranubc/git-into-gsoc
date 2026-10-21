@@ -140,3 +140,21 @@ def validate_year(year: int | None, *, latest: int) -> int | None:
             hint="Leave out the year to use the coming program.",
         )
     return year
+
+
+_SKILL_QUALIFIER_RE = re.compile(
+    r"^(?:a (?:little|bit of)|a little bit of|basic|basics of|some|beginner|intermediate|"
+    r"advanced|learning|familiar with|good at|strong)\s+|\s*\((?:basic|beginner|learning|"
+    r"some|intermediate|advanced)\)$",
+    re.I,
+)
+
+
+def plain_skill(term: str) -> str:
+    """ "a little python" -> "python": the level is useful to a person, not to a search."""
+    cleaned = term.strip()
+    while True:
+        shorter = _SKILL_QUALIFIER_RE.sub("", cleaned).strip()
+        if shorter == cleaned or not shorter:
+            return cleaned
+        cleaned = shorter

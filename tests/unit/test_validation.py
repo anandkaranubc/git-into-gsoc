@@ -122,3 +122,14 @@ def test_program_and_org_list_refuse_years_gsoc_never_had() -> None:
         GSoCToolkit().program_info(3000)
     with pytest.raises(InputError):
         GSoCToolkit().program_info(2004)
+
+
+def test_plain_skill_drops_level_words() -> None:
+    from git_into_gsoc.validation import plain_skill
+
+    # A simulated beginner saved "a little python"; orgs then matched nothing.
+    assert plain_skill("a little python") == "python"
+    assert plain_skill("basic C++") == "C++"
+    assert plain_skill("Rust (learning)") == "Rust"
+    assert plain_skill("machine learning") == "machine learning"
+    assert plain_skill("advanced") == "advanced"

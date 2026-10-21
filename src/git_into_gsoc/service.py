@@ -76,7 +76,13 @@ from git_into_gsoc.models import (
 )
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.text import clean_untrusted
-from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_login, validate_year
+from git_into_gsoc.validation import (
+    parse_issue_ref,
+    parse_repo,
+    plain_skill,
+    validate_login,
+    validate_year,
+)
 
 
 def _parse_iso(value: Any) -> datetime | None:
@@ -550,8 +556,8 @@ class GSoCToolkit:
                     f"`profile --github {login}` again when online to add your languages."
                 )
         self.progress.set_profile(
-            technologies=technologies or None,
-            interests=interests or None,
+            technologies=[plain_skill(t) for t in technologies or []] or None,
+            interests=[plain_skill(t) for t in interests or []] or None,
             hours_per_week=hours_per_week,
             timezone=timezone,
         )
