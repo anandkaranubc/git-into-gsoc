@@ -36,6 +36,7 @@ from git_into_gsoc.models import (
 )
 from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
+from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import parse_repo, search_term, validate_login
 
 MAX_QUERY_CHARS = 256
@@ -52,10 +53,11 @@ def _parse_dt(value: str | None) -> datetime | None:
 
 
 def _excerpt(text: str | None, limit: int = 400) -> str:
+    """One line of an issue body. HTML comments go first: GitHub hides them from
+    people, so they are the easiest place to leave text only a model would read."""
     if not text:
         return ""
-    cleaned = re.sub(r"\s+", " ", text).strip()
-    return cleaned if len(cleaned) <= limit else cleaned[: limit - 1] + "…"
+    return re.sub(r"\s+", " ", clean_untrusted(text, limit=limit)).strip()
 
 
 def _license_name(license_obj: Any) -> str | None:
@@ -85,7 +87,7 @@ def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
     return IssueCandidate(
         repo=repo_name,
         number=int(item["number"]),
-        title=item.get("title") or "",
+        title=clean_untrusted(item.get("title"), limit=256),
         url=item.get("html_url") or "",
         labels=[x for x in labels if x],
         created_at=_parse_dt(item.get("created_at")),
@@ -411,7 +413,7 @@ class GitHubClient:
         health = RepoHealth(
             full_name=f"{owner}/{repo}",
             url=raw.get("html_url", f"https://github.com/{owner}/{repo}"),
-            description=raw.get("description"),
+            description=clean_untrusted(raw.get("description"), limit=350) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
             forks=int(raw.get("forks_count") or 0),
@@ -670,8 +672,8 @@ class GitHubClient:
         ranked = sorted(counts.items(), key=lambda x: (-x[1], x[0]))
         return {
             "login": user.get("login", username),
-            "name": user.get("name"),
-            "bio": user.get("bio"),
+            "name": clean_untrusted(user.get("name"), limit=100) or None,
+            "bio": clean_untrusted(user.get("bio"), limit=200) or None,
             "public_repos": user.get("public_repos"),
             "followers": user.get("followers"),
             "html_url": user.get("html_url"),

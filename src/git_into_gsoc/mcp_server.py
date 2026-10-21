@@ -20,6 +20,7 @@ from git_into_gsoc.errors import GigError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, OFFICIAL_SOURCES, journey_overview
 from git_into_gsoc.models import JourneyPhase, LogEntry
 from git_into_gsoc.service import GSoCToolkit
+from git_into_gsoc.text import strip_hidden_all
 from git_into_gsoc.validation import split_csv
 
 mcp = MCPServer(
@@ -88,8 +89,12 @@ def toolkit() -> GSoCToolkit:
 
 
 def _dump(data: Any) -> str:
-    """Compact JSON: tool results are read by models, and every byte costs tokens."""
-    return json.dumps(data, separators=(",", ":"), default=str)
+    """Compact JSON: tool results are read by models, and every byte costs tokens.
+
+    Hidden characters (zero-width, Unicode tags, bidi and terminal controls) are
+    removed from every string, so no field can carry text the person cannot see.
+    """
+    return json.dumps(strip_hidden_all(data), separators=(",", ":"), default=str)
 
 
 def _call(fn: Any, *args: Any, **kwargs: Any) -> str:

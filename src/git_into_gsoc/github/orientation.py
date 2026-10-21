@@ -663,9 +663,10 @@ def active_committers(commits: list[dict[str, Any]], *, limit: int = 8) -> list[
         if author.get("type") == "Bot" or login.endswith("[bot]") or login.lower() in KNOWN_BOTS:
             continue
         if not login:
-            login = str(
-                ((commit.get("commit") or {}).get("author") or {}).get("name") or ""
-            ).strip()
+            # A git author name is free text that anyone can set on a commit.
+            login = clean_untrusted(
+                ((commit.get("commit") or {}).get("author") or {}).get("name"), limit=100
+            )
         if login and not login.lower().endswith("[bot]"):
             counts[login] += 1
     return [{"login": login, "commits": n} for login, n in counts.most_common(limit)]

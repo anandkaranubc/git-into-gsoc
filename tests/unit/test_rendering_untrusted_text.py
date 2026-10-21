@@ -22,6 +22,10 @@ from git_into_gsoc import cli
 from git_into_gsoc.progress.store import ProgressStore
 
 HOSTILE = " [/]x[bold]y[/bold][link=z]"
+# A clipboard-writing terminal sequence, a zero-width space, a Unicode tag letter,
+# and a right-to-left override: none may reach a terminal or an assistant.
+HIDDEN = "\x1b]52;c;aGk=\x1b\\\u200b\U000e0041\u202e"
+HIDDEN_CHARS = ("\x1b", "\u200b", "\U000e0041", "\u202e")
 # Values the CLI uses as lookup keys or parses, rather than prints as text.
 STRUCTURAL_KEYS = {
     "status",
@@ -46,7 +50,7 @@ def poison(value: Any, key: str = "") -> Any:
     if isinstance(value, str):
         if key in STRUCTURAL_KEYS or key.endswith(("_at", "datetime")) or key in {"at", "date"}:
             return value
-        return value + HOSTILE
+        return value + HOSTILE + HIDDEN
     return value
 
 
@@ -105,6 +109,31 @@ def test_command_renders_untrusted_text_literally(
     assert result.exit_code == 0, result.output[-800:]
     assert "[/]x[bold]y[/bold]" in result.output, "untrusted text was not printed literally"
     assert "\\[" not in result.output, "escaped text was printed with its backslashes"
+    assert not [c for c in HIDDEN_CHARS if c in result.output], "hidden characters were printed"
+
+
+def _strings(value: Any) -> list[str]:
+    if isinstance(value, dict):
+        return [s for v in value.values() for s in _strings(v)]
+    if isinstance(value, list):
+        return [s for v in value for s in _strings(v)]
+    return [value] if isinstance(value, str) else []
+
+
+@pytest.mark.parametrize(("method", "fixture", "argv"), CASES, ids=[c[1] for c in CASES])
+def test_json_output_carries_no_hidden_characters(
+    method: str,
+    fixture: str,
+    argv: list[str],
+    monkeypatch: pytest.MonkeyPatch,
+    wide_console: None,
+) -> None:
+    data = poison(load(fixture))
+    monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit(method, data))
+    result = CliRunner().invoke(cli.app, [*argv, "--output", "json"])
+    assert result.exit_code == 0, result.output[-800:]
+    hidden = [s for s in _strings(json.loads(result.output)) if any(c in s for c in HIDDEN_CHARS)]
+    assert not hidden, hidden[:3]
 
 
 def test_proposal_check_renders_untrusted_text_literally(
@@ -138,3 +167,18 @@ def test_user_notes_render_literally(wide_console: None) -> None:
     listed = runner.invoke(cli.app, ["log"])
     assert listed.exit_code == 0 and "[x]" in listed.output
     assert "\\[" not in logged.output + listed.output
+
+
+def test_error_messages_quote_input_literally() -> None:
+    # The message quotes what was typed; as markup, "[/bold]" crashed the command.
+    result = CliRunner().invoke(cli.app, ["issue", "sympy/sympy#[/bold]x"])
+    assert result.exit_code == 1, repr(result.exception)
+    assert "[/bold]x" in result.output
+
+
+def test_mcp_results_carry_no_hidden_characters() -> None:
+    from git_into_gsoc.mcp_server import _dump
+
+    out = json.loads(_dump({"title": "Free" + HIDDEN, "items": [{"body": "ok" + HIDDEN}]}))
+    assert not [s for s in _strings(out) if any(c in s for c in HIDDEN_CHARS)]
+    assert out["title"].startswith("Free]52;c;aGk=")

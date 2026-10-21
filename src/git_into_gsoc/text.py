@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from typing import Any
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
 _TAG_RE = re.compile(r"</?(?:script|style|iframe|img|svg|object|embed)[^>]*>", re.I)
@@ -33,13 +34,36 @@ def _is_hidden(char: str) -> bool:
     return category in {"Cf", "Cc"} and char not in "\n\t"
 
 
+# Control characters other than tab and newline, including ESC, which starts the
+# terminal escape sequences that can retitle a window or write to the clipboard.
+_ASCII_CONTROL_RE = re.compile(r"[\x00-\x08\x0b-\x1f\x7f]")
+
+
+def strip_hidden(text: str) -> str:
+    """Remove characters that are invisible to people or that control the terminal."""
+    if text.isascii():
+        return _ASCII_CONTROL_RE.sub("", text)
+    return "".join(ch for ch in text if not _is_hidden(ch))
+
+
+def strip_hidden_all(value: Any) -> Any:
+    """``strip_hidden`` on every string in JSON-like data; other values pass through."""
+    if isinstance(value, str):
+        return strip_hidden(value)
+    if isinstance(value, dict):
+        return {key: strip_hidden_all(item) for key, item in value.items()}
+    if isinstance(value, list | tuple):
+        return [strip_hidden_all(item) for item in value]
+    return value
+
+
 def clean_untrusted(text: str | None, *, limit: int = 400) -> str:
     """Strip hidden characters, comments and risky tags, collapse whitespace, cap length."""
     if not text:
         return ""
     value = _HTML_COMMENT_RE.sub(" ", str(text))
     value = _TAG_RE.sub(" ", value)
-    value = "".join(ch for ch in value if not _is_hidden(ch))
+    value = strip_hidden(value)
     value = re.sub(r"[ \t\r\f\v]+", " ", value)
     value = re.sub(r"\n\s*\n+", "\n", value).strip()
     if len(value) > limit:

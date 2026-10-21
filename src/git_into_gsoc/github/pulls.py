@@ -13,6 +13,8 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from git_into_gsoc.text import clean_untrusted
+
 # A commit or reply counts as answering a comment only if it came this long
 # after it; clocks and in-flight pushes make tighter comparisons unreliable.
 RESPONSE_GAP = timedelta(minutes=2)
@@ -176,7 +178,7 @@ def pull_request_status(
         "ref": f"{full_name}#{pull.get('number')}" if full_name else f"#{pull.get('number')}",
         "repo": full_name,
         "url": pull.get("html_url"),
-        "title": pull.get("title"),
+        "title": clean_untrusted(pull.get("title"), limit=256),
         "status": "needs_you" if reasons else "waiting",
         "reasons": reasons,
         "checks_running": running,

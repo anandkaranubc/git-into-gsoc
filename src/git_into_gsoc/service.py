@@ -255,7 +255,7 @@ class GSoCToolkit:
                     RepoLead(
                         full_name=full,
                         url=str(repo.get("html_url")),
-                        description=repo.get("description"),
+                        description=clean_untrusted(repo.get("description"), limit=300) or None,
                         language=repo.get("language"),
                         stars=int(repo.get("stargazers_count") or 0),
                         pushed_at=_parse_iso(repo.get("pushed_at")),
@@ -326,7 +326,7 @@ class GSoCToolkit:
         return {
             "repo": f"{owner}/{repo}",
             "number": num,
-            "title": issue.get("title"),
+            "title": clean_untrusted(issue.get("title"), limit=256),
             "url": issue.get("html_url") or f"https://github.com/{owner}/{repo}/issues/{num}",
             "labels": [
                 lab.get("name") for lab in issue.get("labels") or [] if isinstance(lab, dict)
