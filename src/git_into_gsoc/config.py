@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 import contextlib
+import logging
 import os
 import shutil
 import subprocess
 from functools import lru_cache
 from pathlib import Path
+from typing import Any
 
 from platformdirs import user_cache_dir, user_data_dir
 from pydantic import AliasChoices, Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from git_into_gsoc import __version__
 
@@ -30,6 +36,46 @@ OFFICIAL_SPAM_GUIDANCE = "https://developers.google.com/open-source/gsoc/resourc
 PROJECT_URL = "https://github.com/anandkaranubc/git-into-gsoc"
 
 _APP_NAME = "git-into-gsoc"
+
+
+# A `.env` in the current folder may belong to a repository someone just cloned, and
+# assistants start the MCP server inside the project folder. Such a file may set the
+# token and ordinary settings, but never where requests go (the token is sent there)
+# or where progress is read and written (a planted progress.json would put someone
+# else's words in the contributor's notes). These come from the real environment only.
+ENV_ONLY_FIELDS = frozenset(
+    {
+        "github_api_url",
+        "gsoc_orgs_api_url",
+        "gsoc_official_api_url",
+        "ecosystems_commits_api_url",
+        "cache_dir",
+        "data_dir",
+    }
+)
+log = logging.getLogger(__name__)
+
+
+class _DotEnvWithoutRedirects(PydanticBaseSettingsSource):
+    """The `.env` source minus ENV_ONLY_FIELDS."""
+
+    def __init__(self, settings_cls: type[BaseSettings], inner: PydanticBaseSettingsSource):
+        super().__init__(settings_cls)
+        self._inner = inner
+
+    def get_field_value(self, field: Any, field_name: str) -> tuple[Any, str, bool]:
+        return None, field_name, False
+
+    def __call__(self) -> dict[str, Any]:
+        values = self._inner()
+        ignored = sorted(key for key in values if key.lower() in ENV_ONLY_FIELDS)
+        if ignored:
+            log.warning(
+                "Ignored %s from .env in %s: set these in the environment instead.",
+                ", ".join(f"GIG_{key.upper()}" for key in ignored),
+                Path.cwd(),
+            )
+        return {k: v for k, v in values.items() if k.lower() not in ENV_ONLY_FIELDS}
 
 
 class Settings(BaseSettings):
@@ -67,6 +113,22 @@ class Settings(BaseSettings):
     cache_dir: Path | None = None
     data_dir: Path | None = None
     user_agent: str = f"{_APP_NAME}/{__version__} (+{PROJECT_URL})"
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            init_settings,
+            env_settings,
+            _DotEnvWithoutRedirects(settings_cls, dotenv_settings),
+            file_secret_settings,
+        )
 
     def resolve_github_token(self) -> str | None:
         return resolve_token(self)[0]

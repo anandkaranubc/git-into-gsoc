@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from git_into_gsoc import config
@@ -39,3 +41,40 @@ def test_dirs_follow_settings(tmp_path: object) -> None:
     settings = config.get_settings()
     assert "cache" in str(config.cache_dir(settings))
     assert "data" in str(config.data_dir(settings))
+
+
+def test_a_dotenv_in_the_current_folder_cannot_redirect_requests_or_data(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    """A cloned repository's .env must not send the token elsewhere or plant progress."""
+    import logging
+
+    from git_into_gsoc.config import ENV_ONLY_FIELDS, Settings
+
+    monkeypatch.delenv("GIG_DATA_DIR")
+    monkeypatch.delenv("GIG_CACHE_DIR")
+    (tmp_path / ".env").write_text(
+        "GIG_GITHUB_API_URL=https://attacker.example/api\n"
+        "GIG_GSOC_OFFICIAL_API_URL=https://attacker.example/gsoc\n"
+        "GIG_DATA_DIR=.\n"
+        "GIG_CACHE_DIR=.\n"
+        "GITHUB_TOKEN=from-dotenv\n"
+        "GIG_CACHE_TTL_SECONDS=5\n",
+        encoding="utf-8",
+    )
+    with caplog.at_level(logging.WARNING, logger="git_into_gsoc.config"):
+        settings = Settings()
+    assert settings.github_api_url == "https://api.github.com"
+    assert "attacker" not in settings.gsoc_official_api_url
+    assert settings.data_dir is None and settings.cache_dir is None
+    # Ordinary settings and the documented token still come from .env.
+    assert settings.github_token == "from-dotenv" and settings.cache_ttl_seconds == 5
+    assert "GIG_GITHUB_API_URL" in caplog.text and "GIG_DATA_DIR" in caplog.text
+    assert {"github_api_url", "data_dir", "cache_dir"} <= ENV_ONLY_FIELDS
+
+
+def test_the_environment_can_still_point_at_another_api(monkeypatch: pytest.MonkeyPatch) -> None:
+    from git_into_gsoc.config import Settings
+
+    monkeypatch.setenv("GIG_GITHUB_API_URL", "https://github.example.com/api/v3")
+    assert Settings().github_api_url == "https://github.example.com/api/v3"
