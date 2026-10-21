@@ -409,6 +409,26 @@ class GSoCToolkit:
             "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
         }
 
+    def _gsoc_owners(self, name: str, *, language: str | None) -> tuple[list[str], str]:
+        """GitHub owners to search for a GSoC organization's name, with a note; [] if none."""
+        try:
+            gsoc_org = self.gsoc.get_organization(name)
+        except GigError:
+            return [], ""
+        if gsoc_org is None or not gsoc_org.github_orgs:
+            return [], ""
+        owners = list(gsoc_org.github_orgs[:3])
+        ideas = fetch_ideas_text(self.http, gsoc_org.ideas_url, self.settings.archive_ttl_seconds)
+        linked: list[str] = []
+        for lead in self._repos_named_on_page(ideas or "", owners, language=language):
+            owner = lead.full_name.split("/", 1)[0]
+            if owner.lower() not in {o.lower() for o in [*owners, *linked]}:
+                linked.append(owner)
+        note = f"Searching {gsoc_org.name}: {', '.join(owners)}"
+        if linked:
+            note += f", and {', '.join(linked[:4])} (named on its ideas page)"
+        return [*owners, *linked[:4]], note + "."
+
     def _repos_named_on_page(
         self, text: str, searched: list[str], *, language: str | None, limit: int = 6
     ) -> list[RepoLead]:
@@ -481,8 +501,20 @@ class GSoCToolkit:
             language=language, topics=topics, year=year
         )
         narrowed = bool(topics) and "match your interests" in note
+        # --org may be a GSoC organization's name: search its GitHub owners and the
+        # organizations whose repositories its ideas page names (Open Robotics lists
+        # only openrobotics and osrf; its ROS work is under ros2 and open-rmf).
+        gsoc_owners: list[str] = []
+        if org and not repo:
+            gsoc_owners, owners_note = self._gsoc_owners(org, language=language)
+            if gsoc_owners:
+                shortlist, org = gsoc_owners, None
+                gsoc_name = owners_note.removeprefix("Searching ").split(":", 1)[0]
+                owner_names = {**owner_names, **{o.lower(): gsoc_name for o in gsoc_owners}}
         use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
-        if not use_gsoc:
+        if gsoc_owners:
+            note = owners_note
+        elif not use_gsoc:
             note = "Searching " + (f"{repo}" if repo else f"org {org}" if org else "all of GitHub")
             if repo:
                 # `repo` counts every unassigned beginner issue; this list is stricter.
@@ -502,13 +534,13 @@ class GSoCToolkit:
         issues = self.github.find_beginner_issues(
             language=language,
             org=org,
-            orgs=shortlist if use_gsoc else None,
+            orgs=shortlist if use_gsoc or gsoc_owners else None,
             repo=repo,
             labels=labels_used,
             max_results=max_results,
             org_names=owner_names,
         )
-        if use_gsoc and narrowed and len(issues) < 3:
+        if use_gsoc and narrowed and not gsoc_owners and len(issues) < 3:
             # Too few in the organizations that fit the interests: keep those first and
             # fill the list from every organization that uses the language.
             first = len(issues)

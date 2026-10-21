@@ -778,7 +778,11 @@ def issues_cmd(
     language: str | None = typer.Option(
         None, "--language", "-l", help="Programming language, for example python"
     ),
-    org: str | None = typer.Option(None, "--org", help="GitHub organization or user to search"),
+    org: str | None = typer.Option(
+        None,
+        "--org",
+        help="GSoC organization name (also searches projects its ideas page names) or GitHub login",
+    ),
     repo: str | None = typer.Option(None, "--repo", help="One repository as owner/name"),
     label: str | None = typer.Option(
         None, "--label", help="Label to require (default: good first issue, then help wanted)"

@@ -67,3 +67,46 @@ def test_a_repository_search_says_what_it_leaves_out(monkeypatch: Any) -> None:
     monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: [])
     data = toolkit.find_issues(repo="ArduPilot/ardupilot", max_results=3)
     assert "Left out: issues with an assignee or a linked pull request" in data["note"]
+
+
+def test_org_accepts_a_gsoc_name_and_its_ideas_page_projects(monkeypatch: Any) -> None:
+    # A simulated robotics beginner: Open Robotics lists only openrobotics and osrf as
+    # GitHub owners, so ros2 and open-rmf work named on its ideas page was never searched.
+    from git_into_gsoc.models import RepoLead
+
+    toolkit = GSoCToolkit()
+    robotics = OrgSummary(
+        name="Open Robotics",
+        github_orgs=["openrobotics", "osrf"],
+        ideas_url="https://github.com/osrf/osrf_wiki/wiki/GSoC-2026",
+    )
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, **k: robotics)
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
+    monkeypatch.setattr("git_into_gsoc.service.fetch_ideas_text", lambda *a: "ideas")
+    leads = [
+        RepoLead(full_name=f, url=f"https://github.com/{f}", score=1.0)
+        for f in ("ros2/rclcpp", "open-rmf/crossflow", "ros2/rclpy")
+    ]
+    monkeypatch.setattr(toolkit, "_repos_named_on_page", lambda *a, **k: leads)
+    seen: dict[str, Any] = {}
+
+    def search(**kwargs: Any) -> list[IssueCandidate]:
+        seen.update(kwargs)
+        return []
+
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", search)
+    data = toolkit.find_issues(org="Open Robotics", max_results=5)
+    assert seen["org"] is None
+    assert seen["orgs"] == ["openrobotics", "osrf", "ros2", "open-rmf"]
+    assert "Open Robotics" in data["note"] and "ros2" in data["note"]
+    assert seen["org_names"]["ros2"] == "Open Robotics"
+
+
+def test_org_still_takes_a_plain_github_login(monkeypatch: Any) -> None:
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, **k: None)
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
+    seen: dict[str, Any] = {}
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: seen.update(k) or [])
+    toolkit.find_issues(org="ros2", max_results=5)
+    assert seen["org"] == "ros2" and seen["orgs"] is None
