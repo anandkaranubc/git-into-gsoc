@@ -98,9 +98,20 @@ def test_program_info_defaults_to_the_configured_target_year(monkeypatch) -> Non
     assert data["year"] == 2027
 
 
-def test_recommend_path_asks_the_client_only_when_it_can_and_must(monkeypatch) -> None:
-    import asyncio
+def _run(coroutine):  # type: ignore[no-untyped-def]
+    """Drive a coroutine that never waits on I/O, without an event loop.
 
+    Creating an event loop opens a socket pair on Windows, which the test
+    network guard blocks; the fakes below never actually suspend.
+    """
+    try:
+        coroutine.send(None)
+    except StopIteration as stop:
+        return stop.value
+    raise AssertionError("coroutine suspended on real I/O")
+
+
+def test_recommend_path_asks_the_client_only_when_it_can_and_must(monkeypatch) -> None:
     from git_into_gsoc import mcp_server
 
     calls: dict[str, object] = {}
@@ -141,18 +152,18 @@ def test_recommend_path_asks_the_client_only_when_it_can_and_must(monkeypatch) -
             return Answer()
 
     asking = Ctx(True)
-    out = asyncio.run(mcp_server.gsoc_recommend_path(ctx=asking))
+    out = _run(mcp_server.gsoc_recommend_path(ctx=asking))
     assert asking.asked and '"ok":true' in out
     assert calls["technologies"] == ["python", "rust"] and calls["username"] == "octo"
 
     silent = Ctx(False)
-    asyncio.run(mcp_server.gsoc_recommend_path(ctx=silent))
+    _run(mcp_server.gsoc_recommend_path(ctx=silent))
     assert not silent.asked
 
     given = Ctx(True)
-    asyncio.run(mcp_server.gsoc_recommend_path(technologies="go", ctx=given))
+    _run(mcp_server.gsoc_recommend_path(technologies="go", ctx=given))
     assert not given.asked and calls["technologies"] == ["go"]
 
-    tools = asyncio.run(mcp_server.mcp.list_tools())
+    tools = _run(mcp_server.mcp.list_tools())
     schema = next(t.input_schema for t in tools if t.name == "gsoc_recommend_path")
     assert set(schema["properties"]) == {"github_username", "technologies", "interests"}
