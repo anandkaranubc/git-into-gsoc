@@ -109,6 +109,8 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .term-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--gig-ink-2); font-size: 0.85rem; color: var(--gig-mute-on-ink); }
 .term pre { margin: 0; padding: 18px 20px 20px; overflow-x: auto; line-height: 1.6; font-size: 0.95rem; tab-size: 2; }
 .term pre + pre { padding-top: 0; font-size: 0.85rem; }
+.term pre.out { font-size: 0.8rem; line-height: 1.5; }
+.term b { font-weight: 600; }
 .term .c { color: var(--gig-mute-on-ink); }
 .term .k { color: var(--gig-open); }
 .term .v { color: var(--gig-merge-soft); }
@@ -138,10 +140,10 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .fail li { margin-bottom: 0.5em; }
 
 /* journey */
-.journey { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px 24px; counter-reset: step; }
+.journey { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px 24px; counter-reset: step; }
 .journey li { border-top: 3px solid var(--line); padding-top: 14px; position: relative; }
 .journey li::before {
-  counter-increment: step; content: "0" counter(step);
+  counter-increment: step; content: counter(step, decimal-leading-zero);
   font-family: var(--gig-font-pixel); font-size: var(--px-2); line-height: 1; color: var(--accent); display: block; margin-bottom: 10px;
 }
 .journey li:nth-child(1) { border-top-color: var(--accent); }
@@ -149,7 +151,7 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .journey h3 { margin-bottom: 6px; }
 .journey p { font-size: 0.95rem; color: var(--fg-2); margin: 0 0 8px; }
 .journey a { font-size: 0.9rem; }
-@media (max-width: 960px) { .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 1080px) { .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .journey { grid-template-columns: minmax(0, 1fr); } }
 
 /* house rules: a sticker wall */

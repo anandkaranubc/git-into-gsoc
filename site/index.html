@@ -96,18 +96,27 @@ git-into-gsoc program</code></pre>
         </div>
         <div class="term" aria-label="Example output">
           <div class="term-bar"><span>example output</span></div>
-<pre><code><span class="c">$</span> git-into-gsoc issue owner/repo#123
+<pre class="out"><code><span class="c">$</span> git-into-gsoc issue owner/repo#123
 
-<span class="v">owner/repo#123</span>  good first issue  12 days old
-  claims      <span class="w">3 "assign me" comments</span>, newest 2d ago
-  linked PRs  1 open, 0 merged
-  maintainer  no reply yet
-  verdict     <span class="d">contested.</span> pick another issue,
-              or offer to review the open PR
-
-before you comment
-  <span class="k">+</span> read CONTRIBUTING.md, reproduce the bug
-  <span class="k">+</span> reply with findings, not "please assign me"</code></pre>
+<span class="c">╭──────────────── owner/repo#123 ────────────────╮</span>
+<span class="c">│</span> <b>Date parser drops the leap day</b>                 <span class="c">│</span>
+<span class="c">│</span> https://github.com/owner/repo/issues/123       <span class="c">│</span>
+<span class="c">│</span> Status: <span class="w">contested</span> (3 people asked to work on   <span class="c">│</span>
+<span class="c">│</span> this in the last 60 days)                      <span class="c">│</span>
+<span class="c">│</span> Claim: @chi 2d ago                             <span class="c">│</span>
+<span class="c">│</span> Claim: @ben 5d ago                             <span class="c">│</span>
+<span class="c">│</span> Claim: @ana 9d ago                             <span class="c">│</span>
+<span class="c">╰────────────────────────────────────────────────╯</span>
+<b>Before you comment</b>
+  <span class="k">☐</span> Read the whole thread and any linked PRs first.
+  <span class="k">☐</span> Reproduce the problem locally (or confirm the
+    docs gap) before claiming.
+  <span class="k">☐</span> Point to the code you would change and outline
+    your approach in 2-3 sentences.
+  <span class="k">☐</span> Ask whether the approach fits; do not just
+    write 'can I work on this?'.
+  <span class="k">☐</span> If someone claimed it recently, pick another
+    issue rather than competing.</code></pre>
         </div>
       </div>
     </div>
@@ -116,7 +125,7 @@ before you comment
   <section class="section" aria-labelledby="journey-title">
     <div class="wrap">
       <div class="section-head">
-        <h2 id="journey-title" class="pixel">eight steps. one contribution.</h2>
+        <h2 id="journey-title" class="pixel">ten steps. one contribution.</h2>
         <p>The beginner guide walks this path with real commands and expected output. Skip what you know. Loop when you need to.</p>
       </div>
       <ol class="journey">
@@ -129,32 +138,44 @@ before you comment
         <li>
           <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H8V1H9V2H10V6H9V7H10V8H11V9H12V11H9V10H8V9H7V8H3V7H2V6H1ZM3 2V6H8V2Z"/></svg>
           <h3>Discover</h3>
-          <p>A shortlist of three to five organizations, with reasons.</p>
+          <p>A short list of organizations, each with a reason it fits you.</p>
           <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/04-find-organizations.md">Find organizations</a>
         </li>
         <li>
           <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 7H3V10H4V4H7V10H8V1H11V11H0Z"/></svg>
           <h3>Evaluate</h3>
           <p>One or two repositories that merge newcomers' work.</p>
-          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md">Pick a repository</a>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md#will-a-newcomers-pr-land-here">Pick a repository</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H9V1H10V2H11V7H10V9H9V10H8V11H7V12H5V11H4V10H3V9H2V7H1ZM3 3V7H4V8H5V9H7V8H8V7H9V3H8V2H4V3ZM5 4H7V6H5Z"/></svg>
+          <h3>Orient</h3>
+          <p>You know where a change would go and how to test it.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md#get-your-bearings-in-the-repository">Get your bearings</a>
+        </li>
+        <li>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V8H5V9H4V10H2V9H3V8H0ZM2 2V7H10V2ZM3 4H5V5H3ZM7 4H9V5H7Z"/></svg>
+          <h3>Community</h3>
+          <p>Mentors recognize your name from useful questions, before you claim anything.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/06-first-contribution.md#work-with-the-community">Work with the community</a>
         </li>
         <li>
           <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 4H1V2H2V1H4V0H8V1H10V2H11V4H12V8H11V10H10V11H8V12H4V11H2V10H1V8H0ZM2 4V8H3V9H4V10H8V9H9V8H10V4H9V3H8V2H4V3H3V4ZM4 5H5V4H7V5H8V7H7V8H5V7H4Z"/></svg>
           <h3>Find an issue</h3>
           <p>One available, well-specified issue you can reproduce.</p>
-          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md">Choose an issue</a>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/05-choose-an-issue.md#find-an-issue-that-is-actually-free">Choose an issue</a>
         </li>
         <li>
           <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 5H2V3H4V4H5V5H6V7H5V8H4V9H2V7H0ZM6 1H12V11H6V8H8V10H10V2H8V4H6Z"/></svg>
           <h3>Contribute</h3>
-          <p>A meaningful, reviewed pull request you can explain line by line.</p>
+          <p>A focused pull request you can explain line by line.</p>
           <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/06-first-contribution.md">First contribution</a>
         </li>
         <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V8H5V9H4V10H2V9H3V8H0ZM2 2V7H10V2ZM3 4H5V5H3ZM7 4H9V5H7Z"/></svg>
-          <h3>Community</h3>
-          <p>Mentors recognize your name from useful questions and reviews.</p>
-          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/06-first-contribution.md#work-with-the-community">Work with the community</a>
+          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H1V2H2V1H4V0H8V1H10V2H11V4H12V5H11V6H8V5H7V4H9V3H8V2H4V3H3V4H2V5H0ZM0 7H1V6H4V7H5V8H3V9H4V10H8V9H9V8H10V7H12V9H11V10H10V11H8V12H4V11H2V10H1V8H0Z"/></svg>
+          <h3>Iterate</h3>
+          <p>Every review comment answered, through to a merge or a clear no.</p>
+          <a href="https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/06-first-contribution.md#see-it-through-review">See it through review</a>
         </li>
         <li>
           <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 0H8V1H9V2H10V3H11V4H12V12H0ZM2 1V11H10V4H6V1ZM3 5H8V6H3ZM3 7H8V8H3ZM3 9H8V10H3Z"/></svg>
