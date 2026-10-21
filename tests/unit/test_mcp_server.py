@@ -212,10 +212,12 @@ class _FailingToolkit:
 
 
 def test_every_tool_passes_the_failure_reason_to_the_assistant(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    import asyncio
+    """An unguarded tool lets a GigError escape; the client then shows only
+    "Error executing tool <name>" with no reason or hint."""
+    import inspect
 
     import pytest
-    from mcp.server.mcpserver.exceptions import ToolError, UnexpectedToolError
+    from mcp.server.mcpserver.exceptions import ToolError
 
     from git_into_gsoc import mcp_server
 
@@ -234,8 +236,10 @@ def test_every_tool_passes_the_failure_reason_to_the_assistant(monkeypatch) -> N
         if tool.name in {"gsoc_log", "gsoc_progress"}:
             args.update({"done": "x"} if tool.name == "gsoc_log" else {"action": "note"})
         try:
-            asyncio.run(mcp_server.mcp.call_tool(tool.name, args))
-        except UnexpectedToolError as exc:
-            pytest.fail(f"{tool.name} hid the reason from the assistant: {exc}")
+            result = tool.fn(**args)
+            if inspect.iscoroutine(result):
+                _run(result)
         except ToolError as exc:
-            assert str(exc).split(":", 1)[1].strip(), tool.name
+            assert str(exc).strip(), tool.name
+        except Exception as exc:
+            pytest.fail(f"{tool.name} let {type(exc).__name__} through instead of a ToolError")
