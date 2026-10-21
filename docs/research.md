@@ -131,7 +131,7 @@ What the first twelve queries showed:
 
 ## Full research notes
 
-The complete notes behind this page, one file per stream, with every URL, number, and probe result, live in [docs/research/](research/). They are working notes rather than a guide:
+The complete notes behind this page, one file per stream, with every URL, number, and probe result, live in [docs/research/](research/README.md), which starts with a plain-language guide to the folder and a glossary. They are working notes rather than a guide:
 
 - [GSoC tools](research/gsoc-tools.md): GSoC tools, the official site's API, ideas pages, proposal archives, and what organizations score.
 - [Beginner-issue finders](research/issue-finders.md): Beginner-issue finders, claim conventions, label taxonomies, and newcomer-issue research.
