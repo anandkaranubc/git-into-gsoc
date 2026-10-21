@@ -657,6 +657,10 @@ def _print_gsoc_posts(found: dict[str, Any]) -> None:
     console.print(f"\n[bold]Posts about GSoC {found.get('year')} in its repositories[/bold]")
     for post in posts:
         status = _POST_STATUS.get(post["status"], "")
+        if post.get("source") == "wiki":
+            console.print(f"  Project wiki: {escape(post['title'])}  {status}")
+            console.print(f"  [dim]{post['url']}  (wikis can often be edited by anyone)[/dim]")
+            continue
         who = "a maintainer" if post.get("by_maintainer") else f"@{post.get('author')}"
         console.print(f"  {post['created_at']}  {escape(post['title'])}  {status}")
         console.print(f"  [dim]{post['url']}  (by {escape(who)}, {post['state']})[/dim]")
@@ -1376,9 +1380,9 @@ def draft_cmd(
         _emit(data, output)
         return
     data = _markup_safe(data)
+    if data.get("warning"):  # before the draft, so nobody copies it first
+        console.print(f"[bold yellow]! {escape(data['warning'])}[/bold yellow]")
     console.print(Panel(Text.from_markup(data["template"]), title=f"Draft: {data['kind']}"))
-    if data.get("warning"):
-        console.print(f"[yellow]![/yellow] {escape(data['warning'])}")
     console.print("[bold]Fill these with real observations before sending[/bold]")
     for field in data["must_fill"]:
         console.print(f"  ☐ {escape(field)}")

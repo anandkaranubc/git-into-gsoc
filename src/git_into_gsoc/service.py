@@ -1427,7 +1427,9 @@ class GSoCToolkit:
             found = self.gsoc.get_organization(org)
             if found:
                 context["org"] = found.name
-                context["channels"] = public_channels(found.channels)
+                context["channels"], closed = self._open_channels(public_channels(found.channels))
+                if closed:
+                    context["closed_channels"] = closed
         if issue:
             owner, name, num = parse_issue_ref(issue)
             repo = repo or f"{owner}/{name}"
@@ -1501,15 +1503,51 @@ class GSoCToolkit:
             for k, v in context.items()
             if k in {"org", "channels", "issue", "claim_convention", "contributing_url"}
         }
+        warnings: list[str] = []
         if context.get("issue", {}).get("availability") not in (None, "available"):
             issue_info = context["issue"]
-            draft["warning"] = (
-                f"Do not post a claim: {issue_info.get('reason')}."
-                if issue_info["availability"] == "not_open" and kind == "claim"
-                else f"Issue availability is {issue_info['availability']}; check the thread "
-                "before claiming."
+            if issue_info["availability"] == "not_open" and kind == "claim":
+                # Nothing to copy: a claim here would be turned down.
+                ref = f"{issue_info['repo']}#{issue_info['number']}"
+                draft["template"] = (
+                    f"Do not comment on {ref} to claim it.\n\n"
+                    f"Find another issue: git-into-gsoc issues --repo {issue_info['repo']}"
+                )
+                warnings.append(f"Do not post a claim: {issue_info.get('reason')}.")
+            else:
+                warnings.append(
+                    f"Issue availability is {issue_info['availability']}; check the thread "
+                    "before claiming."
+                )
+        for url in context.get("closed_channels") or []:
+            warnings.append(
+                f"The organization lists {url}, but GitHub Discussions are turned off there. "
+                "Look for the current channel in the project's README or CONTRIBUTING file."
             )
+        if warnings:
+            draft["warning"] = " ".join(warnings)
         return draft
+
+    def _open_channels(self, channels: list[str]) -> tuple[list[str], list[str]]:
+        """Split channels into usable ones and GitHub Discussions links that are turned off.
+
+        GSoC records go stale: Learning Unlimited's 2026 entry links Discussions on a
+        repository that has them disabled, so the link is a 404.
+        """
+        usable: list[str] = []
+        closed: list[str] = []
+        for url in channels:
+            match = _DISCUSSIONS_RE.search(url)
+            if match:
+                try:
+                    meta = self.github.get_repo(match.group(1), match.group(2))
+                except GigError:
+                    meta = {}
+                if meta and meta.get("has_discussions") is False:
+                    closed.append(url)
+                    continue
+            usable.append(url)
+        return usable, closed
 
     # ---------------------------------------------------------------- mentors
 
@@ -1821,7 +1859,9 @@ class GSoCToolkit:
         if not owners:
             return []
         found = self.gsoc_posts_for(list(owners), year=year)["posts"]
-        posts = [p for p in found if p["by_maintainer"]]
+        # A wiki statement has no author to check, but it only counts when it says
+        # the org will not take part or has not decided.
+        posts = [p for p in found if p["by_maintainer"] or p.get("source") == "wiki"]
         for post in posts:
             post["org"] = owners.get(post["repo"].split("/")[0].lower(), post["repo"])
         return posts[:5]
@@ -1911,6 +1951,7 @@ _GITHUB_PROJECT_RE = re.compile(
 )
 _NOT_OWNERS = {"orgs", "topics", "search", "features", "apps", "settings", "marketplace"}
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
+_DISCUSSIONS_RE = re.compile(r"github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/discussions\b")
 _CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
 
 

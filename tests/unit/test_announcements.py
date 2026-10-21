@@ -93,6 +93,7 @@ def test_next_puts_an_org_that_is_sitting_out_first(monkeypatch) -> None:  # typ
     }
     monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, **k: orgs[name])
     monkeypatch.setattr(toolkit.github, "search_issues", lambda *a, **k: [WAGTAIL])
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner: [])
     monkeypatch.setattr(toolkit.official, "program", lambda *a, **k: None)
     monkeypatch.setattr(toolkit, "_new_beginner_issues", lambda *a, **k: [])
     data = toolkit.next_steps(year=2027)
@@ -132,8 +133,57 @@ def test_a_hand_typed_shortlist_name_is_still_moved_aside(monkeypatch) -> None: 
     }
     monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, **k: orgs[name])
     monkeypatch.setattr(toolkit.github, "search_issues", lambda *a, **k: [WAGTAIL])
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner: [])
     monkeypatch.setattr(toolkit.official, "program", lambda *a, **k: None)
     monkeypatch.setattr(toolkit, "_new_beginner_issues", lambda *a, **k: [])
     data = toolkit.next_steps(year=2027)
     repo_step = next(a for a in data["actions"] if a["title"].startswith("Pick the repository"))
     assert repo_step["title"].endswith("SymPy")
+
+
+LU_WIKI = """# Welcome
+
+We have made the decision to not be involved with Google Summer of Code for the 2027 session. If anything changes, we will announce it here.
+
+## I want to get involved!
+We took part in GSoC 2026 and loved it.
+"""
+
+
+def test_a_wiki_statement_about_the_year_counts() -> None:
+    # Learning Unlimited said this on its wiki home page (2026-10-21), never in an issue,
+    # and the tool still ranked it second for a GSoC 2027 beginner.
+    from git_into_gsoc.github.announcements import wiki_post
+
+    post = wiki_post(LU_WIKI, year=2027, repo="learning-unlimited/ESP-Website")
+    assert post is not None and post["status"] == "not_taking_part"
+    assert post["source"] == "wiki" and post["by_maintainer"] is False
+    assert post["url"] == "https://github.com/learning-unlimited/ESP-Website/wiki"
+    assert wiki_post(LU_WIKI, year=2026, repo="x/y") is None  # "took part" is not news
+    assert wiki_post("GSoC 2027 ideas are below.", year=2027, repo="x/y") is None
+
+
+def test_wiki_pages_are_read_for_the_biggest_repositories(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.errors import HttpError
+    from git_into_gsoc.github.client import GitHubClient
+
+    client = GitHubClient()
+    repos = [
+        {"full_name": "learning-unlimited/ESP-Website", "has_wiki": True, "stargazers_count": 400},
+        {"full_name": "learning-unlimited/old", "has_wiki": True, "archived": True},
+        {"full_name": "learning-unlimited/tiny", "has_wiki": True, "stargazers_count": 1},
+    ]
+    monkeypatch.setattr(client, "list_owner_repos", lambda owner: repos)
+    fetched: list[str] = []
+
+    def text(url: str, **kw: object) -> str:
+        fetched.append(url)
+        if "ESP-Website" in url:
+            return LU_WIKI
+        raise HttpError("HTTP 404", status_code=404)
+
+    monkeypatch.setattr(client.http, "get_text", text)
+    monkeypatch.setattr(client, "search_issues", lambda *a, **k: [])
+    posts = client.gsoc_year_posts(["learning-unlimited"], 2027)
+    assert [p["status"] for p in posts] == ["not_taking_part"]
+    assert len(fetched) == 2 and not any("/old/" in url for url in fetched)

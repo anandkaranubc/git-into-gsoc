@@ -19,7 +19,8 @@ _GSOC = re.compile(r"\bgsoc\b|summer of code", re.I)
 _NOT_TAKING_PART = re.compile(
     r"\bno gsoc\b|won[\u2019']?t (?:be )?(?:take|taking) part|won[\u2019']?t (?:participate|apply)|"
     r"will not (?:take part|participate|apply)|not (?:be )?(?:taking|take) part|"
-    r"not participating|not applying|(?:skip|skipping) gsoc|decided (?:not|against)",
+    r"not participating|not applying|(?:skip|skipping) gsoc|decided (?:not|against)|"
+    r"decision (?:to not|not to)|not (?:be )?involved",
     re.I,
 )
 _UNDECIDED = re.compile(
@@ -77,3 +78,34 @@ def gsoc_posts(items: list[dict[str, Any]], *, year: int) -> list[dict[str, Any]
     posts.sort(key=lambda p: p["created_at"], reverse=True)
     posts.sort(key=lambda p: (order[p["status"]], not p["by_maintainer"]))
     return posts
+
+
+def wiki_post(text: str, *, year: int, repo: str) -> dict[str, Any] | None:
+    """A statement about `year` on a project's wiki home page, as a post, or None.
+
+    Learning Unlimited said on its wiki, and nowhere in an issue, that it would
+    not take part in GSoC 2027. A wiki sentence counts only when it names GSoC
+    and the year and says the organization will not take part or has not
+    decided. Anyone may be able to edit a wiki, so it is not marked as written
+    by a maintainer.
+    """
+    year_re = re.compile(rf"(?<![#\d]){int(year)}(?!\d)")
+    for sentence in _SENTENCES.split(text[:20000]):
+        if not (_GSOC.search(sentence) and year_re.search(sentence)):
+            continue
+        status = _status(sentence)
+        if status == "mentions":
+            continue
+        return {
+            "repo": repo,
+            "number": 0,
+            "title": clean_untrusted(sentence.strip(" #*-"), limit=200),
+            "url": f"https://github.com/{repo}/wiki",
+            "state": "wiki",
+            "created_at": "",
+            "author": "",
+            "by_maintainer": False,
+            "source": "wiki",
+            "status": status,
+        }
+    return None

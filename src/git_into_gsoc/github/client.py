@@ -11,7 +11,7 @@ from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
-from git_into_gsoc.github.announcements import gsoc_posts, search_terms
+from git_into_gsoc.github.announcements import gsoc_posts, search_terms, wiki_post
 from git_into_gsoc.github.availability import MAINTAINER_ROLES, assess_issue, unverified_assessment
 from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
@@ -242,7 +242,40 @@ class GitHubClient:
         if not logins:
             return []
         query = build_issue_query(base=search_terms(year), labels=[], orgs=logins)
-        return gsoc_posts(self.search_issues(query, per_page=30, sort="created"), year=year)
+        posts = gsoc_posts(self.search_issues(query, per_page=30, sort="created"), year=year)
+        return self._wiki_posts(logins[:2], year) + posts
+
+    def _wiki_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
+        """Statements about `year` on the wiki home pages of each owner's two biggest repos."""
+        found: list[dict[str, Any]] = []
+        for owner in owners:
+            try:
+                repos = self.list_owner_repos(owner)
+            except HttpError:
+                continue
+            with_wiki = sorted(
+                (
+                    r
+                    for r in repos
+                    if r.get("has_wiki") and not r.get("archived") and not r.get("fork")
+                ),
+                key=lambda r: -int(r.get("stargazers_count") or 0),
+            )
+            for repo in with_wiki[:2]:
+                full = str(repo.get("full_name") or "")
+                if "/" not in full:
+                    continue
+                try:
+                    text = self.http.get_text(
+                        f"https://raw.githubusercontent.com/wiki/{full}/Home.md",
+                        ttl=self.settings.archive_ttl_seconds,
+                    )
+                except HttpError:
+                    continue  # no wiki pages, or the wiki is private
+                post = wiki_post(text, year=year, repo=full)
+                if post:
+                    found.append(post)
+        return found
 
     def get_issue(self, owner: str, repo: str, number: int) -> dict[str, Any]:
         owner, repo = parse_repo(f"{owner}/{repo}")

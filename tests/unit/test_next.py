@@ -62,6 +62,10 @@ def api() -> respx.MockRouter:
         router.get(f"{ARCHIVE}/2026.json").mock(
             return_value=httpx.Response(200, json=_archive_year(2026))
         )
+        # Shortlisted orgs' repositories, read for a wiki statement about GSoC.
+        router.get(url__regex=r"https://api\.github\.com/orgs/[^/]+/repos").mock(
+            return_value=httpx.Response(200, json=[])
+        )
         yield router
 
 
