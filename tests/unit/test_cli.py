@@ -10,9 +10,11 @@ runner = CliRunner()
 
 
 def test_cli_version() -> None:
+    from git_into_gsoc import __version__
+
     result = runner.invoke(app, ["--version"])
     assert result.exit_code == 0
-    assert "0.1.0" in result.stdout
+    assert __version__ in result.stdout
 
 
 def test_cli_journey_json() -> None:
