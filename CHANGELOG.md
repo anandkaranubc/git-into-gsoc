@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.7.0...v0.8.0) (2026-10-21)
+
+
+### Features
+
+* **orient:** show the runtime versions, services and systems CI sets up ([#78](https://github.com/anandkaranubc/git-into-gsoc/issues/78)) ([3381f04](https://github.com/anandkaranubc/git-into-gsoc/commit/3381f04c0a3722e9763091bd2aa5234b20c145a6))
+
+
+### Bug Fixes
+
+* **cli:** render untrusted text literally and let contributions use the saved profile ([#79](https://github.com/anandkaranubc/git-into-gsoc/issues/79)) ([f889c90](https://github.com/anandkaranubc/git-into-gsoc/commit/f889c9031274ff287ab49e29d29b905c8aa90830))
+
 ## [0.7.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.6.1...v0.7.0) (2026-10-21)
 
 
