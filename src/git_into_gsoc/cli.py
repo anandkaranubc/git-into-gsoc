@@ -334,8 +334,18 @@ def _render_matches(data: dict[str, Any]) -> None:
         row = f"[bold]{org['name']}[/bold]"
         if org.get("description"):
             row += f"\n{org['description']}"
-        rows.append(row + f"\n[dim]Why: {'; '.join(reasons)}[/dim]")
+        row += f"\n[dim]Why: {'; '.join(reasons)}[/dim]"
+        for line in (org.get("readiness") or [])[:1]:
+            row += f"\n[green]✓[/green] {line}"
+        for line in (org.get("caveats") or [])[:2]:
+            row += f"\n[yellow]![/yellow] {line}"
+        rows.append(row)
     _numbered(rows)
+    for org in data.get("set_aside") or []:
+        _say(
+            f"[dim]Left out: {org['name']} says it will not take part this year "
+            f"({org.get('url')}).[/dim]"
+        )
     if data["profile"].get("hours_note"):
         _say(f"[yellow]![/yellow] {data['profile']['hours_note']}")
 

@@ -156,6 +156,8 @@ def first_run(
     """Save the answers from `start`, then return organizations that fit and what to do next.
 
     Organizations come from the embedded official list, so this works without a token.
+    The ones shown are checked for posts about the coming year; one that says it will
+    sit the year out is set aside and the next match takes its place.
     """
     profile = toolkit.save_profile(
         github=github,
@@ -168,16 +170,27 @@ def first_run(
         techs = [str(profile["top_language"])]
     topics = list(profile.get("interests") or [])
     organizations: list[dict[str, Any]] = []
+    set_aside: list[dict[str, Any]] = []
     catalog: dict[str, Any] = {}
     if techs or topics:
-        matched = toolkit.match_orgs(technologies=techs or None, topics=topics or None, limit=limit)
-        organizations = matched["organizations"]
+        # Two spares, so an organization that is sitting out can be replaced.
+        matched = toolkit.match_orgs(
+            technologies=techs or None, topics=topics or None, limit=limit + 2
+        )
+        checked = toolkit.check_participation(matched["organizations"], check=limit)
+        organizations = checked[:limit]
+        set_aside = [
+            {"name": org["name"], **org["participation"]}
+            for org in checked[limit:]
+            if (org.get("participation") or {}).get("status") == "not_taking_part"
+        ]
         catalog = matched["catalog"]
     shortlisted = toolkit.progress.load().shortlisted_orgs
     return {
         "profile": profile,
         "catalog": catalog,
         "organizations": organizations,
+        "set_aside": set_aside,
         "shortlisted": shortlisted,
         "next_steps": next_steps_after_start(organizations, shortlisted),
     }

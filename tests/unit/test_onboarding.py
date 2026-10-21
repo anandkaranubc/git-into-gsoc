@@ -41,6 +41,13 @@ def api() -> respx.MockRouter:
         router.get(f"{ARCHIVE}/2026.json").mock(
             return_value=httpx.Response(200, json=_archive_year(2026))
         )
+        # start asks GitHub whether its top picks posted about the coming year.
+        router.get("https://api.github.com/search/issues").mock(
+            return_value=httpx.Response(200, json={"items": []})
+        )
+        router.get(url__regex=r"https://api\.github\.com/(orgs|users)/[^/]+/repos").mock(
+            return_value=httpx.Response(200, json=[])
+        )
         yield router
 
 
@@ -177,3 +184,36 @@ def test_signed_in_login_needs_a_token(monkeypatch: pytest.MonkeyPatch) -> None:
     with respx.mock:
         respx.get("https://api.github.com/user").mock(return_value=httpx.Response(401))
         assert onboarding.signed_in_login(GSoCToolkit()) is None
+
+
+def test_start_sets_aside_an_organization_that_is_sitting_out(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    first = runner.invoke(
+        app, ["start", "--tech", "python", "--interests", "1", "--output", "json"]
+    )
+    top = json.loads(first.stdout)["organizations"][0]
+    owner = top["github_orgs"][0]
+
+    def posts_for(self: GSoCToolkit, owners: list[str], *, year: int | None = None) -> dict:
+        if owner in owners:
+            post = {
+                "status": "not_taking_part",
+                "source": "wiki",
+                "by_maintainer": False,
+                "url": f"https://github.com/{owner}/x/wiki",
+                "title": "Home",
+            }
+            return {"year": year or 2027, "posts": [post]}
+        return {"year": year or 2027, "posts": []}
+
+    monkeypatch.setattr(GSoCToolkit, "gsoc_posts_for", posts_for)
+    result = runner.invoke(
+        app, ["start", "--tech", "python", "--interests", "1", "--output", "json"]
+    )
+    data = json.loads(result.stdout)
+    assert top["name"] not in [o["name"] for o in data["organizations"]]
+    assert len(data["organizations"]) == 3
+    assert data["set_aside"][0]["name"] == top["name"]
+    shown = runner.invoke(app, ["start", "--tech", "python", "--interests", "1"])
+    assert "Left out:" in shown.stdout
