@@ -32,6 +32,7 @@ Start with [installation](guide/02-install.md), then [find organizations](guide/
 - [Sources and limitations](sources.md): where results come from and what they cannot tell you.
 - [Use it in your AI assistant](assistants.md): the plugin or extension for each assistant, one-click buttons, updates, and removal.
 - [MCP reference](mcp.md): tools available to assistants.
+- [Privacy](privacy.md): what the tool reads, what it saves on your computer, and what it never sends.
 - [Examples](../examples/README.md): terminal session and assistant prompts.
 - [Contributing to this tool](../CONTRIBUTING.md), [architecture](architecture.md), [releasing](releasing.md), [distribution](distribution.md), and [what we learned from other tools](research.md): for people improving git-into-gsoc itself.
 

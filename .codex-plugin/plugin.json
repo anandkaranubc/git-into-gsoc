@@ -51,6 +51,7 @@
       "Write"
     ],
     "websiteURL": "https://github.com/anandkaranubc/git-into-gsoc",
+    "privacyPolicyURL": "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/privacy.md",
     "defaultPrompt": [
       "Help me get started with Google Summer of Code",
       "Find GSoC organizations that use Python",

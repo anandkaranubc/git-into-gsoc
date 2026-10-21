@@ -20,6 +20,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import re
@@ -27,6 +28,9 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.parse
+import urllib.request
+import zipfile
 from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -36,6 +40,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from mcp_smoke import SmokeError, smoke  # noqa: E402
+
+sys.path.insert(0, str(ROOT / "src"))
+from git_into_gsoc.install import distribution  # noqa: E402
 
 NAME = "git-into-gsoc"
 PLUGIN_ID = f"{NAME}@{NAME}"
@@ -281,25 +288,109 @@ def setup_antigravity(box: Sandbox, gig: str) -> tuple[str, str]:
     return "ok", "`agy mcp list` shows it enabled"
 
 
-def setup_cursor(box: Sandbox, gig: str) -> tuple[str, str]:
-    _setup(box, gig, "cursor")
-    output = box.run(["cursor-agent", "mcp", "list-tools", NAME])
+def _cursor_tools(box: Sandbox) -> str:
+    agent = shutil.which("cursor-agent") or shutil.which("agent") or "cursor-agent"
+    output = box.run([agent, "mcp", "list-tools", NAME])
     match = re.search(r"Tools for \S+ \((\d+)\)", output)
     if not match or int(match.group(1)) < 20:
-        raise CheckFailed(f"`cursor-agent mcp list-tools` did not list the tools:\n{_tail(output)}")
-    return "ok", f"`cursor-agent mcp list-tools` started it and listed {match.group(1)} tools"
+        raise CheckFailed(f"Cursor's agent CLI did not list the tools:\n{_tail(output)}")
+    return f"Cursor's agent CLI started it and listed {match.group(1)} tools"
+
+
+def setup_cursor(box: Sandbox, gig: str) -> tuple[str, str]:
+    _setup(box, gig, "cursor")
+    return "ok", _cursor_tools(box)
+
+
+# ------------------------------------------------------------- buttons and bundles
+# A button cannot be clicked here, so each check writes exactly what the app writes
+# after the person confirms, then lets the app (or the same command) start it.
+
+
+def _button_command(source: str) -> list[str]:
+    command = distribution.remote_command()
+    if source != REPO:  # test this checkout's code, not main on GitHub
+        command[command.index("--from") + 1] = f"git+file://{source}"
+    return command
+
+
+def button_cursor(box: Sandbox, source: str) -> tuple[str, str]:
+    link = distribution.cursor_install_link(_button_command(source))
+    query = urllib.parse.parse_qs(urllib.parse.urlparse(link).query)
+    config = json.loads(base64.b64decode(query["config"][0]))
+    # On confirm, Cursor writes the decoded object as mcpServers[name] in ~/.cursor/mcp.json.
+    target = box.home / ".cursor" / "mcp.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps({"mcpServers": {NAME: config}}), encoding="utf-8")
+    return "ok", "the button's config: " + _cursor_tools(box)
+
+
+def button_vscode(box: Sandbox, source: str) -> tuple[str, str]:
+    link = distribution.vscode_install_link(_button_command(source))
+    config = json.loads(urllib.parse.parse_qs(urllib.parse.urlparse(link).query)["config"][0])
+    profile = box.dir / "vscode-profile"
+    box.run(
+        [
+            "code",
+            "--user-data-dir",
+            str(profile),
+            "--extensions-dir",
+            str(box.dir / "vscode-extensions"),
+            "--add-mcp",
+            json.dumps({"name": NAME, **config}),
+        ]
+    )
+    written = json.loads((profile / "User" / "mcp.json").read_text(encoding="utf-8"))
+    entry = written["servers"][NAME]
+    return "ok", "VS Code accepted the button's config; " + box.smoke(entry)
+
+
+def bundle_claude_desktop(box: Sandbox, source: str) -> tuple[str, str]:
+    bundle = box.dir / "git-into-gsoc.mcpb"
+    if source == REPO:
+        url = f"https://github.com/{REPO}/releases/latest/download/git-into-gsoc.mcpb"
+        with urllib.request.urlopen(url, timeout=60) as response:
+            bundle.write_bytes(response.read())
+    else:
+        build = ROOT / "scripts" / "build_mcpb.py"
+        box.run([sys.executable, str(build), "--root", source, "--out", str(bundle)])
+    folder = box.dir / "extension"
+    with zipfile.ZipFile(bundle) as archive:
+        archive.extractall(folder)
+    manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    config = manifest["server"]["mcp_config"]
+
+    # Claude Desktop fills ${__dirname} with the unpacked folder and leaves an unset
+    # optional setting empty; the server must start either way.
+    def fill(value: str) -> str:
+        return re.sub(r"\$\{user_config\.[^}]+\}", "", value.replace("${__dirname}", str(folder)))
+
+    entry = {
+        "command": config["command"],
+        "args": [fill(a) for a in config.get("args", [])],
+        "env": {k: fill(v) for k, v in (config.get("env") or {}).items()},
+    }
+    return (
+        "ok",
+        f"bundle {manifest['version']} unpacked and started as Desktop runs it; "
+        + box.smoke(entry),
+    )
 
 
 Check = Callable[..., tuple[str, str]]
-AGENTS: dict[str, tuple[str, Check | None, Check | None]] = {
-    # name: (executable, plugin check, setup check)
-    "claude": ("claude", plugin_claude, setup_claude),
-    "codex": ("codex", plugin_codex, setup_codex),
-    "copilot": ("copilot", plugin_copilot, setup_copilot),
-    "gemini": ("gemini", plugin_gemini, setup_gemini),
-    "antigravity": ("agy", plugin_antigravity, setup_antigravity),
-    "cursor": ("cursor-agent", None, setup_cursor),
+AGENTS: dict[str, tuple[tuple[str, ...], Check | None, Check | None]] = {
+    # name: (executables, plugin or button or bundle check, setup check)
+    "claude": (("claude",), plugin_claude, setup_claude),
+    "codex": (("codex",), plugin_codex, setup_codex),
+    "copilot": (("copilot",), plugin_copilot, setup_copilot),
+    "gemini": (("gemini",), plugin_gemini, setup_gemini),
+    "antigravity": (("agy",), plugin_antigravity, setup_antigravity),
+    "cursor": (("cursor-agent", "agent"), button_cursor, setup_cursor),
+    "vscode": (("code",), button_vscode, None),
+    "claude-desktop": (("uv",), bundle_claude_desktop, None),
 }
+# What the first check of each agent installs from.
+FIRST_ROUTE = {"cursor": "button", "vscode": "button", "claude-desktop": "bundle"}
 
 
 def clean_copy(dest: Path) -> Path:
@@ -351,11 +442,15 @@ def main(args: list[str] | None = None) -> int:
         source = None if ns.remote else str(clean_copy(base / "source"))
         cache = base / "uv-cache"
         for agent in chosen:
-            executable, plugin_check, setup_check = AGENTS[agent]
-            if not shutil.which(executable):
-                results.append(Result(agent, "-", "skipped", f"`{executable}` is not installed"))
+            executables, plugin_check, setup_check = AGENTS[agent]
+            if not any(shutil.which(e) for e in executables):
+                results.append(
+                    Result(agent, "-", "skipped", f"`{executables[0]}` is not installed")
+                )
                 continue
-            routes: list[tuple[str, Check | None]] = [("plugin", plugin_check)]
+            routes: list[tuple[str, Check | None]] = [
+                (FIRST_ROUTE.get(agent, "plugin"), plugin_check)
+            ]
             if ns.setup:
                 routes.append(("setup", setup_check))
             for route, check in routes:

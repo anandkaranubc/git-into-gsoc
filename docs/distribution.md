@@ -47,7 +47,7 @@ python scripts/check_agents.py --remote --only codex  # what people get from Git
 python scripts/mcp_smoke.py -- uvx --from . git-into-gsoc mcp
 ```
 
-`.github/workflows/agents.yml` runs it on Linux with pinned versions of Claude Code, Codex, Gemini CLI, and Copilot CLI whenever the files they read change. Every Monday it also runs with their newest releases and installs from GitHub, because agents change their formats often. Bump the pinned versions in that workflow from time to time.
+`.github/workflows/agents.yml` runs it on Linux with pinned versions of Claude Code, Codex, Gemini CLI, and Copilot CLI, plus the current Antigravity CLI, Cursor agent CLI, and VS Code from their vendors' installers, whenever the files they read change. It also checks the one-click button configs and the Claude Desktop bundle. Every Monday it also runs with their newest releases and installs from GitHub, because agents change their formats often. Bump the pinned versions in that workflow from time to time.
 
 ## Listings that need the owner
 
@@ -66,5 +66,21 @@ None of these has been submitted. Each needs the repository owner's account or d
 | Glama | glama.ai, and awesome-mcp-servers (which asks for a Glama score) | Claim the listing, which already exists, by adding a `glama.json` with the owner's GitHub name, then sign in. A score needs Glama to build the server from a Dockerfile |
 | Smithery | smithery.ai | `smithery mcp publish ./git-into-gsoc.mcpb -n <org>/git-into-gsoc` with a Smithery account |
 | Cline, Kilo Code, MCP Market, mcp.so | Their in-app marketplaces | A pull request or form each; Cline asks for a 400x400 PNG logo |
+
+### Details most forms ask for
+
+| Field | Value |
+|---|---|
+| Name | git-into-gsoc |
+| One line (under 100 characters) | Evidence-based GSoC preparation: organizations, repositories, free beginner issues, proposals. |
+| Description | The `DESCRIPTION` in `src/git_into_gsoc/install/distribution.py` |
+| Category | Developer tools; education |
+| Logo | `brand/logo/mark-tile-512.png` (512x512). For a 400x400 PNG (Cline), resize it, for example `sips -z 400 400 brand/logo/mark-tile-512.png --out logo-400.png` on macOS |
+| Repository and license | https://github.com/anandkaranubc/git-into-gsoc, MIT |
+| Support | https://github.com/anandkaranubc/git-into-gsoc/issues |
+| Privacy policy | https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/privacy.md |
+| Network destinations | summerofcode.withgoogle.com, api.gsocorganizations.dev, api.github.com, commits.ecosyste.ms, and each organization's ideas page (read only) |
+| Credentials | None required; an optional GitHub token raises the rate limit and is sent only to api.github.com |
+| Install command | `claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`, or the matching command in [assistants](assistants.md) |
 
 Already listed, with nothing to do: the official MCP registry (every release), Glama (copied from the registry), and `gh skill search gsoc`. skills.sh lists a repository once people install it with `npx skills add`.

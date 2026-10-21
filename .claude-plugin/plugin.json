@@ -8,8 +8,9 @@
   },
   "homepage": "https://github.com/anandkaranubc/git-into-gsoc",
   "repository": "https://github.com/anandkaranubc/git-into-gsoc",
-  "documentationUrl": "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md",
+  "documentationUrl": "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/assistants.md",
   "supportUrl": "https://github.com/anandkaranubc/git-into-gsoc/issues",
+  "privacyPolicyUrl": "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/privacy.md",
   "icon": "./brand/logo/mark-tile-512.png",
   "license": "MIT",
   "keywords": [

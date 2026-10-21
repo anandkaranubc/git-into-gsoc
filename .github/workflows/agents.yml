@@ -1,8 +1,10 @@
 name: Agents
 
 # Installs git-into-gsoc into real AI coding agents (Claude Code, Codex, Gemini CLI,
-# and Copilot CLI), each in a throwaway home folder, and checks that every one of
-# them can start the server: the plugin or extension route and `git-into-gsoc setup`.
+# Copilot CLI, Antigravity, Cursor's agent CLI, and VS Code), each in a throwaway home
+# folder, and checks that every one of them can start the server: the plugin or
+# extension route, the one-click button configs, the Claude Desktop bundle, and
+# `git-into-gsoc setup`.
 # No secrets, no logins, and no model calls. See scripts/check_agents.py.
 #
 # Pull requests use the agent versions pinned below. The weekly run uses the newest
@@ -93,9 +95,24 @@ jobs:
           gemini --version
           copilot --version
 
-      - name: Plugin and setup routes, from this checkout
-        run: python scripts/check_agents.py --setup --require claude,codex,gemini,copilot
+      # These come from each vendor's own installer, which has no version to pin. A
+      # failed download skips that agent instead of failing the job.
+      - name: Install the Antigravity and Cursor agent CLIs
+        continue-on-error: true
+        run: |
+          curl -fsSL https://antigravity.google/cli/install.sh | bash
+          curl -fsS https://cursor.com/install | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
-      - name: Plugin route, from GitHub
+      - name: Install VS Code
+        continue-on-error: true
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/code.deb" "https://code.visualstudio.com/sha/download?build=stable&os=linux-deb-x64"
+          sudo apt-get install -y -q "$RUNNER_TEMP/code.deb"
+
+      - name: Every route, from this checkout
+        run: python scripts/check_agents.py --setup --require claude,codex,gemini,copilot,claude-desktop
+
+      - name: Every route, from GitHub
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-        run: python scripts/check_agents.py --remote --require claude,codex,gemini,copilot
+        run: python scripts/check_agents.py --remote --require claude,codex,gemini,copilot,claude-desktop

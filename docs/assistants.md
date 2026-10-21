@@ -151,17 +151,19 @@ Use one route per assistant. Setup skips an assistant that already has the plugi
 
 ## What we test
 
-`scripts/check_agents.py` installs the plugin and runs `git-into-gsoc setup` for each assistant command it finds. It uses a throwaway home folder, signs in nowhere, and calls no model. Then it checks that the assistant can start the server. CI runs it with Claude Code, Codex, Gemini CLI, and Copilot CLI on every change to the files they read, and with their newest releases every week.
+`scripts/check_agents.py` installs git-into-gsoc into each assistant command it finds, the way that assistant's users would. It uses a throwaway home folder, signs in nowhere, and calls no model. Then it checks that the assistant can start the server. Buttons cannot be clicked in a script, so for those it writes exactly what the app writes after you confirm, and lets the app start the server. CI runs it on Linux on every change to the files these assistants read, and weekly with each assistant's newest release, installing from GitHub.
 
-| Assistant | Plugin route | Setup route |
-|---|---|---|
-| Claude Code | Server connected | Server connected |
-| Codex | Server answers from the plugin's folder | Server answers |
-| Gemini CLI | Server connected | Server connected |
-| Copilot CLI | Plugin and server registered; Copilot starts servers only after you sign in, so the start is not tested | Server registered and answers |
-| Antigravity (local runs) | Converted plugin's server answers | Server enabled |
-| Cursor agent CLI (local runs) | Not tested | Server started, 25 tools listed |
+| Assistant | What is checked |
+|---|---|
+| Claude Code | Plugin and setup: the server connects |
+| Codex | Plugin and setup: the server answers, from the plugin's own folder |
+| Gemini CLI | Extension and setup: the server connects |
+| Copilot CLI | Plugin and setup: the server is registered; Copilot starts servers only after you sign in, so the start itself is not checked |
+| Antigravity | Plugin and setup: the converted plugin's server answers |
+| Cursor | The button's config and setup: Cursor's agent CLI starts the server and lists its tools |
+| VS Code | The button's config: VS Code accepts it and the server answers |
+| Claude Desktop | The bundle, unpacked and started the way Desktop runs it |
 
-Not tested automatically: the VS Code and Cursor buttons, VS Code's Install Plugin From Source, Devin Desktop, and the Claude Desktop bundle. Each follows its vendor's documented format. Please [report a problem](https://github.com/anandkaranubc/git-into-gsoc/issues) if one does not work for you.
+Not checked automatically: the click itself in each app, VS Code's Install Plugin From Source, and Devin Desktop. Each follows its vendor's documented format. Please [report a problem](https://github.com/anandkaranubc/git-into-gsoc/issues) if one does not work for you.
 
-[Assistant setup guide](guide/03-connect-your-ai-assistant.md) · [Troubleshooting](troubleshooting.md) · [MCP tool reference](mcp.md) · [Guide contents](README.md)
+[Privacy](privacy.md) · [Assistant setup guide](guide/03-connect-your-ai-assistant.md) · [Troubleshooting](troubleshooting.md) · [MCP tool reference](mcp.md) · [Guide contents](README.md)

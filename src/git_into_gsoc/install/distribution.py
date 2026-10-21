@@ -162,7 +162,8 @@ def goose_install_link(command: list[str] | None = None) -> str:
 ICON = "./brand/logo/mark-tile-512.png"
 BRAND_COLOR = "#7A5AF8"
 SUPPORT_URL = f"{REPO_URL}/issues"
-DOCS_URL = f"{REPO_URL}/blob/main/docs/guide/03-connect-your-ai-assistant.md"
+DOCS_URL = f"{REPO_URL}/blob/main/docs/assistants.md"
+PRIVACY_URL = f"{REPO_URL}/blob/main/docs/privacy.md"
 
 
 def claude_plugin(version: str) -> dict[str, Any]:
@@ -175,6 +176,7 @@ def claude_plugin(version: str) -> dict[str, Any]:
         "repository": REPO_URL,
         "documentationUrl": DOCS_URL,
         "supportUrl": SUPPORT_URL,
+        "privacyPolicyUrl": PRIVACY_URL,
         "icon": ICON,
         "license": LICENSE,
         "keywords": KEYWORDS,
@@ -223,6 +225,7 @@ def codex_plugin(version: str) -> dict[str, Any]:
             "category": "Developer Tools",
             "capabilities": ["Interactive", "Read", "Write"],
             "websiteURL": REPO_URL,
+            "privacyPolicyURL": PRIVACY_URL,
             "defaultPrompt": [
                 "Help me get started with Google Summer of Code",
                 "Find GSoC organizations that use Python",
