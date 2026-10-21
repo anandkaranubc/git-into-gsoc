@@ -401,8 +401,8 @@ class GSoCToolkit:
                 issue_error = exc.to_dict()
 
         note = (
-            f"Org rankings use archive data through {LATEST_ARCHIVED_YEAR}. "
-            "GSoC 2027 org lists are not final until officially announced."
+            "Organization rankings use the latest official list plus archive history. "
+            "Next year's organizations are not final until Google announces them."
         )
         if source == "none":
             note = (
@@ -423,10 +423,6 @@ class GSoCToolkit:
                 "Make one meaningful contribution before writing a proposal",
                 "Read Google's AI guidance and each organization's AI policy",
             ],
-            "evidence_note": (
-                "Organization rankings use the latest official list plus archive history. "
-                "Next year's organizations are not final until Google announces them."
-            ),
             "evidence_note": note,
         }
 

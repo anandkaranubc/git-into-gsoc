@@ -14,10 +14,8 @@ from mcp.types import ToolAnnotations
 from git_into_gsoc import __version__
 from git_into_gsoc.config import PROJECT_URL
 from git_into_gsoc.errors import GigError
-from git_into_gsoc.guidance import journey_overview
-from git_into_gsoc.models import JourneyPhase, LogEntry
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, OFFICIAL_SOURCES, journey_overview
-from git_into_gsoc.models import JourneyPhase
+from git_into_gsoc.models import JourneyPhase, LogEntry
 from git_into_gsoc.service import GSoCToolkit
 from git_into_gsoc.validation import split_csv
 
@@ -210,7 +208,6 @@ def gsoc_org_ideas(
     )
 
 
-@mcp.tool()
 @mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="Repository health for newcomers", annotations=READ_ONLY, structured_output=False)
 @guarded
@@ -240,7 +237,6 @@ def gsoc_orient_repo(full_name: str) -> str:
     return _dump(toolkit().orient_repo(full_name))
 
 
-@mcp.tool()
 @mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(
     title="Rank an organization's repositories", annotations=READ_ONLY, structured_output=False
@@ -323,7 +319,6 @@ def gsoc_draft(kind: str, org: str = "", repo: str = "", issue: str = "") -> str
     return _dump(toolkit().draft(kind, org=org or None, repo=repo or None, issue=issue or None))
 
 
-@mcp.tool()
 @mcp.tool(annotations=LOCAL_WRITE, structured_output=False)
 @mcp.tool(title="Personalized starting path", annotations=LOCAL_WRITE, structured_output=False)
 @guarded
@@ -357,7 +352,6 @@ def gsoc_contribution_evidence(github_username: str, org: str = "", repo: str = 
     )
 
 
-@mcp.tool()
 @mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="Proposal checklist", annotations=READ_ONLY, structured_output=False)
 @guarded
@@ -468,7 +462,6 @@ def gsoc_log(
     )
 
 
-@mcp.tool()
 @mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="GitHub API budget", annotations=READ_ONLY, structured_output=False)
 @guarded

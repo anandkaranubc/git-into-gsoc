@@ -369,7 +369,6 @@ def repos_cmd(
     ),
     language: str | None = typer.Option(None, "--language", "-l", help="Prefer this language"),
     limit: int = typer.Option(10, "--limit", "-n", help="How many repositories to show"),
-    limit: int = typer.Option(10, "--limit", "-n"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Rank an organization's repositories by ideas-page mentions, beginner issues, and activity."""
