@@ -292,39 +292,98 @@ def repo_cmd(full_name: str, output: Output = Output.rich) -> None:
             console.print(f"  ! {w}")
 
 
+class Scope(StrEnum):
+    gsoc = "gsoc"
+    all = "all"
+
+
+_STATUS_STYLE = {
+    "available": "green",
+    "claimed": "yellow",
+    "contested": "yellow",
+    "likely_taken": "red",
+    "assigned": "red",
+    "stale": "dim",
+    "closed": "dim",
+    "unknown": "dim",
+}
+
+
 @app.command("issues")
 def issues_cmd(
     language: str | None = typer.Option(None, "--language", "-l"),
-    org: str | None = typer.Option(None, "--org"),
-    repo: str | None = typer.Option(None, "--repo"),
+    org: str | None = typer.Option(None, "--org", help="GitHub org/user to search"),
+    repo: str | None = typer.Option(None, "--repo", help="owner/repo to search"),
+    label: str | None = typer.Option(
+        None, "--label", help="Label to require (default: good first issue, then help wanted)"
+    ),
+    scope: Scope = typer.Option(
+        Scope.gsoc, "--scope", help="gsoc: only GSoC orgs' repos; all: any repository"
+    ),
     limit: int = typer.Option(10, "--limit", "-n"),
     output: Output = Output.rich,
 ) -> None:
-    """Find beginner-friendly issues with availability checks."""
-    issues = _toolkit().find_issues(language=language, org=org, repo=repo, max_results=limit)
+    """Find beginner issues that are actually free: no PR, assignee, or recent claim."""
+    data = _toolkit().find_issues(
+        language=language, org=org, repo=repo, label=label, scope=scope.value, max_results=limit
+    )
     if output == Output.json:
-        _emit(issues, output)
+        _emit(data, output)
         return
-    table = Table(title="Beginner-friendly issues")
+    table = Table(title="Beginner-friendly issues", caption=data["note"])
     table.add_column("Score", justify="right")
-    table.add_column("Availability")
-    table.add_column("Issue")
-    table.add_column("Title")
-    for issue in issues:
+    table.add_column("Status")
+    table.add_column("Issue", overflow="fold")
+    table.add_column("Title", overflow="fold")
+    for issue in data["issues"]:
+        status = issue["availability"]
+        ref = f"{issue['repo']}#{issue['number']}"
+        if issue.get("gsoc_org"):
+            ref += f"\n[dim]{issue['gsoc_org']}[/dim]"
         table.add_row(
-            str(issue["beginner_score"]),
-            issue["availability"],
-            f"{issue['repo']}#{issue['number']}",
-            issue["title"][:70],
+            f"{issue['beginner_score']:.0f}",
+            f"[{_STATUS_STYLE.get(status, '')}]{status}[/]",
+            ref,
+            issue["title"],
         )
     console.print(table)
+    if data["issues"]:
+        console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
 
 
 @app.command("issue")
-def issue_cmd(full_name: str, number: int, output: Output = Output.rich) -> None:
-    """Check availability of a specific issue."""
-    data = _toolkit().issue_status(full_name, number)
-    _emit(data if output == Output.json else json.dumps(data, indent=2), output)
+def issue_cmd(
+    ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
+    number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
+    output: Output = Output.rich,
+) -> None:
+    """Check whether an issue is free to pick up: PRs, claims, assignees, activity."""
+    data = _toolkit().issue_status(ref, number)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    assessment = data["assessment"]
+    style = _STATUS_STYLE.get(data["availability"], "")
+    lines = [
+        f"[bold]{data['title']}[/bold]",
+        data["url"],
+        f"Status: [{style}]{data['availability']}[/] — {data['reason']}",
+    ]
+    if assessment["maintainer_engaged"]:
+        lines.append("Maintainers have commented in this thread.")
+    for pr in assessment["linked_prs"]:
+        lines.append(f"PR #{pr['number']} ({pr['state']}) by @{pr['author']}")
+    for claim in assessment["claims"][:5]:
+        granted = " — approved" if claim["granted"] else ""
+        lines.append(f"Claim: @{claim['login']} {claim['days_ago']}d ago{granted}")
+    for caveat in assessment["caveats"]:
+        lines.append(f"[yellow]![/yellow] {caveat}")
+    console.print(
+        Panel(Text.from_markup("\n".join(lines)), title=f"{data['repo']}#{data['number']}")
+    )
+    console.print("[bold]Before you comment[/bold]")
+    for step in data["before_you_comment"]:
+        console.print(f"  ☐ {step}")
 
 
 @app.command("recommend")

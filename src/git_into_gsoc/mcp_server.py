@@ -126,26 +126,34 @@ def gsoc_find_issues(
     language: str = "",
     org: str = "",
     repo: str = "",
+    label: str = "",
+    scope: str = "gsoc",
     max_results: int = 10,
 ) -> str:
-    """Find beginner-friendly GitHub issues with availability checks.
+    """Find beginner issues that are genuinely free to pick up.
 
-    Prefers open, unassigned issues with good-first-issue / help-wanted labels.
-    Always re-check availability before claiming.
+    scope="gsoc" (default) searches only repos owned by GSoC mentoring orgs that use `language`;
+    scope="all" searches all of GitHub. Excludes assigned, PR-linked, and archived-repo issues,
+    then checks the top candidates' timelines for claims ("can I work on this?"), contested
+    threads, and maintainer engagement. Each result has availability + reason + signals.
     """
-    issues = toolkit().find_issues(
-        language=language or None,
-        org=org or None,
-        repo=repo or None,
-        max_results=max_results,
+    return _dump(
+        toolkit().find_issues(
+            language=language or None,
+            org=org or None,
+            repo=repo or None,
+            label=label or None,
+            scope=scope,
+            max_results=max_results,
+        )
     )
-    return _dump({"count": len(issues), "issues": issues})
 
 
 @mcp.tool()
-def gsoc_issue_status(full_name: str, number: int) -> str:
-    """Check whether a specific GitHub issue looks available to claim."""
-    return _dump(toolkit().issue_status(full_name, number))
+def gsoc_issue_status(ref: str, number: int = 0) -> str:
+    """Check if one issue is free: linked PRs, assignees, claims (with dates), maintainer
+    approval, and caveats. ref: "owner/repo#123", an issue URL, or "owner/repo" + number."""
+    return _dump(toolkit().issue_status(ref, number or None))
 
 
 @mcp.tool()

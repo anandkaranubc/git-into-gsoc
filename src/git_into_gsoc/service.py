@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
+from git_into_gsoc.errors import GigError
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
@@ -12,6 +13,15 @@ from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.progress.store import ProgressStore
+from git_into_gsoc.validation import parse_issue_ref
+
+BEFORE_YOU_COMMENT = [
+    "Read the whole thread and any linked PRs first.",
+    "Reproduce the problem locally (or confirm the docs gap) before claiming.",
+    "Point to the code you would change and outline your approach in 2-3 sentences.",
+    "Ask whether the approach fits; do not just write 'can I work on this?'.",
+    "If someone claimed it recently, pick another issue rather than competing.",
+]
 
 
 class GSoCToolkit:
@@ -104,30 +114,77 @@ class GSoCToolkit:
             "recommendation": _repo_recommendation(health.health_score, health.warnings),
         }
 
+    def gsoc_github_orgs(
+        self, *, language: str | None = None, year: int | None = None, limit: int = 12
+    ) -> tuple[dict[str, str], list[str], str]:
+        """Map GitHub owners to GSoC org names, plus a language-ranked owner shortlist."""
+        try:
+            catalog, orgs = self.gsoc.catalog(year)
+            _, ranked = self.gsoc.search_organizations(
+                technologies=[language] if language else None, year=year, limit=60
+            )
+        except HttpError:
+            return {}, [], "GSoC org data unavailable; searched all of GitHub."
+        owner_names = {gh.lower(): org.name for org in orgs for gh in org.github_orgs}
+        shortlist = [org.github_orgs[0] for org in ranked if org.github_orgs][:limit]
+        note = (
+            f"Searching GitHub orgs of GSoC {catalog.year} organizations"
+            + (f" that use {language}" if language else "")
+            + ". Use --scope all to search every repository."
+        )
+        return owner_names, shortlist, note
+
     def find_issues(
         self,
         *,
         language: str | None = None,
         org: str | None = None,
         repo: str | None = None,
+        label: str | None = None,
+        scope: str = "gsoc",
         max_results: int = 10,
-    ) -> list[dict[str, Any]]:
+        year: int | None = None,
+    ) -> dict[str, Any]:
+        owner_names, shortlist, note = self.gsoc_github_orgs(language=language, year=year)
+        use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
+        if not use_gsoc:
+            note = "Searching " + (f"{repo}" if repo else f"org {org}" if org else "all of GitHub")
         issues = self.github.find_beginner_issues(
             language=language,
             org=org,
+            orgs=shortlist if use_gsoc else None,
             repo=repo,
+            label=label,
             max_results=max_results,
+            org_names=owner_names,
         )
-        return [i.model_dump(mode="json") for i in issues]
-
-    def issue_status(self, full_name: str, number: int) -> dict[str, Any]:
-        availability, reason = self.github.check_issue_availability(full_name, number)
         return {
-            "repo": full_name,
-            "number": number,
-            "availability": availability.value,
-            "reason": reason,
-            "url": f"https://github.com/{full_name}/issues/{number}",
+            "scope": "gsoc" if use_gsoc else "custom",
+            "note": note,
+            "count": len(issues),
+            "issues": [
+                i.model_dump(mode="json", exclude={"signals"}) | {"signals": i.signals}
+                for i in issues
+            ],
+            "before_you_comment": BEFORE_YOU_COMMENT,
+        }
+
+    def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
+        owner, repo, num = parse_issue_ref(ref, number)
+        issue, assessment = self.github.assess(f"{owner}/{repo}", num)
+        return {
+            "repo": f"{owner}/{repo}",
+            "number": num,
+            "title": issue.get("title"),
+            "url": issue.get("html_url") or f"https://github.com/{owner}/{repo}/issues/{num}",
+            "labels": [
+                lab.get("name") for lab in issue.get("labels") or [] if isinstance(lab, dict)
+            ],
+            "comments": issue.get("comments"),
+            "availability": assessment.availability.value,
+            "reason": assessment.reason,
+            "assessment": assessment.model_dump(mode="json"),
+            "before_you_comment": BEFORE_YOU_COMMENT,
         }
 
     def profile_from_github(self, username: str) -> dict[str, Any]:
@@ -160,9 +217,9 @@ class GSoCToolkit:
         issues: list[dict[str, Any]] = []
         if issue_language:
             try:
-                issues = self.find_issues(language=issue_language, max_results=5)
-            except Exception as exc:
-                issues = [{"error": str(exc)}]
+                issues = self.find_issues(language=issue_language, max_results=5)["issues"]
+            except GigError as exc:
+                issues = [exc.to_dict()]
 
         return {
             "profile": profile,
