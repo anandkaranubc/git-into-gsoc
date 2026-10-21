@@ -4,6 +4,8 @@
 
 # Stream A: Direct competitors and GSoC / mentorship-program tooling
 
+> Verification status. Re-checked first hand on 2026-10-21: the official site's JSON (1,191 completed 2025 projects with mentors), every one of the 183 ideas pages through the shipped parser (numbers in the summary), the community archive's commit history, the proposal archives' layouts, and Google's April 2026 announcement (1,142 contributors from 23,371 proposals). Not re-opened: the internals of the hobby explorer sites beyond their public pages. Everything else here is the research stream's working record as written.
+
 Research date: 2026-10-20. All HTTP probes, clones and counts below were run on this date; "verified" means I fetched the primary source myself. Raw downloads live in `(session working files, not included)` (official API JSON, `organizations.json`, 183 fetched ideas pages, 43 proposal PDFs converted to text, shallow clones).
 
 ## TL;DR

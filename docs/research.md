@@ -138,6 +138,7 @@ The complete notes behind this page, one file per stream, with every URL, number
 - [Repository health metrics](research/repo-health.md): Repository health metrics, GraphQL costs, ecosyste.ms, and what predicts a merged newcomer pull request.
 - [Codebase understanding and onboarding tools](research/codebase-onboarding.md): Codebase understanding and onboarding tools, and the GitHub API toolbox behind orient and pointers.
 - [MCP servers](research/mcp-and-skills.md): MCP servers, the Agent Skills specification, distribution channels, and untrusted-content handling.
+- [Search census appendix](research/census-2026-10-21.md): every result of the 42 repository searches, with a verdict for each.
 - [The research on newcomer onboarding](research/onboarding-science.md): The research on newcomer onboarding, what maintainers say they want, and adjacent programs.
 
 ## Evidence worth reading
