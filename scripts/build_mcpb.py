@@ -17,14 +17,14 @@ import sys
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[1]  # overridden by --root
 INCLUDE_FILES = ("pyproject.toml", "README.md", "LICENSE")
 INCLUDE_TREES = ("src/git_into_gsoc", "skills/git-into-gsoc")
 EXCLUDE_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".venv"}
 
 
-def package_version() -> str:
-    text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+def package_version(root: Path = ROOT) -> str:
+    text = (root / "pyproject.toml").read_text(encoding="utf-8")
     match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.M)
     if not match:
         raise SystemExit("version not found in pyproject.toml")
@@ -74,22 +74,22 @@ def manifest(version: str) -> dict[str, object]:
     }
 
 
-def bundle_files() -> list[Path]:
-    files = [ROOT / name for name in INCLUDE_FILES if (ROOT / name).is_file()]
+def bundle_files(root: Path = ROOT) -> list[Path]:
+    files = [root / name for name in INCLUDE_FILES if (root / name).is_file()]
     for tree in INCLUDE_TREES:
-        for path in sorted((ROOT / tree).rglob("*")):
+        for path in sorted((root / tree).rglob("*")):
             if path.is_file() and not (EXCLUDE_PARTS & set(path.parts)):
                 files.append(path)
     return files
 
 
-def build(out: Path) -> tuple[Path, str]:
-    version = package_version()
+def build(out: Path, root: Path = ROOT) -> tuple[Path, str]:
+    version = package_version(root)
     out.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("manifest.json", json.dumps(manifest(version), indent=2) + "\n")
-        for path in bundle_files():
-            zf.write(path, path.relative_to(ROOT).as_posix())
+        for path in bundle_files(root):
+            zf.write(path, path.relative_to(root).as_posix())
     digest = hashlib.sha256(out.read_bytes()).hexdigest()
     return out, digest
 
@@ -98,11 +98,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=ROOT / "dist" / "git-into-gsoc.mcpb")
     parser.add_argument("--manifest-only", action="store_true", help="Print manifest.json and exit")
+    parser.add_argument("--root", type=Path, default=ROOT, help="Source checkout to bundle (default: this repository)")
     args = parser.parse_args(argv)
+    root = args.root.resolve()
     if args.manifest_only:
-        print(json.dumps(manifest(package_version()), indent=2))
+        print(json.dumps(manifest(package_version(root)), indent=2))
         return 0
-    path, digest = build(args.out)
+    path, digest = build(args.out, root)
     print(f"{path} sha256={digest} size={path.stat().st_size}")
     return 0
 

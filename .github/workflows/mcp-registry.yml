@@ -27,16 +27,21 @@ jobs:
         id: tag
         run: echo "tag=${{ github.event.release.tag_name || inputs.tag }}" >> "$GITHUB_OUTPUT"
 
+      # The workflow's own ref supplies server.json and the build script; the bundle
+      # is built from the tagged source so its contents match the release exactly.
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.tag.outputs.tag }}
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Build the MCPB bundle
-        run: python scripts/build_mcpb.py --out dist/git-into-gsoc.mcpb
+      - name: Check out the tagged source
+        run: git worktree add /tmp/tagged-source "${{ steps.tag.outputs.tag }}"
+
+      - name: Build the MCPB bundle from the tag
+        run: python scripts/build_mcpb.py --root /tmp/tagged-source --out dist/git-into-gsoc.mcpb
 
       - name: Attach the bundle to the release
         env:

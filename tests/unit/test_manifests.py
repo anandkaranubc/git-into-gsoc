@@ -17,6 +17,7 @@ def test_manifest_versions_match_the_package() -> None:
     assert _load("gemini-extension.json")["version"] == __version__
     server = _load("server.json")
     assert server["version"] == __version__
+    assert len(server["description"]) <= 100  # the registry rejects longer descriptions
     package = server["packages"][0]
     assert package["registryType"] == "mcpb"
     assert "mcp" in package["identifier"] and len(package["fileSha256"]) == 64
