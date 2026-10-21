@@ -300,6 +300,7 @@ def repos_cmd(
     ),
     language: str | None = typer.Option(None, "--language", "-l", help="Prefer this language"),
     limit: int = typer.Option(10, "--limit", "-n", help="How many repositories to show"),
+    limit: int = typer.Option(10, "--limit", "-n"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Rank an organization's repositories by ideas-page mentions, beginner issues, and activity."""
@@ -553,7 +554,7 @@ def recommend_cmd(
     table.add_column("Fit", overflow="fold")
     for org in data["recommended_orgs"][:8]:
         fit = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
-        table.add_row(f"{org['match_score']:.0f}", org["name"], "; ".join(fit) or "—")
+        table.add_row(f"{org['match_score']:.0f}", org["name"], "; ".join(fit))
     console.print(table)
     if data["starter_issues"]:
         issues = Table(title="Starter issues (verified availability)")
@@ -586,7 +587,7 @@ def contributions_cmd(
     github: str = typer.Option(..., "--github", "-g", help="Your GitHub username"),
     org: str | None = typer.Option(None, "--org", help="GSoC org name or GitHub org"),
     repo: str | None = typer.Option(None, "--repo", help="owner/repo to scope to"),
-    output: Output = Output.rich,
+    output: Output = OUTPUT_OPTION,
 ) -> None:
     """Collect your PRs, issues, and reviews in an org's repos as proposal evidence."""
     if not org and not repo:
@@ -726,6 +727,61 @@ def journey_cmd(output: Output = OUTPUT_OPTION) -> None:
         console.print(f"\n[bold cyan]{phase}[/bold cyan]: {guide['goal']}")
         for action in guide["actions"]:
             console.print(f"  • {action}")
+
+
+@app.command("next")
+def next_cmd(
+    year: int | None = typer.Option(None, help="Program year (default: the target year)"),
+    no_check: bool = typer.Option(
+        False, "--no-check", help="Skip live re-checks of tracked issues and new-issue search"
+    ),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """What should I do right now? Phase, deadlines, tracked-issue changes, new issues, actions."""
+    data = _toolkit().next_steps(year=year, recheck=not no_check)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    program = data["program"]
+    badge = (
+        "[green]official[/green]" if program["dates_are_official"] else "[yellow]estimate[/yellow]"
+    )
+    phase = program["phase"]
+    console.print(
+        Panel.fit(
+            f"[bold]GSoC {program['year']}[/bold]  dates: {badge}\n"
+            f"[bold cyan]Now:[/bold cyan] {phase['title']}\n{phase['advice']}",
+            title="Where you are",
+        )
+    )
+    if data["deadlines"]:
+        console.print("\n[bold]Coming up[/bold]")
+        for item in data["deadlines"]:
+            mark = "" if item["official"] else " (estimate)"
+            console.print(
+                f"  {item['at'][:10]}  {item['label']}{mark}  {_relative(item['days_until'])}"
+            )
+    if data["changes"]:
+        console.print("\n[bold]Changed since your last check[/bold]")
+        for change in data["changes"]:
+            console.print(f"  [yellow]![/yellow] {escape(change)}")
+    if data["tracked_issues"]:
+        console.print("\n[bold]Tracked issues[/bold]")
+        for item in data["tracked_issues"]:
+            style = _STATUS_STYLE.get(item["availability"], "")
+            console.print(
+                f"  [{style}]{item['availability']:<12}[/] {item['ref']}  [dim]{escape(item['reason'])}[/dim]"
+            )
+    if data["new_issues"]:
+        console.print("\n[bold]New beginner issues in places you follow[/bold]")
+        for issue in data["new_issues"][:5]:
+            console.print(f"  {issue['repo']}#{issue['number']}  {escape(issue['title'])}")
+    console.print("\n[bold]Do next[/bold]")
+    for index, action in enumerate(data["actions"], 1):
+        console.print(f"  {index}. {escape(action['title'])}")
+        console.print(f"     [cyan]{escape(action['command'])}[/cyan]")
+        console.print(f"     [dim]{escape(action['why'])}[/dim]")
+    console.print(f"\n[dim]{data['note']}[/dim]")
 
 
 @app.command("mcp")

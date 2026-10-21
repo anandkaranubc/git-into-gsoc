@@ -340,6 +340,20 @@ def gsoc_progress(action: str = "summary", phase: str = "", value: str = "") -> 
     )
 
 
+@mcp.tool()
+def gsoc_next(year: int = 0, recheck: bool = True) -> str:
+    """What should the contributor do right now? One call that combines the program phase and
+    upcoming deadlines, their saved progress, a live re-check of every tracked issue (reporting
+    status changes such as available -> claimed), beginner issues created in tracked repos and
+    shortlisted orgs since the last check, and an ordered list of concrete next actions, each
+    with the exact command. Use this first when a user asks "what now?" or returns after a break.
+    recheck=False skips the live GitHub checks.
+    """
+    return _dump(toolkit().next_steps(year=year or None, recheck=recheck))
+
+
+@mcp.tool()
+@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(title="GitHub API budget", annotations=READ_ONLY, structured_output=False)
 @guarded
 def gsoc_rate_limit() -> str:

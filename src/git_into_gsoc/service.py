@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from git_into_gsoc.coach import plan_actions, upcoming_deadlines
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
 from git_into_gsoc.errors import GigError
 from git_into_gsoc.github.client import GitHubClient
@@ -15,9 +17,9 @@ from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
-from git_into_gsoc.models import RepoLead
+from git_into_gsoc.models import ProgressState, RepoLead
 from git_into_gsoc.progress.store import ProgressStore
-from git_into_gsoc.validation import parse_issue_ref, validate_login
+from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_login
 
 
 def _parse_iso(value: Any) -> datetime | None:
@@ -440,6 +442,147 @@ class GSoCToolkit:
 
     def rate_limit(self) -> dict[str, Any]:
         return self.github.rate_limit()
+
+    # ------------------------------------------------------------- next steps
+
+    def next_steps(
+        self,
+        *,
+        year: int | None = None,
+        now: datetime | None = None,
+        recheck: bool = True,
+    ) -> dict[str, Any]:
+        """What to do right now: phase, deadlines, tracked-issue changes, new issues, actions."""
+        now = now or datetime.now(UTC)
+        year = year or self.settings.target_year
+        offline = False
+        try:
+            official = self.official.program(year)
+        except HttpError:
+            official, offline = None, True
+        program = program_status(year, official_program=official, offline=offline, now=now)
+        state = self.progress.load()
+
+        tracked: list[dict[str, Any]] = []
+        changes: list[str] = []
+        statuses: dict[str, str] = {}
+        if recheck and state.tracked_issues:
+            refs: list[tuple[str, str, str, int]] = []
+            for raw in state.tracked_issues[:10]:
+                try:
+                    owner, repo, num = parse_issue_ref(raw)
+                except GigError:
+                    continue
+                refs.append((raw, f"{owner}/{repo}", f"{owner}/{repo}#{num}", num))
+            with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+                futures = [
+                    (raw, full, key, pool.submit(self.github.check_issue_availability, full, num))
+                    for raw, full, key, num in refs
+                ]
+                for raw, full, key, future in futures:
+                    try:
+                        availability, reason = future.result()
+                        status = availability.value
+                    except GigError as exc:
+                        status, reason = "unknown", str(exc)
+                    previous = state.issue_status.get(key)
+                    statuses[key] = status
+                    entry = {
+                        "ref": key,
+                        "url": raw
+                        if raw.startswith("http")
+                        else f"https://github.com/{full}/issues/{key.rsplit('#', 1)[1]}",
+                        "availability": status,
+                        "reason": reason,
+                        "previous": previous,
+                        "changed": bool(previous and previous != status),
+                    }
+                    tracked.append(entry)
+                    if entry["changed"]:
+                        changes.append(f"{key} went from {previous} to {status}: {reason}")
+
+        new_issues = self._new_beginner_issues(state, now=now) if recheck else []
+        if recheck:
+            self.progress.mark_checked(statuses, now)
+
+        actions = plan_actions(
+            state, program, tracked_issues=tracked, new_issues=new_issues, now=now
+        )
+        return {
+            "checked_at": now.isoformat(),
+            "last_checked_at": state.last_checked_at.isoformat() if state.last_checked_at else None,
+            "program": {
+                "year": program["year"],
+                "phase": program["phase"],
+                "dates_are_official": program["dates_are_official"],
+                "source": program["source"],
+            },
+            "deadlines": upcoming_deadlines(program),
+            "progress": self.progress.summary(),
+            "tracked_issues": tracked,
+            "changes": changes,
+            "new_issues": new_issues,
+            "actions": actions,
+            "note": (
+                "Actions are suggestions from your saved progress and public data. "
+                "Dates for unpublished years are estimates; verify on the official site."
+            ),
+        }
+
+    def _new_beginner_issues(self, state: ProgressState, *, now: datetime) -> list[dict[str, Any]]:
+        """Beginner issues created in tracked repos / shortlisted orgs since the last check."""
+        since = state.last_checked_at or (now - timedelta(days=14))
+        scope: list[str] = []
+        for raw in state.tracked_repos[:10]:
+            try:
+                owner, repo = parse_repo(raw)
+            except GigError:
+                continue
+            scope.append(f"repo:{owner}/{repo}")
+        for name in state.shortlisted_orgs[:5]:
+            try:
+                org = self.gsoc.get_organization(name)
+            except HttpError:
+                org = None
+            if org and org.github_orgs:
+                scope.append(f"org:{org.github_orgs[0]}")
+        scope = list(dict.fromkeys(scope))
+        if not scope:
+            return []
+        base = (
+            'is:issue is:open no:assignee -linked:pr archived:false label:"good first issue" '
+            f"created:>={since.date().isoformat()}"
+        )
+        query = base
+        for qualifier in scope:
+            if len(query) + len(qualifier) + 1 > 250:
+                break
+            query += f" {qualifier}"
+        try:
+            items = self.github.search_issues(query, per_page=20, sort="created")
+        except HttpError:
+            return []
+        out = []
+        for item in items:
+            if "pull_request" in item:
+                continue
+            parts = str(item.get("repository_url") or "").rstrip("/").split("/")
+            repo = "/".join(parts[-2:]) if len(parts) >= 2 else ""
+            if "/" not in repo or not item.get("number"):
+                continue
+            out.append(
+                {
+                    "repo": repo,
+                    "number": int(item["number"]),
+                    "title": str(item.get("title") or ""),
+                    "url": str(item.get("html_url") or ""),
+                    "created_at": item.get("created_at"),
+                    "labels": [
+                        lab.get("name") for lab in item.get("labels") or [] if isinstance(lab, dict)
+                    ],
+                }
+            )
+        return out[:10]
 
 
 def _repo_recommendation(score: float, warnings: list[str]) -> str:

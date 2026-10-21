@@ -76,3 +76,14 @@ def test_cli_contributions_repo_scope() -> None:
 def test_cli_contributions_requires_scope() -> None:
     result = runner.invoke(app, ["contributions", "--github", "alice"])
     assert result.exit_code == 2
+
+
+@respx.mock
+def test_cli_next_without_live_checks() -> None:
+    respx.get("https://summerofcode.withgoogle.com/api/program/2027/").mock(
+        return_value=httpx.Response(404, json={})
+    )
+    result = runner.invoke(app, ["next", "--no-check"])
+    assert result.exit_code == 0, result.output
+    assert "Do next" in result.stdout
+    assert "git-into-gsoc" in result.stdout

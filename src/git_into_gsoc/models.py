@@ -214,6 +214,8 @@ class ProgressState(BaseModel):
     tracked_issues: list[str] = Field(default_factory=list)
     contributions: list[dict[str, Any]] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+    issue_status: dict[str, str] = Field(default_factory=dict)
+    last_checked_at: datetime | None = None
     updated_at: datetime | None = None
 
 

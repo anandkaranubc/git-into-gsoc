@@ -62,6 +62,17 @@ class ProgressStore:
     def profile(self) -> dict[str, Any]:
         return dict(self.load().profile)
 
+    def set_issue_status(self, ref: str, status: str) -> ProgressState:
+        state = self.load()
+        state.issue_status[ref] = status
+        return self.save(state)
+
+    def mark_checked(self, statuses: dict[str, str], at: datetime) -> ProgressState:
+        state = self.load()
+        state.issue_status.update(statuses)
+        state.last_checked_at = at
+        return self.save(state)
+
     def shortlist_org(self, name: str) -> ProgressState:
         name = _require(name, "organization name")
         state = self.load()

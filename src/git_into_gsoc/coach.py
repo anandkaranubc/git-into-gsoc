@@ -1,0 +1,162 @@
+"""Turn program phase, saved progress, and live checks into the next few actions.
+
+Pure functions only: the service layer gathers the data and this module decides
+what a contributor should do now. Every action carries a command they can run.
+"""
+
+from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Any
+
+from git_into_gsoc.models import ProgressState
+
+DEADLINE_HORIZON_DAYS = 45
+SOON_DAYS = 14
+PROPOSAL_PHASES = {"org_exploration", "proposal_window", "proposal_review"}
+PROPOSAL_KEYS = {"contributor_proposals_open", "proposal_deadline"}
+
+
+def _action(title: str, command: str, why: str) -> dict[str, str]:
+    return {"title": title, "command": command, "why": why}
+
+
+def upcoming_deadlines(
+    program: dict[str, Any], *, horizon_days: int = DEADLINE_HORIZON_DAYS
+) -> list[dict[str, Any]]:
+    """Milestones within the horizon, nearest first."""
+    out = []
+    for item in program.get("timeline") or []:
+        days = int(item.get("days_until") or 0)
+        if item.get("status") in {"upcoming", "today"} and days <= horizon_days:
+            out.append(item)
+    out.sort(key=lambda m: int(m.get("days_until") or 0))
+    return out[:4]
+
+
+def plan_actions(
+    state: ProgressState,
+    program: dict[str, Any],
+    *,
+    tracked_issues: list[dict[str, Any]],
+    new_issues: list[dict[str, Any]],
+    now: datetime | None = None,
+) -> list[dict[str, str]]:
+    """A short, ordered ladder of concrete next actions."""
+    now = now or datetime.now(UTC)
+    profile = state.profile or {}
+    github = str(profile.get("github") or "").strip()
+    techs = list(profile.get("technologies") or [])
+    orgs = list(state.shortlisted_orgs)
+    repos = list(state.tracked_repos)
+    phase_id = str((program.get("phase") or {}).get("id") or "")
+    deadlines = upcoming_deadlines(program, horizon_days=30)
+    actions: list[dict[str, str]] = []
+
+    for item in deadlines:
+        if int(item.get("days_until") or 0) <= SOON_DAYS:
+            label = str(item.get("label") or item.get("key"))
+            days = int(item.get("days_until") or 0)
+            when = "today" if days == 0 else f"in {days} day{'s' if days != 1 else ''}"
+            estimate = (
+                "" if item.get("official") else " (estimated date; verify on the official site)"
+            )
+            actions.append(
+                _action(
+                    f"{label} {when}{estimate}",
+                    "git-into-gsoc program",
+                    "Plan around it now; the official timeline is the only source of truth.",
+                )
+            )
+
+    if not techs and not github:
+        actions.append(
+            _action(
+                "Save your profile so every recommendation fits you",
+                "git-into-gsoc profile --github YOUR_USERNAME --tech python --interests science",
+                "Recommendations, starter issues, and this command use it.",
+            )
+        )
+
+    if not orgs:
+        command = (
+            "git-into-gsoc recommend" if (techs or github) else "git-into-gsoc orgs --tech python"
+        )
+        actions.append(
+            _action(
+                "Shortlist 3 organizations that fit your skills",
+                command + '   # then: git-into-gsoc progress shortlist_org --value "NAME"',
+                "Everything downstream (repos, issues, proposal) hangs off a shortlist.",
+            )
+        )
+    elif not repos:
+        first = orgs[0]
+        actions.append(
+            _action(
+                f"Pick the repository to start in at {first}",
+                f'git-into-gsoc repos "{first}"   # then: git-into-gsoc repo owner/name',
+                "Mentors work in a few repos; the ideas page and beginner issues show which.",
+            )
+        )
+    elif not tracked_issues:
+        repo = repos[0]
+        actions.append(
+            _action(
+                f"Find a beginner issue that is actually free in {repo}",
+                f"git-into-gsoc issues --repo {repo} -n 5",
+                "Only issues with no assignee, open PR, or recent claim are worth your time.",
+            )
+        )
+    else:
+        free = [t for t in tracked_issues if t.get("availability") == "available"]
+        if free:
+            ref = free[0]["ref"]
+            actions.append(
+                _action(
+                    f"Reproduce {ref} and comment with a short plan",
+                    f"git-into-gsoc issue {ref}",
+                    "It is still free. Read the thread, reproduce, then say what you would change.",
+                )
+            )
+        else:
+            repo = repos[0] if repos else tracked_issues[0]["ref"].split("#")[0]
+            actions.append(
+                _action(
+                    "Everything you tracked is taken or stale; pick another issue",
+                    f"git-into-gsoc issues --repo {repo} -n 5",
+                    "Do not compete for claimed issues; a free one gets you reviewed sooner.",
+                )
+            )
+
+    if new_issues:
+        newest = new_issues[0]
+        actions.append(
+            _action(
+                f"{len(new_issues)} new beginner issue(s) appeared since your last check",
+                f"git-into-gsoc issue {newest['repo']}#{newest['number']}",
+                "New issues have no competition yet; check availability before commenting.",
+            )
+        )
+
+    proposal_soon = phase_id in PROPOSAL_PHASES or any(
+        d.get("key") in PROPOSAL_KEYS for d in deadlines
+    )
+    if proposal_soon and orgs:
+        who = github or "YOUR_USERNAME"
+        actions.append(
+            _action(
+                f"Check what evidence you have at {orgs[0]} before writing a proposal",
+                f'git-into-gsoc contributions --github {who} --org "{orgs[0]}"',
+                "Prior contributions and public discussion are what reviewers look for first.",
+            )
+        )
+        if phase_id == "proposal_window":
+            actions.append(
+                _action(
+                    "Draft with the organization's template, in your own words",
+                    "git-into-gsoc proposal",
+                    "Submit only on the official site, before the deadline in your timezone.",
+                )
+            )
+
+    return actions[:6]
