@@ -1,52 +1,68 @@
-# Example dialogues
+# Coaching examples
 
-## 1) Absolute beginner
+Patterns, not scripts. Adapt them to the person and report what the tools
+actually returned.
 
-**User:** I want to do GSoC 2027 but I’ve never contributed to open source.
+## "I know a little Python and want to try GSoC"
 
-**Agent should:**
-1. Run/read `git-into-gsoc program --year 2027` and clarify estimate vs official dates.
-2. Build a self-profile (languages, hours, interests).
-3. Start `learn` → `discover` with archive year 2026.
-4. Emphasize one meaningful contribution over many spam PRs.
-5. Mark progress phases as completed.
+Explain GSoC in two sentences and link the FAQ. Ask what they enjoy. Then run
+one search:
 
-## 2) Personalized shortlist
-
-**User:** My GitHub is @alice; I know Python and care about climate/science tools.
-
-**Agent should:**
 ```bash
-git-into-gsoc recommend --github alice --tech python --interests science,climate
+git-into-gsoc orgs --tech python --topics <their interest> -n 5
 ```
-Present top orgs with match reasons + evidence note about 2026 archive → 2027 uncertainty. Suggest joining each org’s channel.
 
-## 3) Issue selection with ethics
+Say that the list shows the latest announced year and that next year's
+organizations are not confirmed. Suggest one next step: open one
+organization's ideas page with `git-into-gsoc org "<name>"` and read it. Do
+not list every command.
 
-**User:** Find me any good first issue and open a PR for me.
+## "Which repository should I start in?"
 
-**Agent should:**
-- Find issues via CLI/MCP.
-- Filter to `available`.
-- Refuse to silently author the whole PR.
-- Require the user to explain the fix plan first (`quality-bar.md`).
+Rank the organization's repositories, then check the best one:
 
-## 4) Proposal review
-
-**User:** Here’s my draft proposal (paste).
-
-**Agent should:**
-- Run through `git-into-gsoc proposal` checklist.
-- Flag generic AI phrasing, missing contribution links, unrealistic scope.
-- Point to official spam + AI guidance URLs.
-- Suggest concrete revisions, not a full rewrite in a different voice.
-
-## 5) Repo looks dead
-
-**User:** Should I apply to Org X’s mega-monorepo?
-
-**Agent should:**
 ```bash
-git-into-gsoc repo orgx/mega
+git-into-gsoc repos "<organization>"
+git-into-gsoc repo owner/name
 ```
-If grade D/F or stale warnings, recommend switching — protect the user’s time.
+
+Point out the setup hints and the contributing guide link. If outside
+contributors' pull requests rarely get merged, say so and suggest comparing
+another repository in the same organization.
+
+## "Find me an issue and open the PR for me"
+
+Find candidates, then check the one they like:
+
+```bash
+git-into-gsoc issues --repo owner/name -n 5
+git-into-gsoc issue owner/name#123
+```
+
+Walk through the status, linked pull requests, and claims. Help them reproduce
+the problem and describe their approach in their own words before anyone
+comments. Decline to write the whole change for them; offer to review their
+plan or their diff instead.
+
+## "The repository got a D"
+
+Read the warnings together. A missing contributing guide may live on a
+website, and slow reviews in a sample of recent pull requests may not reflect
+how a small documentation fix would be treated. Suggest an alternative only
+when the evidence is clear: archived, no activity for months, or outside pull
+requests never merged. Describe the project, not the people.
+
+## "Review my proposal"
+
+Ask for the organization's template and AI policy if you do not have them.
+Run `git-into-gsoc proposal` and compare the draft against the organization's
+requirements. Name specific gaps: a milestone that cannot be demonstrated, a
+claim without a link, a schedule that ignores their availability. Do not
+rewrite it in a different voice, and do not add experience they do not have.
+
+## "I have no merged PR yet and the deadline is close"
+
+Check the organization's actual prerequisites. Reviewed pull requests,
+reproduced bugs, documentation fixes, and helpful discussion all count as
+evidence of engagement. Help them write about what they did and learned. Do
+not promise that any number of pull requests leads to acceptance.
