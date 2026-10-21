@@ -79,7 +79,7 @@ Check one issue before commenting, with `gsoc_issue_status`:
 
 ## Install as a plugin or from a registry
 
-The repository ships the manifests assistants look for: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` for Claude Code plugins (`/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`), `gemini-extension.json` for Gemini CLI extensions, and `server.json` for the public MCP registry. The manifests start the server with `uvx`, which needs the package on PyPI; until the first PyPI release, use the installer or `git-into-gsoc setup`, which register the server from your local checkout. Registry publishing (`mcp-publisher`) is a one-time step for a maintainer after that release; the README carries the `mcp-name` marker the registry checks.
+The repository ships the manifests assistants look for: `.claude-plugin/plugin.json` and `.claude-plugin/marketplace.json` for Claude Code plugins (`/plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`), `gemini-extension.json` for Gemini CLI extensions, and `server.json` for the public MCP registry. The manifests start the server with `uvx` (the uv tool runner, which downloads and runs a Python package in one step), which needs the package on PyPI; until the first PyPI release, use the installer or `git-into-gsoc setup`, which register the server from your local checkout. Registry publishing (`mcp-publisher`) is a one-time step for a maintainer after that release; the README carries the `mcp-name` marker the registry checks.
 
 ## Reading results
 

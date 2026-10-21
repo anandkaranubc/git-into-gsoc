@@ -25,7 +25,7 @@ In October 2026 we surveyed the tools, data sources, and research around open so
 
 - **The official archive names mentors.** `/api/archive/programs/{year}/projects/` lists every completed project with its mentors, code URL, and tags; the community archive we also use drops those fields. `mentors ORG` turns three archived years into a list of who mentors, who returns, and which repositories past work lives in.
 - **Claims are commands, not prose.** Zulip, Rust, Kubernetes, pandas, Beam and others claim issues with `@zulipbot claim`, `@rustbot claim`, `/assign`, `.take` and similar, and bots release them after a week or two of silence. Availability now reads those commands and releases.
-- **GitHub's advanced issue search ANDs repeated qualifiers.** Checked live: `org:a org:b` returns 0 results under `advanced_search=true` and `(org:a OR org:b)` returns the union. All multi-org searches now use grouped qualifiers.
+- **GitHub's advanced issue search treats repeated qualifiers as AND.** Checked live: `org:a org:b` returns 0 results under `advanced_search=true` and `(org:a OR org:b)` returns the union. All multi-org searches now use grouped qualifiers.
 
 ## Ideas we rejected
 
