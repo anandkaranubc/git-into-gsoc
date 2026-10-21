@@ -210,9 +210,12 @@ class GSoCToolkit:
         or a GitHub login.
         """
         gsoc_org = self.gsoc.get_organization(org, year=year)
-        owners = list((gsoc_org.github_orgs if gsoc_org else [])[:3])
-        if not owners:
+        if gsoc_org is None:
             owners = [validate_login(org, kind="GitHub org/user or GSoC org name")]
+        else:
+            # Umbrellas such as the Python Software Foundation list no GitHub owner
+            # of their own; their projects are found through the ideas page below.
+            owners = list(gsoc_org.github_orgs[:3])
         ideas_url = gsoc_org.ideas_url if gsoc_org else None
         ideas = fetch_ideas_text(self.http, ideas_url, self.settings.archive_ttl_seconds)
         # An umbrella organization's page only links to its member projects, which
@@ -221,8 +224,20 @@ class GSoCToolkit:
         linked_repos: set[str] = set()
         if gsoc_org and ideas_url:
             doc = fetch_ideas_document(self.http, ideas_url, self.settings.archive_ttl_seconds)
-            if doc is not None and doc.layout == "index":
-                linked_owners, linked_repos = _linked_github_projects(doc.sub_pages, exclude=owners)
+            if doc is not None and (doc.layout == "index" or not owners):
+                linked_owners, linked_repos = _linked_github_projects(
+                    doc.sub_pages or _github_links(ideas or ""),
+                    exclude=owners,
+                    any_link=not owners,
+                )
+        if gsoc_org is not None and not owners and not linked_owners:
+            raise NotFoundError(
+                f"{gsoc_org.name} lists no GitHub organization, and its ideas page links to "
+                "no GitHub projects. Its code may live on GitLab or its own servers.",
+                hint=f"Open the ideas page to find its repositories: {ideas_url}"
+                if ideas_url
+                else "Check the organization's page on the official GSoC site.",
+            )
 
         cutoff = datetime.now(UTC) - timedelta(days=365)
         leads: list[RepoLead] = []
@@ -1369,15 +1384,24 @@ _NOT_OWNERS = {"orgs", "topics", "search", "features", "apps", "settings", "mark
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
 
 
+def _github_links(text: str) -> list[dict[str, str]]:
+    """Every github.com link in a page's text, shaped like ideas sub-pages."""
+    return [{"title": "", "url": m.group(0)} for m in _GITHUB_PROJECT_RE.finditer(text)]
+
+
 def _linked_github_projects(
-    pages: list[dict[str, str]], *, exclude: list[str], limit: int = 8
+    pages: list[dict[str, str]], *, exclude: list[str], limit: int = 8, any_link: bool = False
 ) -> tuple[list[tuple[str, str]], set[str]]:
-    """GitHub owners (with the page title) and repositories an umbrella index links to."""
+    """GitHub owners (with the page title) and repositories an umbrella index links to.
+
+    ``any_link`` keeps links whose title does not mention ideas, for organizations
+    that list no GitHub owner at all, where every GitHub link is a lead.
+    """
     seen = {o.lower() for o in exclude}
     owners: list[tuple[str, str]] = []
     repos: set[str] = set()
     for page in pages:
-        if not _looks_like_ideas_page(page):
+        if not any_link and not _looks_like_ideas_page(page):
             continue
         match = _GITHUB_PROJECT_RE.match(str(page.get("url") or ""))
         if not match or match.group(1).lower() in _NOT_OWNERS:

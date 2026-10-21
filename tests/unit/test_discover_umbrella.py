@@ -90,3 +90,52 @@ def test_umbrella_org_repos_include_member_projects() -> None:
     assert {"sympy/core", "alpha-lab/core"} <= names
     alpha = next(r for r in data["repos"] if r["full_name"] == "alpha-lab/core")
     assert any("umbrella ideas page (Alpha Lab)" in reason for reason in alpha["reasons"])
+
+
+def _without_owners(toolkit: GSoCToolkit) -> None:
+    """Make SymPy look like the PSF: a GSoC organization that lists no GitHub owner."""
+    real = toolkit.gsoc.get_organization
+
+    def lookup(name: str, year: int | None = None) -> Any:
+        org = real(name, year=year)
+        return org.model_copy(update={"github_orgs": []}) if org else None
+
+    toolkit.gsoc.get_organization = lookup  # type: ignore[method-assign]
+
+
+def _discover_without_owners(page: str) -> dict[str, Any]:
+    with respx.mock(assert_all_called=False) as api:
+        _mock_sources(api)
+        api.get(SYMPY_RAW).mock(return_value=httpx.Response(200, text=page))
+        api.get(url__regex=r"https://api\.github\.com/(orgs|users)/[\w.-]+/repos.*").mock(
+            side_effect=_repos
+        )
+        api.get(url__regex=r"https://api\.github\.com/search/issues.*").mock(
+            return_value=httpx.Response(200, json={"total_count": 0, "items": []})
+        )
+        toolkit = GSoCToolkit()
+        _without_owners(toolkit)
+        return toolkit.discover_repos("SymPy", limit=10)
+
+
+def test_an_org_without_github_owners_is_found_through_its_ideas_page() -> None:
+    page = (
+        "# Sub-organizations\n\n"
+        "- [Zeta](https://github.com/zeta-org)\n"
+        "- [Eta tools](https://github.com/eta-tools/eta)\n"
+        "- [Theta](https://theta.example.org/contribute)\n"
+    )
+    data = _discover_without_owners(page)
+    assert data["org"] == "SymPy"
+    assert {"zeta-org", "eta-tools"} <= set(data["github_owners"])
+    assert {"zeta-org/core", "eta-tools/core"} <= {r["full_name"] for r in data["repos"]}
+
+
+def test_an_org_without_github_anywhere_gets_a_clear_error() -> None:
+    import pytest
+
+    from git_into_gsoc.errors import NotFoundError
+
+    with pytest.raises(NotFoundError, match="lists no GitHub organization") as caught:
+        _discover_without_owners("# Ideas\n\nAll our code is on https://gitlab.example.org.\n")
+    assert caught.value.hint and "ideas page" in caught.value.hint
