@@ -7,6 +7,7 @@ from git_into_gsoc.github.orientation import (
     active_committers,
     branch_gates,
     ci_environment,
+    ci_install_commands,
     ci_test_commands,
     code_map,
     conventions,
@@ -438,3 +439,14 @@ def test_generated_changelogs_are_not_a_request() -> None:
         changelog_request("Please add a news entry for every user-facing change.", "")
         == "CONTRIBUTING asks contributors to update 'news entry'"
     )
+
+
+def test_ci_install_commands_skip_installer_upgrades() -> None:
+    workflow = (
+        "jobs:\n  t:\n    steps:\n"
+        "      - run: python -m pip install --upgrade pip setuptools\n"
+        "      - run: |\n          pip install -r requirements-dev.txt\n          npm ci\n"
+        "      - run: pytest\n"
+    )
+    commands = [c["command"] for c in ci_install_commands({"ci.yml": workflow})]
+    assert commands == ["pip install -r requirements-dev.txt", "npm ci"]

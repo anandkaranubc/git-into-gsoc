@@ -16,6 +16,7 @@ from git_into_gsoc.github.orientation import (
     active_committers,
     branch_gates,
     ci_environment,
+    ci_install_commands,
     ci_test_commands,
     code_map,
     codeowners_for,
@@ -1248,6 +1249,33 @@ class GSoCToolkit:
                 "whether the change is right; only reviewers can."
             ),
         }
+
+    def diagnose(self, text: str, *, repo: str | None = None) -> dict[str, Any]:
+        """Likely causes for failed setup or test output; with `repo`, what its CI sets up."""
+        from git_into_gsoc.diagnose import diagnose_output
+
+        ci: dict[str, Any] | None = None
+        if repo:
+            owner, name = parse_repo(repo)
+            raw = self.github.get_repo(owner, name)
+            branch = str(raw.get("default_branch") or "HEAD")
+            found = find_paths(list(self.github.git_tree(owner, name, branch).get("tree") or []))
+            paths = rank_workflows(found.get("workflows") or [])
+            with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+                texts = {
+                    p: f.result() or ""
+                    for p, f in {
+                        p: pool.submit(self.github.get_raw_file, owner, name, p) for p in paths
+                    }.items()
+                }
+            ci = {
+                **ci_environment(texts),
+                "test_commands": ci_test_commands(texts),
+                "install_commands": ci_install_commands(texts),
+            }
+        report = diagnose_output(text, ci=ci)
+        report["repo"] = repo
+        return report
 
     def check_message(self, kind: str, text: str) -> dict[str, Any]:
         """Check a message the contributor wrote against the rules for its kind."""

@@ -949,6 +949,46 @@ def pointers_cmd(
     console.print(f"\n[dim]{escape(data['next_step'])}[/dim]")
 
 
+@app.command("diagnose", rich_help_panel="Contribute and apply")
+def diagnose_cmd(
+    file: str = typer.Argument(
+        ..., help="A file holding the failing output, or - to read it from standard input"
+    ),
+    repo: str | None = typer.Option(
+        None, "--repo", help="owner/repo, to compare with the environment its CI sets up"
+    ),
+    output: Output = OUTPUT_OPTION,
+) -> None:
+    """Name the likely cause of a failed setup or test run, and what to try next."""
+    if file == "-":
+        text = sys.stdin.read()
+    else:
+        try:
+            text = Path(file).read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            raise InputError(
+                f"Cannot read {file}: {exc.strerror or exc}",
+                hint="Save the output to a file first, or pipe it in with -.",
+            ) from exc
+    data = _toolkit().diagnose(text, repo=repo)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    data = _markup_safe(data)
+    console.print(f"[bold]{data['summary']}[/bold]")
+    for cause in data["causes"]:
+        console.print(
+            f"\n[yellow]{cause['id'].replace('_', ' ')}[/yellow]  line {cause['line']}: [dim]{cause['quote']}[/dim]"
+        )
+        console.print(f"  {cause['means']}")
+        for step in cause["try"]:
+            console.print(f"  - {step}")
+    if data["ci"]:
+        console.print("\n[bold]What CI sets up[/bold]")
+        for note in data["ci"]:
+            console.print(f"  {note}")
+
+
 @app.command("pr-check", rich_help_panel="Contribute and apply")
 def pr_check_cmd(
     ref: str = typer.Argument(..., help="owner/repo#123, a pull request URL, or owner/repo"),

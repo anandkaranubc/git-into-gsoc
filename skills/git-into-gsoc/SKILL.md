@@ -79,6 +79,7 @@ the person to run the installer. Never invent a result in its place.
 | find_issues | `git-into-gsoc pointers sympy/sympy#23161` | `gsoc_issue_pointers` |
 | contribute | `git-into-gsoc draft claim --issue sympy/sympy#23161` | `gsoc_draft` |
 | contribute | `git-into-gsoc draft pr --repo sympy/sympy --issue sympy/sympy#23161` | `gsoc_draft` |
+| contribute | `git-into-gsoc diagnose test-output.txt --repo sympy/sympy` | `gsoc_diagnose` |
 | contribute | `git-into-gsoc pr-check sympy/sympy#23162` | `gsoc_pr_check` |
 | iterate | `git-into-gsoc draft review-reply --repo sympy/sympy --issue sympy/sympy#23161` | `gsoc_draft` |
 | proposal | `git-into-gsoc ideas "SymPy" --skills python` | `gsoc_org_ideas` |

@@ -397,6 +397,41 @@ def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
     }
 
 
+_INSTALL_RE = re.compile(
+    r"\b(?:pip3? install|python -m pip install|uv (?:sync|pip install)|poetry install|"
+    r"pdm install|hatch env create|conda env create|npm (?:ci|install)|yarn(?: install)?\b|"
+    r"pnpm install|bundle install|go mod download|cargo (?:build|fetch))",
+    re.I,
+)
+
+
+# "pip install --upgrade pip setuptools" prepares the installer; it installs nothing of the project.
+_TOOLING_ONLY_RE = re.compile(
+    r"install\s+(?:(?:-U|--upgrade|-q|--quiet)\s+)*(?:(?:pip|setuptools|wheel|build|uv)\b\s*)+$",
+    re.I,
+)
+
+
+def ci_install_commands(workflows: dict[str, str], *, limit: int = 3) -> list[dict[str, str]]:
+    """Commands CI runs to install the project and its dependencies, from `run:` steps."""
+    found: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for path, text in workflows.items():
+        for block in _run_blocks(text):
+            for line in block.splitlines():
+                command = line.strip().rstrip("\\").strip()
+                if (
+                    command
+                    and not command.startswith("#")
+                    and _INSTALL_RE.search(command)
+                    and not _TOOLING_ONLY_RE.search(command)
+                    and command not in seen
+                ):
+                    seen.add(command)
+                    found.append({"command": command[:160], "source": path})
+    return found[:limit]
+
+
 def _run_blocks(text: str) -> list[str]:
     blocks: list[str] = []
     lines = text.splitlines()

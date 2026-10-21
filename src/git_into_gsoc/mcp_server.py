@@ -362,6 +362,23 @@ def gsoc_issue_pointers(
     )
 
 
+@mcp.tool(
+    title="Diagnose a failed setup or test run", annotations=READ_ONLY, structured_output=False
+)
+def gsoc_diagnose(text: str, repo: str = "") -> str:
+    """Name the likely cause of failed setup or test output, with what to try next.
+
+    text: the failing terminal output (the last 50 to 200 lines are enough).
+    repo: optional owner/repo, to add the runtime versions, services, systems and test
+    command its CI uses. Recognises missing modules, wrong runtime versions, missing
+    compilers or headers, services not running, missing environment variables, missing
+    commands, permissions, network failures, ports in use, lock-file mismatches, memory,
+    and test failures. Each cause quotes the line it matched. Walk the contributor through
+    the steps; do not run commands on their machine for them.
+    """
+    return _call(toolkit().diagnose, text, repo=repo or None)
+
+
 @mcp.tool(title="Check a pull request", annotations=READ_ONLY, structured_output=False)
 def gsoc_pr_check(ref: str) -> str:
     """Check one pull request against the repository's own rules before review.
