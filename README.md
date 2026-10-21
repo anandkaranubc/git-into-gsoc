@@ -53,6 +53,7 @@ See [skills/git-into-gsoc/references/install.md](skills/git-into-gsoc/references
 git-into-gsoc program --year 2027
 git-into-gsoc orgs --tech python --topics science --year 2026
 git-into-gsoc org "SymPy"
+git-into-gsoc repos "SymPy"          # rank an org's repos for a first PR
 git-into-gsoc repo sympy/sympy
 git-into-gsoc issues --language python --org sympy
 git-into-gsoc issue sympy/sympy 123
@@ -73,7 +74,8 @@ JSON output: add `--output json` to most commands.
 | `gsoc_journey_guide` | Phase playbooks |
 | `gsoc_search_orgs` | Rank mentoring orgs from archive data |
 | `gsoc_org_details` | Single org profile |
-| `gsoc_evaluate_repo` | Health grade + CONTRIBUTING signals |
+| `gsoc_discover_repos` | Rank an org's repos: ideas-page mentions, beginner issues, activity |
+| `gsoc_evaluate_repo` | Will a newcomer's PR land? Grade, outsider merge rate, setup hints |
 | `gsoc_find_issues` | Beginner issues + availability |
 | `gsoc_issue_status` | Claimability check |
 | `gsoc_recommend_path` | Personalized orgs + starter issues |

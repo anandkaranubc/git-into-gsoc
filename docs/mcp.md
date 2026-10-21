@@ -28,9 +28,13 @@ Comma-separated `technologies` / `topics`. Uses archive data.
 
 Exact or fuzzy org lookup.
 
+### `gsoc_discover_repos(org, language?, limit=10)`
+
+Rank a GSoC org's repositories for a first contribution: ideas-page mentions, open beginner issues, recent activity, preferred language.
+
 ### `gsoc_evaluate_repo(full_name)`
 
-Health grade, signals/warnings, contribution guide excerpt.
+Health grade (A-F) with evidence: activity, community files, CI, open beginner issues, bot-free merge rate, outside-contributor merge rate, review speed, toolchain and dev-container hints.
 
 ### `gsoc_find_issues(language, org, repo, max_results=10)`
 

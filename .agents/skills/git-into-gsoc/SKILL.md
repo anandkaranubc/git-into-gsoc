@@ -33,6 +33,7 @@ git-into-gsoc doctor
 git-into-gsoc program --year 2027
 git-into-gsoc recommend --github USER --tech python --interests science
 git-into-gsoc orgs --tech python --year 2026
+git-into-gsoc repos "Org Name"        # which repo should I start in?
 git-into-gsoc repo owner/repo
 git-into-gsoc issues --language python --org ORG
 git-into-gsoc issue owner/repo 123
@@ -40,7 +41,7 @@ git-into-gsoc proposal
 git-into-gsoc progress summary
 ```
 
-MCP tools mirror these: `gsoc_program_info`, `gsoc_search_orgs`, `gsoc_evaluate_repo`, `gsoc_find_issues`, `gsoc_recommend_path`, `gsoc_proposal_checklist`, `gsoc_progress`, etc.
+MCP tools mirror these: `gsoc_program_info`, `gsoc_search_orgs`, `gsoc_discover_repos`, `gsoc_evaluate_repo`, `gsoc_find_issues`, `gsoc_recommend_path`, `gsoc_proposal_checklist`, `gsoc_progress`, etc.
 
 If tools are missing, tell the user to run the one-shot installer (`./install.sh`) or `pip install -e ".[dev]"`, then continue with official links + careful web/GitHub research.
 
@@ -74,7 +75,8 @@ Mark progress: `git-into-gsoc progress complete_phase --phase discover`
 - Shortlist with **why it fits this user**, not generic prestige.
 
 ### evaluate
-- `git-into-gsoc repo owner/repo`
+- `git-into-gsoc repos "Org"` to pick a repo (ideas-page mentions + open beginner issues), then `git-into-gsoc repo owner/repo`
+- Prefer repos that merge outside contributors' PRs; a high overall merge rate can be all core-team work.
 - Drop archived/stale/no-license/no-CONTRIBUTING unless user has a mentor lead.
 - Read CONTRIBUTING + CoC before coding.
 
