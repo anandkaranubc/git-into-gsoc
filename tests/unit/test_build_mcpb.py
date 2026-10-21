@@ -46,7 +46,8 @@ def test_bundle_bytes_do_not_depend_on_file_times(tmp_path: Path) -> None:
     assert [i.filename for i in infos][:2] == ["manifest.json", "pyproject.toml"]
     assert {i.date_time for i in infos} == {(1980, 1, 1, 0, 0, 0)}
     modes = {i.filename: (i.external_attr >> 16) & 0o777 for i in infos}
-    assert modes["skills/git-into-gsoc/scripts/check.sh"] == 0o755
+    # Windows has no execute bit, so the script is a plain file there.
+    assert modes["skills/git-into-gsoc/scripts/check.sh"] == (0o644 if os.name == "nt" else 0o755)
     assert modes["src/git_into_gsoc/__init__.py"] == 0o644
 
 
