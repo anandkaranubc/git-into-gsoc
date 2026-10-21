@@ -264,3 +264,16 @@ def test_find_issues_for_one_repo_uses_its_own_beginner_label() -> None:
     query = search.calls[0].request.url.params["q"]
     assert 'label:"Difficulty: Easy"' in query and 'label:"good first issue"' in query
     assert data["labels_used"][0] == "Difficulty: Easy"
+
+
+def test_reserved_label_marks_an_issue_as_taken() -> None:
+    issue: dict[str, Any] = {
+        "state": "open",
+        "labels": [{"name": "good first issue"}, {"name": "In Progress"}],
+        "updated_at": NOW.isoformat(),
+    }
+    assessment = assess_issue(issue, [], now=NOW)
+    assert assessment.availability == Availability.CLAIMED
+    assert "In Progress" in assessment.reason
+    free = assess_issue({**issue, "labels": [{"name": "good first issue"}]}, [], now=NOW)
+    assert free.availability == Availability.AVAILABLE

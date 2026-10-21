@@ -652,6 +652,8 @@ def issues_cmd(
         ref = f"{issue['repo']}#{issue['number']}"
         if issue.get("gsoc_org"):
             ref += f"\n[dim]{issue['gsoc_org']}[/dim]"
+        if issue.get("filed_by_maintainer"):
+            ref += "\n[dim]filed by a maintainer[/dim]"
         table.add_row(
             f"{issue['beginner_score']:.0f}",
             f"[{_STATUS_STYLE.get(status, '')}]{status}[/]",
@@ -1099,6 +1101,16 @@ def next_cmd(
             console.print(
                 f"  {item['at'][:10]}  {item['label']}{mark}  {_relative(item['days_until'])}"
             )
+    if data.get("time_budget"):
+        budget = data["time_budget"]
+        mark = "" if budget["official"] else " (estimate)"
+        console.print("\n[bold]Time budget[/bold]")
+        console.print(
+            f"  {budget['hours_per_week']} h/week for about {budget['weeks']} week(s) until "
+            f"{escape(budget['until'])}{mark}: about {budget['hours_available']} hours"
+        )
+        for part in budget["suggested_split"]:
+            console.print(f"  {part['hours']:>4} h  {escape(part['what'])}")
     if data["changes"]:
         console.print("\n[bold]Changed since your last check[/bold]")
         for change in data["changes"]:

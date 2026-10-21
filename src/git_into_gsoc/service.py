@@ -7,7 +7,7 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from git_into_gsoc.coach import plan_actions, upcoming_deadlines
+from git_into_gsoc.coach import plan_actions, time_budget, upcoming_deadlines
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, render_draft
 from git_into_gsoc.errors import GigError, InputError
@@ -209,13 +209,27 @@ class GSoCToolkit:
             owners = [validate_login(org, kind="GitHub org/user or GSoC org name")]
         ideas_url = gsoc_org.ideas_url if gsoc_org else None
         ideas = fetch_ideas_text(self.http, ideas_url, self.settings.archive_ttl_seconds)
+        # An umbrella organization's page only links to its member projects, which
+        # live under their own GitHub owners; follow those links too.
+        linked_owners: list[tuple[str, str]] = []
+        linked_repos: set[str] = set()
+        if gsoc_org and ideas_url:
+            doc = fetch_ideas_document(self.http, ideas_url, self.settings.archive_ttl_seconds)
+            if doc is not None and doc.layout == "index":
+                linked_owners, linked_repos = _linked_github_projects(doc.sub_pages, exclude=owners)
 
         cutoff = datetime.now(UTC) - timedelta(days=365)
         leads: list[RepoLead] = []
-        for owner in owners:
+        for owner, via in [*((o, None) for o in owners), *linked_owners]:
+            try:
+                listed = self.github.list_owner_repos(owner)
+            except GigError:
+                if via is None:
+                    raise
+                continue
             repos = [
                 r
-                for r in self.github.list_owner_repos(owner)
+                for r in listed
                 if not r.get("archived")
                 and not r.get("fork")
                 and r.get("has_issues", True)
@@ -226,10 +240,12 @@ class GSoCToolkit:
             for repo in repos:
                 full = str(repo.get("full_name"))
                 beginner = counts.get(full.lower(), 0)
-                in_ideas = full.lower() in mentioned
+                in_ideas = full.lower() in mentioned or full.lower() in linked_repos
                 score, reasons = repo_lead_score(
                     repo, beginner_issues=beginner, ideas_mention=in_ideas, language=language
                 )
+                if via:
+                    reasons.append(f"Linked from the umbrella ideas page ({via})")
                 leads.append(
                     RepoLead(
                         full_name=full,
@@ -247,7 +263,8 @@ class GSoCToolkit:
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
         return {
             "org": gsoc_org.name if gsoc_org else owners[0],
-            "github_owners": owners,
+            "github_owners": [*owners, *(o for o, _ in linked_owners)],
+            "linked_projects": [{"owner": o, "title": t} for o, t in linked_owners],
             "ideas_url": ideas_url,
             "ideas_page_read": bool(ideas),
             "count": min(limit, len(leads)),
@@ -558,6 +575,7 @@ class GSoCToolkit:
                 "source": program["source"],
             },
             "deadlines": upcoming_deadlines(program),
+            "time_budget": time_budget(state, program, now=now),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
             "changes": changes,
@@ -918,6 +936,14 @@ class GSoCToolkit:
             except GigError as exc:
                 context["issue"]["note"] = str(exc)
         if repo:
+            context["repo"] = repo
+            if kind == "pr":
+                try:
+                    owner_name, repo_name = parse_repo(repo)
+                    meta = self.github.get_repo(owner_name, repo_name)
+                    context["default_branch"] = str(meta.get("default_branch") or "") or None
+                except GigError:
+                    pass
             guide = self.github.contribution_guide(repo)
             context["channels"] = context.get("channels") or guide.communication_channels
             text = guide.contributing_excerpt
@@ -1166,6 +1192,35 @@ def _quote_label(label: str) -> str:
 def _looks_like_ideas_page(page: dict[str, str]) -> bool:
     text = f"{page.get('title', '')} {page.get('url', '')}".lower()
     return any(word in text for word in ("idea", "gsoc", "summer", "project", "mentor"))
+
+
+_GITHUB_PROJECT_RE = re.compile(
+    r"https?://github\.com/([A-Za-z0-9_.-]+)(?:/([A-Za-z0-9_.-]+))?", re.I
+)
+_NOT_OWNERS = {"orgs", "topics", "search", "features", "apps", "settings", "marketplace"}
+_NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
+
+
+def _linked_github_projects(
+    pages: list[dict[str, str]], *, exclude: list[str], limit: int = 8
+) -> tuple[list[tuple[str, str]], set[str]]:
+    """GitHub owners (with the page title) and repositories an umbrella index links to."""
+    seen = {o.lower() for o in exclude}
+    owners: list[tuple[str, str]] = []
+    repos: set[str] = set()
+    for page in pages:
+        if not _looks_like_ideas_page(page):
+            continue
+        match = _GITHUB_PROJECT_RE.match(str(page.get("url") or ""))
+        if not match or match.group(1).lower() in _NOT_OWNERS:
+            continue
+        owner, repo = match.group(1), match.group(2)
+        if repo and repo.lower() not in _NOT_REPOS:
+            repos.add(f"{owner}/{repo}".lower())
+        if owner.lower() not in seen and len(owners) < limit:
+            seen.add(owner.lower())
+            owners.append((owner, str(page.get("title") or owner)))
+    return owners, repos
 
 
 def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:

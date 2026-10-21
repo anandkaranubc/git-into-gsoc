@@ -10,7 +10,7 @@ from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
-from git_into_gsoc.github.availability import assess_issue, unverified_assessment
+from git_into_gsoc.github.availability import MAINTAINER_ROLES, assess_issue, unverified_assessment
 from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
@@ -87,6 +87,7 @@ def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
         updated_at=_parse_dt(item.get("updated_at")),
         comments=int(item.get("comments") or 0),
         author=(item.get("user") or {}).get("login"),
+        filed_by_maintainer=str(item.get("author_association") or "") in MAINTAINER_ROLES,
         body_excerpt=_excerpt(item.get("body")),
     )
 

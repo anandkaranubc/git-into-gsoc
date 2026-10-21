@@ -157,6 +157,7 @@ class IssueCandidate(BaseModel):
     updated_at: datetime | None = None
     comments: int = 0
     author: str | None = None
+    filed_by_maintainer: bool = False
     body_excerpt: str = ""
     availability: Availability = Availability.UNKNOWN
     availability_reason: str = ""

@@ -17,6 +17,21 @@ from typing import Any
 from git_into_gsoc.models import Availability, IssueAssessment, IssueClaim, LinkedPullRequest
 
 MAINTAINER_ROLES = {"OWNER", "MEMBER", "COLLABORATOR"}
+# Labels projects use to mark an issue as taken, with or without an assignee.
+RESERVED_LABELS = {
+    "assigned",
+    "claimed",
+    "taken",
+    "in progress",
+    "in-progress",
+    "wip",
+    "work in progress",
+    "has-pr",
+    "has pr",
+    "pr-open",
+    "pr open",
+    "pr opened",
+}
 RECENT_CLAIM_DAYS = 30
 CONTESTED_WINDOW_DAYS = 60
 CONTESTED_MIN_CLAIMANTS = 3
@@ -185,6 +200,13 @@ def assess_issue(
         return result(
             Availability.LIKELY_TAKEN, f"Open PR {ref}{who}{draft} references it".replace("  ", " ")
         )
+
+    reserved = [
+        str(lab.get("name") if isinstance(lab, dict) else lab) for lab in issue.get("labels") or []
+    ]
+    reserved = [name for name in reserved if name.strip().lower() in RESERVED_LABELS]
+    if reserved:
+        return result(Availability.CLAIMED, f"Label '{reserved[0]}' marks it as taken")
 
     granted = [c for c in claim_list if c.granted and c.days_ago <= CONTESTED_WINDOW_DAYS]
     if granted:

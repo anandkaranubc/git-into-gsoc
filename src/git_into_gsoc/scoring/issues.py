@@ -81,6 +81,9 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
     if issue.gsoc_org:
         score += 5.0
         signals.append(f"Part of GSoC org {issue.gsoc_org}")
+    if issue.filed_by_maintainer:
+        score += 6.0
+        signals.append("Filed by a maintainer, so it reflects a real priority")
 
     if issue.updated_at:
         days = (datetime.now(UTC) - issue.updated_at.astimezone(UTC)).days

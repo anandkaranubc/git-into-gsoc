@@ -261,7 +261,31 @@ def _pr(ctx: dict[str, Any]) -> str:
         lines.append("AI disclosure: <tools used and for what, as the project's template asks>")
     if ctx.get("dco"):
         lines.append("(Commits signed off with git commit -s, as this project requires.)")
+    lines.extend(_setup_commands(ctx))
     return "\n".join(lines)
+
+
+def _setup_commands(ctx: dict[str, Any]) -> list[str]:
+    """The exact git commands for a first pull request, with the real default branch."""
+    repo = str(ctx.get("repo") or "")
+    if "/" not in repo:
+        return []
+    name = repo.rsplit("/", 1)[-1]
+    handle = ctx.get("handle") or "<your-github-username>"
+    number = (ctx.get("issue") or {}).get("number")
+    branch = f"fix-{number}-<short-name>" if number else "<short-branch-name>"
+    base = ctx.get("default_branch") or "<default branch>"
+    test_cmd = (ctx.get("test_commands") or ["<the project's test command>"])[0]
+    return [
+        "",
+        "Before you start, once:",
+        f"  git clone https://github.com/{handle}/{name}.git   # after forking {repo} on GitHub",
+        f"  cd {name} && git remote add upstream https://github.com/{repo}.git && git fetch upstream",
+        f"  git switch -c {branch} upstream/{base}",
+        f"  {test_cmd}   # run the tests once before changing anything",
+        "When the change is ready:",
+        f"  git push -u origin {branch}   # then open the pull request against {base}",
+    ]
 
 
 def _review_reply(ctx: dict[str, Any]) -> str:

@@ -79,3 +79,22 @@ def test_cli_draft_offline_kind() -> None:
 def test_cli_draft_unknown_kind() -> None:
     result = runner.invoke(app, ["draft", "poem"])
     assert result.exit_code != 0
+
+
+def test_pr_draft_lists_the_exact_setup_commands() -> None:
+    draft = render_draft(
+        "pr",
+        context={
+            "repo": "sympy/sympy",
+            "issue": {"repo": "sympy/sympy", "number": 5},
+            "default_branch": "master",
+            "handle": "octocat",
+            "test_commands": ["pytest sympy/core"],
+        },
+    )
+    text = draft["template"]
+    assert "git clone https://github.com/octocat/sympy.git" in text
+    assert "git switch -c fix-5-<short-name> upstream/master" in text
+    assert "pytest sympy/core" in text
+    assert "git push -u origin fix-5-<short-name>" in text
+    assert "Before you start" not in render_draft("pr", context={})["template"]

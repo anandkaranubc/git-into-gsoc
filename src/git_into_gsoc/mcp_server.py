@@ -7,9 +7,10 @@ import json
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp.types import ToolAnnotations
+from mcp.types import ClientCapabilities, ElicitationCapability, ToolAnnotations
+from pydantic import BaseModel, Field
 
 from git_into_gsoc import __version__
 from git_into_gsoc.config import PROJECT_URL
@@ -341,22 +342,57 @@ def gsoc_draft(kind: str, org: str = "", repo: str = "", issue: str = "") -> str
     return _call(toolkit().draft, kind, org=org or None, repo=repo or None, issue=issue or None)
 
 
+class PathAnswers(BaseModel):
+    """What the contributor knows and cares about, asked through the client when nothing
+    was given and no profile is saved."""
+
+    technologies: str = Field("", description="Languages or tools you know, comma-separated")
+    interests: str = Field("", description="Topics you care about, comma-separated")
+    github_username: str = Field("", description="Your GitHub username (optional)")
+
+
+def _client_can_elicit(ctx: Any) -> bool:
+    """True when the connected client declared the elicitation capability."""
+    try:
+        return bool(
+            ctx.session.check_client_capability(
+                ClientCapabilities(elicitation=ElicitationCapability())
+            )
+        )
+    except Exception:
+        return False
+
+
 @mcp.tool(title="Personalized starting path", annotations=LOCAL_WRITE, structured_output=False)
-@guarded
-def gsoc_recommend_path(
+async def gsoc_recommend_path(
     github_username: str = "",
     technologies: str = "",
     interests: str = "",
+    ctx: Context[Any, Any] | None = None,
 ) -> str:
-    """Personalized starting path: profile languages, matching orgs, starter issues."""
+    """Personalized starting path: profile languages, matching orgs, starter issues.
+
+    With no arguments and no saved profile, asks the person what they know and care
+    about through the client (MCP elicitation) when the client supports it; otherwise
+    it falls back to the saved profile or GitHub languages.
+    """
+    nothing_given = not (github_username or technologies or interests)
+    no_profile = nothing_given and not toolkit().progress.profile().get("technologies")
+    if no_profile and ctx is not None and _client_can_elicit(ctx):
+        answer = await ctx.elicit(
+            "Tell me what you know and care about so the path fits you.", schema=PathAnswers
+        )
+        if answer.action == "accept" and answer.data is not None:
+            technologies = answer.data.technologies
+            interests = answer.data.interests
+            github_username = answer.data.github_username
     tech = [t.strip() for t in technologies.split(",") if t.strip()]
     interests_list = [t.strip() for t in interests.split(",") if t.strip()]
-    return _dump(
-        toolkit().recommend_path(
-            username=github_username or None,
-            technologies=tech or None,
-            interests=interests_list or None,
-        )
+    return _call(
+        toolkit().recommend_path,
+        username=github_username or None,
+        technologies=tech or None,
+        interests=interests_list or None,
     )
 
 

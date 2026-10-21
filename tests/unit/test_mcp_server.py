@@ -96,3 +96,63 @@ def test_program_info_defaults_to_the_configured_target_year(monkeypatch) -> Non
         )
         data = json.loads(gsoc_program_info())
     assert data["year"] == 2027
+
+
+def test_recommend_path_asks_the_client_only_when_it_can_and_must(monkeypatch) -> None:
+    import asyncio
+
+    from git_into_gsoc import mcp_server
+
+    calls: dict[str, object] = {}
+
+    class Progress:
+        def profile(self) -> dict[str, object]:
+            return {}
+
+    class Kit:
+        progress = Progress()
+
+        def recommend_path(self, **kwargs: object) -> dict[str, object]:
+            calls.update(kwargs)
+            return {"ok": True}
+
+    monkeypatch.setattr(mcp_server, "toolkit", lambda: Kit())
+
+    class Session:
+        def __init__(self, can: bool) -> None:
+            self.can = can
+
+        def check_client_capability(self, capability: object) -> bool:
+            return self.can
+
+    class Answer:
+        action = "accept"
+        data = mcp_server.PathAnswers(
+            technologies="python, rust", interests="science", github_username="octo"
+        )
+
+    class Ctx:
+        def __init__(self, can: bool) -> None:
+            self.session = Session(can)
+            self.asked: list[str] = []
+
+        async def elicit(self, message: str, schema: type) -> Answer:
+            self.asked.append(message)
+            return Answer()
+
+    asking = Ctx(True)
+    out = asyncio.run(mcp_server.gsoc_recommend_path(ctx=asking))
+    assert asking.asked and '"ok":true' in out
+    assert calls["technologies"] == ["python", "rust"] and calls["username"] == "octo"
+
+    silent = Ctx(False)
+    asyncio.run(mcp_server.gsoc_recommend_path(ctx=silent))
+    assert not silent.asked
+
+    given = Ctx(True)
+    asyncio.run(mcp_server.gsoc_recommend_path(technologies="go", ctx=given))
+    assert not given.asked and calls["technologies"] == ["go"]
+
+    tools = asyncio.run(mcp_server.mcp.list_tools())
+    schema = next(t.input_schema for t in tools if t.name == "gsoc_recommend_path")
+    assert set(schema["properties"]) == {"github_username", "technologies", "interests"}

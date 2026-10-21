@@ -126,6 +126,7 @@ PROPOSAL_ARCHIVES = (
     "pavanjoshi914/GSoC_archive",
     "Google-Summer-of-Code-Archive/gsoc-proposals-archive",
     "COPS-IITBHU/GSoC-Accepted-Proposals",
+    "nirmaltodwal7/GSoC_archive_2026",
 )
 
 

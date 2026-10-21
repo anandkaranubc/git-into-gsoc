@@ -36,6 +36,76 @@ def upcoming_deadlines(
     return out[:4]
 
 
+BUDGET_HORIZON_DAYS = 120
+
+
+def time_budget(
+    state: ProgressState, program: dict[str, Any], *, now: datetime | None = None
+) -> dict[str, Any] | None:
+    """Hours available before the next milestone, split by what this phase needs.
+
+    Uses the saved hours per week. The milestone is the proposal deadline when it
+    is within the horizon, else the nearest upcoming milestone. None when there is
+    nothing to plan against.
+    """
+    profile = state.profile or {}
+    try:
+        hours = int(profile.get("hours_per_week") or 0)
+    except (TypeError, ValueError):
+        hours = 0
+    if hours <= 0:
+        return None
+    upcoming = [
+        m
+        for m in program.get("timeline") or []
+        if m.get("status") in {"upcoming", "today"}
+        and 0 < int(m.get("days_until") or 0) <= BUDGET_HORIZON_DAYS
+    ]
+    upcoming.sort(key=lambda m: int(m.get("days_until") or 0))
+    target = next((m for m in upcoming if m.get("key") == "proposal_deadline"), None)
+    target = target or (upcoming[0] if upcoming else None)
+    if target is None:
+        return None
+    days = int(target.get("days_until") or 0)
+    weeks = max(1, round(days / 7))
+    total = hours * weeks
+    phase_id = str((program.get("phase") or {}).get("id") or "")
+    if (
+        phase_id in {"proposal_window", "proposal_review"}
+        or target.get("key") == "proposal_deadline"
+    ):
+        split = [
+            ("Proposal: draft from the template, get mentor feedback, revise", 0.5),
+            ("Keep contributing where you are applying", 0.3),
+            ("Community: answer questions, review a pull request", 0.2),
+        ]
+    elif not state.phases.get("community"):
+        split = [
+            ("Community: read the channel, introduce yourself, ask one real question", 0.2),
+            ("Set the project up and reproduce one issue", 0.5),
+            ("Read the code and a few merged pull requests", 0.3),
+        ]
+    else:
+        split = [
+            ("Contribute: a small fix with a test, then answer review", 0.6),
+            ("Read code and reviews around your change", 0.2),
+            ("Community and the weekly note", 0.2),
+        ]
+    return {
+        "hours_per_week": hours,
+        "until": str(target.get("label") or target.get("key")),
+        "days": days,
+        "weeks": weeks,
+        "hours_available": total,
+        "official": bool(target.get("official")),
+        "suggested_split": [{"what": what, "hours": round(total * share)} for what, share in split],
+        "note": (
+            "A budget, not a schedule: official dates win, and one small finished change "
+            "beats a large unfinished one."
+        ),
+    }
+
+
 def plan_actions(
     state: ProgressState,
     program: dict[str, Any],

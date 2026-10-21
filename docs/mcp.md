@@ -29,7 +29,7 @@ Every tool returns JSON as text. A parameter shown with a default is optional. R
 | `gsoc_evaluate_repo` | `full_name` | Health grade A to F with signals, warnings, setup hints, the contributing guide link, and chat channels |
 | `gsoc_find_issues` | `language=""`, `org=""`, `repo=""`, `label=""`, `scope="gsoc"`, `max_results=10` | Beginner issues with availability, reasons, signals, and a before-you-comment checklist |
 | `gsoc_issue_status` | `ref`, `number=0` | One issue's availability, linked pull requests, claims with dates, maintainer approval, and caveats |
-| `gsoc_recommend_path` | `github_username=""`, `technologies=""`, `interests=""` | Matching organizations, starter issues, and next steps; saves an inferred profile locally when a username is given |
+| `gsoc_recommend_path` | `github_username=""`, `technologies=""`, `interests=""` | Matching organizations, starter issues, and next steps; saves an inferred profile locally when a username is given. With no arguments and no saved profile it asks the person what they know and care about through the client (MCP elicitation) when the client supports that, and otherwise proceeds without asking |
 | `gsoc_proposal_check` | `text`, `github_username`, `verify_links`, `ideas_text` | Pass/warn/fail findings on a draft: sections, verified contribution links, timeline detail, specificity, generic phrasing, placeholders, copied ideas-page text, length; never rewrites |
 | `gsoc_proposal_checklist` | none | Checklist, suggested structure, and warnings |
 | `gsoc_progress` | `action="summary"`, `phase=""`, `value=""` | The local progress summary, or the saved state after a write |

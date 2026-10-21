@@ -40,7 +40,7 @@ phase. Community participation and note-taking fit anywhere.
 | `learn` | Understand how GSoC works, check eligibility, write down interests and time | They can explain the program in their own words and know where the rules are |
 | `discover` | Search organizations, read ideas pages, make a short list | Two or three organizations with a reason for each |
 | `evaluate` | Pick a repository, check its health, read its contribution guide | One repository they want to set up |
-| `orient` | Get their bearings in the repository: run `orient`, run the tests once, read the contributing guide and a few merged pull requests | They can say where a change would go and how they would test it |
+| `orient` | Get their bearings in the repository: run `orient`, run the tests once, read the contributing guide and a few merged pull requests. Ask them to predict what a file does from its name before they open it, and to trace one request or command through the code | They can say where a change would go and how they would test it |
 | `community` | Introduce themselves and ask informed questions in the project's public channel, before claiming any work | Maintainers recognize their name from useful conversations |
 | `find_issues` | Find an open beginner issue and check whether it is free | One issue they can reproduce and explain |
 | `contribute` | Set up the project, make a small correct change, open a pull request | A pull request they can defend in review |
@@ -105,7 +105,7 @@ actions with commands.
 - **Program dates.** `program` shows the current phase and what to do now. Until Google publishes a year, its dates are estimates projected from the previous year, shown with `~` and a window in days. Always point to the [official timeline](https://developers.google.com/open-source/gsoc/timeline).
 - **Organizations.** The list is the official set of accepted organizations for the latest announced year. When the target year is not announced, the result says so. Past participation suggests, but does not promise, that an organization returns. `--tech` and `--topics` decide which organizations appear; continuity and project counts decide the order.
 - **Repository grades.** `repo` samples recent pull requests and common files. Pay most attention to whether outside contributors' pull requests get merged, and to review speed. A low grade is a reason to look closer, not a verdict on the people.
-- **Issues.** `issues` searches open, unassigned issues without a linked pull request, labeled `good first issue` (then `help wanted` when results are thin), in repositories of GSoC organizations that use the language. Use `--scope all` for all of GitHub or `--repo` for one project. Statuses: `available`, `claimed` (someone asked recently or a maintainer approved them), `contested` (three or more people asked within 60 days), `likely_taken` (an open pull request references it), `assigned`, `stale`, `closed`, `unknown`.
+- **Issues.** `issues` searches open, unassigned issues without a linked pull request, labeled `good first issue` (then `help wanted` when results are thin), in repositories of GSoC organizations that use the language. Use `--scope all` for all of GitHub or `--repo` for one project. Issues filed by a maintainer are marked, since they reflect real priorities. Statuses: `available`, `claimed` (someone asked recently, a maintainer approved them, or a label such as `in progress` or `claimed` reserves it), `contested` (three or more people asked within 60 days), `likely_taken` (an open pull request references it), `assigned`, `stale`, `closed`, `unknown`.
 - **Before commenting.** Run `issue` on the exact issue, read the whole thread, and follow the project's rules for claiming work. The tool reads comments and linked pull requests, but it can miss coordination that happens in chat.
 - **Caching.** Results can be up to an hour old (a day for organization lists). Run `git-into-gsoc cache --clear` for a fresh look, and restart the MCP server to refresh organization data it holds in memory.
 - **Draft checks.** `proposal draft.md` reports pass, warn, and fail findings on a draft: required sections, linked pull requests (confirmed on GitHub when `--github` is given), week-by-week timeline detail, concrete references to code and issues, generic phrasing, leftover placeholders, and text copied from an ideas page passed with `--ideas-file`. It never rewrites the draft. A clean check means the skeleton is right, not that the plan is good; only mentors can judge that.
@@ -121,7 +121,9 @@ actions with commands.
 Before any code, help the person reproduce the problem and find the relevant
 code. A small, verified fix to documentation or tests is a good first
 contribution. Use the project's own setup, test, and review process. See
-[quality-bar.md](references/quality-bar.md).
+[quality-bar.md](references/quality-bar.md). After the first merge, the next
+contribution should be one step harder, not another beginner issue, and
+reviewing someone else's pull request teaches what maintainers care about.
 
 For a proposal, start from the organization's template and requirements. Help
 them turn their real contributions and conversations into a plan with
@@ -132,6 +134,7 @@ official site counts. See [proposal.md](references/proposal.md).
 ## How to respond
 
 - Lead with the next action and the evidence for it.
+- Ask before telling. A question the person can answer builds more understanding than an explanation they only read.
 - Keep it short. One step at a time beats a complete plan nobody follows.
 - Be warm and direct. Say what is uncertain, especially about dates and future participation.
 - If asked to mass-apply, generate spam pull requests, write a change the person cannot explain, or hide AI use from an organization, decline and explain why.
