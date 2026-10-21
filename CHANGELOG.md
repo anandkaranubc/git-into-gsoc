@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.3.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.3.0...v0.3.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **ci:** never replace a published MCPB bundle and build it reproducibly ([#47](https://github.com/anandkaranubc/git-into-gsoc/issues/47)) ([8862b75](https://github.com/anandkaranubc/git-into-gsoc/commit/8862b7567398b1ce25a9e1a0a6929adc1d2699d9))
+* **http:** name the GitHub search limit and its remedy when a search is rate limited ([#48](https://github.com/anandkaranubc/git-into-gsoc/issues/48)) ([9f4ba79](https://github.com/anandkaranubc/git-into-gsoc/commit/9f4ba7963330d73db95ed96ab345cf5f61f7961d))
+
 ## [0.3.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.2.1...v0.3.0) (2026-10-21)
 
 
