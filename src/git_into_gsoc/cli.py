@@ -924,6 +924,8 @@ def profile_cmd(
     console.print(Panel(Text.from_markup("\n".join(lines)), title="Your profile"))
     if data.get("warning"):
         console.print(f"[yellow]![/yellow] {data['warning']}")
+    if data.get("hours_note"):
+        console.print(f"[yellow]![/yellow] {data['hours_note']}")
 
 
 @app.command("pointers", rich_help_panel="Pick a repository and an issue")
@@ -1432,6 +1434,8 @@ def next_cmd(
         )
         for part in budget["suggested_split"]:
             console.print(f"  {part['hours']:>4} h  {escape(part['what'])}")
+    if data.get("hours_note"):
+        console.print(f"\n[yellow]![/yellow] {escape(data['hours_note'])}")
     if data["changes"]:
         console.print("\n[bold]Changed since your last check[/bold]")
         for change in data["changes"]:

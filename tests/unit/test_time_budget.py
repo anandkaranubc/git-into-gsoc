@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from git_into_gsoc.coach import time_budget
+from git_into_gsoc.coach import hours_note, time_budget
 from git_into_gsoc.models import ProgressState
 
 
@@ -44,3 +44,27 @@ def test_budget_before_community_contact_puts_setup_first() -> None:
     assert budget is not None
     assert budget["official"] is False
     assert budget["suggested_split"][1]["what"].startswith("Set the project up")
+
+
+def test_hours_note_says_which_project_sizes_fit() -> None:
+    # A simulated beginner with 5 hours a week was never told a medium project
+    # (about 175 hours, GSoC FAQ) cannot fit even the longest 22-week coding period.
+    five = hours_note(5)
+    assert five is not None
+    assert "about 18 weeks" in five and "medium and large projects would not fit" in five
+    assert "developers.google.com/open-source/gsoc/faq" in five
+    three = hours_note(3)
+    assert three is not None and "even a small project" in three and "about 30 weeks" in three
+    assert "large projects would not fit" in (hours_note(10) or "")
+    assert hours_note(16) is None  # 350 hours in 22 weeks
+    assert hours_note(None) is None and hours_note("lots") is None
+
+
+def test_saving_few_hours_explains_the_fit(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    from typer.testing import CliRunner
+
+    from git_into_gsoc.cli import app
+
+    result = CliRunner().invoke(app, ["profile", "--hours", "5"])
+    assert result.exit_code == 0, result.output
+    assert "medium and large projects would not fit" in " ".join(result.output.split())

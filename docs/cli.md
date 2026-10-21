@@ -90,7 +90,7 @@ git-into-gsoc recommend
 git-into-gsoc recommend --tech python --interests science
 ```
 
-`profile` saves the facts recommendations are built from: your GitHub username, the languages and tools you know, the topics you care about, the hours per week you can give, and your timezone. Run it with no options to see what is saved. Short forms are `-g`, `-t`, and `-i`.
+`profile` saves the facts recommendations are built from: your GitHub username, the languages and tools you know, the topics you care about, the hours per week you can give, and your timezone. Run it with no options to see what is saved. Short forms are `-g`, `-t`, and `-i`. GSoC projects are about 90, 175, or 350 hours, and the coding period runs 8 to 22 weeks ([GSoC FAQ](https://developers.google.com/open-source/gsoc/faq)). When your hours per week are too few for a size, `profile` and `next` say which sizes fit.
 
 `recommend` uses the saved profile when you give no flags, and saves the flags you give so the next run matches. With a GitHub username it reads your recent public repositories to infer your main language. It prints the organizations that fit with their fit reasons, then starter issues from those same organizations (and, when they have fewer than three, from other GSoC organizations that use your first language). Issues someone already claimed or is working on are left out, and the table says how many. It also says which source the match came from.
 

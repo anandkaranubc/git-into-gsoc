@@ -39,6 +39,41 @@ def upcoming_deadlines(
 
 BUDGET_HORIZON_DAYS = 120
 
+# From the GSoC FAQ: projects are about 90, 175, or 350 hours, and the coding
+# period runs 8 to 22 weeks (past the standard end only if the mentor agrees).
+PROJECT_HOURS = {"small": 90, "medium": 175, "large": 350}
+LONGEST_CODING_WEEKS = 22
+GSOC_FAQ_URL = "https://developers.google.com/open-source/gsoc/faq"
+
+
+def hours_note(hours_per_week: Any) -> str | None:
+    """Which project sizes fit the hours someone has, or None when all of them do."""
+    try:
+        hours = int(hours_per_week or 0)
+    except (TypeError, ValueError):
+        return None
+    if hours <= 0:
+        return None
+    weeks = {size: -(-total // hours) for size, total in PROJECT_HOURS.items()}
+    too_long = [size for size, w in weeks.items() if w > LONGEST_CODING_WEEKS]
+    if not too_long:
+        return None
+    small = weeks["small"]
+    if "small" in too_long:
+        return (
+            f"At {hours} hours a week, even a small project (about 90 hours) takes about "
+            f"{small} weeks, longer than the longest coding period ({LONGEST_CODING_WEEKS} "
+            "weeks). You can still contribute now and apply when you have more time. "
+            f"Source: {GSOC_FAQ_URL}"
+        )
+    sizes = " and ".join(too_long)
+    return (
+        f"At {hours} hours a week, a small project (about 90 hours) takes about {small} "
+        f"weeks, and {sizes} projects would not fit in the longest coding period "
+        f"({LONGEST_CODING_WEEKS} weeks, and only if your mentor agrees). Choose a small "
+        f"idea and state your hours in the proposal. Source: {GSOC_FAQ_URL}"
+    )
+
 
 def time_budget(
     state: ProgressState, program: dict[str, Any], *, now: datetime | None = None

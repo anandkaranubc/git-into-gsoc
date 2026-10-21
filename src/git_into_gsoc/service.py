@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlparse
 
-from git_into_gsoc.coach import plan_actions, time_budget, upcoming_deadlines
+from git_into_gsoc.coach import hours_note, plan_actions, time_budget, upcoming_deadlines
 from git_into_gsoc.config import (
     DEFAULT_TARGET_YEAR,
     LATEST_ARCHIVED_YEAR,
@@ -747,6 +747,8 @@ class GSoCToolkit:
         profile = self.progress.profile()
         if warning:
             profile["warning"] = warning
+        if hours_per_week is not None and hours_note(hours_per_week):
+            profile["hours_note"] = hours_note(hours_per_week)
         return profile
 
     def recommend_path(
@@ -988,6 +990,7 @@ class GSoCToolkit:
             },
             "deadlines": upcoming_deadlines(program),
             "time_budget": time_budget(state, program, now=now),
+            "hours_note": hours_note((state.profile or {}).get("hours_per_week")),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
             "open_pull_requests": open_prs,
