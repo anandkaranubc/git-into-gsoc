@@ -23,6 +23,7 @@ from git_into_gsoc.github.repos import (
     contributing_path,
     detect_toolchain,
     landed_elsewhere,
+    mirror_source,
     pick_beginner_label,
     pull_stats,
 )
@@ -657,7 +658,11 @@ class GitHubClient:
 
     def assess(self, full_name: str, number: int) -> tuple[dict[str, Any], IssueAssessment]:
         owner, repo = parse_repo(full_name)
-        issue = self.get_issue(owner, repo, number)
+        try:
+            issue = self.get_issue(owner, repo, number)
+        except NotFoundError:
+            self._explain_missing_issues(owner, repo)
+            raise
         if "pull_request" in issue:
             raise InputError(
                 f"{owner}/{repo}#{number} is a pull request, not an issue",
@@ -667,6 +672,29 @@ class GitHubClient:
         if timeline is None:
             return issue, unverified_assessment()
         return issue, assess_issue(issue, timeline, pull_lookup=self._pull_lookup(owner, repo))
+
+    def _explain_missing_issues(self, owner: str, repo: str) -> None:
+        """Raise a clearer error when the repository keeps no issues on GitHub at all.
+
+        GNOME/gitg#494 is open on gitlab.gnome.org; on GitHub's read-only mirror it
+        is a 404, which read as a misspelled name.
+        """
+        try:
+            raw = self.get_repo(owner, repo)
+        except HttpError:
+            return
+        source = mirror_source(raw)
+        if source:
+            raise NotFoundError(
+                f"{owner}/{repo} on GitHub is a read-only mirror, so its issues are not here",
+                hint=f"Open the issue where the project lives: {source}. This tool reads "
+                "GitHub only, so check claims and linked merge requests there yourself.",
+            )
+        if raw.get("has_issues") is False:
+            raise NotFoundError(
+                f"{owner}/{repo} has GitHub issues turned off",
+                hint="Its README or CONTRIBUTING file says where it tracks bugs.",
+            )
 
     def _pull_lookup(self, owner: str, repo: str) -> Callable[[int], dict[str, Any] | None]:
         """Fetch a pull request of this repository by number; None for an issue or an error."""

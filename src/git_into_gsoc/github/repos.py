@@ -328,6 +328,36 @@ def pick_beginner_label(labels: list[dict[str, Any]]) -> str | None:
     return None
 
 
+_MIRROR_START = re.compile(r"^\W*(?:read[- ]only\s+)?mirror\s+(?:of|from)\b", re.I)
+_URL = re.compile(r"https?://[^\s,;)]+")
+
+
+def mirror_source(raw: dict[str, Any]) -> str | None:
+    """Where a GitHub mirror's real project lives, or None when it is not a mirror.
+
+    GNOME/gitg on GitHub is "Read-only mirror of https://gitlab.gnome.org/GNOME/gitg"
+    with issues turned off; grading it graded the mirror, not the project. A
+    description must start with "mirror of" (or GitHub must flag it, or issues must
+    be off and the description say "mirror"), so "a tool to create a mirror of a
+    website" is not one.
+    """
+    description = str(raw.get("description") or "")
+    is_mirror = (
+        bool(raw.get("mirror_url"))
+        or bool(_MIRROR_START.search(description))
+        or (raw.get("has_issues") is False and "mirror" in description.lower())
+    )
+    if not is_mirror:
+        return None
+    found = _URL.search(description)
+    homepage = str(raw.get("homepage") or "")
+    if found:
+        return found.group(0).rstrip(".")
+    if homepage.startswith("http"):
+        return homepage
+    return str(raw.get("mirror_url") or "") or "the project's own site"
+
+
 def beginner_labels(labels: list[dict[str, Any]], *, limit: int = 3) -> list[str]:
     """Every beginner-like label a repository has, best known names first.
 

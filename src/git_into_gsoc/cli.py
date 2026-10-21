@@ -880,12 +880,15 @@ def repo_cmd(
     """Check whether a newcomer's pull request can land here: grade, merge history, setup hints."""
     data = _toolkit().evaluate_repo(full_name)
     if track:
-        _toolkit().progress.track_repo(data["health"]["full_name"])
+        _toolkit().progress.track_repo((data["health"] or data)["full_name"])
         data["tracked"] = True
     if output == Output.json:
         _emit(data, output)
         return
     data = _markup_safe(data)
+    if data.get("mirror_of"):
+        console.print(Panel.fit(data["recommendation"], title=f"{data['full_name']}: a mirror"))
+        return
     health = data["health"]
     guide = data["contribution_guide"]
     console.print(

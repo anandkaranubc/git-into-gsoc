@@ -64,6 +64,7 @@ from git_into_gsoc.github.repos import (
     channels_in,
     is_bot,
     mentioned_repos,
+    mirror_source,
     pick_beginner_label,
     repo_lead_score,
 )
@@ -84,6 +85,7 @@ from git_into_gsoc.models import (
     Availability,
     ContactChannel,
     IdeasDocument,
+    OrgSummary,
     ProgressState,
     ProjectIdea,
     RepoLead,
@@ -396,6 +398,20 @@ class GSoCToolkit:
         }
 
     def evaluate_repo(self, full_name: str) -> dict[str, Any]:
+        owner, name = parse_repo(full_name)
+        source = mirror_source(self.github.get_repo(owner, name))
+        if source:
+            # The mirror's pull requests and issues say nothing about the project.
+            return {
+                "full_name": f"{owner}/{name}",
+                "mirror_of": source,
+                "health": None,
+                "recommendation": (
+                    f"Not graded: {owner}/{name} is a read-only mirror of {source}. Its "
+                    "GitHub history does not show how the project treats newcomers. Judge "
+                    "the project, and contribute, where its code really lives."
+                ),
+            }
         health = self.github.repo_health(full_name)
         guide = self.github.contribution_guide(full_name)
         return {
@@ -571,8 +587,10 @@ class GSoCToolkit:
             gsoc_org = self.gsoc.get_organization(name)
         except GigError:
             return [], [], ""
-        if gsoc_org is None or not gsoc_org.github_orgs:
+        if gsoc_org is None:
             return [], [], ""
+        if not gsoc_org.github_orgs:
+            return self._owners_off_github(gsoc_org, language=language)
         owners = list(gsoc_org.github_orgs[:3])
         ideas = fetch_ideas_text(self.http, gsoc_org.ideas_url, self.settings.archive_ttl_seconds)
         linked: list[str] = []
@@ -584,6 +602,37 @@ class GSoCToolkit:
         if linked:
             note += f", and {', '.join(linked[:4])} (named on its ideas page)"
         return owners, linked[:4], note + "."
+
+    def _owners_off_github(
+        self, gsoc_org: OrgSummary, *, language: str | None
+    ) -> tuple[list[str], list[str], str]:
+        """For an org with no GitHub owner: the GitHub projects its ideas page names.
+
+        An umbrella such as the Python Software Foundation lists member projects on
+        GitHub. An org whose code lives elsewhere (GNOME on gitlab.gnome.org, KDE on
+        invent.kde.org) gets a clear error naming that place, instead of being read
+        as a mistyped GitHub login.
+        """
+        ideas = fetch_ideas_text(self.http, gsoc_org.ideas_url, self.settings.archive_ttl_seconds)
+        linked: list[str] = []
+        for lead in self._repos_named_on_page(ideas or "", [], language=language):
+            owner = lead.full_name.split("/", 1)[0]
+            if owner.lower() not in {o.lower() for o in linked}:
+                linked.append(owner)
+        if linked:
+            note = (
+                f"Searching {gsoc_org.name}: it lists no GitHub organization, so the GitHub "
+                f"projects its ideas page names: {', '.join(linked[:4])}."
+            )
+            return [], linked[:4], note
+        where = gsoc_org.source_code or gsoc_org.url or "its own site"
+        raise NotFoundError(
+            f"{gsoc_org.name} keeps its code outside GitHub ({where}), so this tool cannot "
+            "search its issues",
+            hint=f"Open {where} and look for a newcomer or beginner label, and read the ideas "
+            f"page ({gsoc_org.ideas_url or 'not listed'}). org, ideas, mentors, projects, and "
+            "proposal still work for this organization.",
+        )
 
     def _repos_named_on_page(
         self, text: str, searched: list[str], *, language: str | None, limit: int = 6
@@ -615,8 +664,8 @@ class GSoCToolkit:
                 continue
             if (raw.get("owner") or {}).get("type") != "Organization":
                 continue
-            if raw.get("archived") or raw.get("fork"):
-                continue
+            if raw.get("archived") or raw.get("fork") or mirror_source(raw):
+                continue  # a mirror's issues and pull requests live elsewhere
             score, reasons = repo_lead_score(
                 raw, beginner_issues=0, ideas_mention=True, language=language
             )
