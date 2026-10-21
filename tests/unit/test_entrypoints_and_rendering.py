@@ -144,3 +144,16 @@ def test_output_never_crashes_on_a_legacy_windows_code_page(tmp_path: Path) -> N
     )
     assert result.returncode == 0, result.stderr.decode("cp1252", "replace")[-600:]
     assert "? " in result.stdout.decode("cp1252")
+
+
+@pytest.mark.parametrize("encoding", ["utf-8", "utf-8-sig", "utf-16", "cp1252"])
+def test_proposal_reads_drafts_saved_by_any_common_editor(tmp_path: Path, encoding: str) -> None:
+    from git_into_gsoc.cli import app
+
+    draft = tmp_path / "draft.md"
+    # The heading is on the first line, where a byte-order mark would hide it.
+    draft.write_text("## About me\nCafé owner — I like parsers.\n", encoding=encoding)
+    result = CliRunner().invoke(app, ["proposal", str(draft), "--no-verify", "--output", "json"])
+    assert result.exit_code == 0, result.output[-600:]
+    findings = {f["id"]: f["status"] for f in json.loads(result.output)["findings"]}
+    assert findings["about"] == "pass"

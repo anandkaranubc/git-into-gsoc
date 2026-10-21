@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import codecs
 import contextlib
 import json
 import re
@@ -41,6 +42,21 @@ def _tolerate_unencodable_output() -> None:
         if reconfigure is not None:
             with contextlib.suppress(ValueError, OSError):
                 reconfigure(errors="replace")
+
+
+def _read_document(path: Path) -> str:
+    """Read a text file the way an editor would: UTF-8 (with or without a byte-order
+    mark), UTF-16 from Notepad or Word, or the Windows legacy code page."""
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        raise InputError(f"Cannot read {path}: {exc.strerror or exc}") from exc
+    if raw.startswith((codecs.BOM_UTF16_LE, codecs.BOM_UTF16_BE)):
+        return raw.decode("utf-16", errors="replace")
+    try:
+        return raw.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return raw.decode("cp1252", errors="replace")
 
 
 class _FriendlyErrors(TyperGroup):
@@ -1133,11 +1149,8 @@ def proposal_cmd(
             console.print(f"  {i}. {section}")
         console.print("\n[dim]Check a draft: git-into-gsoc proposal draft.md --github you[/dim]")
         return
-    try:
-        text = file.read_text(encoding="utf-8")
-    except OSError as exc:
-        raise InputError(f"Cannot read {file}: {exc.strerror or exc}") from exc
-    ideas_text = ideas_file.read_text(encoding="utf-8", errors="replace") if ideas_file else None
+    text = _read_document(file)
+    ideas_text = _read_document(ideas_file) if ideas_file else None
     report = _toolkit().check_proposal(text, github=github, verify=verify, ideas_text=ideas_text)
     if output == Output.json:
         _emit(report, output)
