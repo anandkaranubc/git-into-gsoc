@@ -1,0 +1,472 @@
+"""Repository orientation for a first contribution: facts and paths, no prose.
+
+Everything here is a pure function over GitHub API payloads (the recursive
+tree, commits, workflow files, CONTRIBUTING and PR template text). The output
+names files a newcomer should open, the real test command from CI, who merges,
+and the rules that apply before a PR (sign-off, CLA, commit style), each with
+the path or URL that proves it. Purpose guesses are labelled as guesses.
+"""
+
+from __future__ import annotations
+
+import re
+from collections import Counter
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+PURPOSES: dict[str, tuple[str, ...]] = {
+    "source": ("src", "lib", "pkg", "internal", "core", "app", "cmd", "packages", "crates"),
+    "tests": ("tests", "test", "spec", "specs", "__tests__", "e2e", "testing"),
+    "docs": ("docs", "doc", "site", "website", "documentation", "wiki", "man"),
+    "examples": ("examples", "example", "samples", "galleries", "demo", "demos", "tutorials"),
+    "tooling": ("scripts", "tools", "bin", "ci", ".github", ".circleci", "build", "dev"),
+    "vendored": ("extern", "vendor", "third_party", "thirdparty", "node_modules", "external"),
+    "perf": ("benchmarks", "benchmark", "bench", "perf"),
+    "data": ("data", "assets", "resources", "fixtures", "static"),
+}
+_PURPOSE_BY_NAME = {name: purpose for purpose, names in PURPOSES.items() for name in names}
+
+ARCH_DOC_RE = re.compile(
+    r"^(?:docs?/(?:dev(?:elop(?:er|ment))?/|contributing/|internals?/|design/)?)?"
+    r"(?:ARCHITECTURE|HACKING|DEVELOPING|DEVELOPMENT|DESIGN|INTERNALS|CONTRIBUTING)"
+    r"[^/]*\.(?:md|rst|txt|adoc)$",
+    re.I,
+)
+TEST_RUNNER_RE = re.compile(
+    r"\b(pytest|python -m pytest|tox\b|nox\b|npm (?:run )?test|pnpm (?:run )?test|yarn test|"
+    r"cargo test|go test|make (?:test|check)|mvn (?:test|verify)|gradle(?:w)? test|ctest|"
+    r"meson test|bundle exec rspec|rspec|phpunit|dotnet test|swift test|mix test|"
+    r"ninja test|hatch test|poetry run pytest|uv run pytest|just test)\b",
+    re.I,
+)
+CONVENTIONAL_RE = re.compile(
+    r"^(feat|fix|docs|chore|refactor|test|tests|ci|build|perf|style|revert|deps)(\([^)]*\))?!?:\s",
+    re.I,
+)
+COMMITLINT_FILES = (
+    ".commitlintrc",
+    ".commitlintrc.json",
+    ".commitlintrc.yaml",
+    ".commitlintrc.yml",
+    ".commitlintrc.js",
+    ".commitlintrc.cjs",
+    ".commitlintrc.mjs",
+    ".commitlintrc.ts",
+    "commitlint.config.js",
+    "commitlint.config.cjs",
+    "commitlint.config.mjs",
+    "commitlint.config.ts",
+    ".cz.toml",
+    ".cz.json",
+    "release-please-config.json",
+    ".releaserc",
+    ".releaserc.json",
+    "cliff.toml",
+)
+ENTRY_FILE_RE = re.compile(
+    r"(?:^|/)(?:__main__\.py|main\.py|cli\.py|app\.py|server\.py|manage\.py|main\.go|main\.rs|"
+    r"Main\.java|index\.(?:js|ts)|main\.(?:js|ts|c|cpp|cc))$"
+)
+KNOWN_BOTS = {"dependabot", "renovate", "pre-commit-ci", "github-actions", "allcontributors"}
+
+POLICY_PATTERNS: dict[str, re.Pattern[str]] = {
+    "assignment": re.compile(
+        r"\b(do not assign|don't assign|we don't assign|not assign issues|assign(?:ed|ment)? "
+        r"(?:policy|process)|claim(?:ing)? (?:an |the )?issue|/assign\b|\.take\b|self-assign)",
+        re.I,
+    ),
+    "ai": re.compile(
+        r"\b(ai[- ]generated|ai[- ]assist\w*|ai disclosure|generative ai|llm|chatgpt|copilot|"
+        r"no ai\b|ai tools?)\b",
+        re.I,
+    ),
+    "pr_limit": re.compile(
+        r"\b(one (?:pull request|pr) at a time|one open (?:pull request|pr)|"
+        r"finish (?:your|one) (?:pull request|pr)|limit(?:ed)? to one)\b",
+        re.I,
+    ),
+    "first_timer": re.compile(
+        r"\b(first[- ]time contributors?|newcomers?|new contributors?|good first issue)\b", re.I
+    ),
+}
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+
+
+def _paths(tree: list[dict[str, Any]], kind: str = "blob") -> list[str]:
+    return [str(e.get("path")) for e in tree if e.get("type") == kind and e.get("path")]
+
+
+def code_map(
+    tree: list[dict[str, Any]], *, limit: int = 12, repo_name: str | None = None
+) -> list[dict[str, Any]]:
+    """Top-level directories with file counts, dominant extension, and a purpose guess."""
+    files_by_dir: Counter[str] = Counter()
+    ext_by_dir: dict[str, Counter[str]] = {}
+    root_files = 0
+    for path in _paths(tree):
+        if "/" not in path:
+            root_files += 1
+            continue
+        top = path.split("/", 1)[0]
+        files_by_dir[top] += 1
+        ext = path.rsplit(".", 1)[-1].lower() if "." in path.rsplit("/", 1)[-1] else ""
+        ext_by_dir.setdefault(top, Counter())[f".{ext}" if ext else "(none)"] += 1
+    rows = []
+    for top, count in files_by_dir.most_common(limit):
+        purpose = _PURPOSE_BY_NAME.get(top.lower())
+        main_ext = ext_by_dir[top].most_common(1)[0][0] if ext_by_dir.get(top) else ""
+        if (
+            purpose is None
+            and repo_name
+            and top.lower().replace("-", "_") == repo_name.lower().replace("-", "_")
+        ):
+            purpose = "source (main package)"
+        elif purpose is None and main_ext in {".md", ".rst", ".txt"}:
+            purpose = "docs"
+        rows.append(
+            {
+                "path": top,
+                "files": count,
+                "main_extension": main_ext,
+                "purpose": purpose or "unknown",
+                "purpose_is_guess": True,
+            }
+        )
+    if root_files:
+        rows.append(
+            {
+                "path": ".",
+                "files": root_files,
+                "main_extension": "",
+                "purpose": "project root",
+                "purpose_is_guess": False,
+            }
+        )
+    return rows
+
+
+def find_paths(tree: list[dict[str, Any]]) -> dict[str, Any]:
+    """Paths that matter to a newcomer, found in the tree (never guessed)."""
+    blobs = _paths(tree)
+    trees = _paths(tree, "tree")
+    lower = {p.lower(): p for p in blobs}
+
+    def first(*names: str) -> str | None:
+        for name in names:
+            if name.lower() in lower:
+                return lower[name.lower()]
+        return None
+
+    arch = [p for p in blobs if ARCH_DOC_RE.match(p) and not p.upper().startswith("CONTRIBUTING")]
+    workflows = [
+        p for p in blobs if p.startswith(".github/workflows/") and p.endswith((".yml", ".yaml"))
+    ]
+    test_file_re = re.compile(
+        r"(?:^|/)(?:test_[^/]+|[^/]+_test\.[a-z]+|[^/]+\.test\.[a-z]+|[^/]+\.spec\.[a-z]+|[^/]+Test\.java)$"
+    )
+    candidates = [t for t in trees if t.rsplit("/", 1)[-1].lower() in PURPOSES["tests"]]
+    weight = {
+        t: sum(1 for p in blobs if p.startswith(t + "/") and test_file_re.search(p))
+        for t in candidates
+    }
+    test_dirs = sorted(candidates, key=lambda t: (-weight[t], t.count("/"), t))
+    return {
+        "readme": first("README.md", "README.rst", "README.txt", "README", "readme.md"),
+        "contributing": first(
+            "CONTRIBUTING.md", ".github/CONTRIBUTING.md", "docs/CONTRIBUTING.md", "CONTRIBUTING.rst"
+        ),
+        "architecture_docs": sorted(arch)[:5],
+        "codeowners": first("CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS"),
+        "pr_template": first(
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            "PULL_REQUEST_TEMPLATE.md",
+            "docs/PULL_REQUEST_TEMPLATE.md",
+            ".github/pull_request_template.md",
+        ),
+        "workflows": sorted(workflows)[:20],
+        "test_dirs": test_dirs[:8],
+        "pre_commit": ".pre-commit-config.yaml" in lower,
+        "commitlint": any(name.lower() in lower for name in COMMITLINT_FILES),
+        "dco_file": first(".github/dco.yml", "DCO", "DCO.md", "DCO.txt"),
+        "cla_file": first("CLA.md", "CLA", ".clabot", "CONTRIBUTOR_LICENSE_AGREEMENT.md"),
+        "devcontainer": any(p.startswith(".devcontainer") for p in blobs),
+        "pyproject": first("pyproject.toml"),
+        "package_json": first("package.json"),
+        "makefile": first("Makefile", "justfile", "Justfile", "noxfile.py", "tox.ini"),
+        "governance": first(
+            "GOVERNANCE.md", "MAINTAINERS.md", "MAINTAINERS", "CONTRIBUTOR_LADDER.md"
+        ),
+    }
+
+
+def entry_points(
+    tree: list[dict[str, Any]],
+    *,
+    pyproject: str | None = None,
+    package_json: str | None = None,
+    limit: int = 6,
+) -> list[dict[str, str]]:
+    """Likely entry points: manifests first, then conventional file names (shallowest first)."""
+    points: list[dict[str, str]] = []
+    if pyproject:
+        section = re.search(r"\[project\.scripts\]\s*\n((?:[^\[\n][^\n]*\n?)*)", pyproject)
+        if section:
+            for line in section.group(1).splitlines():
+                match = re.match(r'\s*([\w.-]+)\s*=\s*"([^"]+)"', line)
+                if match:
+                    module = match.group(2).split(":")[0].replace(".", "/")
+                    points.append(
+                        {
+                            "path": f"{module}.py",
+                            "reason": f"pyproject.toml [project.scripts] {match.group(1)} = {match.group(2)}",
+                        }
+                    )
+    if package_json:
+        for key in ("main", "bin"):
+            match = re.search(rf'"{key}"\s*:\s*"([^"]+)"', package_json)
+            if match:
+                points.append({"path": match.group(1), "reason": f'package.json "{key}"'})
+    candidates = sorted(
+        (p for p in _paths(tree) if ENTRY_FILE_RE.search(p)),
+        key=lambda p: (p.count("/"), len(p)),
+    )
+    for path in candidates:
+        if any(path == x["path"] for x in points):
+            continue
+        name = path.rsplit("/", 1)[-1]
+        reason = {
+            "__main__.py": "module entry point (python -m)",
+            "main.go": "Go main package",
+            "main.rs": "Rust binary",
+            "Main.java": "Java main class",
+        }.get(name, "conventional entry file name")
+        points.append({"path": path, "reason": reason})
+    return points[:limit]
+
+
+def ci_test_commands(workflows: dict[str, str], *, limit: int = 4) -> list[dict[str, str]]:
+    """Commands CI really runs for tests, read from `run:` steps of workflow files."""
+    found: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for path, text in workflows.items():
+        for block in _run_blocks(text):
+            for line in block.splitlines():
+                command = line.strip().rstrip("\\").strip()
+                if not command or command.startswith("#"):
+                    continue
+                if TEST_RUNNER_RE.search(command) and command not in seen:
+                    seen.add(command)
+                    found.append({"command": command[:160], "source": path})
+    return found[:limit]
+
+
+def _run_blocks(text: str) -> list[str]:
+    blocks: list[str] = []
+    lines = text.splitlines()
+    index = 0
+    while index < len(lines):
+        match = re.match(r"^(\s*)(?:-\s+)?run:\s*(\|?-?|>-?)?\s*(.*)$", lines[index])
+        if not match:
+            index += 1
+            continue
+        indent, style, rest = match.groups()
+        if style:
+            body = []
+            index += 1
+            while index < len(lines) and (
+                not lines[index].strip()
+                or len(lines[index]) - len(lines[index].lstrip()) > len(indent)
+            ):
+                body.append(lines[index])
+                index += 1
+            blocks.append("\n".join(body))
+            continue
+        blocks.append(rest)
+        index += 1
+    return blocks
+
+
+def conventions(
+    commits: list[dict[str, Any]],
+    *,
+    contributing: str,
+    pr_template: str,
+    check_names: list[str],
+    found: dict[str, Any],
+) -> dict[str, Any]:
+    """Rules a PR must follow: sign-off, CLA, commit style, checklist. Evidence per rule."""
+    messages = [str((c.get("commit") or {}).get("message") or "") for c in commits]
+    signed = sum(1 for m in messages if "Signed-off-by:" in m)
+    conventional = sum(1 for m in messages if CONVENTIONAL_RE.match(m.splitlines()[0] if m else ""))
+    total = len(messages)
+    checks_lower = [c.lower() for c in check_names]
+    text = f"{contributing}\n{pr_template}"
+
+    dco_evidence: list[str] = []
+    if total and signed / total >= 0.5:
+        dco_evidence.append(f"{signed} of the last {total} commits carry Signed-off-by")
+    if any("dco" in c for c in checks_lower):
+        dco_evidence.append("a DCO status check runs on pull requests")
+    if found.get("dco_file"):
+        dco_evidence.append(f"{found['dco_file']} is present")
+    match = re.search(
+        r"(git commit -s|Signed-off-by|Developer Certificate of Origin|\bDCO\b)", text
+    )
+    if match:
+        dco_evidence.insert(0, f"CONTRIBUTING or the PR template mentions '{match.group(1)}'")
+
+    cla_evidence: list[str] = []
+    if any(re.search(r"\bcla\b|easycla|license/cla|verify cla", c) for c in checks_lower):
+        cla_evidence.append("a CLA status check runs on pull requests")
+    if found.get("cla_file"):
+        cla_evidence.append(f"{found['cla_file']} is present")
+    if re.search(r"Contributor License Agreement|\bCLA\b", text):
+        cla_evidence.append("CONTRIBUTING or the PR template mentions a CLA")
+
+    ratio = conventional / total if total else 0.0
+    style_evidence: list[str] = []
+    if total:
+        style_evidence.append(
+            f"{conventional} of the last {total} commits use type(scope): subject"
+        )
+    if found.get("commitlint"):
+        style_evidence.append("a commitlint or release tooling config is in the repository")
+    if any(re.search(r"commitlint|semantic|conventional|pr title", c) for c in checks_lower):
+        style_evidence.append("a commit or PR title check runs on pull requests")
+
+    checklist_items = len(re.findall(r"^\s*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
+    return {
+        "dco": {"required": bool(dco_evidence), "evidence": dco_evidence},
+        "cla": {"required": bool(cla_evidence), "evidence": cla_evidence},
+        "conventional_commits": {
+            "expected": ratio >= 0.7 or bool(found.get("commitlint")),
+            "ratio": round(ratio, 2),
+            "evidence": style_evidence,
+        },
+        "pre_commit": bool(found.get("pre_commit")),
+        "pr_checklist_items": checklist_items,
+        "ai_disclosure_in_pr_template": bool(
+            re.search(r"\bai\b.*disclos|disclos.*\bai\b", pr_template, re.I | re.S)
+        ),
+        "codeowners": found.get("codeowners"),
+        "required_checks_seen": sorted(set(check_names))[:12],
+    }
+
+
+def policy_quotes(texts: dict[str, str], *, limit: int = 8) -> list[dict[str, str]]:
+    """Verbatim sentences about assignment, AI use, PR limits, and newcomers, with sources."""
+    quotes: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for source, text in texts.items():
+        cleaned = re.sub(r"<!--.*?-->", " ", text or "", flags=re.S)
+        for line in cleaned.splitlines():
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#") or re.match(r"^[-*]\s*\[[ xX]\]", stripped):
+                continue
+            stripped = re.sub(r"^[-*>\d.)\s]+", "", stripped)
+            for sentence in _SENTENCE_SPLIT.split(re.sub(r"\s+", " ", stripped)):
+                clean = sentence.strip(" -*#>")
+                if not 20 <= len(clean) <= 300 or len(clean.split()) < 4 or clean in seen:
+                    continue
+                for kind, pattern in POLICY_PATTERNS.items():
+                    if pattern.search(clean):
+                        seen.add(clean)
+                        quotes.append({"kind": kind, "text": clean, "source": source})
+                        break
+    priority = {"assignment": 0, "ai": 1, "pr_limit": 2, "first_timer": 3}
+    quotes.sort(key=lambda q: priority[q["kind"]])
+    return quotes[:limit]
+
+
+def rank_workflows(paths: list[str], *, limit: int = 2) -> list[str]:
+    """Workflow files most likely to run the test suite, best first."""
+
+    def priority(path: str) -> tuple[int, str]:
+        name = path.rsplit("/", 1)[-1].lower()
+        if re.search(r"test|pytest|tox|nox", name):
+            return (0, name)
+        if re.search(r"^ci\b|[._-]ci\b|\bci[._-]|main|build|check", name):
+            return (1, name)
+        if re.search(r"release|publish|deploy|docs|label|stale|close|comment|lint|welcome", name):
+            return (3, name)
+        return (2, name)
+
+    return sorted(paths, key=priority)[:limit]
+
+
+def active_committers(commits: list[dict[str, Any]], *, limit: int = 8) -> list[dict[str, Any]]:
+    """People who landed commits in the sample, bots removed, most active first."""
+    counts: Counter[str] = Counter()
+    for commit in commits:
+        author = commit.get("author") or {}
+        login = str(author.get("login") or "")
+        if author.get("type") == "Bot" or login.endswith("[bot]") or login.lower() in KNOWN_BOTS:
+            continue
+        if not login:
+            login = str(
+                ((commit.get("commit") or {}).get("author") or {}).get("name") or ""
+            ).strip()
+        if login and not login.lower().endswith("[bot]"):
+            counts[login] += 1
+    return [{"login": login, "commits": n} for login, n in counts.most_common(limit)]
+
+
+def codeowners_for(text: str, *, limit: int = 8) -> list[dict[str, str]]:
+    """CODEOWNERS lines as (pattern, owners); last matching pattern wins on GitHub."""
+    rows = []
+    for line in (text or "").splitlines():
+        line = line.split("#", 1)[0].strip()
+        if not line:
+            continue
+        parts = line.split()
+        if len(parts) >= 2:
+            rows.append({"pattern": parts[0], "owners": " ".join(parts[1:])})
+    return rows[:limit]
+
+
+def reading_plan(
+    *,
+    found: dict[str, Any],
+    points: list[dict[str, str]],
+    example_pr: dict[str, Any] | None,
+) -> list[dict[str, str]]:
+    """An ordered reading list, each step a real path or URL."""
+    steps: list[dict[str, str]] = []
+    if found.get("readme"):
+        steps.append({"path": found["readme"], "why": "What the project is and how to run it"})
+    if found.get("contributing"):
+        steps.append({"path": found["contributing"], "why": "How this project wants changes made"})
+    for doc in found.get("architecture_docs") or []:
+        steps.append({"path": doc, "why": "How the code is organised, in the maintainers' words"})
+    for point in points[:2]:
+        steps.append({"path": point["path"], "why": f"Entry point: {point['reason']}"})
+    for test_dir in (found.get("test_dirs") or [])[:1]:
+        steps.append(
+            {"path": test_dir, "why": "How behaviour is tested; your change will need a test here"}
+        )
+    for workflow in rank_workflows(found.get("workflows") or [], limit=1):
+        steps.append({"path": workflow, "why": "What CI runs on your pull request"})
+    if example_pr:
+        steps.append(
+            {
+                "path": str(example_pr.get("url") or ""),
+                "why": f"A recently merged small PR from an outside contributor ({example_pr.get('files', '?')} files): the shape of a change that lands",
+            }
+        )
+    return steps
+
+
+def days_since(value: str | None, now: datetime | None = None) -> int | None:
+    if not value:
+        return None
+    now = now or datetime.now(UTC)
+    try:
+        then = datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+    except ValueError:
+        return None
+    return (now - then).days
+
+
+def since_iso(days: int, now: datetime | None = None) -> str:
+    now = now or datetime.now(UTC)
+    return (now - timedelta(days=days)).replace(microsecond=0).isoformat().replace("+00:00", "Z")

@@ -544,3 +544,79 @@ class GitHubClient:
             "languages": [{"name": n, "repos": c} for n, c in ranked[:10]],
             "top_language": ranked[0][0] if ranked else None,
         }
+
+    # ------------------------------------------------------ orientation reads
+
+    def git_tree(self, owner: str, repo: str, ref: str) -> dict[str, Any]:
+        """Whole file tree in one call (GitHub caps it at 100,000 entries / 7 MB)."""
+        owner, repo = parse_repo(f"{owner}/{repo}")
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/git/trees/{quote(ref, safe='')}",
+                params={"recursive": "1"},
+                ttl=86400,
+            )
+        except HttpError:
+            return {}
+        return data if isinstance(data, dict) else {}
+
+    def languages(self, owner: str, repo: str) -> dict[str, int]:
+        try:
+            data = self._api(f"repos/{owner}/{repo}/languages", ttl=86400)
+        except HttpError:
+            return {}
+        return {str(k): int(v) for k, v in data.items()} if isinstance(data, dict) else {}
+
+    def list_commits(
+        self, owner: str, repo: str, *, since: str, per_page: int = 100
+    ) -> list[dict[str, Any]]:
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/commits", params={"since": since, "per_page": per_page}
+            )
+        except HttpError:
+            return []
+        return data if isinstance(data, list) else []
+
+    def list_pull_files(self, owner: str, repo: str, number: int) -> list[dict[str, Any]]:
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/pulls/{int(number)}/files",
+                params={"per_page": 100},
+                ttl=604800,
+            )
+        except HttpError:
+            return []
+        return data if isinstance(data, list) else []
+
+    def check_run_names(self, owner: str, repo: str, ref: str) -> list[str]:
+        """Names of check runs and status contexts on a commit (CLA/DCO/CI detection)."""
+        names: list[str] = []
+        try:
+            runs = self._api(
+                f"repos/{owner}/{repo}/commits/{quote(ref, safe='')}/check-runs",
+                params={"per_page": 50},
+                ttl=604800,
+            )
+            if isinstance(runs, dict):
+                names.extend(
+                    str(r.get("name")) for r in runs.get("check_runs") or [] if r.get("name")
+                )
+        except HttpError:
+            pass
+        try:
+            status = self._api(
+                f"repos/{owner}/{repo}/commits/{quote(ref, safe='')}/status", ttl=604800
+            )
+            if isinstance(status, dict):
+                names.extend(
+                    str(s.get("context")) for s in status.get("statuses") or [] if s.get("context")
+                )
+        except HttpError:
+            pass
+        return list(dict.fromkeys(names))
+
+    def search_code(self, query: str, *, per_page: int = 10) -> list[dict[str, Any]]:
+        """Code search (authenticated only, 10 requests/minute); returns path hits."""
+        data = self._api("search/code", params={"q": query, "per_page": per_page}, ttl=3600)
+        return data.get("items", []) if isinstance(data, dict) else []

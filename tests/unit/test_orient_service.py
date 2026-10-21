@@ -1,0 +1,159 @@
+from __future__ import annotations
+
+from datetime import UTC, datetime, timedelta
+from typing import Any
+
+import httpx
+import respx
+from typer.testing import CliRunner
+
+from git_into_gsoc.cli import app
+from git_into_gsoc.service import GSoCToolkit
+
+runner = CliRunner()
+API = "https://api.github.com/repos/acme/lib"
+NOW = datetime.now(UTC)
+
+
+def _iso(days: int) -> str:
+    return (NOW - timedelta(days=days)).isoformat().replace("+00:00", "Z")
+
+
+def _tree_entry(path: str, kind: str = "blob") -> dict[str, Any]:
+    return {"path": path, "type": kind, "size": 10, "sha": "x"}
+
+
+def _mock_repo(router: respx.MockRouter) -> None:
+    router.get(API).mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "full_name": "acme/lib",
+                "html_url": "https://github.com/acme/lib",
+                "description": "A library",
+                "default_branch": "main",
+                "stargazers_count": 300,
+                "license": {"spdx_id": "MIT"},
+                "pushed_at": _iso(1),
+            },
+        )
+    )
+    router.get(f"{API}/git/trees/main").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "sha": "abc123def456",
+                "truncated": False,
+                "tree": [
+                    _tree_entry("README.md"),
+                    _tree_entry("CONTRIBUTING.md"),
+                    _tree_entry("pyproject.toml"),
+                    _tree_entry(".github", "tree"),
+                    _tree_entry(".github/CODEOWNERS"),
+                    _tree_entry(".github/workflows", "tree"),
+                    _tree_entry(".github/workflows/ci.yml"),
+                    _tree_entry("src", "tree"),
+                    _tree_entry("src/lib", "tree"),
+                    _tree_entry("src/lib/__main__.py"),
+                    _tree_entry("src/lib/core.py"),
+                    _tree_entry("tests", "tree"),
+                    _tree_entry("tests/test_core.py"),
+                ],
+            },
+        )
+    )
+    router.get(f"{API}/languages").mock(
+        return_value=httpx.Response(200, json={"Python": 900, "C": 100})
+    )
+    router.get(f"{API}/community/profile").mock(
+        return_value=httpx.Response(200, json={"files": {}})
+    )
+    router.get(f"{API}/commits").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "author": {"login": "maintainer", "type": "User"},
+                    "commit": {
+                        "message": "feat(core): add thing\n\nSigned-off-by: M <m@x>",
+                        "author": {"date": _iso(2)},
+                    },
+                }
+            ]
+            * 6,
+        )
+    )
+    router.get(f"{API}/pulls").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "number": 7,
+                    "html_url": "https://github.com/acme/lib/pull/7",
+                    "title": "Fix docs link",
+                    "merged_at": _iso(3),
+                    "author_association": "CONTRIBUTOR",
+                    "user": {"login": "newbie", "type": "User"},
+                    "head": {"sha": "deadbeef"},
+                }
+            ],
+        )
+    )
+    router.get(f"{API}/pulls/7/files").mock(
+        return_value=httpx.Response(
+            200, json=[{"filename": "src/lib/core.py"}, {"filename": "tests/test_core.py"}]
+        )
+    )
+    router.get(f"{API}/commits/deadbeef/check-runs").mock(
+        return_value=httpx.Response(
+            200, json={"check_runs": [{"name": "DCO"}, {"name": "ci / test"}]}
+        )
+    )
+    router.get(f"{API}/commits/deadbeef/status").mock(
+        return_value=httpx.Response(200, json={"statuses": [{"context": "EasyCLA"}]})
+    )
+    raw = {
+        "CONTRIBUTING.md": "Join us on Zulip. We do not assign issues; open a PR. Sign your commits with git commit -s.",
+        "pyproject.toml": '[project]\nname = "lib"\n[project.scripts]\nlib = "lib.cli:app"\n',
+        ".github/CODEOWNERS": "src/lib/ @maintainer @other\n",
+        ".github/workflows/ci.yml": "jobs:\n  t:\n    steps:\n      - run: pip install -e .\n      - run: pytest -q\n",
+    }
+    for path, text in raw.items():
+        router.get(f"{API}/contents/{path}").mock(return_value=httpx.Response(200, text=text))
+
+
+@respx.mock
+def test_orient_repo_builds_facts_and_paths() -> None:
+    _mock_repo(respx)
+    data = GSoCToolkit().orient_repo("https://github.com/acme/lib")
+    assert data["as_of_commit"] == "abc123def456"
+    assert data["languages"][0] == {"name": "Python", "share": 90}
+    assert {row["path"] for row in data["code_map"]} >= {"src", "tests", ".github"}
+    assert data["test_commands"][0]["command"] == "pytest -q"
+    assert any(p["path"] == "lib/cli.py" for p in data["entry_points"])
+    assert data["maintainers"]["active_committers_90d"][0]["login"] == "maintainer"
+    assert data["maintainers"]["codeowners"][0]["owners"] == "@maintainer @other"
+    rules = data["conventions"]
+    assert rules["dco"]["required"] and rules["cla"]["required"]
+    assert rules["conventional_commits"]["expected"]
+    assert any(q["kind"] == "assignment" for q in data["policies"])
+    assert data["channels"] == ["Zulip"]
+    assert data["example_pr"]["number"] == 7 and data["example_pr"]["touches_tests"]
+    assert data["reading_plan"][0]["path"] == "README.md"
+    assert data["reading_plan"][-1]["path"].endswith("/pull/7")
+
+
+@respx.mock
+def test_cli_orient_renders_sections() -> None:
+    _mock_repo(respx)
+    result = runner.invoke(app, ["orient", "acme/lib"])
+    assert result.exit_code == 0, result.output
+    for needle in (
+        "Code map",
+        "Entry points",
+        "pytest -q",
+        "Who merges",
+        "Before you open a PR",
+        "Read in this order",
+    ):
+        assert needle in result.stdout

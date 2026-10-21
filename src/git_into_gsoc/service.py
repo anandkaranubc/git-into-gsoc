@@ -10,7 +10,27 @@ from git_into_gsoc.coach import plan_actions, upcoming_deadlines
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, LATEST_ARCHIVED_YEAR, get_settings
 from git_into_gsoc.errors import GigError
 from git_into_gsoc.github.client import GitHubClient
-from git_into_gsoc.github.repos import mentioned_repos, repo_lead_score
+from git_into_gsoc.github.orientation import (
+    active_committers,
+    ci_test_commands,
+    code_map,
+    codeowners_for,
+    conventions,
+    days_since,
+    entry_points,
+    find_paths,
+    policy_quotes,
+    rank_workflows,
+    reading_plan,
+    since_iso,
+)
+from git_into_gsoc.github.repos import (
+    OUTSIDER_ROLES,
+    channels_in,
+    is_bot,
+    mentioned_repos,
+    repo_lead_score,
+)
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
@@ -530,6 +550,146 @@ class GSoCToolkit:
             ),
         }
 
+    # ---------------------------------------------------------- orientation
+
+    def orient_repo(self, full_name: str) -> dict[str, Any]:
+        """A one-screen orientation sheet: facts and paths only, about 16 API calls."""
+        owner, repo = parse_repo(full_name)
+        raw = self.github.get_repo(owner, repo)
+        owner, repo = (raw.get("full_name") or f"{owner}/{repo}").split("/", 1)
+        branch = str(raw.get("default_branch") or "HEAD")
+        workers = self.settings.max_concurrency
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            tree_f = pool.submit(self.github.git_tree, owner, repo, branch)
+            langs_f = pool.submit(self.github.languages, owner, repo)
+            profile_f = pool.submit(self.github.community_profile, owner, repo)
+            commits_f = pool.submit(self.github.list_commits, owner, repo, since=since_iso(90))
+            pulls_f = pool.submit(self.github.list_pulls, owner, repo, state="closed", per_page=30)
+            tree, langs = tree_f.result(), langs_f.result()
+            profile, commits, pulls = profile_f.result(), commits_f.result(), pulls_f.result()
+        entries = list(tree.get("tree") or [])
+        found = find_paths(entries)
+        if not found.get("contributing"):
+            html = ((profile.get("files") or {}).get("contributing") or {}).get("html_url")
+            if html and "/blob/" in html:
+                found["contributing"] = html.split("/blob/", 1)[1].split("/", 1)[1]
+
+        workflow_paths = rank_workflows(found.get("workflows") or [])
+        raw_wanted = {
+            key: found[key]
+            for key in ("contributing", "pr_template", "pyproject", "package_json", "codeowners")
+            if found.get(key)
+        }
+        texts: dict[str, str] = {}
+        workflow_texts: dict[str, str] = {}
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures = {
+                key: pool.submit(self.github.get_raw_file, owner, repo, path)
+                for key, path in raw_wanted.items()
+            }
+            wf_futures = {
+                path: pool.submit(self.github.get_raw_file, owner, repo, path)
+                for path in workflow_paths
+            }
+            for key, future in futures.items():
+                texts[key] = future.result() or ""
+            for path, future in wf_futures.items():
+                workflow_texts[path] = future.result() or ""
+
+        merged = [p for p in pulls if p.get("merged_at") and not is_bot(p.get("user"))]
+        check_names: list[str] = []
+        if merged and (merged[0].get("head") or {}).get("sha"):
+            check_names = self.github.check_run_names(owner, repo, str(merged[0]["head"]["sha"]))
+        example = self._example_outsider_pr(owner, repo, merged)
+
+        points = entry_points(
+            entries, pyproject=texts.get("pyproject"), package_json=texts.get("package_json")
+        )
+        rules = conventions(
+            commits,
+            contributing=texts.get("contributing", ""),
+            pr_template=texts.get("pr_template", ""),
+            check_names=check_names,
+            found=found,
+        )
+        quotes = policy_quotes(
+            {
+                str(found.get("contributing") or "CONTRIBUTING"): texts.get("contributing", ""),
+                str(found.get("pr_template") or "PR template"): texts.get("pr_template", ""),
+            }
+        )
+        total_bytes = sum(langs.values()) or 1
+        languages = [
+            {"name": name, "share": round(100 * size / total_bytes)}
+            for name, size in sorted(langs.items(), key=lambda kv: -kv[1])[:4]
+        ]
+        tests = ci_test_commands(workflow_texts)
+        fallback_hints = [
+            f"{found['makefile']} lists local targets" if found.get("makefile") else "",
+            "Dev container present: open in Codespaces or VS Code for a ready environment"
+            if found.get("devcontainer")
+            else "",
+        ]
+        return {
+            "repo": f"{owner}/{repo}",
+            "url": raw.get("html_url") or f"https://github.com/{owner}/{repo}",
+            "description": raw.get("description"),
+            "default_branch": branch,
+            "as_of_commit": tree.get("sha"),
+            "tree_truncated": bool(tree.get("truncated")),
+            "stars": int(raw.get("stargazers_count") or 0),
+            "license": _license_label(raw.get("license")),
+            "pushed_days_ago": days_since(raw.get("pushed_at")),
+            "languages": languages,
+            "code_map": code_map(entries, repo_name=repo),
+            "entry_points": points,
+            "test_commands": tests,
+            "setup_hints": [h for h in fallback_hints if h],
+            "docs": {
+                "readme": found.get("readme"),
+                "contributing": found.get("contributing"),
+                "architecture": found.get("architecture_docs") or [],
+                "governance": found.get("governance"),
+                "test_dirs": found.get("test_dirs") or [],
+            },
+            "maintainers": {
+                "active_committers_90d": active_committers(commits),
+                "commits_90d": len(commits),
+                "codeowners": codeowners_for(texts.get("codeowners", "")),
+                "codeowners_path": found.get("codeowners"),
+            },
+            "conventions": rules,
+            "policies": quotes,
+            "channels": channels_in(texts.get("contributing", "")),
+            "example_pr": example,
+            "reading_plan": reading_plan(found=found, points=points, example_pr=example),
+            "note": (
+                "Purpose labels on the code map are guesses from directory names. Everything "
+                "else names a real file, commit, or check. Read the files; do not rely on a summary."
+            ),
+        }
+
+    def _example_outsider_pr(
+        self, owner: str, repo: str, merged: list[dict[str, Any]]
+    ) -> dict[str, Any] | None:
+        """A recently merged, small PR by someone without write access (at most 2 lookups)."""
+        candidates = [p for p in merged if p.get("author_association") in OUTSIDER_ROLES][:2]
+        for pull in candidates:
+            files = self.github.list_pull_files(owner, repo, int(pull["number"]))
+            if files and len(files) <= 6:
+                return {
+                    "number": int(pull["number"]),
+                    "url": pull.get("html_url"),
+                    "title": str(pull.get("title") or "")[:120],
+                    "author": (pull.get("user") or {}).get("login"),
+                    "files": len(files),
+                    "paths": [str(f.get("filename")) for f in files[:6]],
+                    "touches_tests": any(
+                        "test" in str(f.get("filename", "")).lower() for f in files
+                    ),
+                }
+        return None
+
     # ------------------------------------------------------------ project ideas
 
     def org_ideas(
@@ -692,6 +852,15 @@ class GSoCToolkit:
                 }
             )
         return out[:10]
+
+
+def _license_label(license_obj: Any) -> str | None:
+    if not isinstance(license_obj, dict):
+        return None
+    spdx = str(license_obj.get("spdx_id") or "")
+    if spdx and spdx != "NOASSERTION":
+        return spdx
+    return str(license_obj.get("name") or "") or None
 
 
 def _quote_label(label: str) -> str:

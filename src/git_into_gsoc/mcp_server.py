@@ -224,6 +224,24 @@ def gsoc_evaluate_repo(full_name: str) -> str:
     return _dump(toolkit().evaluate_repo(full_name))
 
 
+@mcp.tool()
+def gsoc_orient_repo(full_name: str) -> str:
+    """Orientation sheet for a repository the contributor has chosen, built from about 16
+    cached GitHub calls and containing facts and paths only: top-level code map with file
+    counts and purpose guesses, entry points, the test command CI really runs, README /
+    CONTRIBUTING / architecture docs, active committers in the last 90 days and CODEOWNERS,
+    rules before a PR (DCO sign-off, CLA, commit style, pre-commit, PR checklist, AI
+    disclosure) each with evidence, verbatim policy sentences (assignment, AI, PR limits),
+    chat channels, one recently merged small outsider PR as a worked example, and an ordered
+    reading plan. Use after gsoc_evaluate_repo, before the contributor reads code. Any
+    narrative you write about the code must cite paths from this result.
+    full_name: owner/repo or a GitHub URL.
+    """
+    return _dump(toolkit().orient_repo(full_name))
+
+
+@mcp.tool()
+@mcp.tool(annotations=READ_ONLY, structured_output=False)
 @mcp.tool(
     title="Rank an organization's repositories", annotations=READ_ONLY, structured_output=False
 )

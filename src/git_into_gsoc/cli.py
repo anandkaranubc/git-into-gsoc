@@ -436,6 +436,105 @@ def repo_cmd(
         console.print(f"  • Channels mentioned: {', '.join(guide['communication_channels'])}")
 
 
+@app.command("orient")
+def orient_cmd(full_name: str, output: Output = OUTPUT_OPTION) -> None:
+    """Get your bearings in a repository: code map, entry points, test command, who merges, rules."""
+    data = _toolkit().orient_repo(full_name)
+    if output == Output.json:
+        _emit(data, output)
+        return
+    langs = ", ".join(f"{x['name']} {x['share']}%" for x in data["languages"]) or "unknown"
+    head = (data.get("as_of_commit") or "")[:10]
+    lines = [
+        f"[bold]{data['repo']}[/bold]  {escape(data.get('description') or '')}",
+        f"Languages: {langs}  |  License: {data.get('license') or 'none detected'}  |  "
+        f"Last push: {data.get('pushed_days_ago')}d ago",
+        f"[dim]As of commit {head} on {data['default_branch']}[/dim]",
+    ]
+    console.print(Panel(Text.from_markup("\n".join(lines)), title="Orientation"))
+
+    table = Table(title="Code map (purpose is a guess from the directory name)")
+    table.add_column("Directory")
+    table.add_column("Files", justify="right")
+    table.add_column("Mostly")
+    table.add_column("Purpose")
+    for row in data["code_map"]:
+        table.add_row(row["path"], str(row["files"]), row["main_extension"], row["purpose"])
+    console.print(table)
+
+    def section(title: str, items: list[str]) -> None:
+        if items:
+            console.print(f"\n[bold]{title}[/bold]")
+            for item in items:
+                console.print(f"  {item}")
+
+    section(
+        "Entry points",
+        [f"{p['path']}  [dim]{escape(p['reason'])}[/dim]" for p in data["entry_points"]],
+    )
+    section(
+        "How CI runs the tests",
+        [f"{escape(t['command'])}  [dim]({t['source']})[/dim]" for t in data["test_commands"]]
+        + [escape(h) for h in data["setup_hints"]],
+    )
+    docs = data["docs"]
+    section(
+        "Read first",
+        [
+            p
+            for p in (docs.get("readme"), docs.get("contributing"), *docs.get("architecture", []))
+            if p
+        ],
+    )
+    people = data["maintainers"]
+    section(
+        f"Who merges ({people['commits_90d']} commits in 90 days)",
+        [f"@{p['login']} ({p['commits']})" for p in people["active_committers_90d"]]
+        + [
+            f"CODEOWNERS {escape(c['pattern'])}: {escape(c['owners'])}"
+            for c in people["codeowners"][:5]
+        ],
+    )
+    rules = data["conventions"]
+    rule_lines = []
+    if rules["dco"]["required"]:
+        rule_lines.append(
+            "Sign-off required (git commit -s): " + "; ".join(rules["dco"]["evidence"])
+        )
+    if rules["cla"]["required"]:
+        rule_lines.append("CLA required: " + "; ".join(rules["cla"]["evidence"]))
+    if rules["conventional_commits"]["expected"]:
+        rule_lines.append(
+            "Commit style type(scope): subject expected: "
+            + "; ".join(rules["conventional_commits"]["evidence"])
+        )
+    if rules["pre_commit"]:
+        rule_lines.append("pre-commit hooks configured: run `pre-commit install` before committing")
+    if rules["pr_checklist_items"]:
+        rule_lines.append(
+            f"PR template has a {rules['pr_checklist_items']}-item checklist; fill it in"
+        )
+    if rules["ai_disclosure_in_pr_template"]:
+        rule_lines.append("PR template asks for an AI disclosure")
+    section("Before you open a PR", [escape(line) for line in rule_lines])
+    section(
+        "Policies, in the project's words",
+        [
+            f"[{q['kind']}] {escape(q['text'])}  [dim]({q['source']})[/dim]"
+            for q in data["policies"]
+        ],
+    )
+    section("Where to talk", [", ".join(data["channels"])] if data["channels"] else [])
+    section(
+        "Read in this order",
+        [
+            f"{i}. {escape(step['path'])}  [dim]{escape(step['why'])}[/dim]"
+            for i, step in enumerate(data["reading_plan"], 1)
+        ],
+    )
+    console.print(f"\n[dim]{escape(data['note'])}[/dim]")
+
+
 class Scope(StrEnum):
     gsoc = "gsoc"
     all = "all"
