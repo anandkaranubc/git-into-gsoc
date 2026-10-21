@@ -4,23 +4,44 @@ from __future__ import annotations
 
 import json
 from enum import StrEnum
+from typing import Any
 
 import typer
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
+from typer.core import TyperGroup
 
 from git_into_gsoc import __version__
+from git_into_gsoc.errors import GigError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, journey_overview
 from git_into_gsoc.service import GSoCToolkit
+
+console = Console()
+err_console = Console(stderr=True)
+
+
+class _FriendlyErrors(TyperGroup):
+    """Render expected failures as one-line errors with a hint, not tracebacks."""
+
+    def invoke(self, ctx: Any) -> Any:
+        try:
+            return super().invoke(ctx)
+        except GigError as exc:
+            err_console.print(f"[bold red]error:[/bold red] {exc}")
+            if exc.hint:
+                err_console.print(f"[dim]hint:[/dim] {exc.hint}")
+            raise typer.Exit(code=1) from exc
+
 
 app = typer.Typer(
     name="git-into-gsoc",
     help="AI-native toolkit for aspiring Google Summer of Code contributors.",
     no_args_is_help=True,
     rich_markup_mode="rich",
+    cls=_FriendlyErrors,
+    pretty_exceptions_show_locals=False,
 )
-console = Console()
 
 
 class Output(StrEnum):
@@ -298,21 +319,39 @@ def mcp_cmd() -> None:
 @app.command("doctor")
 def doctor_cmd() -> None:
     """Check environment: Python package, GitHub auth, cache paths."""
+    import sys
+
     from git_into_gsoc.config import cache_dir, data_dir, get_settings
 
     settings = get_settings()
-    token = settings.resolve_github_token()
-    console.print(f"git-into-gsoc {__version__}")
+    source = settings.github_token_source()
+    console.print(f"git-into-gsoc {__version__}  (Python {sys.version.split()[0]})")
     console.print(f"cache: {cache_dir()}")
     console.print(f"data:  {data_dir()}")
-    console.print(
-        f"GitHub token: {'set' if token else 'missing (unauthenticated rate limits apply)'}"
-    )
+    if source:
+        console.print(f"GitHub token: [green]found[/green] via {source}")
+    else:
+        console.print(
+            "GitHub token: [yellow]missing[/yellow] — 60 req/h limit. "
+            "Run `gh auth login` or set GITHUB_TOKEN."
+        )
     try:
         rl = _toolkit().rate_limit()
         console.print(f"GitHub rate: {rl.get('remaining')}/{rl.get('limit')} remaining")
-    except Exception as exc:
+    except GigError as exc:
         console.print(f"[red]GitHub check failed:[/red] {exc}")
+
+
+@app.command("cache")
+def cache_cmd(
+    clear: bool = typer.Option(False, "--clear", help="Delete all cached HTTP responses"),
+) -> None:
+    """Show or clear the local HTTP cache."""
+    http = _toolkit().github.http
+    if clear:
+        console.print(f"Removed {http.clear_cache()} cached responses")
+        return
+    console.print(f"Cache size: {http.cache_size_bytes() / 1_048_576:.1f} MiB")
 
 
 if __name__ == "__main__":
