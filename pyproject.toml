@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "git-into-gsoc"
 version = "0.1.0"
-description = "AI-native toolkit for aspiring Google Summer of Code contributors — Agent Skill + MCP + CLI"
+description = "Find your first open-source contribution and prepare for Google Summer of Code: CLI, MCP server, and Agent Skill"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
