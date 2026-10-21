@@ -2,6 +2,67 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.10.0...v0.11.0) (2026-10-21)
+
+
+### Features
+
+* a feedback command and form, and a five-minute contributor quick start ([#161](https://github.com/anandkaranubc/git-into-gsoc/issues/161)) ([2680f8d](https://github.com/anandkaranubc/git-into-gsoc/commit/2680f8d041fa11f88c47da79f7b08430ee226b1b))
+* a guided start command and a home screen for first-time users ([#152](https://github.com/anandkaranubc/git-into-gsoc/issues/152)) ([edb4cde](https://github.com/anandkaranubc/git-into-gsoc/commit/edb4cde99e190c545edb78677cd1fe59d260d1e9))
+* **next:** notice merged pull requests, record them, and mark the first one ([#169](https://github.com/anandkaranubc/git-into-gsoc/issues/169)) ([f0a53b7](https://github.com/anandkaranubc/git-into-gsoc/commit/f0a53b773d82d3e2d989c4d512e32655d330e063))
+* one install command per assistant, one-click buttons, and a stable branch they follow ([#143](https://github.com/anandkaranubc/git-into-gsoc/issues/143)) ([2b097d3](https://github.com/anandkaranubc/git-into-gsoc/commit/2b097d394448831a09a4671f95051dc7b122414b))
+* **org:** show what an organization posted about the coming GSoC, and warn when it sits out ([#123](https://github.com/anandkaranubc/git-into-gsoc/issues/123)) ([5869f72](https://github.com/anandkaranubc/git-into-gsoc/commit/5869f72fb824045f3b39fde586a26bb566093e5b))
+* **plugins:** every plugin runs the server from its own installed copy, and Codex gets a native manifest ([#136](https://github.com/anandkaranubc/git-into-gsoc/issues/136)) ([03cc5bc](https://github.com/anandkaranubc/git-into-gsoc/commit/03cc5bcc6a4e665591ad8eeca7dab3873f8a9c2c))
+* **service:** check whether top organizations say they sit out the coming GSoC ([#155](https://github.com/anandkaranubc/git-into-gsoc/issues/155)) ([628ff62](https://github.com/anandkaranubc/git-into-gsoc/commit/628ff626dc1bcd45dbd167e14dd046a4d36a2c33))
+* **start:** leave out organizations that say they will sit the year out ([#160](https://github.com/anandkaranubc/git-into-gsoc/issues/160)) ([2a42775](https://github.com/anandkaranubc/git-into-gsoc/commit/2a42775976516c8fef3a23fc0df45de6dca20d7e))
+
+
+### Bug Fixes
+
+* a way past stale lock files, and org-aware tips for empty searches ([#151](https://github.com/anandkaranubc/git-into-gsoc/issues/151)) ([953f0c0](https://github.com/anandkaranubc/git-into-gsoc/commit/953f0c05d8bf8582ae223864d2f57cf97ebe7dd8))
+* claims typed with curly apostrophes, and a clearer stale status in the skill ([#170](https://github.com/anandkaranubc/git-into-gsoc/issues/170)) ([2e457c6](https://github.com/anandkaranubc/git-into-gsoc/commit/2e457c68dda18f9e575f1164dd75628af690dc59))
+* **draft:** read the whole contributing guide for the claim rule, sign-off, and AI disclosure ([#130](https://github.com/anandkaranubc/git-into-gsoc/issues/130)) ([6effd2a](https://github.com/anandkaranubc/git-into-gsoc/commit/6effd2a10789841fd2c80fb79e32fd17e812b69e))
+* five findings from a simulated C++ beginner run (orient, repo, next, repos, pointers) ([#139](https://github.com/anandkaranubc/git-into-gsoc/issues/139)) ([513f189](https://github.com/anandkaranubc/git-into-gsoc/commit/513f1896258719ffb8ada511a799503d90c288e1))
+* **ideas:** say when the ideas page is last year's, and keep only names in the mentors column ([#129](https://github.com/anandkaranubc/git-into-gsoc/issues/129)) ([074207b](https://github.com/anandkaranubc/git-into-gsoc/commit/074207b098cda10202d7bb2f413470e252a08623))
+* **install:** install the newest release without Git, and offer uv when Python is missing ([#127](https://github.com/anandkaranubc/git-into-gsoc/issues/127)) ([9983eee](https://github.com/anandkaranubc/git-into-gsoc/commit/9983eeeb5f870ba46139c0b009aa666962451dcd))
+* installs that work on fresh machines and tools that work in assistant sandboxes ([#153](https://github.com/anandkaranubc/git-into-gsoc/issues/153)) ([009bd93](https://github.com/anandkaranubc/git-into-gsoc/commit/009bd9322f468fc7887cfda957188dc40ead1937))
+* **install:** Windows one-line installs put the command on PATH, and CI tests that route ([#157](https://github.com/anandkaranubc/git-into-gsoc/issues/157)) ([d081783](https://github.com/anandkaranubc/git-into-gsoc/commit/d0817835ee3cc6b10fa11f43abb116261180ed22))
+* **issues,profile:** search organizations that match the profile's interests first, and save plain skill names ([#141](https://github.com/anandkaranubc/git-into-gsoc/issues/141)) ([8fc2198](https://github.com/anandkaranubc/git-into-gsoc/commit/8fc2198fc90b2cfa0daff066e6cdcbd16c7c6149))
+* **issues:** use the saved profile, mix organizations, and only rank real beginner issues first ([#117](https://github.com/anandkaranubc/git-into-gsoc/issues/117)) ([b92ed21](https://github.com/anandkaranubc/git-into-gsoc/commit/b92ed21d3f8397cee635a0d46224bcb7d41436a4))
+* **links:** one-click buttons run main, since the Actions token cannot move a stable branch ([#144](https://github.com/anandkaranubc/git-into-gsoc/issues/144)) ([510993f](https://github.com/anandkaranubc/git-into-gsoc/commit/510993f8d2dc28a5ce2dc598e65189eadbb5e985))
+* organizations whose code lives outside GitHub, mirrors, and GitLab links in proposals ([#159](https://github.com/anandkaranubc/git-into-gsoc/issues/159)) ([5b8eba3](https://github.com/anandkaranubc/git-into-gsoc/commit/5b8eba3e428383cd355183fcc0cd8ec6a0c66483))
+* **org:** match organization names by whole words, never inside other names ([#113](https://github.com/anandkaranubc/git-into-gsoc/issues/113)) ([c32b812](https://github.com/anandkaranubc/git-into-gsoc/commit/c32b812f99c1af730f02ebb7508fdec2e5eed9ce))
+* **orgs:** with no filters, rank by the saved profile and say so ([#133](https://github.com/anandkaranubc/git-into-gsoc/issues/133)) ([ec8b707](https://github.com/anandkaranubc/git-into-gsoc/commit/ec8b707f60528a017b768cd7d01444a540879df3))
+* **orient:** the example of an outside contributor's PR is not a maintainer's ([#142](https://github.com/anandkaranubc/git-into-gsoc/issues/142)) ([95ecbcd](https://github.com/anandkaranubc/git-into-gsoc/commit/95ecbcdd95d791cf12990785b1537e09b1337232))
+* **orient:** whole policy sentences without markdown, and the workflow that runs the tests ([#125](https://github.com/anandkaranubc/git-into-gsoc/issues/125)) ([0671087](https://github.com/anandkaranubc/git-into-gsoc/commit/0671087ccc5f95fd66469a03dd3f04f4c1b0c4e1))
+* point first-time users to start instead of profile flags ([#167](https://github.com/anandkaranubc/git-into-gsoc/issues/167)) ([aed1f02](https://github.com/anandkaranubc/git-into-gsoc/commit/aed1f028b5adc2d78a2e76abdac7bffbcb5b5d8b))
+* **pointers:** only call past fixes similar when they share words, and search title words when no file is named ([#126](https://github.com/anandkaranubc/git-into-gsoc/issues/126)) ([b5a91a0](https://github.com/anandkaranubc/git-into-gsoc/commit/b5a91a0b67093a2fdaadeb3aa4a7c3f3c6ea4d32))
+* **pr-check:** a docs page about testing is not a test change ([#172](https://github.com/anandkaranubc/git-into-gsoc/issues/172)) ([a235b61](https://github.com/anandkaranubc/git-into-gsoc/commit/a235b61ec48bc88c282043f4cbfb778395d090e6))
+* **pr-check:** one ticked option of an either/or checklist is enough, and quote items whole ([#131](https://github.com/anandkaranubc/git-into-gsoc/issues/131)) ([4066c47](https://github.com/anandkaranubc/git-into-gsoc/commit/4066c470a21c3648d61abbee0e897bb5ad121b3b))
+* **program:** show people habits written for them, and end with a next step ([#122](https://github.com/anandkaranubc/git-into-gsoc/issues/122)) ([b8bce13](https://github.com/anandkaranubc/git-into-gsoc/commit/b8bce13d6cdf146fc0ff6be873e74d35429acd65))
+* **proposal:** catch a PR described as merged that is not, and common cover-letter phrases ([#128](https://github.com/anandkaranubc/git-into-gsoc/issues/128)) ([e69cedc](https://github.com/anandkaranubc/git-into-gsoc/commit/e69cedcdf11444cdb14ef3c4245029714aa3f1f6))
+* **recommend:** save plain skill names from recommend and the MCP tool too ([#148](https://github.com/anandkaranubc/git-into-gsoc/issues/148)) ([abe1626](https://github.com/anandkaranubc/git-into-gsoc/commit/abe162620533799b2e53536f53cdb7b5d71c26ac))
+* **recommend:** starter issues from the recommended orgs, never already taken ([#115](https://github.com/anandkaranubc/git-into-gsoc/issues/115)) ([7044724](https://github.com/anandkaranubc/git-into-gsoc/commit/7044724143043b9c078cceb86205be82a29a444c))
+* refuse program years GSoC never had and three-part repository names ([#121](https://github.com/anandkaranubc/git-into-gsoc/issues/121)) ([2ccd7c5](https://github.com/anandkaranubc/git-into-gsoc/commit/2ccd7c579c2042218ff7ec61254d1d686165528d))
+* **repo:** a repo that turns down most outside PRs no longer grades A ([#116](https://github.com/anandkaranubc/git-into-gsoc/issues/116)) ([4c7b295](https://github.com/anandkaranubc/git-into-gsoc/commit/4c7b295de0ee9e3d919711d1c33042534a52703a))
+* **repos:** name an organization's own code when it lives outside GitHub ([#134](https://github.com/anandkaranubc/git-into-gsoc/issues/134)) ([98a2f63](https://github.com/anandkaranubc/git-into-gsoc/commit/98a2f637767e3879745715d0579a3c54f64d4497))
+* **repos:** rank repositories the ideas page names under other GitHub owners ([#137](https://github.com/anandkaranubc/git-into-gsoc/issues/137)) ([1b88853](https://github.com/anandkaranubc/git-into-gsoc/commit/1b8885336778d101f160b270c1b5b593353c8727))
+* round 3 beginner fixes for discussion-only issues, web searches, hours, and AI wording ([#150](https://github.com/anandkaranubc/git-into-gsoc/issues/150)) ([41ffa94](https://github.com/anandkaranubc/git-into-gsoc/commit/41ffa943b47cad05525971a6544393bf558fa1b8))
+* round 5 beginner fixes for hidden claims, labels, wiki notices, repo rules, and hours ([#154](https://github.com/anandkaranubc/git-into-gsoc/issues/154)) ([afc2886](https://github.com/anandkaranubc/git-into-gsoc/commit/afc2886e561762271f78c7105f5516ef9bbfdfaa))
+* say which repository, issue, or user does not exist instead of "HTTP 404" ([#135](https://github.com/anandkaranubc/git-into-gsoc/issues/135)) ([18ed124](https://github.com/anandkaranubc/git-into-gsoc/commit/18ed1248a4076784dae25ae9b79235afc2ae0787))
+* second-round findings from a re-run persona and real setup runs ([#147](https://github.com/anandkaranubc/git-into-gsoc/issues/147)) ([fdcdb23](https://github.com/anandkaranubc/git-into-gsoc/commit/fdcdb236c27d25a30e8df939ad92c398c5bd9120))
+* **setup:** one shared skill copy, working Codex entries, and Antigravity and Copilot targets ([#132](https://github.com/anandkaranubc/git-into-gsoc/issues/132)) ([d82fcc6](https://github.com/anandkaranubc/git-into-gsoc/commit/d82fcc67347fd038c654311990610383bb9b27a6))
+
+
+### Documentation
+
+* a README that shows the first two minutes, with a real terminal demo ([#156](https://github.com/anandkaranubc/git-into-gsoc/issues/156)) ([1b745c6](https://github.com/anandkaranubc/git-into-gsoc/commit/1b745c6112600af7a26aeaa42b88f76817019366))
+* assistants use JSON when they run the CLI, and Gemini CLI needs a paid plan ([#168](https://github.com/anandkaranubc/git-into-gsoc/issues/168)) ([1a696ba](https://github.com/anandkaranubc/git-into-gsoc/commit/1a696ba094263f22ab4531e014a163c155d4dd03))
+* **assistants:** Copilot CLI starts the plugin's server, checked with a signed-in session ([#149](https://github.com/anandkaranubc/git-into-gsoc/issues/149)) ([c0a675c](https://github.com/anandkaranubc/git-into-gsoc/commit/c0a675ce2d68a464e35e20a76be1ca2ac6ba3103))
+* **distribution:** the Gemini gallery topic is added ([#146](https://github.com/anandkaranubc/git-into-gsoc/issues/146)) ([5155738](https://github.com/anandkaranubc/git-into-gsoc/commit/515573856ed47df0b6157aa057760a63507e5bf7))
+* **guide:** start with a question in your own words, and the get_started prompt ([#171](https://github.com/anandkaranubc/git-into-gsoc/issues/171)) ([013ddf6](https://github.com/anandkaranubc/git-into-gsoc/commit/013ddf6f3ac3751cd52aa6ba69d25bc287954d27))
+* **site:** start in the hero, a four-questions section with the real demo, and AA contrast ([#158](https://github.com/anandkaranubc/git-into-gsoc/issues/158)) ([884a64e](https://github.com/anandkaranubc/git-into-gsoc/commit/884a64ec3da20dbf6c5bcd33eb05a694b25cb551))
+
 ## [0.10.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.9.0...v0.10.0) (2026-10-21)
 
 
