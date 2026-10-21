@@ -12,6 +12,7 @@ from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.github.availability import assess_issue, unverified_assessment
 from git_into_gsoc.github.evidence import summarize_activity
+from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
 from git_into_gsoc.github.repos import (
     channels_in,
     contributing_path,
@@ -275,20 +276,43 @@ class GitHubClient:
             return []
         return data if isinstance(data, list) else []
 
+    def pull_analysis(self, owner: str, repo: str) -> PullAnalysis | None:
+        """GraphQL PR analysis (insiders, first human reply); None without a token."""
+        if not self.token:
+            return None
+        return fetch_pull_analysis(
+            self.http,
+            api_url=self.settings.github_api_url,
+            token=self.token,
+            owner=owner,
+            repo=repo,
+            ttl=self.settings.cache_ttl_seconds,
+        )
+
     def repo_health(self, full_name: str) -> RepoHealth:
-        """~6 core API calls: metadata, community profile, workflows, PRs, labels, issues."""
+        """~6 core API calls: metadata, community profile, workflows, PRs, labels, issues.
+
+        With a token, one GraphQL query replaces the PR listing and adds the
+        insider set and time to first human reply (cost: about 4 points).
+        """
         owner, repo = parse_repo(full_name)
         raw = self.get_repo(owner, repo)
         owner, repo = (raw.get("full_name") or f"{owner}/{repo}").split("/", 1)
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
             profile_f = pool.submit(self.community_profile, owner, repo)
             workflows_f = pool.submit(self.workflow_count, owner, repo)
-            pulls_f = pool.submit(self.list_pulls, owner, repo, state="closed", per_page=60)
+            analysis_f = pool.submit(self.pull_analysis, owner, repo)
             labels_f = pool.submit(self.list_labels, owner, repo)
             profile, workflows = profile_f.result(), workflows_f.result()
-            pulls, labels = pulls_f.result(), labels_f.result()
+            analysis, labels = analysis_f.result(), labels_f.result()
+        if analysis is not None:
+            stats = pull_stats(analysis.pulls, insiders=analysis.insiders)
+            pr_source = "graphql"
+        else:
+            pulls = self.list_pulls(owner, repo, state="closed", per_page=60)
+            stats = pull_stats(pulls)
+            pr_source = "rest"
         files = profile.get("files") or {}
-        stats = pull_stats(pulls)
         label = pick_beginner_label(labels)
         open_beginner = self.count_open_issues_with_label(owner, repo, label) if label else None
         health = RepoHealth(
@@ -317,6 +341,10 @@ class GitHubClient:
             outsider_prs_sampled=stats.outsider_sampled,
             outsider_merge_rate=stats.outsider_merge_rate,
             outside_authors_merged=stats.outside_authors_merged,
+            median_first_response_hours=stats.median_first_response_hours,
+            median_outsider_pr_size=stats.median_outsider_size,
+            insiders_known=stats.insiders_known,
+            pr_source=pr_source,
             beginner_label=label,
             open_beginner_issues=open_beginner,
         )

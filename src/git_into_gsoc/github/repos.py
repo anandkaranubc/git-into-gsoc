@@ -67,10 +67,17 @@ TOOLCHAIN_FILES: dict[str, str] = {
 
 
 def is_bot(user: dict[str, Any] | None) -> bool:
+    """Bots by type, by the [bot] suffix, by a known list, or by a -bot/-ci/-robot name.
+
+    Project bots such as sympy-bot or k8s-ci-robot are ordinary user accounts to
+    the API, so the name heuristic is needed to keep them out of response times.
+    """
     login = str((user or {}).get("login") or "").lower()
     if (user or {}).get("type") == "Bot" or login.endswith("[bot]"):
         return True
-    return login in KNOWN_BOTS or login.removesuffix("-bot") in KNOWN_BOTS
+    if login in KNOWN_BOTS or login.removesuffix("-bot") in KNOWN_BOTS:
+        return True
+    return login.endswith(("-bot", "_bot", "-robot", "-ci", "-automation", "bot-ci"))
 
 
 def _dt(value: str | None) -> datetime | None:
@@ -90,27 +97,56 @@ class PullStats:
     outsider_sampled: int
     outsider_merge_rate: float | None
     outside_authors_merged: int  # distinct people without write access who got a PR merged
+    median_first_response_hours: float | None = None  # outside PRs, first human reply
+    median_outsider_size: int | None = None  # lines changed in merged outside PRs
+    insiders_known: bool = False
 
 
-def pull_stats(pulls: list[dict[str, Any]]) -> PullStats:
+def _hours_between(start: str | None, end: str | None) -> float | None:
+    a, b = _dt(start), _dt(end)
+    return (b - a).total_seconds() / 3600 if a and b else None
+
+
+def pull_stats(pulls: list[dict[str, Any]], *, insiders: frozenset[str] | None = None) -> PullStats:
     """Merge behaviour of closed PRs, ignoring bots, split by author association.
 
     GitHub evaluates ``author_association`` when the list is fetched, so anyone
     whose PR has merged shows as CONTRIBUTOR and FIRST_TIME_CONTRIBUTOR never
     appears on a merged PR. Outsiders are therefore everyone without write
     access (CONTRIBUTOR, NONE, first-timers), and breadth is measured as the
-    number of distinct outside authors merged rather than "first-timers".
+    number of distinct outside authors merged rather than "first-timers". When
+    the repository's assignable users are known (GraphQL path), anyone in that
+    set counts as an insider regardless of association.
     """
     human = [p for p in pulls if not is_bot(p.get("user"))]
     merged = [p for p in human if p.get("merged_at")]
-    hours = []
-    for pull in merged:
-        created, done = _dt(pull.get("created_at")), _dt(pull.get("merged_at"))
-        if created and done:
-            hours.append((done - created).total_seconds() / 3600)
-    outsiders = [p for p in human if p.get("author_association") in OUTSIDER_ROLES]
+    hours = [
+        h
+        for h in (_hours_between(p.get("created_at"), p.get("merged_at")) for p in merged)
+        if h is not None
+    ]
+
+    def outsider(pull: dict[str, Any]) -> bool:
+        login = str((pull.get("user") or {}).get("login") or "")
+        if insiders is not None and login in insiders:
+            return False
+        return pull.get("author_association") in OUTSIDER_ROLES
+
+    outsiders = [p for p in human if outsider(p)]
     outsider_merged = [p for p in outsiders if p.get("merged_at")]
     authors = {str((p.get("user") or {}).get("login")) for p in outsider_merged}
+    responses = [
+        h
+        for h in (
+            _hours_between(p.get("created_at"), p.get("first_response_at")) for p in outsiders
+        )
+        if h is not None
+    ]
+    sizes = [
+        int(p.get("additions") or 0) + int(p.get("deletions") or 0)
+        for p in outsider_merged
+        if "additions" in p
+    ]
     return PullStats(
         sampled=len(human),
         merge_rate=len(merged) / len(human) if human else None,
@@ -118,6 +154,9 @@ def pull_stats(pulls: list[dict[str, Any]]) -> PullStats:
         outsider_sampled=len(outsiders),
         outsider_merge_rate=len(outsider_merged) / len(outsiders) if outsiders else None,
         outside_authors_merged=len(authors),
+        median_first_response_hours=statistics.median(responses) if responses else None,
+        median_outsider_size=int(statistics.median(sizes)) if sizes else None,
+        insiders_known=insiders is not None,
     )
 
 

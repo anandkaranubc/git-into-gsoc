@@ -8,6 +8,10 @@ from git_into_gsoc.github.repos import MIN_OUTSIDER_SAMPLE
 from git_into_gsoc.models import RepoHealth
 
 
+def _days_or_hours(hours: float) -> str:
+    return f"{hours:.0f}h" if hours < 48 else f"{hours / 24:.0f}d"
+
+
 def _grade(score: float) -> str:
     if score >= 85:
         return "A"
@@ -107,7 +111,21 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
             f"{health.outside_authors_merged} different outside author(s) merged recently"
         )
 
-    if health.median_pr_hours is not None:
+    first = health.median_first_response_hours
+    if first is not None:
+        # Time to the first human reply explains most of a PR's lifetime and
+        # predicts whether newcomers keep contributing; prefer it over merge time.
+        if first <= 24:
+            score += 10
+            signals.append(f"Outside PRs get a human reply within ~{first:.0f}h (median)")
+        elif first <= 72:
+            score += 6
+            signals.append(f"Outside PRs get a human reply in ~{first / 24:.0f}d (median)")
+        else:
+            warnings.append(f"Outside PRs wait ~{first / 24:.0f}d for a first human reply (median)")
+        if health.median_pr_hours is not None:
+            signals.append(f"Merged PRs land in ~{_days_or_hours(health.median_pr_hours)} (median)")
+    elif health.median_pr_hours is not None:
         if health.median_pr_hours <= 72:
             score += 10
             signals.append(f"Merged PRs land fast (~{health.median_pr_hours:.0f}h median)")
@@ -119,6 +137,11 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
                 f"Merged PRs take ~{health.median_pr_hours / 24:.0f}d (median); "
                 "unmerged ones are not counted"
             )
+    if health.median_outsider_pr_size is not None:
+        signals.append(
+            f"Merged outside PRs change ~{health.median_outsider_pr_size} lines (median); "
+            "keep yours around that size"
+        )
 
     if health.license:
         score += 4
