@@ -178,3 +178,16 @@ def test_a_search_with_results_has_no_next_steps(monkeypatch: Any) -> None:
     hits = [_issue("ArduPilot/ardupilot", n) for n in (1, 2, 3)]
     toolkit, _ = _toolkit(monkeypatch, [hits])
     assert toolkit.find_issues(max_results=3)["next_steps"] == []
+
+
+def test_an_empty_org_search_points_at_that_orgs_repositories(monkeypatch: Any) -> None:
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
+    monkeypatch.setattr(
+        toolkit, "_gsoc_owners", lambda *a, **k: (["zulip"], [], "Searching Zulip.")
+    )
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: [])
+    steps = toolkit.find_issues(org="Zulip", max_results=5)["next_steps"]
+    assert any('git-into-gsoc repos "Zulip"' in step for step in steps)
+    assert not any("Pick an organization first" in step for step in steps)
+    assert not any("--scope all" in step for step in steps)

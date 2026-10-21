@@ -140,12 +140,19 @@ def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) 
             "Ask in the project's public channel which small task would help most.",
             'Or pick another repository: git-into-gsoc repos "ORG NAME"',
         ]
-    steps = [
-        "Pick an organization first: git-into-gsoc orgs"
-        + (f" --tech {language}" if language else ""),
-        'List its repositories: git-into-gsoc repos "ORG NAME", then '
-        "git-into-gsoc issues --repo owner/name (it uses that repository's own beginner label).",
-    ]
+    where = f'"{org}"' if org else '"ORG NAME"'
+    steps = (
+        []
+        if org
+        else [
+            "Pick an organization first: git-into-gsoc orgs"
+            + (f" --tech {language}" if language else "")
+        ]
+    )
+    steps.append(
+        f"List its repositories: git-into-gsoc repos {where}, then "
+        "git-into-gsoc issues --repo owner/name (it uses that repository's own beginner label)."
+    )
     if not org:
         steps.append("Search every repository, not only GSoC organizations: add --scope all")
     steps.append(
@@ -539,6 +546,7 @@ class GSoCToolkit:
         year: int | None = None,
     ) -> dict[str, Any]:
         from_profile = False
+        asked_org = org  # cleared below when it names a GSoC organization
         if not (language or org or repo):
             saved = list(self.progress.profile().get("technologies") or [])
             language, from_profile = (saved[0], True) if saved else (None, False)
@@ -651,7 +659,7 @@ class GSoCToolkit:
             "count": len(issues),
             "issues": [_issue_dict(i) for i in issues],
             "before_you_comment": BEFORE_YOU_COMMENT,
-            "next_steps": [] if issues else _when_no_issues(language, org=org, repo=repo),
+            "next_steps": [] if issues else _when_no_issues(language, org=asked_org, repo=repo),
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
