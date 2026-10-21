@@ -6,6 +6,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from urllib.parse import urlparse
 
 from git_into_gsoc.coach import plan_actions, time_budget, upcoming_deadlines
 from git_into_gsoc.config import (
@@ -325,11 +326,17 @@ class GSoCToolkit:
                     exclude=owners,
                     any_link=not owners,
                 )
+        # Code hosted elsewhere (ns-3 and Inkscape on GitLab) cannot be ranked here.
+        source = (gsoc_org.source_code or "") if gsoc_org else ""
+        host = urlparse(source).netloc.lower().removeprefix("www.")
+        main_code = source if source and not owners and host != "github.com" else None
         if gsoc_org is not None and not owners and not linked_owners:
             raise NotFoundError(
                 f"{gsoc_org.name} lists no GitHub organization, and its ideas page links to "
                 "no GitHub projects. Its code may live on GitLab or its own servers.",
-                hint=f"Open the ideas page to find its repositories: {ideas_url}"
+                hint=f"Its code is at {main_code}; the ideas page is {ideas_url or 'not listed'}."
+                if main_code
+                else f"Open the ideas page to find its repositories: {ideas_url}"
                 if ideas_url
                 else "Check the organization's page on the official GSoC site.",
             )
@@ -387,6 +394,15 @@ class GSoCToolkit:
             "ideas_page_read": bool(ideas),
             "count": min(limit, len(leads)),
             "repos": [lead.model_dump(mode="json") for lead in leads[:limit]],
+            "main_code": main_code,
+            "note": (
+                f"{gsoc_org.name if gsoc_org else 'This organization'}'s own code is at "
+                f"{main_code}, outside GitHub, so this tool cannot rank it. The repositories "
+                "below are GitHub projects its ideas page links to; start with the main code "
+                "unless an idea names one of them."
+                if main_code
+                else ""
+            ),
             "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
         }
 

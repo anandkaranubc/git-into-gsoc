@@ -92,18 +92,21 @@ def test_umbrella_org_repos_include_member_projects() -> None:
     assert any("umbrella ideas page (Alpha Lab)" in reason for reason in alpha["reasons"])
 
 
-def _without_owners(toolkit: GSoCToolkit) -> None:
+def _without_owners(toolkit: GSoCToolkit, source_code: str | None = None) -> None:
     """Make SymPy look like the PSF: a GSoC organization that lists no GitHub owner."""
     real = toolkit.gsoc.get_organization
 
     def lookup(name: str, year: int | None = None) -> Any:
         org = real(name, year=year)
-        return org.model_copy(update={"github_orgs": []}) if org else None
+        update: dict[str, Any] = {"github_orgs": []}
+        if source_code:
+            update["source_code"] = source_code
+        return org.model_copy(update=update) if org else None
 
     toolkit.gsoc.get_organization = lookup  # type: ignore[method-assign]
 
 
-def _discover_without_owners(page: str) -> dict[str, Any]:
+def _discover_without_owners(page: str, source_code: str | None = None) -> dict[str, Any]:
     with respx.mock(assert_all_called=False) as api:
         _mock_sources(api)
         api.get(SYMPY_RAW).mock(return_value=httpx.Response(200, text=page))
@@ -114,7 +117,7 @@ def _discover_without_owners(page: str) -> dict[str, Any]:
             return_value=httpx.Response(200, json={"total_count": 0, "items": []})
         )
         toolkit = GSoCToolkit()
-        _without_owners(toolkit)
+        _without_owners(toolkit, source_code)
         return toolkit.discover_repos("SymPy", limit=10)
 
 
@@ -185,3 +188,24 @@ def test_repositories_the_ideas_page_names_under_other_owners_are_ranked() -> No
     assert "someone/personal-bench" not in names  # a person's repository, not a project
     mixin = next(r for r in data["repos"] if r["full_name"] == "colcon/colcon-mixin")
     assert any("ideas page" in reason for reason in mixin["reasons"])
+
+
+def test_code_hosted_outside_github_is_named_before_linked_projects() -> None:
+    # ns-3 (2026-10-21): its code is on gitlab.com/nsnam/ns-3-dev, and `repos ns-3`
+    # showed only DEFIANCE-project repositories its ideas page links to.
+    page = "# Ideas\n\n- [DEFIANCE](https://github.com/DEFIANCE-project/ns3-DEFIANCE)\n"
+    data = _discover_without_owners(page, source_code="https://gitlab.com/nsnam/ns-3-dev")
+    assert data["main_code"] == "https://gitlab.com/nsnam/ns-3-dev"
+    assert "outside GitHub" in data["note"]
+    on_github = _discover_without_owners(page, source_code="https://github.com/sympy/sympy")
+    assert on_github["main_code"] is None
+
+
+def test_the_no_github_error_points_at_the_code() -> None:
+    import pytest
+
+    from git_into_gsoc.errors import NotFoundError
+
+    with pytest.raises(NotFoundError) as caught:
+        _discover_without_owners("# Ideas\n\nNo links.\n", source_code="https://gitlab.com/a/b")
+    assert caught.value.hint and "https://gitlab.com/a/b" in caught.value.hint

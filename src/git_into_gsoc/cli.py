@@ -562,6 +562,8 @@ def repos_cmd(
         if data["ideas_page_read"]
         else "Ideas page not readable; ranking uses activity and beginner issues."
     )
+    if data.get("note"):
+        console.print(f"[yellow]{data['note']}[/yellow]")
     table = Table(
         title=f"{data['org']} repositories ({', '.join(data['github_owners'])})", caption=caption
     )
