@@ -11,6 +11,7 @@ an issue with five "can I work on this?" comments; that is surfaced as
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -65,6 +66,8 @@ _CLAIM_PATTERNS = [
     r"\b(?:please |kindly )?assign (?:this |it )?(?:issue )?(?:to )?me\b",
     r"\bi(?:'d| would) (?:really )?(?:like|love) to (?:work on|take|tackle|pick up|fix|contribute to) (?:this|it)\b",
     r"\b(?:i want|wanting) to work on (?:this|it)\b",
+    r"\b(?:happy|glad) to (?:work on|take on|pick up|take|fix) (?:this|it)\b",
+    r"\bi(?:'d| would) (?:really )?(?:like|love) to (?:pick|take) (?:this|it) (?:up|on)\b",
     r"\bclaiming (?:this|it)\b",
     r"\bi(?:'ve| have) (?:started|begun) working\b",
     r"\bis (?:this|it) (?:still )?(?:available|open) (?:to|for) (?:work|take)\b",
@@ -90,7 +93,19 @@ _GRANT_PATTERNS = [
     r"\bfeel free\b",
     r"\ball yours\b",
     r"\bsure,? (?:go|you can|please)\b",
+    r"\b(?:this|that|your plan|the plan|your approach) (?:sounds|looks) (?:good|great|fine)\b",
 ]
+# A comment pointing at a pull request: "covered by #1293", "PR #12", or a PR link.
+_PR_MENTION_RE = re.compile(
+    r"\b(?:PR|pull request)\s*#(\d+)"
+    r"|\b(?:covered|fixed|addressed|resolved|handled|implemented|solved|done|tackled)"
+    r"\s+(?:by|in|with|via)\s+#(\d+)"
+    r"|https?://github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)",
+    re.IGNORECASE,
+)
+MAX_PR_LOOKUPS = 3
+
+PullLookup = Callable[[int], dict[str, Any] | None]
 _CLAIM_RE = re.compile("|".join(_CLAIM_PATTERNS), re.IGNORECASE | re.MULTILINE)
 _GRANT_RE = re.compile("|".join(_GRANT_PATTERNS), re.IGNORECASE)
 _RELEASE_RE = re.compile("|".join(_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
@@ -127,16 +142,42 @@ def is_release(text: str) -> bool:
     return bool(_RELEASE_RE.search(text or ""))
 
 
+def _mentioned_pulls(body: str, repo: str) -> list[int]:
+    """Pull request numbers in this repository that a comment points at."""
+    numbers: list[int] = []
+    for match in _PR_MENTION_RE.finditer(body):
+        short, covered, other_repo, linked_number = match.groups()
+        if other_repo and other_repo.lower() != repo.lower():
+            continue
+        numbers.append(int(short or covered or linked_number))
+    return numbers
+
+
+def _issue_repo(issue: dict[str, Any]) -> str:
+    url = str(issue.get("html_url") or "")
+    parts = url.split("github.com/", 1)[-1].split("/")
+    return "/".join(parts[:2]) if len(parts) >= 2 else ""
+
+
 def assess_issue(
     issue: dict[str, Any],
     timeline: list[dict[str, Any]],
     *,
     now: datetime | None = None,
+    pull_lookup: PullLookup | None = None,
 ) -> IssueAssessment:
+    """Classify one issue from its payload and timeline.
+
+    `pull_lookup(number)` returns a pull request of the same repository, or None.
+    With it, a comment such as "this is covered by #1293" counts when that pull
+    request is open, even though the pull request itself never links the issue.
+    """
     now = now or datetime.now(UTC)
     caveats: list[str] = []
     claims: dict[str, IssueClaim] = {}
     linked: dict[str, LinkedPullRequest] = {}
+    mentioned: list[int] = []
+    repo = _issue_repo(issue)
     maintainer_engaged = False
     last_activity = _dt(issue.get("updated_at"))
 
@@ -160,12 +201,22 @@ def assess_issue(
             login = _login(user)
             if is_release(body) and login:
                 _release(claims, body, caveats, who=login)
+            mentioned += _mentioned_pulls(body, repo)
             if role in MAINTAINER_ROLES:
                 maintainer_engaged = True
                 if is_grant(body):
                     _grant(claims, body)
+                # "@x are you still working on this?" keeps x's claim alive.
+                if at is not None:
+                    for name in set(re.findall(r"@([A-Za-z0-9-]+)", body)) & set(claims):
+                        _touch(claims[name], at, now)
             elif is_claim(body) and not is_release(body) and at is not None and login:
-                claims[login] = IssueClaim(login=login, at=at, days_ago=(now - at).days)
+                if login in claims:
+                    _touch(claims[login], at, now)
+                else:
+                    claims[login] = IssueClaim(login=login, at=at, days_ago=(now - at).days)
+            elif login in claims and not is_release(body) and at is not None:
+                _touch(claims[login], at, now)  # the claimant is still talking about it
         elif kind == "unassigned":
             login = _login(event.get("assignee"))
             if login and login in claims:
@@ -192,6 +243,26 @@ def assess_issue(
             )
         if at and (last_activity is None or at > last_activity):
             last_activity = at
+
+    known = {p.number for p in linked.values()} | {issue.get("number")}
+    for number in [n for n in dict.fromkeys(mentioned) if n not in known][:MAX_PR_LOOKUPS]:
+        pull = pull_lookup(number) if pull_lookup else None
+        if not pull:
+            continue  # not a pull request, or it could not be read
+        merged = bool(pull.get("merged_at"))
+        state = "merged" if merged else str(pull.get("state") or "unknown")
+        if state == "closed":
+            continue
+        touched = _dt(pull.get("updated_at"))
+        linked[f"comment-{number}"] = LinkedPullRequest(
+            number=number,
+            url=pull.get("html_url"),
+            state=state,
+            author=_login(pull.get("user")),
+            draft=bool(pull.get("draft")),
+            idle_days=(now - touched).days if touched else None,
+            via_comment=True,
+        )
 
     assignees = [a for a in (_login(x) for x in issue.get("assignees") or []) if a]
     if not assignees and issue.get("assignee"):
@@ -233,7 +304,11 @@ def assess_issue(
         ref = f"#{pr.number}" if pr.number else ""
         who = f" by @{pr.author}" if pr.author else ""
         draft = " (draft)" if pr.draft else ""
-        reason = f"Open PR {ref}{who}{draft} references it".replace("  ", " ")
+        reason = (
+            f"A comment says open PR {ref}{who}{draft} covers it"
+            if pr.via_comment
+            else f"Open PR {ref}{who}{draft} references it"
+        ).replace("  ", " ")
         if pr.idle_days is not None and pr.idle_days >= STALE_PR_DAYS:
             # Still someone else's work, but a quiet one: say how to ask, as
             # is-it-claimed does, instead of implying the issue is out of reach.
@@ -266,7 +341,10 @@ def assess_issue(
     granted = [c for c in claim_list if c.granted and c.days_ago <= CONTESTED_WINDOW_DAYS]
     if granted:
         c = granted[0]
-        return result(Availability.CLAIMED, f"Maintainer approved @{c.login} {c.days_ago}d ago")
+        return result(
+            Availability.CLAIMED,
+            f"A maintainer approved @{c.login}; the claim was last active {c.days_ago}d ago",
+        )
     window = [c for c in claim_list if c.days_ago <= CONTESTED_WINDOW_DAYS]
     if len(window) >= CONTESTED_MIN_CLAIMANTS:
         return result(
@@ -276,7 +354,10 @@ def assess_issue(
     recent = [c for c in claim_list if c.days_ago <= RECENT_CLAIM_DAYS]
     if recent:
         c = recent[0]
-        return result(Availability.CLAIMED, f"@{c.login} asked to work on it {c.days_ago}d ago")
+        return result(
+            Availability.CLAIMED,
+            f"@{c.login} asked to work on it; the claim was last active {c.days_ago}d ago",
+        )
     if claim_list:
         c = claim_list[0]
         caveats.append(
@@ -310,6 +391,13 @@ def _release(
     for login in targets:
         del claims[login]
         caveats.append(f"@{login} released this issue later; it is open again")
+
+
+def _touch(claim: IssueClaim, at: datetime, now: datetime) -> None:
+    """Move a claim's last sign of life forward."""
+    if at > claim.at:
+        claim.at = at
+        claim.days_ago = (now - at).days
 
 
 def _grant(claims: dict[str, IssueClaim], body: str) -> None:

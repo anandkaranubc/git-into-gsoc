@@ -50,6 +50,8 @@ class LinkedPullRequest(BaseModel):
     author: str | None = None
     draft: bool = False
     idle_days: int | None = None
+    # True when only a comment on the issue points at the PR, not GitHub's links.
+    via_comment: bool = False
 
 
 class IssueAssessment(BaseModel):

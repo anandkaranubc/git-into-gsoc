@@ -433,3 +433,58 @@ def test_an_issue_held_for_discussion_is_not_open_for_claims() -> None:
     told = assess_issue(_issue(), [bot], now=NOW)
     assert told.availability == Availability.NOT_OPEN
     assert "not currently available for assignment" in told.reason
+
+
+def test_an_approved_plan_and_a_maintainer_follow_up_keep_a_claim() -> None:
+    # processing/p5.sound.js#57 (2026-10-21) showed "available" at the top of a list:
+    # a member said "this sounds good" to a claimant 31 days ago, the claimant said
+    # "I'd be happy to work on this", and the member checked in on them 4 days ago.
+    timeline = [
+        _comment("abhishek", "If this is still up for grabs I'd like to pick it up.", 59),
+        _comment(
+            "member", "hi @abhishek, this sounds good, can you still work on it?", 31, "MEMBER"
+        ),
+        _comment("abhishek", "Yes, absolutely! I'd be happy to work on this.", 31),
+        _comment("member", "heya @abhishek are you still working on this?", 4, "MEMBER"),
+    ]
+    found = assess_issue(_issue(), timeline, now=NOW)
+    assert found.availability == Availability.CLAIMED
+    assert "approved @abhishek" in found.reason and "last active 4d ago" in found.reason
+    assert is_claim("I'd be happy to work on this.")
+    assert is_grant("Your plan looks good.")
+
+
+def test_a_comment_pointing_at_an_open_pr_marks_the_issue_taken() -> None:
+    # CircuitVerse/cv-frontend-vue#1411: two comments say open PR #1293 covers it,
+    # but the PR never links the issue, so the timeline has no cross-reference.
+    issue = _issue(number=1411, html_url="https://github.com/acme/app/issues/1411")
+    timeline = [
+        _comment("someone", "I think this is already covered by #1293.", 8, "CONTRIBUTOR"),
+        _comment("other", "Could you confirm PR #1293 addresses this? See #12 too.", 2),
+    ]
+    looked_up: list[int] = []
+
+    def pull(number: int) -> dict[str, Any] | None:
+        looked_up.append(number)
+        if number != 1293:
+            return None
+        return {"number": 1293, "state": "open", "user": {"login": "author"}, "updated_at": _iso(8)}
+
+    found = assess_issue(issue, timeline, now=NOW, pull_lookup=pull)
+    assert found.availability == Availability.LIKELY_TAKEN
+    assert found.reason == "A comment says open PR #1293 by @author covers it"
+    assert looked_up == [1293]  # "#12 too" is not a PR mention; each number is read once
+    # Without a way to look pull requests up, nothing changes.
+    assert assess_issue(issue, timeline, now=NOW).availability == Availability.AVAILABLE
+
+
+def test_a_closed_or_other_repo_pr_in_a_comment_does_not_count() -> None:
+    issue = _issue(number=5, html_url="https://github.com/acme/app/issues/5")
+    timeline = [
+        _comment("a", "Fixed in #7 maybe?", 3),
+        _comment("b", "Like https://github.com/other/lib/pull/9 did.", 2),
+    ]
+    found = assess_issue(
+        issue, timeline, now=NOW, pull_lookup=lambda n: {"number": n, "state": "closed"}
+    )
+    assert found.availability == Availability.AVAILABLE

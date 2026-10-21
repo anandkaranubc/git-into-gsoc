@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -606,7 +607,12 @@ class GitHubClient:
                 if timeline is None:
                     assessment = unverified_assessment()
                 else:
-                    assessment = assess_issue(issues_by_key.get(key, {}), timeline)
+                    owner_name, repo_name = key[0].split("/", 1)
+                    assessment = assess_issue(
+                        issues_by_key.get(key, {}),
+                        timeline,
+                        pull_lookup=self._pull_lookup(owner_name, repo_name),
+                    )
                 candidate.assessment = assessment
                 candidate.availability = assessment.availability
                 candidate.availability_reason = assessment.reason
@@ -626,7 +632,11 @@ class GitHubClient:
         timeline = self.get_issue_timeline(owner, repo, number)
         if timeline is None:
             return issue, unverified_assessment()
-        return issue, assess_issue(issue, timeline)
+        return issue, assess_issue(issue, timeline, pull_lookup=self._pull_lookup(owner, repo))
+
+    def _pull_lookup(self, owner: str, repo: str) -> Callable[[int], dict[str, Any] | None]:
+        """Fetch a pull request of this repository by number; None for an issue or an error."""
+        return lambda number: self.get_pull(owner, repo, number)
 
     def contribution_guide(self, full_name: str) -> ContributionGuide:
         owner, repo = parse_repo(full_name)

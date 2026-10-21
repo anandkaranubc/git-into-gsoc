@@ -1131,7 +1131,7 @@ def issue_cmd(
         lines.append(f"PR #{pr['number']} ({pr['state']}) by @{pr['author']}")
     for claim in assessment["claims"][:5]:
         granted = ", approved by a maintainer" if claim["granted"] else ""
-        lines.append(f"Claim: @{claim['login']} {claim['days_ago']}d ago{granted}")
+        lines.append(f"Claim: @{claim['login']}, last active {claim['days_ago']}d ago{granted}")
     for caveat in assessment["caveats"]:
         lines.append(f"[yellow]![/yellow] {caveat}")
     console.print(

@@ -80,9 +80,9 @@ Each result has a status:
 | Status | Meaning | What to do |
 |---|---|---|
 | `available` | Open, unassigned, no open PR, no recent claim | Read the thread, reproduce the problem, then comment with a plan |
-| `claimed` | Someone asked to work on it in the last 30 days, or a maintainer approved them | Pick another issue; do not compete |
+| `claimed` | Someone asked to work on it in the last 30 days, or a maintainer approved them, or a maintainer recently checked in with them | Pick another issue; do not compete |
 | `contested` | Three or more people asked in the last 60 days | Avoid; this is the GSoC-season trap |
-| `likely_taken` | An open PR references the issue | Choose another unless the PR is abandoned |
+| `likely_taken` | An open PR references the issue, or a comment points at an open PR that covers it | Choose another unless the PR is abandoned |
 | `not_open` | A label such as "Idea for Discussion" or "on hold", or the project itself, says it is not taking claims yet | Choose another; do not comment asking for it |
 | `assigned` | GitHub shows an assignee | Choose another unless maintainers invite collaboration |
 | `stale` | No activity for a year and no maintainer engagement | Ask whether it is still relevant before investing time |
