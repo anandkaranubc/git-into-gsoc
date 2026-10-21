@@ -90,7 +90,32 @@ def build_history(archive: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 
 
 def build_official(raw_orgs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [{k: org.get(k) for k in _OFFICIAL_FIELDS if org.get(k) is not None} for org in raw_orgs]
+    # The official API lists organizations in a different order on every call; sorting
+    # keeps an unchanged list byte-identical.
+    kept = [{k: org.get(k) for k in _OFFICIAL_FIELDS if org.get(k) is not None} for org in raw_orgs]
+    return sorted(kept, key=lambda org: (str(org.get("slug") or ""), str(org.get("name") or "")))
+
+
+def _write_json(path: Path, payload: dict[str, Any], *, sort_keys: bool) -> None:
+    """Write the snapshot, but keep the old "generated" date when nothing else changed.
+
+    The weekly refresh workflow opens a pull request on any difference, so an
+    unchanged refresh must leave the file byte-identical.
+    """
+    try:
+        previous = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        previous = None
+    if isinstance(previous, dict) and "generated" in previous:
+        unchanged = {k: v for k, v in previous.items() if k != "generated"} == {
+            k: v for k, v in payload.items() if k != "generated"
+        }
+        if unchanged:
+            payload = {**payload, "generated": previous["generated"]}
+    path.write_text(
+        json.dumps(payload, separators=(",", ":"), ensure_ascii=False, sort_keys=sort_keys) + "\n",
+        encoding="utf-8",
+    )
 
 
 def write_snapshot(
@@ -99,24 +124,15 @@ def write_snapshot(
     stamp = datetime.now(UTC).date().isoformat()
     history_path = out / HISTORY_FILE
     official_path = out / OFFICIAL_FILE
-    history_path.write_text(
-        json.dumps(
-            {"generated": stamp, "organizations": build_history(archive)},
-            separators=(",", ":"),
-            ensure_ascii=False,
-            sort_keys=True,
-        )
-        + "\n",
-        encoding="utf-8",
+    _write_json(
+        history_path,
+        {"generated": stamp, "organizations": build_history(archive)},
+        sort_keys=True,
     )
-    official_path.write_text(
-        json.dumps(
-            {"generated": stamp, "year": year, "organizations": build_official(official)},
-            separators=(",", ":"),
-            ensure_ascii=False,
-        )
-        + "\n",
-        encoding="utf-8",
+    _write_json(
+        official_path,
+        {"generated": stamp, "year": year, "organizations": build_official(official)},
+        sort_keys=False,
     )
     return history_path, official_path
 

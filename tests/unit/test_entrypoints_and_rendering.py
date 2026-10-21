@@ -39,6 +39,34 @@ def test_snapshot_writer_round_trips(tmp_path: Path) -> None:
     assert "logo_url" not in compact["organizations"][0]
 
 
+def test_an_unchanged_refresh_leaves_the_snapshot_byte_identical(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The weekly workflow opens a pull request on any diff, so order and date must not churn."""
+    from datetime import UTC, datetime
+
+    archive = load_fixture("archive_organizations.json")
+    official = load_fixture("official_orgs_2026.json")
+    paths = snapshot.write_snapshot(archive=archive, official=official, year=2026, out=tmp_path)
+    first = [p.read_bytes() for p in paths]
+
+    class NextWeek(datetime):
+        @classmethod
+        def now(cls, tz=None):  # type: ignore[no-untyped-def, override]
+            return datetime(2030, 1, 7, tzinfo=UTC)
+
+    monkeypatch.setattr(snapshot, "datetime", NextWeek)
+    snapshot.write_snapshot(
+        archive=archive, official=list(reversed(official)), year=2026, out=tmp_path
+    )
+    assert [p.read_bytes() for p in paths] == first
+    snapshot.write_snapshot(archive=archive, official=official[1:], year=2026, out=tmp_path)
+    changed = json.loads(paths[1].read_text(encoding="utf-8"))
+    assert (
+        changed["generated"] == "2030-01-07" and len(changed["organizations"]) == len(official) - 1
+    )
+
+
 @respx.mock
 def test_snapshot_refresh_command_writes_files(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
