@@ -98,3 +98,12 @@ def test_pr_draft_lists_the_exact_setup_commands() -> None:
     assert "pytest sympy/core" in text
     assert "git push -u origin fix-5-<short-name>" in text
     assert "Before you start" not in render_draft("pr", context={})["template"]
+
+
+def test_pr_draft_lists_branch_rule_gates() -> None:
+    text = render_draft(
+        "pr", context={"gates": ["Needs 2 approving reviews including a code owner"]}
+    )["template"]
+    assert "This repository's branch rules also require:" in text
+    assert "  - Needs 2 approving reviews including a code owner" in text
+    assert "branch rules" not in render_draft("pr", context={})["template"]

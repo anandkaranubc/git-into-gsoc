@@ -581,6 +581,8 @@ def orient_cmd(
         )
     if rules["ai_disclosure_in_pr_template"]:
         rule_lines.append("PR template asks for an AI disclosure")
+    for gate in rules.get("gates") or []:
+        rule_lines.append(f"{gate['gate']}  ({gate['source']})")
     section("Before you open a PR", [escape(line) for line in rule_lines])
     section(
         "Policies, in the project's words",

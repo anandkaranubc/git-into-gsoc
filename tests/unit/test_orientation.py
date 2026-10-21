@@ -5,14 +5,17 @@ from typing import Any
 
 from git_into_gsoc.github.orientation import (
     active_committers,
+    branch_gates,
     ci_test_commands,
     code_map,
     conventions,
     entry_points,
     find_paths,
     policy_quotes,
+    rank_gate_workflows,
     rank_workflows,
     reading_plan,
+    workflow_gates,
 )
 
 NOW = datetime(2026, 10, 21, tzinfo=UTC)
@@ -250,3 +253,59 @@ def test_codetour_from_orientation_pins_commit_and_orders_steps() -> None:
     assert any(">> pytest -q" in s["description"] for s in tour["steps"])
     assert any("pull/7" in s["description"] for s in tour["steps"] if "file" not in s)
     assert kinds[0] == (False, False)  # the intro step is description only
+
+
+def test_branch_gates_translate_rules_a_contributor_must_meet() -> None:
+    rules = [
+        {"type": "deletion"},
+        {"type": "creation"},
+        {"type": "required_signatures"},
+        {"type": "required_linear_history"},
+        {"type": "pull_request", "parameters": {"required_approving_review_count": 1}},
+        {"type": "merge_queue", "parameters": {"merge_method": "SQUASH"}},
+        {
+            "type": "commit_message_pattern",
+            "parameters": {"operator": "starts_with", "pattern": "[A-Z]+-", "name": "Ticket id"},
+        },
+        {"type": "required_status_checks", "parameters": {"required_status_checks": []}},
+    ]
+    gates = [g["gate"] for g in branch_gates(rules, branch="main")]
+    assert gates == [
+        "Commits must be signed (GPG or SSH); set up commit signing before you push",
+        "Linear history: rebase on main instead of merging it into your branch",
+        "Needs 1 approving review",
+        "Merged through a merge queue (squash)",
+        "Commit messages must starts with `[A-Z]+-` (Ticket id)",
+    ]
+    assert branch_gates([], branch="main") == []
+    zero = [{"type": "pull_request", "parameters": {"required_approving_review_count": 0}}]
+    assert branch_gates(zero, branch="main") == []
+
+
+def test_workflow_gates_and_gate_workflow_ranking() -> None:
+    paths = [
+        ".github/workflows/ci.yml",
+        ".github/workflows/lint-pr-title.yml",
+        ".github/workflows/check-linked-issues.yml",
+        ".github/workflows/release.yml",
+    ]
+    assert rank_gate_workflows(paths, skip=[".github/workflows/ci.yml"]) == [
+        ".github/workflows/check-linked-issues.yml",
+        ".github/workflows/lint-pr-title.yml",
+    ]
+    gates = workflow_gates(
+        {
+            ".github/workflows/lint-pr-title.yml": "steps:\n  - uses: amannn/action-semantic-pull-request@v5\n",
+            ".github/workflows/check-linked-issues.yml": "uses: nearform-actions/github-action-check-linked-issues@v1\n",
+            ".github/workflows/ci.yml": "run: pytest\n",
+        }
+    )
+    assert {
+        "gate": "The pull request title is checked against a format",
+        "source": ".github/workflows/lint-pr-title.yml",
+    } in gates
+    assert {
+        "gate": "Pull requests must reference an issue",
+        "source": ".github/workflows/check-linked-issues.yml",
+    } in gates
+    assert len(gates) == 2

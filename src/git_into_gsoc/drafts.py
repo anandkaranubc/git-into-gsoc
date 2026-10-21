@@ -261,6 +261,11 @@ def _pr(ctx: dict[str, Any]) -> str:
         lines.append("AI disclosure: <tools used and for what, as the project's template asks>")
     if ctx.get("dco"):
         lines.append("(Commits signed off with git commit -s, as this project requires.)")
+    gates = ctx.get("gates") or []
+    if gates:
+        lines.append("")
+        lines.append("This repository's branch rules also require:")
+        lines.extend(f"  - {gate}" for gate in gates)
     lines.extend(_setup_commands(ctx))
     return "\n".join(lines)
 

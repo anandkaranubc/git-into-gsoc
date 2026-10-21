@@ -54,6 +54,7 @@ def _mock_repo(router: respx.MockRouter) -> None:
                     _tree_entry(".github/CODEOWNERS"),
                     _tree_entry(".github/workflows", "tree"),
                     _tree_entry(".github/workflows/ci.yml"),
+                    _tree_entry(".github/workflows/check-contribution.yaml"),
                     _tree_entry("src", "tree"),
                     _tree_entry("src/lib", "tree"),
                     _tree_entry("src/lib/__main__.py"),
@@ -62,6 +63,30 @@ def _mock_repo(router: respx.MockRouter) -> None:
                     _tree_entry("tests/test_core.py"),
                 ],
             },
+        )
+    )
+    router.get(f"{API}/rules/branches/main").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"type": "deletion"},
+                {"type": "non_fast_forward"},
+                {
+                    "type": "pull_request",
+                    "parameters": {
+                        "required_approving_review_count": 2,
+                        "require_code_owner_review": True,
+                        "dismiss_stale_reviews_on_push": True,
+                    },
+                },
+                {
+                    "type": "required_status_checks",
+                    "parameters": {
+                        "strict_required_status_checks_policy": True,
+                        "required_status_checks": [{"context": "ci / test"}],
+                    },
+                },
+            ],
         )
     )
     router.get(f"{API}/languages").mock(
@@ -119,6 +144,11 @@ def _mock_repo(router: respx.MockRouter) -> None:
         "pyproject.toml": '[project]\nname = "lib"\n[project.scripts]\nlib = "lib.cli:app"\n',
         ".github/CODEOWNERS": "src/lib/ @maintainer @other\n",
         ".github/workflows/ci.yml": "jobs:\n  t:\n    steps:\n      - run: pip install -e .\n      - run: pytest -q\n",
+        ".github/workflows/check-contribution.yaml": (
+            "on: pull_request_target\njobs:\n  check:\n    steps:\n      - uses: org/check@v1\n"
+            "        with:\n          check_for: issue_assignee, issue_reference\n"
+            "          close_on: issue_assignee, issue_reference\n"
+        ),
     }
     for path, text in raw.items():
         router.get(f"{API}/contents/{path}").mock(return_value=httpx.Response(200, text=text))
@@ -138,6 +168,20 @@ def test_orient_repo_builds_facts_and_paths() -> None:
     rules = data["conventions"]
     assert rules["dco"]["required"] and rules["cla"]["required"]
     assert rules["conventional_commits"]["expected"]
+    gates = [g["gate"] for g in rules["gates"]]
+    assert (
+        "Needs 2 approving reviews including a code owner; pushing new commits dismisses earlier approvals"
+        in gates
+    )
+    assert "Required checks must pass: ci / test" in gates
+    assert "Your branch must be up to date with main before it can merge" in gates
+    assert any(
+        g["gate"].startswith("Pull requests must reference an issue that is assigned to the author")
+        and g["source"] == ".github/workflows/check-contribution.yaml"
+        for g in rules["gates"]
+    )
+    assert not any("delet" in g or "force" in g for g in gates)
+    assert data["test_commands"][0]["source"] == ".github/workflows/ci.yml"
     assert any(q["kind"] == "assignment" for q in data["policies"])
     assert data["channels"] == ["Zulip"]
     assert data["example_pr"]["number"] == 7 and data["example_pr"]["touches_tests"]
