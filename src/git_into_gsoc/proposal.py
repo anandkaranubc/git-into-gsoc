@@ -342,7 +342,8 @@ def check_proposal(
                 "ai_statement",
                 "warn",
                 "No statement about AI use",
-                "Check the org's AI policy; many ask you to disclose how (or whether) you used AI.",
+                "Check the org's AI policy before you submit. Some allow no AI use at all, even "
+                "in proposals; if yours allows it and its template asks, say how you used it.",
             )
         )
 

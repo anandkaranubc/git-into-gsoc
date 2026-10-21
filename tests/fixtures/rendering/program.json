@@ -269,7 +269,7 @@
   "anti_spam_rules": [
     "Never fabricate organizations, issues, mentors, or deadlines.",
     "Read a project's contributing guide before opening a pull request, and never message many maintainers at once.",
-    "Do not submit an AI-written proposal unless the organization allows it. Many reject them.",
+    "Check the organization's AI policy before using AI. Some allow no AI tooling at all, even for writing a proposal, and the contributor stays fully responsible for the work.",
     "Understand, and be able to explain, every line you submit.",
     "Prefer a real fix, test, or documentation improvement over trivial typo changes.",
     "Talk with the organization in its public channels before you propose a project.",
@@ -279,7 +279,7 @@
   "contributor_habits": [
     "Read the project's contributing guide before you open a pull request.",
     "Talk with the organization in its public channel before you propose a project. Never message many maintainers at once.",
-    "Check the organization's AI policy. Many reject AI-written proposals and pull requests.",
+    "Check the organization's AI policy before you apply. Some allow no AI tools at all, even for writing a proposal, and some accept no AI-generated code. You are fully responsible for everything you submit.",
     "Only submit work you understand and can explain line by line.",
     "A real fix, test, or documentation improvement counts. A typo change does not."
   ],

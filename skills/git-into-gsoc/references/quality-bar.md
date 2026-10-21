@@ -58,7 +58,10 @@ reply.
 
 ## AI use
 
-Unless the organization allows more: the person designs the approach, the
-assistant helps research and draft, the person checks every line, and nothing
-is submitted that they cannot explain. Disclose AI assistance whenever the
-organization asks.
+Check the organization's policy first. Some allow no AI tooling at all, even
+for writing a proposal, and some accept no AI-generated code
+(https://developers.google.com/open-source/gsoc/resources/ai_guidance). Where
+AI is allowed: the person designs the approach, the assistant helps research,
+the person checks every line, and nothing is submitted that they cannot
+explain. The person stays fully responsible for the work. Disclose AI
+assistance whenever the organization asks.

@@ -50,7 +50,7 @@ Starting before the program is announced gives you time to learn a project and g
 
 ## AI assistance
 
-Before using AI for a contribution or proposal, read [Google's AI guidance](https://developers.google.com/open-source/gsoc/resources/ai_guidance) and the organization's own policy. Ask if the policy is unclear. You are responsible for understanding and checking anything you submit. Many organizations reject proposals that read as AI-generated, and the tool's guidance asks you to write everything in your own words.
+Before using AI for a contribution or proposal, read [Google's AI guidance](https://developers.google.com/open-source/gsoc/resources/ai_guidance) and the organization's own policy. Ask if the policy is unclear. You are responsible for understanding and checking anything you submit. Some organizations allow no AI tools at all, even for writing a proposal, and the [GSoC FAQ](https://developers.google.com/open-source/gsoc/faq) warns that using AI to write your proposal could mean automatic rejection. Write your proposal in your own words.
 
 When you are unsure what to do at any point, run `git-into-gsoc next`. It combines the program phase, your profile, and your saved progress into the next few actions, each with the command to run.
 
