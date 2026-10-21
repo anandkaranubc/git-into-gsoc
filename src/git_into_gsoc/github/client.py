@@ -208,10 +208,11 @@ class GitHubClient:
         *,
         state: str = "closed",
         per_page: int = 30,
+        sort: str = "updated",
     ) -> list[dict[str, Any]]:
         data = self._api(
             f"repos/{owner}/{repo}/pulls",
-            params={"state": state, "per_page": per_page, "sort": "updated", "direction": "desc"},
+            params={"state": state, "per_page": per_page, "sort": sort, "direction": "desc"},
         )
         return data if isinstance(data, list) else []
 
@@ -309,7 +310,9 @@ class GitHubClient:
             stats = pull_stats(analysis.pulls, insiders=analysis.insiders)
             pr_source = "graphql"
         else:
-            pulls = self.list_pulls(owner, repo, state="closed", per_page=60)
+            # Most recently created, like the GraphQL path; sorting by update time
+            # pulls in old PRs that were merely closed or relabelled recently.
+            pulls = self.list_pulls(owner, repo, state="closed", per_page=60, sort="created")
             stats = pull_stats(pulls)
             pr_source = "rest"
         files = profile.get("files") or {}
