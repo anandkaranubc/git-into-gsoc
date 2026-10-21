@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
+import sys
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -27,8 +29,26 @@ console = Console()
 err_console = Console(stderr=True)
 
 
+def _tolerate_unencodable_output() -> None:
+    """Print "?" for characters the output encoding cannot represent, never crash.
+
+    On Windows, output that is piped (an assistant running a command, or `> file`)
+    uses a legacy code page such as cp1252, which has no ☐, ✓, or emoji, and issue
+    titles are full of emoji. JSON output is plain ASCII and unaffected.
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            with contextlib.suppress(ValueError, OSError):
+                reconfigure(errors="replace")
+
+
 class _FriendlyErrors(TyperGroup):
     """Render expected failures as one-line errors with a hint, not tracebacks."""
+
+    def main(self, *args: Any, **kwargs: Any) -> Any:
+        _tolerate_unencodable_output()
+        return super().main(*args, **kwargs)
 
     def invoke(self, ctx: Any) -> Any:
         try:
@@ -1486,8 +1506,6 @@ def setup_cmd(
 @app.command("doctor", rich_help_panel="Maintenance")
 def doctor_cmd() -> None:
     """Check your setup: version, GitHub token, data locations, API access, skill, and MCP."""
-    import sys
-
     from git_into_gsoc.config import cache_dir, data_dir, get_settings
     from git_into_gsoc.install.clients import env_home, installed_skills, registered_servers
     from git_into_gsoc.install.skill import InstallError, skill_source
