@@ -6,9 +6,17 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, progress_path
+from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase, ProgressState
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
+
+
+def _require(value: str, what: str) -> str:
+    cleaned = (value or "").strip()
+    if not cleaned:
+        raise InputError(f"Nothing to save: {what} is empty.", hint=f"Pass the {what} as --value.")
+    return cleaned
 
 
 class ProgressStore:
@@ -36,9 +44,12 @@ class ProgressStore:
 
     def complete_phase(self, phase: str | JourneyPhase) -> ProgressState:
         state = self.load()
-        key = phase.value if isinstance(phase, JourneyPhase) else phase
+        key = phase.value if isinstance(phase, JourneyPhase) else (phase or "").strip().lower()
         if key not in DEFAULT_PHASES:
-            raise ValueError(f"Unknown phase: {key}. Expected one of {list(DEFAULT_PHASES)}")
+            raise InputError(
+                f"Unknown phase: {phase!r}",
+                hint="Choose one of: " + ", ".join(DEFAULT_PHASES),
+            )
         state.phases[key] = True
         return self.save(state)
 
@@ -48,18 +59,21 @@ class ProgressStore:
         return self.save(state)
 
     def shortlist_org(self, name: str) -> ProgressState:
+        name = _require(name, "organization name")
         state = self.load()
         if name not in state.shortlisted_orgs:
             state.shortlisted_orgs.append(name)
         return self.save(state)
 
     def track_repo(self, full_name: str) -> ProgressState:
+        full_name = _require(full_name, "repository")
         state = self.load()
         if full_name not in state.tracked_repos:
             state.tracked_repos.append(full_name)
         return self.save(state)
 
     def track_issue(self, issue_ref: str) -> ProgressState:
+        issue_ref = _require(issue_ref, "issue reference")
         state = self.load()
         if issue_ref not in state.tracked_issues:
             state.tracked_issues.append(issue_ref)
@@ -71,6 +85,7 @@ class ProgressStore:
         return self.save(state)
 
     def add_note(self, note: str) -> ProgressState:
+        note = _require(note, "note")
         state = self.load()
         state.notes.append(note)
         return self.save(state)
