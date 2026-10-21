@@ -16,7 +16,7 @@
 
 **Find your first open-source contribution and prepare for [Google Summer of Code](https://summerofcode.withgoogle.com) (GSoC), using real data instead of guesses.**
 
-Every year, many first-timers end up in a project that stopped answering, ask for an issue three people already claimed, or send a proposal that reads like a hundred others. git-into-gsoc reads the official GSoC site, the organization archive, and GitHub, and tells you what a mentor would tell you if they had the time:
+Every year, many first-timers end up in a project that stopped answering, ask for an issue three people already claimed, or send a proposal that reads like a hundred others. git-into-gsoc reads the official GSoC site, the organization archive, and GitHub, and shows you:
 
 - which **organizations** fit what you know and what you care about
 - which of their **repositories** actually merge newcomers' pull requests (proposed changes)
