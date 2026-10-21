@@ -63,7 +63,7 @@ git --version
 python3 --version
 ```
 
-If either is missing or Python is older than 3.11, install it first, reopen the terminal, and check again. Then run these once in the folder where you keep projects:
+On Windows, check Python with `py -3 --version` instead. There, `python3` can open the Microsoft Store rather than run Python. If either tool is missing or Python is older than 3.11, install it first, reopen the terminal, and check again. Then run these once in the folder where you keep projects:
 
 ```bash
 git clone https://github.com/anandkaranubc/git-into-gsoc.git
@@ -96,7 +96,9 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 .\.venv\Scripts\git-into-gsoc.exe program
 ```
 
-`install.ps1` accepts `-NoUserSkills`, `-UserSkills`, `-Assistant name`, `-SkillOnly`, `-McpOnly`, `-DryRun`, and `-InstallUv`, matching the Bash options below. Use the full `.exe` path in place of `git-into-gsoc`, or run `.\.venv\Scripts\Activate.ps1` first. The installer is checked on Windows in CI; report problems with your Python and Windows versions.
+`install.ps1` accepts `-NoUserSkills`, `-UserSkills`, `-Assistant name`, `-SkillOnly`, `-McpOnly`, `-DryRun`, and `-InstallUv`, matching the Bash options below. Use the full `.exe` path in place of `git-into-gsoc`, or turn on the environment with `.\.venv\Scripts\Activate.ps1`. The same script policy blocks that file too. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once to allow scripts you created or downloaded on purpose. The installer is checked on Windows in CI; report problems with your Python and Windows versions.
+
+Some organizations build software that only runs on Linux, such as GNOME, KDE, and the Linux kernel. git-into-gsoc itself works on Windows, but to build and test those projects you will need Linux. [WSL](https://learn.microsoft.com/windows/wsl/install) (Windows Subsystem for Linux) gives you one inside Windows: run `wsl --install` in PowerShell, restart, and use the one-line Linux installer in the Ubuntu terminal it adds. The organization's contributor guide says which systems it supports.
 
 ## Manual install on macOS or Linux
 

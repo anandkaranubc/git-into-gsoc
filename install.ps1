@@ -68,14 +68,10 @@ function Get-LatestReleaseVersion {
   # The API allows 60 requests an hour per address, which a classroom can use up. The
   # release page redirects to the newest tag without counting against that limit.
   try {
-    $request = [System.Net.WebRequest]::Create("https://github.com/$OwnRepo/releases/latest")
-    $request.Method = "HEAD"
-    $request.AllowAutoRedirect = $false
-    $request.Timeout = 10000
-    $response = $request.GetResponse()
-    $location = $response.Headers["Location"]
-    $response.Close()
-    if ($location -match "/releases/tag/v?([0-9][0-9A-Za-z.+-]*)$") { return $Matches[1] }
+    $page = Invoke-WebRequest -Uri "https://github.com/$OwnRepo/releases/latest" -Method Head -UseBasicParsing -TimeoutSec 10
+    # Where the redirect ended: ResponseUri in Windows PowerShell 5.1, RequestMessage in 7.
+    $final = if ($page.BaseResponse.ResponseUri) { $page.BaseResponse.ResponseUri.AbsoluteUri } else { $page.BaseResponse.RequestMessage.RequestUri.AbsoluteUri }
+    if ("$final" -match "/releases/tag/v?([0-9][0-9A-Za-z.+-]*)$") { return $Matches[1] }
   } catch { }
   return $null
 }
@@ -158,7 +154,8 @@ $GigBin = $null
 function Add-ToUserPath([string]$Dir) {
   $current = [Environment]::GetEnvironmentVariable("Path", "User")
   $parts = @("$current".Split(";") | Where-Object { $_ })
-  if ($parts -notcontains $Dir) {
+  $machine = @("$([Environment]::GetEnvironmentVariable("Path", "Machine"))".Split(";"))
+  if ($parts -notcontains $Dir -and $machine -notcontains $Dir) {
     [Environment]::SetEnvironmentVariable("Path", (@($parts) + $Dir) -join ";", "User")
     Log "Added $Dir to your PATH, so new terminals find git-into-gsoc"
   }
@@ -180,12 +177,17 @@ if (-not $SkillOnly) {
     $spec = Get-InstallSpec
     Log "Installing git-into-gsoc with uv"
     uv tool install -q --force $spec
-    $GigBin = Join-Path (uv tool dir --bin) "git-into-gsoc.exe"
+    $bin = "$(uv tool dir --bin)".Trim()
+    $GigBin = Join-Path $bin "git-into-gsoc.exe"
+    Add-ToUserPath $bin
   } elseif (Get-Command pipx -ErrorAction SilentlyContinue) {
     $spec = Get-InstallSpec
     Log "Installing git-into-gsoc with pipx"
     pipx install --force $spec | Out-Null
-    $GigBin = "git-into-gsoc"
+    $bin = "$(pipx environment --value PIPX_BIN_DIR 2>$null)".Trim()
+    if (-not $bin) { $bin = Join-Path $env:USERPROFILE ".local\bin" }
+    $GigBin = Join-Path $bin "git-into-gsoc.exe"
+    Add-ToUserPath $bin
   } else {
     $py = Find-Python
     $base = Join-Path $env:LOCALAPPDATA "git-into-gsoc"
@@ -197,6 +199,9 @@ if (-not $SkillOnly) {
     & $venvPy -m pip install -q (Get-InstallSpec)
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
     Add-ToUserPath (Join-Path $venv "Scripts")
+  }
+  if (-not (Test-Path $GigBin)) {
+    throw "The install finished, but $GigBin is missing. Run this installer again; if it fails the same way, open an issue at $RepoUrl/issues with this message."
   }
   & $GigBin --version | Out-Null
 } else {

@@ -154,3 +154,25 @@ jobs:
           if (-not (Test-Path ".claude\skills\git-into-gsoc\SKILL.md")) { throw "skill not installed" }
           if (-not (Test-Path ".cursor\mcp.json")) { throw "mcp not registered" }
           .\.venv\Scripts\git-into-gsoc.exe doctor
+
+      # The route most Windows users take: `irm ... | iex` with uv or pipx, then a new
+      # terminal. It must leave the command on PATH without any manual step.
+      - name: PowerShell installer (one-line install, new terminal)
+        shell: pwsh
+        run: |
+          $commit = git -C $env:GITHUB_WORKSPACE rev-parse HEAD
+          $env:GIG_REPO_URL = "file:///" + ($env:GITHUB_WORKSPACE -replace '\\', '/') + "@$commit"
+          $env:GIG_HOME = Join-Path $env:RUNNER_TEMP "home-oneline"
+          $env:GIG_DATA_DIR = Join-Path $env:RUNNER_TEMP "gig-data"
+          $env:GIG_CACHE_DIR = Join-Path $env:RUNNER_TEMP "gig-cache"
+          $before = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+          Get-Content -Raw .\install.ps1 | Invoke-Expression
+          # A new terminal reads PATH from the registry, not from this session.
+          $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+          $found = (Get-Command git-into-gsoc -ErrorAction Stop).Source
+          $folder = Split-Path $found
+          Write-Host "git-into-gsoc found at $found (folder on PATH before install: $(@($before.Split(';')) -contains $folder))"
+          git-into-gsoc --version
+          if ($LASTEXITCODE) { throw "git-into-gsoc --version failed" }
+          git-into-gsoc start --no-input --tech python --output json | Out-Null
+          if ($LASTEXITCODE) { throw "git-into-gsoc start failed" }
