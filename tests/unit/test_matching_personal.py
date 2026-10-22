@@ -486,3 +486,12 @@ def test_a_starter_issue_counts_for_the_top_organization_by_name_or_owner() -> N
     assert _has_starter(orgs, [{"repo": "x/y", "gsoc_org": "AnkiDroid"}])
     assert not _has_starter(orgs, [{"repo": "kiwix/kiwix-android", "gsoc_org": "Kiwix"}])
     assert _has_starter([], []) is None
+
+
+def test_a_broad_interest_is_not_widened_to_every_part_of_it() -> None:
+    from git_into_gsoc.matching.ideas import wanted_domains
+
+    websites = wanted_domains(build_profile(interests=["websites"]))
+    assert "web" in websites and "backend" not in websites  # websites is not caring about APIs
+    robots = wanted_domains(build_profile(interests=["robotics"]))
+    assert "robotics" in robots

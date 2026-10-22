@@ -302,6 +302,11 @@ def _cased_pattern() -> tuple[re.Pattern[str], dict[str, str]] | None:
     return re.compile(_BOUNDARY_BEFORE + "(" + body + ")" + _BOUNDARY_AFTER), cased
 
 
+# Umbrella subjects too broad to stand in for a specific interest: "web" covers
+# backends and frontends alike, "science" every field.
+GENERIC_PARENTS = frozenset({"science", "web"})
+
+
 def find_tag_concepts(tag: str) -> dict[str, int]:
     """Concepts a tag names: any safe spelling inside it, or an ambiguous word that is
     the whole tag ("go", "performance"), but not one inside a longer tag ("systems

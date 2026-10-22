@@ -23,6 +23,7 @@ from typing import Any
 from git_into_gsoc.coach import LONGEST_CODING_WEEKS, PROJECT_HOURS
 from git_into_gsoc.matching.concepts import (
     CONCEPTS,
+    GENERIC_PARENTS,
     SKILL,
     broader_of,
     find_concepts,
@@ -44,8 +45,6 @@ WORD_IN_TAG, WORD_IN_TEXT = 1.0, 0.6
 # LLVM, Open Robotics) is that thing's home; it gets this much extra relevance when
 # its other evidence agrees.
 NAME_BOOST = 0.1
-# Umbrella subjects too broad to stand in for a specific interest.
-GENERIC_PARENTS = frozenset({"science", "web"})
 # Interests and skills weigh the same (tuned on the dev half of evals/; see evals/README.md).
 INTEREST_WEIGHT = 0.5
 SYNERGY = 0.1
@@ -72,6 +71,9 @@ TIME_MISFIT = 0.85
 # Most of its active code is in a language the person did not list, so a tag naming
 # theirs is likely a side project (tuned on the dev sets of evals/).
 OTHER_MAIN_LANGUAGE = 0.95
+# Most of its ideas need a skill the person did not list: a caveat, and a small cost
+# (tuned on the dev sets of evals/ after a blind beginner test).
+MOSTLY_NEEDS = 0.95
 # How much a phrase's common concept counts against its rarest one (see match_term).
 SPECIFIC_POWER = 1.0
 FIT_STRONG, FIT_GOOD, FIT_MIN = 0.7, 0.45, 0.12
@@ -676,6 +678,7 @@ class OrgIndex:
         needs = _mostly_needs(profile, person) if not person.empty else []
         if needs:
             caveats.append(f"Most of its ideas need {', '.join(needs)}, which you did not list")
+            score *= MOSTLY_NEEDS
         blocking = (
             bool(needs)
             or fits is False

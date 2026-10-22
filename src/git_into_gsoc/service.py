@@ -831,6 +831,19 @@ class GSoCToolkit:
                 if result is not None:
                     found.append(result)
         leads.sort(key=lambda lead: (_unread(status, lead), -lead.score, -lead.stars))
+        # Say why a higher score can sit below a lower one: unread repositories follow.
+        shown_unread = [lead for lead in leads[:limit] if lead.full_name not in status]
+        for lead in shown_unread:
+            lead.reasons.append(
+                "Not checked for outside contributions (only the first few are), so it comes "
+                "after the checked ones"
+            )
+        order_note = (
+            f"The first {min(len(status), limit)} were checked for recent outside "
+            "contributions and come first; the rest follow by score."
+            if status and shown_unread
+            else ""
+        )
         name = gsoc_org.name if gsoc_org else owners[0]
         judged = [f for f in found if f.humans]
         failed = sum(1 for v in status.values() if v == "failed")
@@ -883,13 +896,14 @@ class GSoCToolkit:
                 if part
             ),
             "next_step": (
-                "Run `git-into-gsoc repo owner/name` on your top pick, then "
-                "`git-into-gsoc issues --repo owner/name`."
+                "Run `git-into-gsoc repo owner/name --track` on your top pick (so `next` "
+                "remembers it), then `git-into-gsoc issues --repo owner/name`."
             ),
             # Points add up the reasons listed; they only order this list.
             "score_meaning": (
                 "Score: points from its stars and recent activity plus the reasons listed, to "
                 "order this list. Not a grade or a chance of acceptance."
+                + (f" {order_note}" if order_note else "")
             ),
         }
 

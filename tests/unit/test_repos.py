@@ -800,3 +800,16 @@ def test_beginner_issues_opened_counts_one_search_over_owners_and_labels() -> No
     assert params["advanced_search"] == "true"  # without it the label OR group finds nothing
     query = params["q"]
     assert "created:>=2025-10-22" in query and "good first issue" in query and "ML4SCI" in query
+
+
+def test_a_higher_score_below_a_lower_one_is_explained(monkeypatch: pytest.MonkeyPatch) -> None:
+    # 20 quiet repositories: 15 are read and lose points, 5 are not and follow them.
+    toolkit, _ = _quiet_lab(monkeypatch, 20)
+    found = toolkit.discover_repos("lab", limit=20)
+    unread = [
+        r for r in found["repos"] if any("Not checked for outside" in x for x in r["reasons"])
+    ]
+    assert len(unread) == 5
+    assert "The first 15 were checked" in found["score_meaning"]
+    assert all(r["score"] > found["repos"][0]["score"] for r in unread)  # higher, yet below
+    assert found["repos"][-5:] == unread

@@ -15,6 +15,7 @@ from typing import Any
 from git_into_gsoc.coach import LONGEST_CODING_WEEKS, PROJECT_HOURS
 from git_into_gsoc.matching.concepts import (
     DOMAIN,
+    GENERIC_PARENTS,
     SKILL,
     broader_of,
     find_concepts,
@@ -63,7 +64,9 @@ def wanted_domains(person: ContributorProfile) -> set[str]:
     for want in person.interests:
         for concept in want.concepts:
             wanted.add(concept)
-            wanted.update(narrower_index().get(concept, ()))
+            # "Websites" is not caring about backends: a broad subject is not widened.
+            if concept not in GENERIC_PARENTS:
+                wanted.update(narrower_index().get(concept, ()))
     return wanted
 
 

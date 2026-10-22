@@ -34,13 +34,13 @@ Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py`
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
-| Personas: nDCG@10 | 0.643 | **0.810** |
+| Personas: nDCG@10 | 0.643 | **0.811** |
 | Personas: P@5 | 0.537 | **0.637** |
 | Personas: strong@10 | 0.763 | **0.885** |
 | Personas: wrong@5 | 14 | **6** |
-| Accepted projects: hit@5 | 0.521 | **0.664** |
+| Accepted projects: hit@5 | 0.521 | **0.655** |
 | Accepted projects: hit@10 | 0.622 | **0.765** |
-| Accepted projects: MRR | 0.363 | **0.455** |
+| Accepted projects: MRR | 0.363 | **0.463** |
 
 `holdout2.json` (12 personas in ecosystems the first set does not cover: Swift, Elixir, Scala and Spark, Lua, MATLAB, C#, embedded Rust, NLP, D3 with no language named, Java and Spring, documentation only, several with misspellings) was written and graded by a second reviewer who never saw the code or the first set. At its first and only blind look, the keyword ranker scored nDCG@10 0.451 (P@5 0.317, wrong@5 21) and the current ranker 0.566 (P@5 0.483, wrong@5 11). Its typed words then showed four vocabulary gaps (Phoenix, NLTK, Leaflet, "realtime chat"), now fixed, which moved it to 0.573; treat it as no longer blind. It is harder by design: four of its personas have no strong fit among the 2026 organizations.
 
@@ -88,7 +88,7 @@ The current ranker finds more of the right organizations, but it puts one more w
 
 Second look, once, after round 5 was tuned on `dev` and `dev2` and before anything else changed: nDCG@10 0.493 (from 0.488), P@5 0.320 (unchanged), strong@10 0.700 (from 0.667), wrong@5 6 (unchanged). The round carried over only a little to these people, and the wrong-pick gap remains. It was not used to choose between changes, so it stays sealed for one more round.
 
-Measured on 2026-10-21 with the data shipped then, after the fifth round of changes. Round 5 added one wrong pick on the test half (5 to 6) and improved every other number there. Before that, the third round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
+Measured on 2026-10-21 with the data shipped then, after the fifth round of changes. Round 5 added one wrong pick on the test half (5 to 6) and improved every other number there. A later change, after a blind beginner test, costs an organization a little (x0.95) when most of its ideas need a skill the person did not list: on `dev` nDCG@10 0.804 to 0.815, on `dev2` 0.623 to 0.635, accepted-project MRR 0.510 to 0.518 over all cases, but `holdout2` one more wrong pick (10 to 11) and P@5 0.500 to 0.483. Before that, the third round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
 
 ## Adding to the benchmark
 
