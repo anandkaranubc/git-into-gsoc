@@ -15,6 +15,64 @@ EXPERIENCE_HELP = (
 )
 
 
+# Skill concepts that are languages GitHub classifies repositories by, with the name
+# its search uses.
+GITHUB_LANGUAGES = {
+    "python": "python",
+    "javascript": "javascript",
+    "typescript": "typescript",
+    "java": "java",
+    "kotlin": "kotlin",
+    "c": "c",
+    "c++": "c++",
+    "c#": "csharp",
+    "go": "go",
+    "rust": "rust",
+    "ruby": "ruby",
+    "php": "php",
+    "swift": "swift",
+    "dart": "dart",
+    "r": "r",
+    "julia": "julia",
+    "haskell": "haskell",
+    "scala": "scala",
+    "ocaml": "ocaml",
+    "elixir": "elixir",
+    "clojure": "clojure",
+    "lua": "lua",
+    "perl": "perl",
+    "fortran": "fortran",
+    "assembly": "assembly",
+    "shell": "shell",
+    "html": "html",
+    "css": "css",
+    "matlab": "matlab",
+    "zig": "zig",
+    "objective-c": "objective-c",
+    "solidity": "solidity",
+    "tcl": "tcl",
+}
+
+
+def languages_of(person: ContributorProfile, limit: int = 4) -> list[str]:
+    """GitHub language names for what the person knows, frameworks traced to their language."""
+    out: list[str] = []
+
+    def add(concept: str, depth: int = 0) -> None:
+        if concept in GITHUB_LANGUAGES:
+            if GITHUB_LANGUAGES[concept] not in out:
+                out.append(GITHUB_LANGUAGES[concept])
+            return
+        if depth < 2:
+            for parent in broader_of(concept):
+                add(parent, depth + 1)
+
+    for want in person.skills:
+        for concept in want.concepts:
+            add(concept)
+    return out[:limit]
+
+
 def experience_from_merged(count: int | None) -> str | None:
     """A level from merged pull requests in other people's projects (None: unknown)."""
     if count is None:

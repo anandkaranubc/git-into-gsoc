@@ -576,7 +576,7 @@ class GitHubClient:
     def find_beginner_issues(
         self,
         *,
-        language: str | None = None,
+        language: str | list[str] | None = None,
         org: str | None = None,
         orgs: list[str] | None = None,
         repo: str | None = None,

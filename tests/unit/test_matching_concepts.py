@@ -130,3 +130,21 @@ def test_in_a_phrase_the_specific_word_wins_over_an_ambiguous_one() -> None:
     assert resolve("realtime chat").concepts == ("communication",)
     assert resolve("realtime").concepts == ("embedded",)
     assert resolve("real-time systems").concepts == ("embedded",)
+
+
+def test_skills_come_down_to_the_languages_github_searches() -> None:
+    from git_into_gsoc.matching.profile import languages_of
+
+    assert languages_of(build_profile(technologies=["django", "react"])) == ["python", "javascript"]
+    assert languages_of(build_profile(technologies=["flutter"])) == ["dart"]
+    assert languages_of(build_profile(technologies=["c#", "unity"])) == ["csharp"]
+    assert languages_of(build_profile(technologies=["markdown", "git"])) == []
+
+
+def test_a_search_can_cover_several_languages_and_their_relatives() -> None:
+    from git_into_gsoc.github.search import language_group
+
+    assert language_group("python") == "language:python"
+    assert language_group(["python", "javascript"]) == (
+        "(language:python OR language:javascript OR language:typescript)"
+    )

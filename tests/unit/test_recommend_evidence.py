@@ -237,3 +237,15 @@ def test_an_empty_starter_list_names_where_to_look(
     assert data["starter_issues"] == []
     top = data["recommended_orgs"][0]["name"]
     assert f'git-into-gsoc issues --org "{top}"' in data["starter_issue_note"]
+
+
+def test_starter_issues_search_every_language_more_owners_and_beginner_labels(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    toolkit = GSoCToolkit()
+    seen: list[dict[str, Any]] = []
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: seen.append(k) or [])
+    toolkit.recommend_path(technologies=["django", "react"], interests=["mathematics"])
+    first = seen[0]
+    assert first["language"] == ["python", "javascript"]
+    assert "starter" in first["labels"] and "help wanted" in first["labels"]

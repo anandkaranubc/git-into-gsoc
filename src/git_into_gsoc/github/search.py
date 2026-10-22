@@ -66,10 +66,15 @@ def or_group(qualifier: str, values: list[str]) -> str:
     return "(" + " OR ".join(terms) + ")"
 
 
-def language_group(language: str) -> str:
-    """`language:x`, or an OR group with its close relatives (JS and TS)."""
-    main = canonical(language)
-    return or_group("language", [main, *RELATED_LANGUAGES.get(main, [])])
+def language_group(language: str | list[str]) -> str:
+    """`language:x`, or an OR group of several and their close relatives (JS and TS)."""
+    values: list[str] = []
+    for one in [language] if isinstance(language, str) else language:
+        main = canonical(one)
+        for value in (main, *RELATED_LANGUAGES.get(main, [])):
+            if value not in values:
+                values.append(value)
+    return or_group("language", values)
 
 
 def build_issue_query(
