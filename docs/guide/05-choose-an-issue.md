@@ -10,6 +10,8 @@ Many organizations own dozens of repositories, and only a few are where mentors 
 git-into-gsoc repos "SymPy" --language python
 ```
 
+The examples on this page use SymPy only to show what the commands print. Run them on your own shortlist, and see the note on SymPy in [step 4](04-find-organizations.md).
+
 The table ranks the organization's active repositories. The strongest signal is whether the organization's GSoC ideas page names the repository. After that come open, unassigned beginner issues, recent pushes, stars, and whether the repository is written in your language. The caption tells you whether the ideas page could be read; some wikis block automated readers, in which case the ranking uses activity and beginner issues only. You can also pass a GitHub organization login directly, such as `repos sympy`.
 
 ## Will a newcomer's PR land here?
@@ -106,7 +108,7 @@ Each result has a status:
 | Status | Meaning | What to do |
 |---|---|---|
 | `available` | Open, unassigned, no open PR, no recent claim | Read the thread, reproduce the problem, then comment with a plan |
-| `claimed` | Someone asked to work on it in the last 30 days, or a maintainer approved them, or a maintainer recently checked in with them | Pick another issue; do not compete |
+| `claimed` | Someone asked to work on it and the claim was active in the last 30 days, a maintainer approved a claim that was active in the last 60 days, or a label marks it as taken. A claim stays active while its author keeps commenting or a maintainer checks in with them, so an approval from long ago no longer counts | Pick another issue; do not compete |
 | `contested` | Three or more people asked in the last 60 days | Avoid; this is the GSoC-season trap |
 | `likely_taken` | An open PR references the issue, or a comment points at an open PR that covers it | Choose another unless the PR is abandoned |
 | `not_open` | A label such as "Idea for Discussion" or "on hold", or the project itself, says it is not taking claims yet, or the repository is archived (read-only) | Choose another; do not comment asking for it |

@@ -23,7 +23,7 @@ git-into-gsoc orgs --query "symbolic math" -n 5
 git-into-gsoc org "SymPy"
 ```
 
-`org` shows one organization's ideas page, contributor guide, source code, website, GitHub organizations, contact channels, technologies, projects per year, and its recent accepted project titles. Those titles are there to help you understand the scope organizations fund; never copy a past proposal. SymPy is an example lookup, not a promise of future participation or available work.
+`org` shows one organization's ideas page, contributor guide, source code, website, GitHub organizations, contact channels, technologies, projects per year, and its recent accepted project titles. Those titles are there to help you understand the scope organizations fund; never copy a past proposal. SymPy is an example lookup, not a promise of future participation or available work. In October 2026 a SymPy maintainer wrote that, after a flood of low-quality AI pull requests, SymPy will likely not take part in GSoC 2027 ([SymPy issue 30671](https://github.com/sympy/sympy/issues/30671)). The official 2027 organization list is the final word.
 
 ## Read the ideas page as a list
 
