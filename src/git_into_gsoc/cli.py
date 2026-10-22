@@ -698,7 +698,7 @@ def org_cmd(
     if org.get("github_orgs"):
         lines.append("GitHub: " + ", ".join(org["github_orgs"]))
     for channel in org.get("channels") or []:
-        lines.append(f"{channel['kind']}: {channel['value']}")
+        lines.append(f"{_channel_label(str(channel['kind']))}: {channel['value']}")
     lines.append(
         f"Tech: {', '.join(org.get('technologies') or [])}  |  "
         f"Topics: {', '.join(org.get('topics') or [])}"
@@ -723,6 +723,30 @@ def org_cmd(
         for project in org["recent_projects"]:
             table.add_row(str(project["year"]), project["title"])
         console.print(table)
+    console.print(
+        f'[dim]Next: git-into-gsoc ideas "{org["name"]}" to read its project ideas, then '
+        f'git-into-gsoc repos "{org["name"]}" to pick a repository.[/dim]'
+    )
+
+
+# The GSoC API's channel kinds, as a person would say them.
+_CHANNEL_LABELS = {
+    "chat": "Chat",
+    "mailingList": "Mailing list",
+    "email": "Email",
+    "twitter": "X (Twitter)",
+    "blog": "Blog",
+    "forum": "Forum",
+    "irc": "IRC",
+}
+
+
+def _channel_label(kind: str) -> str:
+    """'mailingList' reads as 'Mailing list'; an unknown kind is split into words."""
+    if kind in _CHANNEL_LABELS:
+        return _CHANNEL_LABELS[kind]
+    words = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", kind).replace("_", " ").strip()
+    return words[:1].upper() + words[1:].lower() if words else "Contact"
 
 
 _POST_STATUS = {
@@ -1050,20 +1074,34 @@ def orient_cmd(
         "Entry points",
         [f"{p['path']}  [dim]{escape(p['reason'])}[/dim]" for p in data["entry_points"]],
     )
-    section(
-        "How CI runs the tests",
+    ci_lines = (
         [f"{escape(t['command'])}  [dim]({t['source']})[/dim]" for t in data["test_commands"]]
         + _ci_environment_lines(data.get("ci_environment") or {})
-        + [escape(h) for h in data["setup_hints"]],
+        + [escape(h) for h in data["setup_hints"]]
     )
+    if ci_lines:
+        # Terms a first-time contributor may not know, said once where they first appear.
+        ci_lines.insert(0, "[dim]CI is the set of checks GitHub runs on every pull request.[/dim]")
+        if any("tox" in str(t.get("command")) for t in data["test_commands"]):
+            ci_lines.append(
+                "[dim]tox runs the tests in fresh, separate Python environments: pip install "
+                "tox, then run the same tox command yourself.[/dim]"
+            )
+    section("How CI runs the tests", ci_lines)
     docs = data["docs"]
     section(
         "Read first",
-        [
-            p
-            for p in (docs.get("readme"), docs.get("contributing"), *docs.get("architecture", []))
-            if p
-        ],
+        list(
+            dict.fromkeys(
+                p
+                for p in (
+                    docs.get("readme"),
+                    docs.get("contributing"),
+                    *docs.get("architecture", []),
+                )
+                if p
+            )
+        ),
     )
     people = data["maintainers"]
     section(
@@ -1080,7 +1118,8 @@ def orient_cmd(
     rule_lines = []
     if rules["dco"]["required"]:
         rule_lines.append(
-            "Sign-off required (git commit -s): " + "; ".join(rules["dco"]["evidence"])
+            "Sign-off required (git commit -s adds a 'Signed-off-by' line saying you may "
+            "submit the change): " + "; ".join(rules["dco"]["evidence"])
         )
     if rules["cla"]["required"]:
         rule_lines.append("CLA required: " + "; ".join(rules["cla"]["evidence"]))

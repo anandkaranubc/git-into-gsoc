@@ -205,7 +205,13 @@ def find_paths(tree: list[dict[str, Any]]) -> dict[str, Any]:
                 return lower[name.lower()]
         return None
 
-    arch = [p for p in blobs if ARCH_DOC_RE.match(p) and not p.upper().startswith("CONTRIBUTING")]
+    # A CONTRIBUTING file anywhere is the contributing guide, not an architecture doc:
+    # MDAnalysis's docs/CONTRIBUTING.rst was listed as both.
+    arch = [
+        p
+        for p in blobs
+        if ARCH_DOC_RE.match(p) and not p.rsplit("/", 1)[-1].upper().startswith("CONTRIBUTING")
+    ]
     workflows = [
         p for p in blobs if p.startswith(".github/workflows/") and p.endswith((".yml", ".yaml"))
     ]
@@ -259,6 +265,7 @@ def entry_points(
 ) -> list[dict[str, str]]:
     """Likely entry points: manifests first, then conventional file names (shallowest first)."""
     points: list[dict[str, str]] = []
+    blobs = set(_paths(tree))
     if pyproject:
         section = re.search(r"\[project\.scripts\]\s*\n((?:[^\[\n][^\n]*\n?)*)", pyproject)
         if section:
@@ -266,12 +273,21 @@ def entry_points(
                 match = re.match(r'\s*([\w.-]+)\s*=\s*"([^"]+)"', line)
                 if match:
                     module = match.group(2).split(":")[0].replace(".", "/")
-                    points.append(
-                        {
-                            "path": f"{module}.py",
-                            "reason": f"pyproject.toml [project.scripts] {match.group(1)} = {match.group(2)}",
-                        }
+                    # The module's real file, under src/, lib/ or wherever it is: the
+                    # guess "mdacli/__main__.py" did not exist. Not in the tree: dropped.
+                    ends = (f"{module}.py", f"{module}/__init__.py")
+                    found_at = sorted(
+                        (b for b in blobs if b in ends or b.endswith(tuple("/" + e for e in ends))),
+                        key=lambda b: (b.count("/"), b),
                     )
+                    path = found_at[0] if found_at else None
+                    if path:
+                        points.append(
+                            {
+                                "path": path,
+                                "reason": f"pyproject.toml [project.scripts] {match.group(1)} = {match.group(2)}",
+                            }
+                        )
     if package_json:
         for key in ("main", "bin"):
             match = re.search(rf'"{key}"\s*:\s*"([^"]+)"', package_json)
@@ -525,6 +541,9 @@ def changelog_request(contributing: str, pr_template: str) -> str | None:
     return None
 
 
+MIN_COMMITS_FOR_A_RULE = 5
+
+
 def conventions(
     commits: list[dict[str, Any]],
     *,
@@ -542,7 +561,8 @@ def conventions(
     text = f"{contributing}\n{pr_template}"
 
     dco_evidence: list[str] = []
-    if total and signed / total >= 0.5:
+    # "1 of the last 1 commits" is no evidence of a rule.
+    if total >= MIN_COMMITS_FOR_A_RULE and signed / total >= 0.5:
         dco_evidence.append(f"{signed} of the last {total} commits carry Signed-off-by")
     if any("dco" in c for c in checks_lower):
         dco_evidence.append("a DCO status check runs on pull requests")
@@ -868,7 +888,7 @@ def reading_plan(
                 "why": f"A recently merged small PR from an outside contributor ({example_pr.get('files', '?')} files): the shape of a change that lands",
             }
         )
-    return steps
+    return list({s["path"]: s for s in reversed(steps)}.values())[::-1]  # first of each path
 
 
 def days_since(value: str | None, now: datetime | None = None) -> int | None:

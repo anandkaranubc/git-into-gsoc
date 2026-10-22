@@ -89,11 +89,26 @@ def test_find_paths_detects_docs_and_conventions_files() -> None:
 def test_entry_points_from_tree_and_manifests() -> None:
     points = entry_points(
         TREE,
-        pyproject='[project]\nname="pkg"\n[project.scripts]\npkg = "pkg.cli:app"\n',
+        pyproject='[project]\nname="pkg"\n[project.scripts]\npkg = "pkg.core:app"\n',
         package_json=None,
     )
     assert any(p["path"] == "lib/pkg/__main__.py" for p in points)
-    assert any(p["reason"].startswith("pyproject") and "pkg.cli:app" in p["reason"] for p in points)
+    # The module's real file, found under lib/: never the guess "pkg/core.py".
+    assert points[0] == {
+        "path": "lib/pkg/core.py",
+        "reason": "pyproject.toml [project.scripts] pkg = pkg.core:app",
+    }
+
+
+def test_a_script_module_that_is_not_in_the_tree_is_not_listed() -> None:
+    # MDAnalysis mdacli listed "mdacli/__main__.py", which does not exist: its code is
+    # under src/. A manifest entry whose file cannot be found is dropped.
+    points = entry_points(
+        TREE,
+        pyproject='[project]\nname="pkg"\n[project.scripts]\npkg = "pkg.missing:app"\n',
+        package_json=None,
+    )
+    assert not any("pkg.missing" in p["reason"] for p in points)
 
 
 def test_test_commands_from_workflow_run_lines() -> None:

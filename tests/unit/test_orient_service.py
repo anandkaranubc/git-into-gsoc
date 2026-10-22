@@ -142,7 +142,7 @@ def _mock_repo(router: respx.MockRouter) -> None:
     )
     raw = {
         "CONTRIBUTING.md": "Join us on Zulip. We do not assign issues; open a PR. Sign your commits with git commit -s.",
-        "pyproject.toml": '[project]\nname = "lib"\n[project.scripts]\nlib = "lib.cli:app"\n',
+        "pyproject.toml": '[project]\nname = "lib"\n[project.scripts]\nlib = "lib.core:app"\n',
         ".github/CODEOWNERS": "src/lib/ @maintainer @other\n",
         ".github/workflows/ci.yml": "jobs:\n  t:\n    steps:\n      - run: pip install -e .\n      - run: pytest -q\n",
         ".github/workflows/check-contribution.yaml": (
@@ -163,7 +163,7 @@ def test_orient_repo_builds_facts_and_paths() -> None:
     assert data["languages"][0] == {"name": "Python", "share": 90}
     assert {row["path"] for row in data["code_map"]} >= {"src", "tests", ".github"}
     assert data["test_commands"][0]["command"] == "pytest -q"
-    assert any(p["path"] == "lib/cli.py" for p in data["entry_points"])
+    assert any(p["path"] == "src/lib/core.py" for p in data["entry_points"])
     assert data["maintainers"]["active_committers_90d"][0]["login"] == "maintainer"
     assert data["maintainers"]["codeowners"][0]["owners"] == "@maintainer @other"
     rules = data["conventions"]
