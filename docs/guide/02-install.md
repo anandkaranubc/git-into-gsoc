@@ -18,7 +18,7 @@ On Windows PowerShell:
 irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
 ```
 
-The script downloads the newest release from GitHub and installs the `git-into-gsoc` command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with [Python 3.11 or newer](https://www.python.org/downloads/) into a private folder under your home directory. If you have none of the three, it asks whether to install uv, a free tool that installs Python programs together with the Python they need, all inside your home folder. Answer yes. To skip the question, pass the option through the pipe like this:
+The script downloads the newest release from [PyPI](https://pypi.org/project/git-into-gsoc/), the Python Package Index, or from GitHub if PyPI does not have it yet. It installs the `git-into-gsoc` command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with [Python 3.11 or newer](https://www.python.org/downloads/) into a private folder under your home directory. If you have none of the three, it asks whether to install uv, a free tool that installs Python programs together with the Python they need, all inside your home folder. Answer yes. To skip the question, pass the option through the pipe like this:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash -s -- --install-uv
@@ -39,20 +39,16 @@ git-into-gsoc start
 
 `start` shows where the program is right now, asks four quick questions, and suggests organizations that fit you. Press Enter to skip any question. It needs network access the first time to fetch official dates and falls back to an embedded snapshot when offline. Run `git-into-gsoc` with no command any time to see your progress and what to do next.
 
-If you would rather see each step, this is what the script does:
+## The short way, if you already use uv or pipx
+
+If you would rather see each step, or you already have uv or pipx, this is what the script does:
 
 ```bash
-uv tool install git+https://github.com/anandkaranubc/git-into-gsoc    # needs Git; or: pipx install git+https://github.com/anandkaranubc/git-into-gsoc
-git-into-gsoc setup                                                     # add --dry-run to preview
+uv tool install git-into-gsoc    # or: pipx install git-into-gsoc
+git-into-gsoc setup              # add --dry-run to preview
 ```
 
-To install one particular release instead of the latest code, use the wheel attached to that release on the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases). A **wheel** is Python's ready-to-install package file, and its name carries the version. Replace both `X.Y.Z` with the release you want, for example `0.9.0`:
-
-```bash
-uv tool install https://github.com/anandkaranubc/git-into-gsoc/releases/download/vX.Y.Z/git_into_gsoc-X.Y.Z-py3-none-any.whl
-```
-
-`pipx install` accepts the same address. Once the package is on PyPI, `uv tool install git-into-gsoc` is the shorter way.
+To install one particular release, add its version, for example `uv tool install git-into-gsoc==0.14.1`. Every version is listed on the [PyPI page](https://pypi.org/project/git-into-gsoc/#history) and the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases). Each release also carries a **wheel**, Python's ready-to-install package file, so `uv tool install` or `pipx install` with the wheel's address works without PyPI. To try the newest code that is not released yet, install from GitHub instead, which needs Git: `uv tool install git+https://github.com/anandkaranubc/git-into-gsoc`.
 
 ## From a clone (contributors, or no uv/pipx)
 
@@ -139,7 +135,7 @@ Optional: `git-into-gsoc --install-completion` adds tab completion for your shel
 
 ## Update or remove the tool
 
-To update, run the same one-line install command again. It installs the newest release over the old one and refreshes the skill and MCP registration, and `git-into-gsoc --version` shows the new number. From a clone, run `git pull` and then `./install.sh` again.
+To update, run the same one-line install command again. It installs the newest release over the old one and refreshes the skill and MCP registration, and `git-into-gsoc --version` shows the new number. If you installed with uv or pipx yourself, run `uv tool upgrade git-into-gsoc` or `pipx upgrade git-into-gsoc`, then `git-into-gsoc setup` to refresh the skill. From a clone, run `git pull` and then `./install.sh` again.
 
 To remove everything, first undo the assistant setup, then remove the package with the tool that installed it:
 

@@ -7,7 +7,7 @@
 
 <p align="center">
   <a href="https://github.com/anandkaranubc/git-into-gsoc/actions/workflows/ci.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/anandkaranubc/git-into-gsoc/ci.yml?branch=main&style=flat-square&label=tests"></a>
-  <a href="https://github.com/anandkaranubc/git-into-gsoc/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/anandkaranubc/git-into-gsoc?style=flat-square&color=7A5AF8"></a>
+  <a href="https://pypi.org/project/git-into-gsoc/"><img alt="Latest version on PyPI" src="https://img.shields.io/pypi/v/git-into-gsoc?style=flat-square&color=7A5AF8"></a>
   <img alt="Python 3.11 or newer" src="https://img.shields.io/badge/python-3.11%2B-3F6A00?style=flat-square">
   <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-15121E?style=flat-square"></a>
 </p>
@@ -40,6 +40,13 @@ irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.p
 ```
 
 You only need an internet connection. If something is missing, the installer offers [uv](https://docs.astral.sh/uv/), a free tool that brings its own Python. It tells you exactly what it changed and connects every AI assistant it finds. [Other ways to install](docs/guide/02-install.md).
+
+Already use uv or pipx? Install the [package from PyPI](https://pypi.org/project/git-into-gsoc/), the Python Package Index, then connect your assistants:
+
+```bash
+uv tool install git-into-gsoc    # or: pipx install git-into-gsoc
+git-into-gsoc setup
+```
 
 **2. Answer four questions** in a new terminal:
 
