@@ -394,7 +394,8 @@ class _LineParser(HTMLParser):
 
 
 def html_to_lines(raw: str, base_url: str | None = None) -> list[str]:
-    """HTML as markdown-like lines: headings, bullets, bold labels, and links, with
+    """HTML as markdown-like lines: headings (a collapsible block's title counts as
+    one), bullets, bold labels, definition-list terms and values, and links, with
     scripts, menus, and footers left out."""
     parser = _LineParser(base_url)
     parser.feed(raw[:MAX_CHARS])
@@ -455,7 +456,8 @@ def _looks_like_html(raw: str) -> bool:
 
 def to_lines(raw: str, base_url: str | None = None) -> list[str]:
     """An ideas page as lines, whether it arrived as HTML or as markdown; a line with
-    breaks inside it is split where a label starts, so each label is read."""
+    breaks inside it is split where a label starts, or after a label's bare name, so
+    each label is read."""
     lines = html_to_lines(raw, base_url) if _looks_like_html(raw) else markdown_to_lines(raw)
     # A paragraph with line breaks (<br>) arrives as one line: MariaDB writes "Skills
     # needed: C++, bison" and "Mentors: ..." in one, and neither label was read. Split
