@@ -17,7 +17,9 @@ Collect the project idea, required questions, relevant code or documentation, yo
 git-into-gsoc contributions --org "SymPy"
 ```
 
-It needs your GitHub username: if you did not save it in step 1, run `git-into-gsoc profile --github YOUR_USERNAME` first, or add `--github YOUR_USERNAME` to this command. It lists your pull requests, issues, and reviews in the organization's repositories with their state, ready to paste into the "about you" and "prior contributions" sections. The proposal check below verifies those links again. Check the organization's requested project size and your availability. Projects are about 90 hours (small), 175 hours (medium), or 350 hours (large), and the coding period runs 8 to 22 weeks ([GSoC FAQ](https://developers.google.com/open-source/gsoc/faq)). If you saved your hours with `profile --hours`, `next` tells you which sizes fit. There is no universal requirement for a fixed number of merged PRs; follow the organization's prerequisites.
+It needs your GitHub username: if you did not save it in step 1, run `git-into-gsoc profile --github YOUR_USERNAME` first, or add `--github YOUR_USERNAME` to this command. It lists your pull requests, issues, and reviews in the organization's repositories with their state, ready to paste into the "about you" and "prior contributions" sections. The proposal check below verifies those links again.
+
+Check the organization's requested project size against your availability. Projects are about 90 hours (small), 175 hours (medium), or 350 hours (large), and the coding period runs 8 to 22 weeks ([GSoC FAQ](https://developers.google.com/open-source/gsoc/faq)). If you saved your hours with `profile --hours`, `next` tells you which sizes fit. There is no universal requirement for a fixed number of merged PRs; follow the organization's prerequisites.
 
 To see how big accepted projects have been and what the organization values:
 

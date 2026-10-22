@@ -239,6 +239,11 @@ def _render_home(data: dict[str, Any]) -> None:
             else:
                 _say(f"  [dim]○ {step['label']}[/dim]")
         _say(f"What to do now, with live checks:\n  [cyan]{data['next_command']}[/cyan]")
+    if not data["github_token"]:
+        _say(
+            "\n[dim]Tip: run gh auth login once so issue searches do not hit GitHub's limit "
+            "for anonymous use.[/dim]"
+        )
     _say("\n[bold]Commands to start with[/bold]")
     for name, what in _HOME_COMMANDS:
         _say(f"  [cyan]{name:<8}[/cyan] {what}")
@@ -2502,7 +2507,8 @@ def feedback_cmd(
     _say(
         "This opens a GitHub form with your versions filled in, so you can tell us what "
         "worked and what did not. Nothing is sent until you read it and press Submit. "
-        "Submitting needs a GitHub account."
+        "Submitting needs a GitHub account and creates a public issue under your "
+        "username, so leave out anything private."
     )
     _say(f"[dim]Filled in: {escape(system_summary())}[/dim]")
     console.print(url, markup=False, highlight=False, soft_wrap=True)

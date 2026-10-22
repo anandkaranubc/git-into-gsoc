@@ -1217,7 +1217,9 @@ class GSoCToolkit:
                 if len(issues) > first
                 else f" Other organizations that use {language} had none free either."
             )
-        if use_gsoc and language:
+        if use_gsoc and language and not gsoc_owners:
+            # With an organization named (`--org CERN-HSF`), other organizations that keep
+            # code off GitHub are beside the point: the note listed SageMath and ns-3.
             note += self._skipped_off_github(language, year=year)
         related = RELATED_LANGUAGES.get(canonical(language), []) if language else []
         if related and not repo:
@@ -1253,6 +1255,8 @@ class GSoCToolkit:
                 " None of these has a beginner label, only labels such as 'help wanted', which "
                 "often mark larger work."
                 if unlabelled == len(listed)
+                else " 1 of these has no beginner label and is marked."
+                if unlabelled == 1
                 else f" {unlabelled} of these have no beginner label and are marked."
             )
         return {

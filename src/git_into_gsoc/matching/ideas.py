@@ -71,8 +71,10 @@ def wanted_domains(person: ContributorProfile) -> set[str]:
         for concept in want.concepts:
             wanted.add(concept)
             # "Websites" is not caring about backends: a broad subject is not widened.
+            # Only narrower subjects count: Jupyter and pandas sit under data science,
+            # but someone who picked "data" did not say they care about Jupyter.
             if concept not in GENERIC_PARENTS:
-                wanted.update(narrower_index().get(concept, ()))
+                wanted.update(n for n in narrower_index().get(concept, ()) if kind_of(n) == DOMAIN)
     return wanted
 
 

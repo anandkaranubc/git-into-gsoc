@@ -13,12 +13,16 @@ Only public data, from these places:
 | api.github.com | Public repositories, issues, pull requests, and labels you ask about, and the public profile of a GitHub username you give it |
 | commits.ecosyste.ms | Public commit counts for a repository |
 | Each organization's own ideas page | The page the organization published for GSoC |
+| raw.githubusercontent.com | Ideas and wiki pages that an organization keeps in a GitHub repository |
+| A GitLab server, such as gitlab.com, gitlab.gnome.org, or invent.kde.org | Only when you check a GitLab issue link: that issue, its labels, assignees, and merge requests |
 
 Each service sees a normal web request from your computer: your IP address and what was asked for, such as an organization or repository name. The tool never posts, comments, opens pull requests, or changes anything on any of them.
 
 ## Your GitHub token
 
 A token is optional. If you have one (in `GITHUB_TOKEN`, `GH_TOKEN`, `GIG_GITHUB_TOKEN`, or from `gh auth token`), the tool sends it only to GitHub's API, to raise the request limit. It is never written to a file, printed, or sent anywhere else. Public data needs no token scopes.
+
+A GitLab token (`GITLAB_TOKEN` or `GIG_GITLAB_TOKEN`) is optional too. If you set one, it is sent only to the GitLab server it belongs to (`GITLAB_HOST`, `gitlab.com` by default), to read issue comments that GitLab hides without a sign-in.
 
 ## What it saves on your computer
 
