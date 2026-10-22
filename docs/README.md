@@ -35,6 +35,7 @@ Start with [installation](guide/02-install.md), run `git-into-gsoc start`, then 
 - [MCP reference](mcp.md): tools available to assistants.
 - [Privacy](privacy.md): what the tool reads, what it saves on your computer, and what it never sends.
 - [Examples](../examples/README.md): terminal session and assistant prompts.
+- [Watch someone try it](watch-someone-try-it.md): a 30-minute session with a newcomer that needs no code, and the most useful test we have.
 - [Contributing to this tool](../CONTRIBUTING.md), [architecture](architecture.md), [releasing](releasing.md), [distribution](distribution.md), and [what we learned from other tools](research.md): for people improving git-into-gsoc itself.
 
 [Back to the project README](../README.md)

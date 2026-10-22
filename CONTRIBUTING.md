@@ -27,6 +27,7 @@ pytest -q
 ## Ways to contribute
 
 - Tell us how your own preparation went: run `git-into-gsoc feedback`, or fill in the [feedback form](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=feedback.yml). Knowing where people get stuck is how this project decides what to fix next.
+- Watch someone new try the tool for 30 minutes and send us your notes. It needs no code, and it finds problems nothing else does. [How to run the session](docs/watch-someone-try-it.md).
 - Report a bug or confusing behavior with a [bug report](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=bug_report.yml). `git-into-gsoc feedback --bug` fills in your versions.
 - Suggest an improvement with a [feature request](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=feature_request.yml).
 - Fix documentation. If an instruction did not work for you, that is a bug in the docs.
