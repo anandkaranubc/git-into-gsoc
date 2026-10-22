@@ -212,6 +212,14 @@ def test_competencies_in_a_skills_field_are_not_the_project_subject() -> None:
     assert "developer tools" in skill_concepts("Python, testing")
     assert skill_concepts("test frameworks") == ["developer tools"]
     assert skill_concepts("test automation") == ["developer tools"]
+    # InVesalius asks for "A source code editor" in all 9 ideas: a tool to have, not
+    # the subject. Building a debugger, an editor plugin, or a review tool is one.
+    assert skill_concepts("A source code editor") == []
+    assert skill_concepts("Mac OS installed. A source code editor") == []
+    assert skill_concepts("Build a debugger UI")[0] == "developer tools"
+    assert skill_concepts("Build a code editor plugin") == ["developer tools"]
+    assert skill_concepts("a code review tool") == ["developer tools"]
+    assert skill_concepts("Debugging skills") == []
     summary = summarize_ideas(
         [{"title": "Web user feedback", "skills": ["Debug", "Write Python code with unit tests"]}],
         layout="headings",

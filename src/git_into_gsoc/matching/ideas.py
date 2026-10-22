@@ -70,13 +70,18 @@ def wanted_domains(person: ContributorProfile) -> set[str]:
     return wanted
 
 
-# What a contributor does on any project ("Debug; fix CI failures", "Write Python code
-# with unit tests"), listed under Oppia's skills: not what the project is about. Read as
-# subjects, they put developer tools in 10 of Oppia's 11 ideas and all 9 of InVesalius'.
+# What a contributor does or has on any project ("Debug; fix CI failures", "Write Python
+# code with unit tests", "A source code editor"), listed under Oppia's and InVesalius'
+# skills: not what the project is about. Read as subjects, they put developer tools in
+# 10 of Oppia's 11 ideas and all 9 of InVesalius'. "debugger" and "code review tool"
+# name what a project builds, so they stay.
 _COMPETENCY_RE = re.compile(
-    r"\bdebug\w*|\bunit tests?\b|\b(?:write|writing|add|adding)\s+(?:\w+\s+){0,3}?tests?\b|"
+    r"\bdebug(?:s|ged|ging)?\b|\bunit tests?\b|"
+    r"\b(?:write|writing|add|adding)\s+(?:\w+\s+){0,3}?tests?\b|"
     r"\bfix(?:ing)?\s+(?:\w+\s+){0,2}?(?:ci|tests?|failures?|bugs?)\b|\bci failures?\b|"
-    r"\bflak\w*|\bcode reviews?\b|\broot cause\b",
+    r"\bflak\w*|\bcode reviews?\b(?!\s+(?:tool|bot|app|platform|system)s?\b)|\broot cause\b|"
+    r"\b(?:a|any|your)\s+(?:favou?rite\s+|preferred\s+)?(?:source[- ]code|code|text)\s+editor"
+    r"(?:\s+of\s+your\s+choice|\s+installed)?\s*(?:$|[.,;:)])",
     re.I,
 )
 _PRACTICE_SUBJECTS = frozenset({"developer tools", "devops"})
