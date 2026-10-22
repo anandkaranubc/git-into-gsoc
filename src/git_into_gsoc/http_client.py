@@ -136,6 +136,63 @@ class CachedHttpClient:
         merged = {"Accept": "application/json", **(headers or {})}
         return self._get(url, merged, None, use_cache, ttl, kind="json", json_body=body)
 
+    def get_tail(
+        self,
+        url: str,
+        *,
+        headers: dict[str, str] | None = None,
+        max_bytes: int = 200_000,
+        timeout: float = 20.0,
+    ) -> str:
+        """The last `max_bytes` of a large text body, such as a CI job's log. Not cached.
+
+        GitHub answers a log request with a redirect to short-lived storage on another
+        host. That second request carries no Authorization header and asks for the end
+        of the file only, so a log of tens of megabytes costs a few hundred kilobytes.
+        """
+        try:
+            self._throttle(url)
+            request = self._client.build_request("GET", url, headers=headers or {}, timeout=timeout)
+            self.stats["requests"] += 1
+            response = self._client.send(request, stream=True, follow_redirects=False)
+            location = response.headers.get("Location")
+            if response.is_redirect and location:
+                response.close()
+                # Only the range: the token was for GitHub, not for the storage host.
+                follow = self._client.build_request(
+                    "GET",
+                    response.url.join(location),
+                    headers={"Range": f"bytes=-{max_bytes}"},
+                    timeout=timeout,
+                )
+                self.stats["requests"] += 1
+                response = self._client.send(follow, stream=True, follow_redirects=False)
+            try:
+                if response.status_code >= 400:
+                    response.read()
+                    if _is_rate_limited(response):
+                        raise _rate_limit_error(response, url, "Authorization" in (headers or {}))
+                    raise _http_error(response, url)
+                tail, seen = b"", 0
+                for chunk in response.iter_bytes():
+                    seen += len(chunk)
+                    if seen > MAX_RESPONSE_BYTES:
+                        raise HttpError(
+                            f"The log from {_host(url)} is larger than "
+                            f"{MAX_RESPONSE_BYTES // 1_048_576} MB, so it was not read.",
+                            url=url,
+                        )
+                    # A server that ignores the range sends everything: keep the end.
+                    tail = (tail + chunk)[-max_bytes:]
+            finally:
+                response.close()
+        except httpx.HTTPError as exc:
+            raise HttpError(f"Could not read {_host(url)}: {exc}", url=url) from exc
+        text = tail.decode("utf-8", errors="replace")
+        if len(tail) >= max_bytes and "\n" in text:
+            text = text.split("\n", 1)[1]  # the first line was cut in the middle
+        return text
+
     def clear_cache(self) -> int:
         removed = 0
         for path in self._cache_root.glob("*.json"):

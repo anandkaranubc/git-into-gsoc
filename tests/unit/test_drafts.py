@@ -548,3 +548,56 @@ def test_a_claim_draft_for_a_repository_leads_with_its_own_rule() -> None:
     assert silent["rule"].startswith("This project's contributing guide does not say how")
     missing = render_draft("claim", context={"claim_convention": {"kind": "unknown", "text": ""}})
     assert missing["rules"][0]["source"] == "no contributing guide found"
+
+
+def test_a_claim_draft_asks_whoever_asked_before(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # A real Codex session took a beginner to RUXAILAB issue 2361. `issue` said "@name asked
+    # 31d ago with no PR; ask politely in the thread first", but `draft claim` opened with
+    # "I'd like to work on this" and never named them.
+    from git_into_gsoc.models import ContributionGuide
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    status = {
+        "title": "The logos are not properly visible in dark mode",
+        "availability": "available",
+        "reason": "Open, unassigned, no open PR, and no claim in the last 30 days",
+        "assessment": {"claims": [{"login": "earlier-asker", "days_ago": 31, "granted": False}]},
+    }
+    monkeypatch.setattr(toolkit, "issue_status", lambda ref: status)
+    monkeypatch.setattr(
+        toolkit.github, "contribution_guide", lambda repo: ContributionGuide(repo=repo)
+    )
+    monkeypatch.setattr(toolkit, "_add_pr_rules", lambda repo, context: None)
+    draft = toolkit.draft("claim", issue="ruxailab/RUXAILAB#2361")
+    assert "@earlier-asker, you asked to work on this 31 days ago." in draft["template"]
+    assert "I'd like to work on this." not in draft["template"]
+    assert draft["warning"].startswith("@earlier-asker asked to work on this 31 days ago")
+    assert draft["context"]["issue"]["earlier_claims"] == [
+        {"login": "earlier-asker", "days_ago": 31, "granted": False}
+    ]
+
+    # A maintainer's "yes" 70 days ago with no PR since: that person first.
+    status["assessment"] = {
+        "claims": [
+            {"login": "told-yes", "days_ago": 70, "granted": True},
+            {"login": "older-asker", "days_ago": 120, "granted": False},
+        ]
+    }
+    draft = toolkit.draft("claim", issue="ruxailab/RUXAILAB#2361")
+    assert "@told-yes, you were told yes 70 days ago." in draft["template"]
+    assert draft["warning"].startswith("@told-yes was told yes 70 days ago")
+
+    # Three or more asked: no fourth request; lead with the plan, as `issue` says.
+    status["assessment"] = {
+        "claims": [{"login": f"asker-{n}", "days_ago": 40 + n, "granted": False} for n in range(4)]
+    }
+    draft = toolkit.draft("claim", issue="ruxailab/RUXAILAB#2361")
+    assert draft["template"].splitlines()[2].startswith("I'd like to work on this.")
+    assert draft["warning"].startswith("4 people asked to work on this, the latest @asker-0")
+    assert "Post a concrete plan instead of another request" in draft["warning"]
+
+    # With no earlier request, nothing changes.
+    status["assessment"] = {"claims": []}
+    draft = toolkit.draft("claim", issue="ruxailab/RUXAILAB#2361")
+    assert "I'd like to work on this." in draft["template"] and "warning" not in draft

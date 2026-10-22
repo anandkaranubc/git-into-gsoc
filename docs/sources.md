@@ -31,6 +31,33 @@ Issue searches ask GitHub for open, unassigned issues without linked PRs in non-
 
 Organization scoping uses the GitHub organizations linked from each GSoC organization's official listing. Organizations whose code lives outside GitHub, or under a personal account, are not covered by `issues --scope gsoc`. `repos` reads up to 100 repositories from each of the first three GitHub owners linked to an organization and skips forks, archived repositories, repositories with issues disabled, and anything not pushed in the last year.
 
+### How the repository grade is worked out
+
+Each signal adds points, and the points add up to exactly 100. A repository with every signal at its best scores 100, and each missing signal costs exactly its points, so two repositories that both show 100 really are equal.
+
+| Signal | Most points | How the points are earned |
+|---|---|---|
+| Recent push | 16 | 16 within two weeks, 12 within 45 days, 6 within 120 days |
+| CONTRIBUTING guide | 12 | A CONTRIBUTING file, or a README section on contributing with real rules in it |
+| Outside merge rate | 12 | 12 at 40% or more, 6 at 20% or more, once ten outside PRs are sampled |
+| Open beginner issues | 10 | 10 when one is free, 4 when the label has no open issues, 2 when every one is assigned |
+| Time to a first human reply | 10 | 10 within a day, 6 within three days. With too few replies measured, time to merge: 10 within three days, 5 within ten |
+| Merge rate of all human PRs | 8 | 8 at 50% or more, 4 at 25% or more |
+| CI on pull requests | 8 | At least one workflow |
+| Different outside authors merged | 6 | 2 for each, up to three |
+| People who landed a single commit last year | 6 | 6 for ten or more, 3 for three or more |
+| Code of Conduct | 4 | Found in the repository |
+| Issue or PR templates | 4 | Either one found |
+| License | 4 | Detected by GitHub |
+
+The outside merge rate is worth more than the merge rate of all PRs, because most PRs in a busy project come from the core team. The grade follows the score: A from 85, B from 72, C from 58, D from 45, and F below that. Two rules can then hold it down, however many points the rest earns: the outside merge rate limits described above (a B or a C at best), and a year without a push (a D at best). An archived repository is an F.
+
+A figure that rests on too few PRs is shown but scores nothing, since a handful of PRs is not evidence either way. The single-commit count comes from a community service (ecosyste.ms). When it has no commit history for the repository, the count is left out and the score is out of the other 94 points, because a gap in someone else's data says nothing about the project. When GitHub does not answer a read, often because of a rate limit, the signals that come from it (the CONTRIBUTING guide, Code of Conduct and templates, the README's contributing section, CI, or open beginner issues) are left out the same way, with a note to run it again later. They never count as missing.
+
+The advice under the grade follows the grade: "Strong candidate" for an A, "Promising, with caveats" for a B, "Risky" for a C or a D, and "Poor fit" for an F.
+
+Under the checks, "Where it lost points" lists each signal that earned less than its most, using the names in the table above, with the reason when the lines above do not give it. It also says when a signal was left out for lack of data, and which rule held the grade down, if one did. A line marked with a dot (·) instead of a check mark is a fact that earns nothing either way, such as a figure based on too few PRs. The last line names the command to run next: `orient` and `issues --repo` for an A or a B, and `repos` to compare other repositories for anything lower.
+
 ## Ideas pages, orientation, pointers, and evidence
 
 Where these features came from, and which ideas from other tools were adopted or rejected, is in the [research notes](research.md).

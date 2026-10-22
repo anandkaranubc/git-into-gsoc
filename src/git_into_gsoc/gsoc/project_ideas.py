@@ -51,6 +51,8 @@ LABELS: dict[str, tuple[str, ...]] = {
         "duration",
         "length",
         "project length",
+        "estimate project length",
+        "estimated project length",
         "time commitment",
         "hours",
         "expected time",
@@ -73,6 +75,7 @@ LABELS: dict[str, tuple[str, ...]] = {
         "relevant skills",
         "recommended skills",
         "required skills",
+        "required skills / knowledge",
         "required/desirable skills",
         "skills required",
         "skills needed",
@@ -242,6 +245,8 @@ class _LineParser(HTMLParser):
 
     _BLOCK: ClassVar[frozenset[str]] = frozenset(
         {"p", "div", "li", "br", "tr", "section", "article", "blockquote", "pre", "table"}
+        # C2SI writes each field as <dt>Mentors</dt><dd>names</dd>: two lines, not one.
+        | {"dl", "dt", "dd"}
     )
     _SKIP: ClassVar[frozenset[str]] = frozenset(
         {"script", "style", "noscript", "svg", "head", "nav", "footer"}
@@ -271,6 +276,10 @@ class _LineParser(HTMLParser):
         self._href: str | None = None
         self._li = False
         self._divs: list[int | None] = []
+        # The level of the last real heading, and whether the current heading is a
+        # collapsible block's title (<summary>, class "accordion"), which sits below it.
+        self._last = 0
+        self._soft = False
 
     def _flush(self) -> None:
         text = re.sub(r"[ \t]+", " ", "".join(self._buf)).strip()
@@ -296,16 +305,30 @@ class _LineParser(HTMLParser):
             return
         if tag in {"h1", "h2", "h3", "h4", "h5", "h6"}:
             self._flush()
-            self._heading = int(tag[1])
+            self._heading = self._last = int(tag[1])
+            self._soft = False
         elif tag == "li":
             self._flush()
             self._li = True
         elif tag == "div":
             self._flush()
+            if self._soft and self._heading:
+                # An accordion's title holds only the title; a block inside it is the
+                # body (Bootstrap wraps every item in one <div class="accordion">).
+                self._heading, self._soft = None, False
             level = self._div_level(attrs)
+            if level:
+                self._last = level
+            elif self._collapsible(tag, attrs):
+                level, self._soft = min(6, self._last + 1), True
             self._divs.append(level)
             if level:
                 self._heading = level
+        elif tag == "summary" or (tag == "button" and self._collapsible(tag, attrs)):
+            # C2SI and the Neuroinformatics Unit put each idea in a collapsible block
+            # whose title is not a heading tag; it is one level below the last heading.
+            self._flush()
+            self._heading, self._soft = min(6, self._last + 1), True
         elif tag in self._BLOCK:
             self._flush()
         elif tag in {"b", "strong"}:
@@ -313,6 +336,10 @@ class _LineParser(HTMLParser):
             self._buf.append("**")
         elif tag == "a":
             self._href = dict(attrs).get("href") or None
+
+    @staticmethod
+    def _collapsible(tag: str, attrs: list[tuple[str, str | None]]) -> bool:
+        return tag == "summary" or "accordion" in str(dict(attrs).get("class") or "").split()
 
     def _div_level(self, attrs: list[tuple[str, str | None]]) -> int | None:
         classes = str(dict(attrs).get("class") or "").lower()
@@ -338,7 +365,10 @@ class _LineParser(HTMLParser):
         elif tag == "div":
             self._flush()
             if self._divs and self._divs.pop():
-                self._heading = None
+                self._heading, self._soft = None, False
+        elif tag in {"summary", "button"} and self._soft:
+            self._flush()
+            self._heading, self._soft = None, False
         elif tag in self._BLOCK:
             self._flush()
         elif tag in {"b", "strong"} and self._bold:
@@ -364,7 +394,8 @@ class _LineParser(HTMLParser):
 
 
 def html_to_lines(raw: str, base_url: str | None = None) -> list[str]:
-    """HTML as markdown-like lines: headings, bullets, bold labels, and links, with
+    """HTML as markdown-like lines: headings (a collapsible block's title counts as
+    one), bullets, bold labels, definition-list terms and values, and links, with
     scripts, menus, and footers left out."""
     parser = _LineParser(base_url)
     parser.feed(raw[:MAX_CHARS])
@@ -425,7 +456,8 @@ def _looks_like_html(raw: str) -> bool:
 
 def to_lines(raw: str, base_url: str | None = None) -> list[str]:
     """An ideas page as lines, whether it arrived as HTML or as markdown; a line with
-    breaks inside it is split where a label starts, so each label is read."""
+    breaks inside it is split where a label starts, or after a label's bare name, so
+    each label is read."""
     lines = html_to_lines(raw, base_url) if _looks_like_html(raw) else markdown_to_lines(raw)
     # A paragraph with line breaks (<br>) arrives as one line: MariaDB writes "Skills
     # needed: C++, bison" and "Mentors: ..." in one, and neither label was read. Split
@@ -435,7 +467,11 @@ def to_lines(raw: str, base_url: str | None = None) -> list[str]:
         parts = line.split("\n")
         # A label after a break ("...bison<br>Mentors: ..."), not a label whose value
         # wraps onto the next lines (Submitty's "Expected Outcomes: This project ...").
-        if len(parts) > 1 and any(_label(part.strip()) for part in parts[1:]):
+        # Or a label's bare name before its value ("**Duration**<br>Small (~90 hours)").
+        if len(parts) > 1 and (
+            any(_label(part.strip()) for part in parts[1:])
+            or _norm_label(_clean(parts[0])) in _LABEL_LOOKUP
+        ):
             out.extend(parts)
         else:
             out.append(line)
@@ -510,9 +546,13 @@ def _split_list(value: str) -> list[str]:
 
 
 def _split_people(value: str) -> list[str]:
-    value = _clean(value)
+    # One name per line counts as a list too (the Neuroinformatics Unit's
+    # "@alessandrofelder\n@igortatarnikov"); _clean would join the lines.
+    value = "; ".join(_clean(line) for line in value.split("\n"))
     # A linked name renders as "Name (https://...)"; the link is kept in idea.links.
     value = re.sub(r"\s*\(\s*(?:https?:)?//[^)]*\)", "", value)
+    # Cloudflare replaces an email address with "[email protected]" (C2SI).
+    value = re.sub(r"\s*\(?\[email\s+protected\]\)?", "", value, flags=re.I)
     parts = re.split(r"\s*(?:,|;| and |&)\s*(?![^()]*\))", value)
     return [p.strip(" .") for p in parts if p.strip(" .")]
 
@@ -556,7 +596,8 @@ def _person(part: str) -> str | None:
     text = re.split(r"\s+[-\u2013]\s+", text, maxsplit=1)[0].strip(" .,")
     bare = re.sub(r"\s*\([^)]*\)", "", text).strip(" .,")
     words = bare.split()
-    if len(words) == 1 and _HANDLE_RE.match(bare):
+    # GitHub handles ignore case: "@IgorTatarnikov" is one, "AI" alone is not.
+    if len(words) == 1 and _HANDLE_RE.match(bare.lower() if bare.startswith("@") else bare):
         return text
     if not 1 <= len(words) <= 5:
         return None
@@ -678,6 +719,8 @@ def _split_blocks(
             section = head[1]
             outside.append(line)
             continue
+        if head and head[0] == level and not _without_urls(_clean(head[1])).strip():
+            continue  # Oppia's "### </p>": no title, so the idea above goes on
         if head and head[0] == level:
             if title is not None:
                 blocks.append((title, body, section))
@@ -760,6 +803,8 @@ def _is_list_heading(section: str) -> bool:
 
 
 # A line that only states a project's size: "Full-time project 350h", "175 hours".
+# A line that is all bold and ends in a colon, such as "**Details:**", is a label.
+_BOLD_LABEL_RE = re.compile(r"(\*\*|__)[^*_\n]{1,80}(?::\1|\1:)")
 _SIZE_LINE_RE = re.compile(
     r"(?:(?:full|part)[- ]time\s+)?(?:project\s*)?[:(,-]?\s*(?:90|175|350)\s*(?:h|hrs?|hours?)\)?",
     re.I,
@@ -774,6 +819,7 @@ def _parse_block(
     )
     free_text: list[str] = []
     current: str | None = None
+    taken = 0  # lines the running field has taken
     cell: str | None = None
     cells = sum(1 for line in body if _norm_label(_clean(line)) in _LABEL_LOOKUP) >= 2
     for line in body:
@@ -786,7 +832,7 @@ def _parse_block(
                 current = None
                 continue
             label = _norm_label(head[1])
-            current = _LABEL_LOOKUP.get(label)
+            current, taken = _LABEL_LOOKUP.get(label), 0
             if current is None:
                 current = None
                 free_text.append(head[1])
@@ -796,22 +842,34 @@ def _parse_block(
             field, _, value = labelled
             if value.startswith("#"):  # inline template note, not a value
                 value = ""
-            current = field if not value else None
+            current, taken = (field if not value else None), 0
             if value:
                 _assign(idea, field, value)
             continue
+        # SageMath lays an idea out as table cells: "Mentor", then "Travis Scrimshaw".
+        # A line that is only a label's name labels the one line after it, in a block
+        # with several such lines: one "Mentors" in a page's contents is a link. It also
+        # ends a field that runs on (C2SI's "Skills Required:" lines, then "Mentor").
+        bare = _LABEL_LOOKUP.get(_norm_label(_clean(line))) if cells else None
+        if bare:
+            current, cell = None, bare
+            continue
+        if current and taken and _BOLD_LABEL_RE.fullmatch(line.strip()):
+            # Kubeflow's "**Mentors:**" names, then "**Contributor:**", a label this reader
+            # does not know. Before any value it is a group ("**For modules A-D:**").
+            current = None
         if current:
             _assign(idea, current, line)
+            taken += 1
         elif cell:
             _assign(idea, cell, line)
+            if _BULLET_RE.match(line):
+                continue  # a list under the label's name: each item belongs to it
         elif not idea.size and _SIZE_LINE_RE.fullmatch(_clean(line).strip(" .")):
             _assign(idea, "size", line)  # MariaDB: "**Full-time project 350h**"
         else:
             free_text.append(line)
-        # SageMath lays an idea out as table cells: "Mentor", then "Travis Scrimshaw".
-        # A line that is only a label's name labels the one line after it, in a block
-        # with several such lines: one "Mentors" in a page's contents is a link.
-        cell = None if current or not cells else _LABEL_LOOKUP.get(_norm_label(_clean(line)))
+        cell = None
     if not idea.description:
         text = " ".join(_clean(x) for x in free_text if not _URL_RE.fullmatch(x.strip()))
         idea.description = text[:500].strip()
@@ -1044,7 +1102,7 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         return doc
 
     # Try every candidate level; keep the one whose blocks carry the most labelled fields.
-    best: tuple[int, int, int, list[ProjectIdea], list[str]] | None = None
+    best: tuple[tuple[int, ...], int, list[ProjectIdea], list[str]] | None = None
     for level in levels:
         blocks, outside = _split_blocks(lines, level)
         ideas = [
@@ -1053,11 +1111,15 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
             if not _is_non_idea(t)
         ]
         yield_ = sum(_labelled(i) for i in ideas)
-        key = (yield_, len(ideas), level)
-        if best is None or key > best[:3]:
-            best = (*key, ideas, outside)
+        # When as many blocks carry as many fields, the deeper level wins: LibreOffice's
+        # "## Filters" holds one "### Add JPEG XL import support", and its empty groups
+        # ("## Draw") are not ideas. With no fields anywhere, more blocks still win.
+        labelled = sum(1 for i in ideas if _labelled(i))
+        key = (yield_, labelled, level if labelled else len(ideas), len(ideas), level)
+        if best is None or key > best[0]:
+            best = (key, level, ideas, outside)
     assert best is not None
-    _, _, level, ideas, outside = best
+    _, level, ideas, outside = best
     # Some pages put ideas at two heading levels: ListenBrainz's 2026 page has three
     # under "## Ideas" as ### and its two Android ideas as ##. A heading above the
     # ideas' level whose own text, before the next heading, holds two idea fields is an
