@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "git-into-gsoc"
-version = "0.14.0"
+version = "0.14.1"
 description = "Find your first open-source contribution and prepare for Google Summer of Code: CLI, MCP server, and Agent Skill"
 readme = "README.md"
 license = "MIT"

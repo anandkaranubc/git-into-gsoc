@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.14.0...v0.14.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **issues:** measure claim detection on a fresh sample and close the gaps ([#191](https://github.com/anandkaranubc/git-into-gsoc/issues/191)) ([de61c0b](https://github.com/anandkaranubc/git-into-gsoc/commit/de61c0b7543bab7240328e4c68238fca1918e12d))
+* **pointers:** match names in an issue to file names, which needs no token ([#193](https://github.com/anandkaranubc/git-into-gsoc/issues/193)) ([7eca8cf](https://github.com/anandkaranubc/git-into-gsoc/commit/7eca8cfcd75ce5316fc5d42f4a23518a0486bf35))
+* **pointers:** show code files before changelogs and docs ([#194](https://github.com/anandkaranubc/git-into-gsoc/issues/194)) ([ede31d9](https://github.com/anandkaranubc/git-into-gsoc/commit/ede31d90d930e0d7436de70dbad200f4c3aa4ac8))
+
 ## [0.14.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.13.0...v0.14.0) (2026-10-22)
 
 
