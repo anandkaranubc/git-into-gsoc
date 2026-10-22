@@ -358,6 +358,12 @@ def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) 
         f"List its repositories: git-into-gsoc repos {where}, then "
         "git-into-gsoc issues --repo owner/name (it uses that repository's own beginner label)."
     )
+    if org:
+        steps.append(
+            f"Or start from its ideas: git-into-gsoc ideas {where}. At some organizations GSoC "
+            "work begins with an idea and its mentors, not with labelled issues; ask the "
+            "mentors in its chat how to start."
+        )
     if not org:
         steps.append("Search every repository, not only GSoC organizations: add --scope all")
     steps.append(

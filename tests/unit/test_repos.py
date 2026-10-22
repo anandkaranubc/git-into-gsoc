@@ -665,3 +665,13 @@ def test_repos_says_where_to_start_when_no_repository_takes_outside_work(
         lambda owner, repo, **k: [welcome] if repo == "tool-2" else [by_team],
     )
     assert toolkit.discover_repos("lab")["note"] == ""
+
+
+def test_an_empty_issue_search_in_an_organization_points_to_its_ideas() -> None:
+    from git_into_gsoc.service import _when_no_issues
+
+    steps = _when_no_issues("python", org="ML4SCI", repo=None)
+    assert any('git-into-gsoc ideas "ML4SCI"' in step for step in steps)
+    assert not any(
+        "git-into-gsoc ideas" in s for s in _when_no_issues("python", org=None, repo=None)
+    )
