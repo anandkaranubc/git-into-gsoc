@@ -236,9 +236,95 @@ def test_recommendation_text_matches_the_grade() -> None:
     from git_into_gsoc.service import _repo_recommendation
 
     busy = score_repo_health(_busy_repo())
-    assert "Go ahead" not in _repo_recommendation(busy.health_score, busy.warnings)
-    assert "warnings" in _repo_recommendation(90, ["One person wrote most commits"])
-    assert "Go ahead" in _repo_recommendation(90, [])
+    assert "Go ahead" not in _repo_recommendation(busy.grade, busy.warnings)
+    assert "warnings" in _repo_recommendation("A", ["One person wrote most commits"])
+    assert "Go ahead" in _repo_recommendation("A", [])
+    # One message per grade: a C used to read "Promising" from 65 up, so a repository
+    # held at 71 for merging under 20% of outside pull requests looked promising.
+    rare = score_repo_health(_busy_repo(outsider_merge_rate=0.1))
+    assert rare.grade == "C"
+    assert _repo_recommendation(rare.grade, rare.warnings).startswith("Risky")
+    assert _repo_recommendation("B", []).startswith("Promising")
+    assert _repo_recommendation("D", []).startswith("Risky")
+    assert _repo_recommendation("F", []).startswith("Poor fit")
+
+
+def _perfect_repo(**overrides: object) -> RepoHealth:
+    """Every scored signal at its best."""
+    fields: dict[str, object] = {
+        "full_name": "acme/ideal",
+        "url": "https://github.com/acme/ideal",
+        "pushed_at": datetime.now(UTC) - timedelta(days=1),
+        "has_contributing": True,
+        "has_code_of_conduct": True,
+        "has_issue_template": True,
+        "has_ci": True,
+        "beginner_label": "good first issue",
+        "open_beginner_issues": 6,
+        "prs_sampled": 40,
+        "merge_rate": 0.8,
+        "outsider_prs_sampled": 20,
+        "outsider_merge_rate": 0.8,
+        "outside_authors_merged": 5,
+        "median_first_response_hours": 10,
+        "first_response_sampled": 12,
+        "committers_last_year": 60,
+        "newcomer_committers_last_year": 25,
+        "license": "MIT",
+    }
+    fields.update(overrides)
+    return RepoHealth(**fields)  # type: ignore[arg-type]
+
+
+# Taking one signal away from a perfect repository, and the points it carries.
+KNOCKOUTS: dict[str, tuple[dict[str, object], int]] = {
+    "recent push": ({"pushed_at": datetime.now(UTC) - timedelta(days=200)}, 16),
+    "CONTRIBUTING guide": ({"has_contributing": False}, 12),
+    "Code of Conduct": ({"has_code_of_conduct": False}, 4),
+    "templates": ({"has_issue_template": False}, 4),
+    "CI": ({"has_ci": False}, 8),
+    "free beginner issues": ({"beginner_label": None, "open_beginner_issues": None}, 10),
+    "merge rate": ({"merge_rate": 0.1}, 8),
+    "outside merge rate": ({"outsider_prs_sampled": 4}, 12),
+    "outside authors": ({"outside_authors_merged": 0}, 6),
+    "reply time": ({"median_first_response_hours": None, "first_response_sampled": 0}, 10),
+    "single-commit newcomers": ({"newcomer_committers_last_year": 1}, 6),
+    "license": ({"license": None}, 4),
+}
+
+
+def test_health_points_add_up_to_exactly_100() -> None:
+    # They used to add up to 108 and were cut at 100, so a top repository could lose a
+    # Code of Conduct, or every free beginner issue, without its score moving. Every
+    # signal must now cost exactly its points, wherever the repository starts.
+    assert score_repo_health(_perfect_repo()).health_score == 100
+    assert sum(points for _, points in KNOCKOUTS.values()) == 100
+    for name, (change, points) in KNOCKOUTS.items():
+        scored = score_repo_health(_perfect_repo(**change))
+        assert scored.health_score == 100 - points, name
+
+
+def test_missing_commit_data_leaves_newcomers_out_of_the_score() -> None:
+    # ecosyste.ms has no commit history for some repositories and is sometimes down.
+    # That says nothing about the repository, so it must not cost a grade.
+    missing = {"committers_last_year": None, "newcomer_committers_last_year": None}
+    assert score_repo_health(_perfect_repo(**missing)).health_score == 100
+    no_ci = score_repo_health(_perfect_repo(has_ci=False, **missing))
+    assert no_ci.health_score == round(86 * 100 / 94, 1)
+    assert any("ecosyste.ms" in s for s in no_ci.signals)
+    # A measured count of zero is evidence, not missing data.
+    none_landed = score_repo_health(_perfect_repo(newcomer_committers_last_year=0))
+    assert none_landed.health_score == 94
+
+
+def test_caps_still_bound_a_repository_with_missing_commit_data() -> None:
+    missing = {"committers_last_year": None, "newcomer_committers_last_year": None}
+    quiet = score_repo_health(
+        _perfect_repo(pushed_at=datetime.now(UTC) - timedelta(days=851), **missing)
+    )
+    assert quiet.health_score == 57 and quiet.grade == "D"
+    rare = score_repo_health(_perfect_repo(outsider_merge_rate=0.1, **missing))
+    assert rare.health_score == 71 and rare.grade == "C"
 
 
 def _candidate(labels: list[str], **overrides: object) -> IssueCandidate:

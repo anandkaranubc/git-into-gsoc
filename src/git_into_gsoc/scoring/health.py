@@ -16,6 +16,10 @@ DORMANT_DAYS = 365
 # Its pull request figures come from before it went quiet, so they cannot lift it above
 # a D ("Risky") however good they look.
 DORMANT_CAP = 57.0
+# The most the single-commit newcomer count adds. It comes from ecosyste.ms, so when
+# that service has no commit history for a repository the score leaves these points out
+# instead of counting them as lost.
+NEWCOMER_POINTS = 6
 
 
 def _days_or_hours(hours: float) -> str:
@@ -37,13 +41,17 @@ def _grade(score: float) -> str:
 def score_repo_health(health: RepoHealth) -> RepoHealth:
     """Score how likely a newcomer's pull request is to land, out of 100.
 
-    The points add up to 108 and the total is capped at 100, so a repository can
-    miss one minor signal and still score 100. The outside merge rate is the
-    strongest newcomer signal: when it is scored and low, it caps the grade (see
+    The points add up to exactly 100, so every missing signal shows in the score and
+    100 means every signal is at its best. (They once added up to 108 and were cut at
+    100, which let a top repository lose a Code of Conduct, or all of its free
+    beginner issues, without the score moving.) The grade bands leave room for a
+    repository to miss a few points and still get an A. The outside merge rate is
+    the strongest newcomer signal: when it is scored and low, it caps the grade (see
     OUTSIDER_CAPS). Stars add nothing: larger projects reject a higher share of
     newcomer PRs.
     """
     score = 0.0
+    out_of = 100.0
     signals: list[str] = []
     warnings: list[str] = []
     dormant = False
@@ -57,14 +65,16 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
 
     if health.pushed_at:
         days = (datetime.now(UTC) - health.pushed_at.astimezone(UTC)).days
+        # A push shows the code is alive, not that anyone reviews outside work; the
+        # reply time below measures that, and DORMANT_CAP handles a silent year.
         if days <= 14:
-            score += 20
+            score += 16
             signals.append(f"Very recent activity ({days}d since push)")
         elif days <= 45:
-            score += 15
+            score += 12
             signals.append(f"Active ({days}d since push)")
         elif days <= 120:
-            score += 7
+            score += 6
             signals.append(f"Somewhat active ({days}d since push)")
         elif days <= DORMANT_DAYS:
             warnings.append(f"Stale repository ({days}d since last push)")
@@ -115,12 +125,14 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         score += 4
         warnings.append(f"'{health.beginner_label}' label exists but no open issues use it")
 
+    # Worth less than the outside merge rate below: most of these PRs come from the
+    # core team, and the outside ones are counted again there.
     if health.merge_rate is not None and health.prs_sampled >= 5:
         if health.merge_rate >= 0.5:
-            score += 12
+            score += 8
             signals.append(past(f"Healthy merge rate ({health.merge_rate:.0%} of human PRs)"))
         elif health.merge_rate >= 0.25:
-            score += 6
+            score += 4
             signals.append(past(f"Moderate merge rate ({health.merge_rate:.0%})"))
         else:
             warnings.append(f"Low merge rate ({health.merge_rate:.0%})")
@@ -206,15 +218,24 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
                 "unmerged ones are not counted"
             )
     newcomers = health.newcomer_committers_last_year
-    if newcomers is not None and health.committers_last_year:
+    if newcomers is None:
+        # No commit history from ecosyste.ms says nothing about the repository, so
+        # score the rest out of what could be read. A year with no commits reads the
+        # same way, and DORMANT_CAP already holds that repository down.
+        out_of -= NEWCOMER_POINTS
+        signals.append(
+            "No commit history from ecosyste.ms, so people who landed a single "
+            "commit are left out of the score"
+        )
+    elif health.committers_last_year:
         if newcomers >= 10:
-            score += 6
+            score += NEWCOMER_POINTS
             signals.append(
                 f"{newcomers} people landed their first and only commit in the last year "
                 f"({health.committers_last_year} committers in total)"
             )
         elif newcomers >= 3:
-            score += 3
+            score += NEWCOMER_POINTS / 2
             signals.append(
                 f"{newcomers} people landed a single commit in the last year "
                 f"({health.committers_last_year} committers in total)"
@@ -246,7 +267,7 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
 
     if dormant:
         cap = min(cap, DORMANT_CAP)
-    health.health_score = round(min(score, cap, 100.0), 1)
+    health.health_score = round(min(score * 100 / out_of, cap), 1)
     health.grade = _grade(health.health_score)
     health.signals = signals
     health.warnings = warnings

@@ -605,7 +605,7 @@ class GSoCToolkit:
         return {
             "health": health.model_dump(mode="json"),
             "contribution_guide": guide.model_dump(),
-            "recommendation": _repo_recommendation(health.health_score, health.warnings),
+            "recommendation": _repo_recommendation(health.grade, health.warnings),
         }
 
     def gsoc_github_orgs(
@@ -2847,14 +2847,16 @@ def _issue_dict(issue: Any) -> dict[str, Any]:
     return data | {"signals": issue.signals}
 
 
-def _repo_recommendation(score: float, warnings: list[str]) -> str:
-    # Same cut-off as grade A, so a B never reads as "go ahead".
-    if score >= 85:
+def _repo_recommendation(grade: str, warnings: list[str]) -> str:
+    # Read from the grade, so the advice can never disagree with it: a B never reads
+    # as "go ahead", and a C (where merging under 20% of outside PRs caps a
+    # repository) never reads as promising.
+    if grade == "A":
         if warnings:
             return "Strong candidate. Read the warnings below, then set it up and pick an issue."
         return "Strong candidate. Go ahead with setup and pick an issue."
-    if score >= 65:
+    if grade == "B":
         return "Promising, with caveats. Read the warnings and check that maintainers reply."
-    if score >= 45:
+    if grade in {"C", "D"}:
         return "Risky. Only continue if you have a mentor contact or a strong reason."
     return "Poor fit for a first GSoC contribution. Choose a healthier repository."
