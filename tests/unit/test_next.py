@@ -330,4 +330,8 @@ def test_next_shows_merged_pull_requests_in_the_terminal(api: respx.MockRouter) 
     assert result.exit_code == 0, result.output
     assert "Merged since your last check" in result.stdout
     assert "sympy/sympy#42" in result.stdout
-    assert "first merged pull request" in " ".join(result.stdout.split())
+    words = " ".join(result.stdout.split())
+    assert "first merged pull request" in words
+    # The one moment worth asking: point to feedback and a friend, once.
+    assert "tell a friend" in words
+    assert "git-into-gsoc feedback" in words

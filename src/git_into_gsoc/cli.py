@@ -1923,6 +1923,10 @@ def next_cmd(
                 "That is the hardest step, and it is done. Maintainers will remember a "
                 "contributor who finished one."
             )
+            console.print(
+                "  [dim]If git-into-gsoc helped, tell a friend who is starting out, or tell "
+                "us what worked: git-into-gsoc feedback[/dim]"
+            )
     news = [p for p in data.get("org_posts") or [] if p["status"] != "mentions"] + [
         p for p in data.get("org_posts") or [] if p["status"] == "mentions"
     ]
