@@ -1,9 +1,10 @@
 name: Release assets and MCP registry
 
 # Builds the release assets from the tagged source and attaches them to the
-# GitHub release: the Python wheel and source archive (installable by URL until
-# the package is on PyPI) and the MCPB bundle. Then publishes this server to the
-# public MCP registry (registry.modelcontextprotocol.io). Authentication uses
+# GitHub release: the Python wheel and source archive (installable by URL
+# without PyPI) and the MCPB bundle. Then publishes this server to the public
+# MCP registry (registry.modelcontextprotocol.io) with the bundle and the PyPI
+# package that release.yml uploads. Authentication uses
 # GitHub's OIDC token, so no secret is stored; the namespace
 # io.github.anandkaranubc/* is granted to this repository's owner.
 #
@@ -126,13 +127,39 @@ jobs:
             exit 1
           fi
 
-      - name: Point server.json at the release asset
+      # The registry accepts a PyPI package only once PyPI serves that version and
+      # its description carries the README's mcp-name line. release.yml uploads to
+      # PyPI while this workflow runs, so wait for it. If it never appears, list
+      # the bundle alone rather than fail the whole entry.
+      - name: Wait for the version on PyPI
+        id: pypi
         if: steps.registry.outputs.publish == 'true'
+        run: |
+          TOKEN="mcp-name: $(jq -r .name server.json)"
+          for _ in $(seq 20); do
+            if curl -fsS -o pypi.json "https://pypi.org/pypi/git-into-gsoc/${VERSION}/json" \
+              && jq -e --arg token "$TOKEN" '.info.description | contains($token)' pypi.json >/dev/null; then
+              echo "PyPI serves git-into-gsoc ${VERSION}."
+              echo "available=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            sleep 30
+          done
+          echo "::warning::PyPI did not serve git-into-gsoc ${VERSION} with the mcp-name line within 10 minutes, so the registry entry lists only the bundle. Check the Publish to PyPI job of the release run."
+          echo "available=false" >> "$GITHUB_OUTPUT"
+
+      # The bundle stays first: the registry lookup above reads packages[0].
+      - name: Point server.json at the release asset and the PyPI package
+        if: steps.registry.outputs.publish == 'true'
+        env:
+          PYPI_AVAILABLE: ${{ steps.pypi.outputs.available }}
         run: |
           SHA=$(openssl dgst -sha256 dist/git-into-gsoc.mcpb | awk '{print $NF}')
           URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/git-into-gsoc.mcpb"
-          jq --arg v "$VERSION" --arg url "$URL" --arg sha "$SHA" \
-            '.version = $v | .packages = [{"registryType": "mcpb", "identifier": $url, "fileSha256": $sha, "transport": {"type": "stdio"}}]' \
+          jq --arg v "$VERSION" --arg url "$URL" --arg sha "$SHA" --arg pypi "$PYPI_AVAILABLE" \
+            '.version = $v
+             | .packages = [{"registryType": "mcpb", "identifier": $url, "fileSha256": $sha, "transport": {"type": "stdio"}}]
+               + (if $pypi == "true" then [{"registryType": "pypi", "identifier": "git-into-gsoc", "version": $v, "runtimeHint": "uvx", "transport": {"type": "stdio"}, "packageArguments": [{"type": "positional", "value": "mcp"}]}] else [] end)' \
             server.json > server.tmp && mv server.tmp server.json
           cat server.json
 

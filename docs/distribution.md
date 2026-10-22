@@ -25,16 +25,14 @@ python scripts/sync_integrations.py --check   # what the tests run
 ### Launch commands
 
 - **Plugins and extensions** run the server from their own installed copy: `uvx --from ${CLAUDE_PLUGIN_ROOT}`, `uvx --from ${extensionPath}`, or, for Codex, `uvx --from .` with `cwd: "."`. The server then always matches the skill next to it, updates arrive with the plugin, and nothing is cloned when it starts.
-- **One-click buttons and copied configs** run `uvx --from git+https://github.com/anandkaranubc/git-into-gsoc@main`. `main` changes only through reviewed pull requests that pass CI. A `stable` branch that follows releases was tried and dropped: the built-in Actions token may not create or move a branch whose commits change workflow files, so it would need a personal token stored as a secret.
+- **One-click buttons and copied configs** run the newest PyPI release: `uvx git-into-gsoc@latest mcp`. They need only uv, and uv checks PyPI for a newer release at every start. Before the package was on PyPI they ran `main` from GitHub, which also needed Git.
 - **`git-into-gsoc setup`** writes the absolute path of the installed command, which works offline and starts fastest.
-
-When the package is on PyPI, switch `remote_command()` to `uvx git-into-gsoc@latest mcp`, run the sync script, and add a `pypi` package to `server.json` (see below).
 
 ## What happens at release
 
 Release Please bumps `version` in `pyproject.toml`, `src/git_into_gsoc/__init__.py`, both plugin manifests, `gemini-extension.json`, and `server.json`. After the release:
 
-- `release.yml` dispatches `mcp-registry.yml`, which attaches the wheel, source archive, and `git-into-gsoc.mcpb` and publishes the registry entry.
+- `release.yml` uploads the wheel and source archive to PyPI, and dispatches `mcp-registry.yml`, which attaches the wheel, source archive, and `git-into-gsoc.mcpb` to the release and publishes the registry entry. The entry lists the bundle and the PyPI package. The registry accepts a PyPI package only after PyPI serves that version, so the workflow waits up to 10 minutes for it. If PyPI still does not have it, the entry lists only the bundle and the run shows a warning.
 - Claude Code, Codex, and Copilot see the new `version` and offer the update. Gemini CLI compares release tags, so `--auto-update` installs pick it up at the next start.
 
 ## Compatibility checks
@@ -51,14 +49,13 @@ python scripts/mcp_smoke.py -- uvx --from . git-into-gsoc mcp
 
 ## Listings that need the owner
 
-None of these has been submitted. Each needs the repository owner's account or decision, and some are reviewed by the platform. The files they need are already in the repository unless noted.
+None of these has been submitted yet. Each needs the repository owner's account or decision, and some are reviewed by the platform. The files they need are already in the repository unless noted.
 
 | Where | What it reaches | How |
 |---|---|---|
-| PyPI | `uvx git-into-gsoc`, `pip install`, VS Code's MCP gallery (it cannot install `mcpb` packages) | Add the trusted publisher in [releasing](releasing.md), then the next release uploads. Then add a `pypi` package to `server.json`: `{"registryType": "pypi", "identifier": "git-into-gsoc", "version": "<version>", "runtimeHint": "uvx", "transport": {"type": "stdio"}, "packageArguments": [{"type": "positional", "value": "mcp"}]}`, and have `mcp-registry.yml` keep it |
 | Gemini CLI extension gallery | geminicli.com/extensions | Done: the GitHub topic `gemini-cli-extension` was added on 2026-10-21. The gallery crawls tagged repositories daily, so the listing appears after the next crawl; check https://geminicli.com/extensions.json for `anandkaranubc/git-into-gsoc`. Remove the topic to unlist |
 | Anthropic plugin directory | claude.ai, Cowork, Claude Code (`claude-community`) | Submit at claude.ai/directory/manage (paid plan). Track a release tag or `main`. Expect a human review. The README must list the network destinations, which it does under "Where the results come from" and in [sources](sources.md) |
-| GitHub MCP registry | VS Code's `@mcp` gallery, JetBrains, Visual Studio | After PyPI: post an onboarding request in github/github-mcp-server discussion 1257 or email partnerships@github.com, with the registry name and the two `curl` checks |
+| GitHub MCP registry | VS Code's `@mcp` gallery, JetBrains, Visual Studio | Now possible, because new registry entries also list the PyPI package: post an onboarding request in github/github-mcp-server discussion 1257 or email partnerships@github.com, with the registry name and the two `curl` checks |
 | github/awesome-copilot | The default plugin marketplace in Copilot CLI and VS Code | The external-plugin issue form, with a release tag and its full commit SHA |
 | Cursor Marketplace and cursor.directory | Cursor's plugin browser | cursor.com/marketplace/publish (reviewed); cursor.directory/plugins/new (paste the repo URL) |
 | Codex plugin directory | Codex and ChatGPT | platform.openai.com/plugins. Local MCP servers are accepted only from approved partners, so submit the skill only |
@@ -83,4 +80,4 @@ None of these has been submitted. Each needs the repository owner's account or d
 | Credentials | None required; an optional GitHub token raises the rate limit and is sent only to api.github.com |
 | Install command | `claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`, or the matching command in [assistants](assistants.md) |
 
-Already listed, with nothing to do: the official MCP registry (every release), Glama (copied from the registry), and `gh skill search gsoc`. skills.sh lists a repository once people install it with `npx skills add`.
+Already listed, with nothing to do: [PyPI](https://pypi.org/project/git-into-gsoc/) (every release since 0.14.1, by trusted publishing), the official MCP registry (every release), Glama (copied from the registry), and `gh skill search gsoc`. skills.sh lists a repository once people install it with `npx skills add`.

@@ -309,10 +309,10 @@ def setup_cursor(box: Sandbox, gig: str) -> tuple[str, str]:
 
 
 def _button_command(source: str) -> list[str]:
-    command = distribution.remote_command()
-    if source != REPO:  # test this checkout's code, not main on GitHub
-        command[command.index("--from") + 1] = f"git+file://{source}"
-    return command
+    if source == REPO:
+        return distribution.remote_command()
+    # Test this checkout's code, not the release on PyPI.
+    return ["uvx", "--from", f"git+file://{source}", distribution.SERVER_NAME, "mcp"]
 
 
 def button_cursor(box: Sandbox, source: str) -> tuple[str, str]:
@@ -424,7 +424,11 @@ def main(args: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Check git-into-gsoc in real agent CLIs.")
     parser.add_argument("--only", help="Comma-separated agents: " + ", ".join(AGENTS))
     parser.add_argument("--setup", action="store_true", help="Also check `git-into-gsoc setup`")
-    parser.add_argument("--remote", action="store_true", help="Install from GitHub, not here")
+    parser.add_argument(
+        "--remote",
+        action="store_true",
+        help="Install what people get (plugins from GitHub, buttons from PyPI), not this checkout",
+    )
     parser.add_argument("--gig", help="git-into-gsoc executable for --setup (default: this env)")
     parser.add_argument("--require", help="Comma-separated agents that must be installed")
     parser.add_argument("--json", action="store_true", help="Print results as JSON")

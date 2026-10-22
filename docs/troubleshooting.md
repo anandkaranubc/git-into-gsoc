@@ -103,7 +103,7 @@ Run `git-into-gsoc doctor`: it lists which assistants have the skill and which c
 - The first start downloads what the server needs and can take up to a minute. An assistant may report it as disconnected or timed out the first time. Restart the assistant once the download is done.
 - Gemini CLI shows the server as disabled: it starts MCP servers only in folders you trust. Run `/permissions` in the folder, or answer yes when it asks.
 - Codex says the server took too long to start: the plugin allows 120 seconds. A config you wrote yourself may have only Codex's default of 10. Add `startup_timeout_sec = 60` under `[mcp_servers."git-into-gsoc"]` in `~/.codex/config.toml`, or run `git-into-gsoc setup --assistant codex`, which writes it for you.
-- One-click buttons install from GitHub with Git. If `git` is missing, install [Git](https://git-scm.com/downloads) or use the plugin route instead.
+- A one-click button's server asks PyPI for the newest release each time it starts, so it needs network access. Behind a proxy, set `HTTPS_PROXY` where the assistant can see it, or use `git-into-gsoc setup`, which registers the installed command and starts offline.
 - The skill is listed twice: use one route per assistant. `git-into-gsoc setup --remove --assistant NAME` takes away what setup added, and `doctor` lists every copy it finds.
 
 ## Progress will not load
