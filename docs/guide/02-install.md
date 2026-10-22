@@ -44,7 +44,7 @@ uv tool install git-into-gsoc    # or: pipx install git-into-gsoc
 git-into-gsoc setup              # connect your AI assistants; add --dry-run to preview
 ```
 
-pipx installs with the Python it runs on, which must be 3.11 or newer. Ubuntu 22.04's packaged pipx runs on Python 3.10, and `pip3 install pipx` on a Mac can use 3.9; there `pipx install git-into-gsoc` fails with "No matching distribution found" or "requires a different Python". Use uv or the one-line installer instead; both bring a Python that fits.
+pipx installs with the Python it runs on, which must be 3.11 or newer. Ubuntu 22.04's packaged pipx runs on Python 3.10, and `pip3 install pipx` on a Mac can use 3.9; there `pipx install git-into-gsoc` fails with "No matching distribution found" or "requires a different Python". Use uv instead, or the one-line installer, which skips such a pipx and offers to install uv.
 
 To install one particular release, add its version, for example `uv tool install git-into-gsoc==0.14.1`. Every release is on the [PyPI page](https://pypi.org/project/git-into-gsoc/#history) and the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases), each with a **wheel**, Python's ready-to-install package file, which `uv tool install` or `pipx install` accepts by address when PyPI is slow to update. For the newest code that is not released yet, run `uv tool install git+https://github.com/anandkaranubc/git-into-gsoc`, which needs Git.
 
