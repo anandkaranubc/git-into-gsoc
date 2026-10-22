@@ -1,4 +1,9 @@
-"""Typer CLI for git-into-gsoc."""
+"""The command line: each command calls one GSoCToolkit method and renders the result.
+
+Command docstrings are the `--help` text people read, so they are written for people
+and checked against docs/cli.md by a test. Everything printed goes through `escape`,
+because issue titles, labels and notes are text strangers wrote.
+"""
 
 from __future__ import annotations
 
