@@ -398,3 +398,45 @@ def test_governance_test_and_reserved_issues_are_not_first_tasks() -> None:
         "created_at": "2026-01-01",
     }
     assert starter_problem(reserved, person) == "reserved for someone or already being worked on"
+
+
+def test_help_wanted_alone_medium_and_unsettled_issues_are_not_first_tasks() -> None:
+    from git_into_gsoc.matching.issues import starter_problem
+
+    person = build_profile(technologies=["rust"])
+
+    def issue(*labels: str, title: str = "Fix the parser") -> dict[str, object]:
+        return {"title": title, "labels": list(labels), "created_at": "2026-01-01"}
+
+    assert "no beginner label" in str(starter_problem(issue("Help Wanted", "A-API"), person))
+    assert starter_problem(issue("good first issue", "E-Medium"), person)
+    assert starter_problem(issue("good first issue", "status: needs discussion"), person)
+    calls = issue("good first issue", title="Find bugs in the rewrite of the assumption system")
+    assert "call for testing" in str(starter_problem(calls, person))
+    # A beginner label beside "help wanted" is fine, and so is a medium priority.
+    assert starter_problem(issue("good first issue", "help wanted"), person) is None
+    assert starter_problem(issue("Easy to Fix", "priority: medium"), person) is None
+
+
+def test_issues_others_asked_for_stay_off_the_starter_list() -> None:
+    from git_into_gsoc.matching.issues import starter_problem
+
+    person = build_profile(technologies=["python"])
+
+    def asked(*claims: dict[str, object]) -> dict[str, object]:
+        return {
+            "title": "Fix the parser",
+            "labels": ["good first issue"],
+            "created_at": "2026-01-01",
+            "assessment": {"claims": list(claims)},
+        }
+
+    # Three people over two years: crowded, though each claim is old.
+    crowded = asked({"days_ago": 240}, {"days_ago": 340}, {"days_ago": 680})
+    assert starter_problem(crowded, person) == "3 people have asked to work on it"
+    # The author said "I'm working on this" 73 days ago: stale for `issue`, still theirs.
+    assert "73 days ago" in str(starter_problem(asked({"days_ago": 73}), person))
+    granted = asked({"days_ago": 128, "granted": True})
+    assert "a maintainer gave it to someone" in str(starter_problem(granted, person))
+    assert starter_problem(asked({"days_ago": 200}), person) is None
+    assert starter_problem(asked(), person) is None

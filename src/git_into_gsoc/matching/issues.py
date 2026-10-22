@@ -14,6 +14,7 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 
+from git_into_gsoc.github.repos import is_beginner_label
 from git_into_gsoc.matching.concepts import SKILL, find_concepts, find_tag_concepts, kind_of, label
 from git_into_gsoc.matching.ideas import known_skills, wanted_domains
 from git_into_gsoc.matching.profile import ContributorProfile
@@ -62,7 +63,10 @@ def is_event_repo(full_name: str) -> bool:
 _NOT_A_TASK_RE = re.compile(
     r"\b(?:gsoc|google summer of code|roadmap|tracker|tracking issue|epic|umbrella issue|"
     r"meta issue|what can i work on|announcement|no gsoc|working group|release [0-9.]+|"
-    r"publish .* to (?:maven|pypi|npm)|request for comments|rfc)\b",
+    r"publish .* to (?:maven|pypi|npm)|request for comments|rfc|"
+    # Calls for testing or feedback: open-ended, with nothing to finish.
+    r"find bugs|call for (?:testing|testers|feedback)|help (?:us )?test|testers wanted|"
+    r"feedback wanted|bug bash)\b",
     re.I,
 )
 _NOT_A_TASK_LABELS = frozenset(
@@ -72,11 +76,18 @@ _NOT_A_TASK_LABELS = frozenset(
 _NOT_READY_RE = re.compile(
     r"\b(?:intermediate|advanced|hard|difficult|expert|"
     r"can'?t reproduce|cannot reproduce|needs? (?:repro|reproduction|info|more info|"
-    r"triage|decision|design)|waiting|blocked|on hold|duplicate|invalid|wontfix|"
+    r"triage|decision|design|discussion)|waiting|blocked|on hold|duplicate|invalid|wontfix|"
     r"won't fix|stale)\b",
     re.I,
 )
+# Medium difficulty ("E-Medium", "difficulty: medium"), but not a medium priority.
+_MEDIUM_RE = re.compile(r"^(?:e-|difficulty[:/ -]*|level[:/ -]*|effort[:/ -]*)?medium$", re.I)
 OLD_ISSUE_YEARS = 3
+# Claims a curated first-task list leaves alone, though `issue` calls the older ones
+# stale: a newcomer's first comment should not land on someone else's work.
+RECENT_ASK_DAYS = 90
+GRANTED_DAYS = 180
+CROWDED_ASKS = 3
 
 
 def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | None:
@@ -91,10 +102,19 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     ):
         return "reserved for someone or already being worked on"
     if _NOT_A_TASK_RE.search(title) or labels & _NOT_A_TASK_LABELS:
-        return "an announcement, roadmap, or tracker rather than a task"
-    not_ready = next((lab for lab in labels if _NOT_READY_RE.search(lab)), None)
+        return "an announcement, roadmap, tracker, or call for testing rather than a task"
+    not_ready = next(
+        (lab for lab in labels if _NOT_READY_RE.search(lab) or _MEDIUM_RE.match(lab)), None
+    )
     if not_ready:
         return f"labelled '{not_ready}'"
+    if labels and not any(is_beginner_label(lab) for lab in labels):
+        # In blind reviews, issues labelled only "help wanted" were mostly too big,
+        # claimed, or unsettled: 1 of 12 was a good first task.
+        return "has no beginner label" + (", only 'help wanted'" if "help wanted" in labels else "")
+    asked = _claim_problem((issue.get("assessment") or {}).get("claims") or [])
+    if asked:
+        return asked
     created = str(issue.get("created_at") or "")[:4]
     if created.isdigit() and int(created) <= datetime.now(UTC).year - OLD_ISSUE_YEARS:
         return f"open since {created}"
@@ -107,6 +127,19 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
         return (
             "needs " + ", ".join(sorted(label(c) for c in skills)[:2]) + ", which you did not list"
         )
+    return None
+
+
+def _claim_problem(claims: list[dict[str, Any]]) -> str | None:
+    """Why the people who asked for an issue keep it off a first-task list, if they do."""
+    days = [int(c.get("days_ago") or 0) for c in claims]
+    if len(claims) >= CROWDED_ASKS:
+        return f"{len(claims)} people have asked to work on it"
+    granted = [int(c.get("days_ago") or 0) for c in claims if c.get("granted")]
+    if granted and min(granted) <= GRANTED_DAYS:
+        return f"a maintainer gave it to someone {min(granted)} days ago"
+    if days and min(days) <= RECENT_ASK_DAYS:
+        return f"someone asked to work on it {min(days)} days ago"
     return None
 
 

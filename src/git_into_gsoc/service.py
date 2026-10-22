@@ -1281,7 +1281,8 @@ class GSoCToolkit:
                     found = self.github.find_beginner_issues(
                         language=languages or issue_language,
                         orgs=list(owners),
-                        labels=[*_COMMON_BEGINNER_LABELS, "help wanted"],
+                        # Not "help wanted": it mostly marks work too big for a first task.
+                        labels=list(_COMMON_BEGINNER_LABELS),
                         org_names={k.lower(): v for k, v in owners.items()},
                         max_results=10,
                     )

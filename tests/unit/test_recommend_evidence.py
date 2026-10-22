@@ -248,7 +248,8 @@ def test_starter_issues_search_every_language_more_owners_and_beginner_labels(
     toolkit.recommend_path(technologies=["django", "react"], interests=["mathematics"])
     first = seen[0]
     assert first["language"] == ["python", "javascript"]
-    assert "starter" in first["labels"] and "help wanted" in first["labels"]
+    # Common beginner labels, but not "help wanted", which mostly marks bigger work.
+    assert "starter" in first["labels"] and "help wanted" not in first["labels"]
 
 
 def test_starter_issues_in_a_repository_written_in_another_language_are_left_out(

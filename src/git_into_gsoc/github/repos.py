@@ -379,6 +379,12 @@ _BEGINNER_WORDS = re.compile(
 )
 
 
+def is_beginner_label(name: str) -> bool:
+    """True for a label that marks an issue as suitable for a newcomer."""
+    low = name.strip().lower()
+    return low in BEGINNER_LABELS or bool(_BEGINNER_WORDS.search(low))
+
+
 def detect_toolchain(
     entries: list[dict[str, Any]], *, language: str | None = None
 ) -> tuple[list[str], bool]:
