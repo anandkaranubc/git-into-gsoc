@@ -125,11 +125,15 @@ Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/tes
 
 ## What independent reviewers found
 
-Twice, a reviewer who never saw the code read the live `recommend` output for all 46 personas and graded it as a mentor would. Both times every output was honest: no chance of acceptance, the 2027 list never presented as confirmed, and the eligibility rules stated correctly. About 70% of the top three organizations were graded good or strong (a mean of about 2 out of 3), and the learning path was judged right for about two thirds of people. Their findings led to the stricter evidence, the screened starter issues, the eligibility notes, and the sitting-out flags described above. What they still found weak is listed next.
+Twice, a reviewer who never saw the code read the live `recommend` output for all 46 personas and graded it as a mentor would. Both times every output was honest: no chance of acceptance, the 2027 list never presented as confirmed, and the eligibility rules stated correctly. About 70% of the top three organizations were graded good or strong (a mean of about 2 out of 3), and the learning path was judged right for about two thirds of people. Their findings led to the stricter evidence, the screened starter issues, the eligibility notes, and the sitting-out flags described above.
+
+Starter issues were then compared in blind pairs: for each of the 46 personas, a reviewer read the live thread of every issue in two lists without knowing which version made which, graded each issue good, ok, or bad for that person, and picked the list they would rather hand over. Against the version before the stricter screen, the current one kept the same number of good issues (8 against 8), cut bad ones from 26 to 8, cut the people handed a bad issue from 19 to 7, and was preferred for 19 people against 6 (21 ties). The price is that 9 more people get an empty list with a note on where to look instead. Two further rules were tested against the reviewers' grades and left out because they would have dropped good issues: skipping an issue that a merged pull request mentions (4 good, 13 ok, and 7 bad issues), and skipping one that several pull requests tried and failed (a single example).
+
+What the reviewers still found weak is listed next.
 
 ## Known limits
 
-- **Starter issues are thin.** After screening, about four in ten people get no starter issue and are pointed to the best organization's repositories instead; and a few issues that pass the checks are still unsuitable (already claimed in a comment the tool did not catch, or declined by a maintainer). Read each thread before you start.
+- **Starter issues are thin.** Recent issues with a beginner label that suit a given person are scarce in their best organizations, so after screening about six in ten people get no starter issue and are pointed to the best organization's repositories and chat instead. About one in four issues that pass the checks is still unsuitable, most often because it was already fixed without a linked pull request, or is not really a task (a question, a broken link to fix by a maintainer). Read each thread before you start.
 - **Some ideas lists are noisy.** Ideas pages are written in many formats, and some headings still slip through as ideas.
 - **Very vague input** ("ai" alone) still gives a long list; the tip suggests narrower words, and adding one helps most.
 - **Organizations with many tags** (polyglot runtimes, umbrellas) still match many searches, but count a little less per match than focused organizations.

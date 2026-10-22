@@ -1389,9 +1389,7 @@ class GSoCToolkit:
                 else:
                     main = canonical(str(raw.get("language") or ""))
                     off_language = bool(wanted) and bool(main) and main not in wanted
-                    verdicts[repo] = not (
-                        _retired_repo(raw) or _dormant_days(raw) or off_language
-                    )
+                    verdicts[repo] = not (_retired_repo(raw) or _dormant_days(raw) or off_language)
             if verdicts[repo]:
                 keep.append(issue)
         return keep
