@@ -101,6 +101,8 @@ Run `source .venv/bin/activate` again in every new terminal. If `./install.sh` w
 
    Types we use: `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `ci`, `chore`. Add a scope in parentheses when it helps, such as `cli`, `github`, `gsoc`, `skill`, or `docs`. Releases and the changelog are generated from these messages, so `feat` means a new capability for users and `fix` means a bug fix.
 
+   Do not name another project's issue or pull request as `owner/repo#123`, or by its link, in a commit message, PR title, or PR body. GitHub then posts a notice on that issue for every push of the commit, so its maintainers hear from this project each time you rebase, and the squash merge copies the PR body onto `main`. Describe it in words instead ("SymPy issue 30671"). This repository's own `#123` is fine.
+
 5. Push your branch with `git push -u origin fix/short-description` and open the pull request link GitHub prints, against `main`. The pull request template asks what changed, why, and how you tested it. Link the issue with `Fixes #123` when there is one.
 
 ## What happens next
