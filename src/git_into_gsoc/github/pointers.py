@@ -122,6 +122,18 @@ def _name_key(name: str) -> str:
     return name.replace("_", "").replace("-", "").lower()
 
 
+_PROSE_RE = re.compile(r"\.(?:md|rst|txt|adoc)$|(?:^|/)(?:contributing|changelog|readme)", re.I)
+
+
+def code_first(paths: list[str]) -> list[str]:
+    """Code files before docs, changelogs, and release notes, keeping search order.
+
+    Code search for kornia's distance_transform found the real file, then two
+    changelog entries; a beginner looking for where to start reading needs code.
+    """
+    return sorted(paths, key=lambda p: bool(_PROSE_RE.search(p) or _DOCS_RE.search(p)))
+
+
 def resolve_paths(
     mentions: list[dict[str, Any]], tree_paths: list[str], *, limit: int = 8
 ) -> list[dict[str, Any]]:

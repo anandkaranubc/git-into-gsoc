@@ -49,6 +49,7 @@ from git_into_gsoc.github.orientation import (
 )
 from git_into_gsoc.github.pointers import (
     closing_pull_request,
+    code_first,
     days_between,
     extract_mentions,
     fix_norm,
@@ -1657,7 +1658,9 @@ class GSoCToolkit:
                     code_search_note = f"Code search stopped: {exc}"
                     break
                 paths = [str(h.get("path")) for h in hits if h.get("path")]
-                paths = [p for p in paths if not p.startswith(("node_modules/", "vendor/"))]
+                paths = code_first(
+                    [p for p in paths if not p.startswith(("node_modules/", "vendor/"))]
+                )
                 searched.append({"identifier": ident, "paths": paths[:6]})
                 for path in paths[:3]:
                     if path not in resolved_paths:
@@ -1688,7 +1691,7 @@ class GSoCToolkit:
             except HttpError as exc:
                 hits, code_search_note = [], f"Code search stopped: {exc}"
             paths = [str(h.get("path")) for h in hits if h.get("path")]
-            paths = [p for p in paths if not p.startswith(("node_modules/", "vendor/"))]
+            paths = code_first([p for p in paths if not p.startswith(("node_modules/", "vendor/"))])
             if paths:
                 searched.append({"identifier": " ".join(words), "paths": paths[:6]})
             for path in paths[:3]:

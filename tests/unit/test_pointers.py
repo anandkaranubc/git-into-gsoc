@@ -183,3 +183,20 @@ def test_a_name_in_the_issue_matches_a_file_name_without_code_search() -> None:
     assert found[0]["confidence"] == "file name match"
     # A short or common name does not match a pile of files.
     assert resolve_paths(extract_mentions("`setup` fails"), ["a/setup.py", "b/setup.py"]) == []
+
+
+def test_code_files_come_before_changelogs_and_docs() -> None:
+    from git_into_gsoc.github.pointers import code_first
+
+    # Code search for kornia's distance_transform: the real file, then changelog entries.
+    found = [
+        "changelog.d/6045.fixed.md",
+        "kornia/contrib/distance_transform.py",
+        "CONTRIBUTING.md",
+        "docs/source/contrib.rst",
+        "kornia/contrib/__init__.py",
+    ]
+    assert code_first(found)[:2] == [
+        "kornia/contrib/distance_transform.py",
+        "kornia/contrib/__init__.py",
+    ]
