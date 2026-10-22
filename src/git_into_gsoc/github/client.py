@@ -412,6 +412,14 @@ class GitHubClient:
             return False
 
     def get_raw_file(self, owner: str, repo: str, path: str) -> str | None:
+        try:
+            return self._raw_file(owner, repo, path)
+        except HttpError:
+            return None
+
+    def _raw_file(self, owner: str, repo: str, path: str) -> str | None:
+        """The file's text, or None when it does not exist. Raises HttpError when GitHub
+        does not answer, so `repo_health` can tell the two apart."""
         owner, repo = parse_repo(f"{owner}/{repo}")
         url = f"{self.settings.github_api_url.rstrip('/')}/repos/{owner}/{repo}/contents/" + quote(
             path.lstrip("/"), safe="/"
@@ -420,7 +428,7 @@ class GitHubClient:
         headers["Accept"] = "application/vnd.github.raw+json"
         try:
             return self.http.get_text(url, headers=headers)
-        except HttpError:
+        except NotFoundError:
             return None
 
     def readme_contributing_path(
@@ -630,15 +638,27 @@ class GitHubClient:
             if landed:
                 stats = pull_stats(source_pulls, insiders=source_insiders, landed=frozenset(landed))
         files = profile.get("files") or {}
-        contributing_source = (
-            "file"
-            if files.get("contributing")
-            else "readme"
-            if self.readme_contributing_path(owner, repo, profile)
-            else None
-        )
+        contributing_source = "file" if files.get("contributing") else None
+        readme = readme_path(profile) if contributing_source is None else None
+        if readme:
+            # The same check as `readme_contributing_path`, but a README GitHub did not
+            # send is unread, not a README without a guide. It runs after the pull
+            # request reads, so it is the read most likely to meet the limit.
+            try:
+                text = self._raw_file(owner, repo, readme)
+            except HttpError:
+                unread.append("README")
+            else:
+                if text and readme_contributing_section(text):
+                    contributing_source = "readme"
         label = pick_beginner_label(labels)
-        counted = self._count_open_issues_with_label(owner, repo, label) if label else None
+        if label and raw.get("has_issues") is False:
+            # Issues are turned off (the project tracks work elsewhere), yet GitHub's
+            # default labels remain. None are open here, and the issues endpoint answers
+            # 410, which retrying never changes.
+            counted: tuple[int, int] | None = (0, 0)
+        else:
+            counted = self._count_open_issues_with_label(owner, repo, label) if label else None
         if label and counted is None:
             unread.append("beginner issues")
         open_beginner, assigned_beginner = counted or (None, None)

@@ -112,7 +112,7 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         return f"Before it went quiet: {text[0].lower()}{text[1:]}" if dormant else text
 
     unread = set(health.unread)
-    if "community profile" in unread and not health.has_contributing:
+    if "community profile" in unread:
         # GitHub did not answer for the community profile, so these say nothing about
         # the repository: left out of the score, like missing ecosyste.ms data. A rate
         # limit used to read as no CONTRIBUTING guide, Code of Conduct, or templates.
@@ -126,9 +126,14 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
                 if health.contributing_source == "readme"
                 else "Has a CONTRIBUTING guide"
             )
+            award("CONTRIBUTING guide", 12, 12)
+        elif "README" in unread:
+            # No CONTRIBUTING file, and GitHub did not send the README that could hold
+            # the guide instead.
+            award("CONTRIBUTING guide", 0, 0, UNREAD_WHY)
         else:
             warnings.append("No CONTRIBUTING guide detected; ask maintainers how to start")
-        award("CONTRIBUTING guide", 12 if health.has_contributing else 0, 12)
+            award("CONTRIBUTING guide", 0, 12)
         if health.has_code_of_conduct:
             signals.append("Has a Code of Conduct")
         award("Code of Conduct", 4 if health.has_code_of_conduct else 0, 4)

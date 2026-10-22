@@ -5,7 +5,9 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+import httpx
 import pytest
+import respx
 
 from git_into_gsoc.errors import NotFoundError, RateLimitError
 from git_into_gsoc.github.client import GitHubClient
@@ -118,3 +120,116 @@ def test_several_left_out_signals_are_one_line() -> None:
     left = [line for line in lines if line.startswith("Left out:")]
     assert len(left) == 1
     assert "contributing guide, code of conduct, issue or pr templates" in left[0]
+
+
+API = "https://api.github.com/repos/acme/lib"
+README = {"html_url": "https://github.com/acme/lib/blob/main/README.md"}
+GUIDE = (
+    "# lib\n\n## How to contribute\n\nOnly issues labelled help wanted can be requested. "
+    "Comment on the issue to ask, then wait to be assigned "
+    "before you open a pull request. Pull requests for issues that were not assigned to you "
+    "will be closed. Run the tests before you push.\n"
+)
+
+
+def _limited() -> httpx.Response:
+    return httpx.Response(
+        403, headers={"x-ratelimit-remaining": "0"}, json={"message": "API rate limit exceeded"}
+    )
+
+
+def _repo_health(**answers: httpx.Response) -> RepoHealth:
+    """Run the whole `repo_health` read with every endpoint answered, except `answers`."""
+    repo = answers.pop("repo", None) or httpx.Response(
+        200, json={"full_name": "acme/lib", "pushed_at": datetime.now(UTC).isoformat()}
+    )
+    defaults = {
+        "community/profile": httpx.Response(
+            200, json={"files": {"readme": README, "code_of_conduct": {"html_url": "x"}}}
+        ),
+        "actions/workflows": httpx.Response(200, json={"total_count": 2}),
+        "labels": httpx.Response(200, json=[{"name": "good first issue"}]),
+        "issues": httpx.Response(200, json=[{"number": 1}, {"number": 2}]),
+        "contents/README.md": httpx.Response(200, text=GUIDE),
+    }
+    respx.get(API).mock(return_value=repo)
+    for path, response in {**defaults, **answers}.items():
+        respx.get(f"{API}/{path}").mock(return_value=response)
+    for path in ("pulls", "assignees", "issues/comments", "pulls/comments"):
+        respx.get(f"{API}/{path}").mock(return_value=httpx.Response(200, json=[]))
+    respx.get(url__startswith="https://commits.ecosyste.ms").mock(
+        return_value=httpx.Response(404, json={})
+    )
+    return GitHubClient().repo_health("acme/lib")
+
+
+def _most(health: RepoHealth, signal: str) -> float:
+    return next(p.most for p in health.points if p.signal == signal)
+
+
+@respx.mock
+def test_repo_health_with_every_read_answered_has_nothing_unread() -> None:
+    health = _repo_health()
+    assert health.unread == []
+    assert health.contributing_source == "readme"
+    assert (health.open_beginner_issues, _most(health, "CI on pull requests")) == (2, 8)
+
+
+@respx.mock
+def test_repo_health_leaves_out_a_rate_limited_community_profile() -> None:
+    health = _repo_health(**{"community/profile": _limited()})
+    assert health.unread == ["community profile"]
+    assert _most(health, "CONTRIBUTING guide") == _most(health, "Code of Conduct") == 0
+    assert not any("No CONTRIBUTING guide" in w for w in health.warnings)
+
+
+@respx.mock
+def test_a_rate_limited_readme_leaves_out_only_the_guide() -> None:
+    # The README is read last, after the pull requests, so it meets the limit most often.
+    health = _repo_health(**{"contents/README.md": _limited()})
+    assert health.unread == ["README"]
+    assert _most(health, "CONTRIBUTING guide") == 0
+    assert _most(health, "Code of Conduct") == 4
+    assert not any("No CONTRIBUTING guide" in w for w in health.warnings)
+    assert any("GitHub did not answer for its README" in n for n in health.notes)
+
+
+@respx.mock
+def test_a_missing_readme_and_profile_are_answers() -> None:
+    health = _repo_health(
+        **{
+            "community/profile": httpx.Response(404, json={}),
+            "labels": httpx.Response(200, json=[]),
+        }
+    )
+    assert health.unread == []
+    assert _most(health, "CONTRIBUTING guide") == 12
+    assert any("No CONTRIBUTING guide" in w for w in health.warnings)
+
+
+@respx.mock
+def test_labels_read_but_the_count_unread_leaves_out_beginner_issues() -> None:
+    health = _repo_health(issues=httpx.Response(502, json={}), **{"actions/workflows": _limited()})
+    assert health.unread == ["workflows", "beginner issues"]
+    assert _most(health, "Open beginner issues") == 0
+    assert _most(health, "CI on pull requests") == 0
+
+
+@respx.mock
+def test_issues_turned_off_is_an_answer_not_a_read_to_retry() -> None:
+    # GitHub answers 410 for the issues of a repository that turned them off, but its
+    # default labels remain; that is not a failure to retry.
+    repo = httpx.Response(
+        200,
+        json={
+            "full_name": "acme/lib",
+            "pushed_at": datetime.now(UTC).isoformat(),
+            "has_issues": False,
+        },
+    )
+    issues = respx.get(f"{API}/issues")
+    health = _repo_health(repo=repo, issues=httpx.Response(410, json={}))
+    assert "beginner issues" not in health.unread
+    assert health.open_beginner_issues == 0
+    assert _most(health, "Open beginner issues") == 10
+    assert not issues.called
