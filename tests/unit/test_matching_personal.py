@@ -465,3 +465,24 @@ def test_an_android_app_issue_suits_someone_who_knows_kotlin() -> None:
     }
     assert starter_problem(crash, build_profile(technologies=["kotlin"])) is None
     assert starter_problem(crash, build_profile(technologies=["haskell"]))
+
+
+def test_the_path_goes_through_mentors_when_the_top_organization_has_no_starter_issue() -> None:
+    orgs = [{"name": "ML4SCI", "github_orgs": ["ML4SCI"]}]
+    person = build_profile(technologies=["python"], experience="new")
+    empty = learning_path(person, orgs, top_has_starter=False)
+    commands = " ".join(s["command"] for s in empty)
+    assert "issues --org" not in commands
+    assert any("mentors" in s["step"] for s in empty)
+    usual = learning_path(person, orgs, top_has_starter=True)
+    assert any("issues --org" in s["command"] for s in usual)
+
+
+def test_a_starter_issue_counts_for_the_top_organization_by_name_or_owner() -> None:
+    from git_into_gsoc.service import _has_starter
+
+    orgs = [{"name": "AnkiDroid", "github_orgs": ["ankidroid"]}, {"name": "Kiwix"}]
+    assert _has_starter(orgs, [{"repo": "ankidroid/Anki-Android"}])
+    assert _has_starter(orgs, [{"repo": "x/y", "gsoc_org": "AnkiDroid"}])
+    assert not _has_starter(orgs, [{"repo": "kiwix/kiwix-android", "gsoc_org": "Kiwix"}])
+    assert _has_starter([], []) is None

@@ -170,7 +170,8 @@ INTEREST_MATCH = 0.5
 HOW_RANKED = (
     "Fit compares your skills and interests with each organization's official listing, its "
     "ideas page, and its GitHub repositories; every reason names its source. It says how well "
-    "the work matches you, not your chance of being accepted. See docs/recommendations.md."
+    "the work matches you, not your chance of being accepted. How it works: "
+    "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/recommendations.md"
 )
 
 
@@ -316,6 +317,19 @@ def _off_github_issue(link: str) -> dict[str, Any]:
         "changed": False,
         "off_github": True,
     }
+
+
+def _has_starter(orgs: list[dict[str, Any]], issues: list[dict[str, Any]]) -> bool | None:
+    """Whether a starter issue came from the first organization; None with no organization."""
+    if not orgs:
+        return None
+    top = orgs[0]
+    owners = {str(o).lower() for o in top.get("github_orgs") or []}
+    return any(
+        i.get("gsoc_org") == top.get("name")
+        or str(i.get("repo") or "").split("/")[0].lower() in owners
+        for i in issues
+    )
 
 
 def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) -> list[str]:
@@ -1410,7 +1424,12 @@ class GSoCToolkit:
             "starter_issues_skipped": skipped,
             "starter_issue_note": None if issues or issue_error else _no_issue_note(taking_part),
             "notes": self._recommend_notes(person, level),
-            "learning_path": learning_path(person, taking_part, ideas),
+            "learning_path": learning_path(
+                person,
+                taking_part,
+                ideas,
+                top_has_starter=_has_starter(taking_part, issues) if not issue_error else None,
+            ),
             "next_steps": [
                 "Shortlist three organizations and join their community channels",
                 "Check one or two of their main repositories for health and a contributing guide",

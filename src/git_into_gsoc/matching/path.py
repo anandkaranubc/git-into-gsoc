@@ -24,11 +24,15 @@ def learning_path(
     person: ContributorProfile,
     orgs: list[dict[str, Any]],
     ideas_that_fit: list[dict[str, Any]] | None = None,
+    *,
+    top_has_starter: bool | None = None,
 ) -> list[dict[str, Any]]:
     """Steps for this person, built around their best-fitting organization.
 
     The skill to learn comes from the top organization's ideas that fit the
-    person, not from everything its page lists.
+    person, not from everything its page lists. With `top_has_starter` False (no
+    open beginner issue there right now), the first-task step goes through its ideas
+    and mentors instead of an issue search that would come back empty.
     """
     top = orgs[0] if orgs else None
     name = _quote(top["name"]) if top else '"ORG"'
@@ -65,7 +69,15 @@ def learning_path(
         "Getting the project to build is the first real barrier; solve it before choosing an issue.",
         f"git-into-gsoc repos {name}, then git-into-gsoc orient OWNER/REPO",
     )
-    if level == "new":
+    if level in {"new", "some"} and top_has_starter is False:
+        add(
+            "Ask its mentors which small task would help a newcomer, starting from the idea "
+            "closest to you.",
+            "It has no open beginner issue right now; at organizations like this, first tasks "
+            "come from mentors and ideas rather than labelled issues.",
+            f"git-into-gsoc ideas {name}",
+        )
+    elif level == "new":
         add(
             "Start with a documentation, test, or small bug issue nobody has claimed.",
             "Small changes teach the review process without the risk of a large rewrite.",
