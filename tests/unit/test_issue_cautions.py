@@ -113,7 +113,18 @@ def test_the_list_says_when_issues_have_no_beginner_label(monkeypatch: Any) -> N
     monkeypatch.setattr(toolkit.github, "list_labels", lambda owner, name: [])
     monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ([], [], "Searching acme/lib."))
     for found, expected in (
-        ([candidate(1, ["good first issue"]), candidate(2, ["help wanted"])], "1 of these have"),
+        (
+            [candidate(1, ["good first issue"]), candidate(2, ["help wanted"])],
+            "1 of these has no beginner label and is marked.",
+        ),
+        (
+            [
+                candidate(1, ["good first issue"]),
+                candidate(2, ["help wanted"]),
+                candidate(3, ["help wanted"]),
+            ],
+            "2 of these have no beginner label and are marked.",
+        ),
         ([candidate(3, ["help wanted"])], "None of these has a beginner label"),
     ):
         monkeypatch.setattr(

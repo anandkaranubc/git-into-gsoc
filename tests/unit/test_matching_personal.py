@@ -404,6 +404,45 @@ def test_governance_test_and_reserved_issues_are_not_first_tasks() -> None:
     assert starter_problem(reserved, person) == "reserved for someone or already being worked on"
 
 
+def test_a_program_word_marks_an_application_repo_only_as_its_first_word() -> None:
+    # A launch audit found `issue anandkaranubc/git-into-gsoc#166`, the check
+    # CONTRIBUTING asks for, calling this project "a governance, test, or sandbox
+    # repository" because its name contains "gsoc".
+    from git_into_gsoc.matching.issues import is_not_code_repo, starter_problem
+
+    for repo in (
+        "learning-unlimited/gsoc",
+        "example/gsoc2026",
+        "example/GSoC-2026-ideas",
+        "example/gsoc_ideas",
+        "example/google-summer-of-code",
+        "example/outreachy-2025",
+        # Right after the owner's own name: an organization's own GSoC repository.
+        "pharo-project/pharo-gsoc",
+        "ML4SCI/ML4SCI_GSoC",
+        "processing/Processing-Foundation-GSoC",
+        "processing/processing-gsoc-archive",
+    ):
+        assert is_not_code_repo(repo), repo
+    for repo in (
+        "anandkaranubc/git-into-gsoc",
+        "example/foo-gsoc-tools",
+        "example/gsocial",
+        "example/project-gsoc-tools",
+        # A project built in a GSoC year is still code.
+        "RocketChat/CodeReviewAgent_GSoC2025",
+        "ga4gh/ga4gh_workflow_clinic_gsoc_2026",
+    ):
+        assert not is_not_code_repo(repo), repo
+    issue = {
+        "repo": "anandkaranubc/git-into-gsoc",
+        "title": "Explain the bus factor at first use",
+        "labels": ["good first issue", "documentation"],
+        "created_at": "2026-10-20T00:00:00Z",
+    }
+    assert starter_problem(issue, build_profile(technologies=["python"])) is None
+
+
 def test_help_wanted_alone_medium_and_unsettled_issues_are_not_first_tasks() -> None:
     from git_into_gsoc.matching.issues import starter_problem
 

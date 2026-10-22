@@ -18,7 +18,7 @@ Looking for help using the tool instead? Start with the [beginner guide](docs/RE
 - Report a bug or confusing behavior with a [bug report](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=bug_report.yml). `git-into-gsoc feedback --bug` fills in your versions.
 - Suggest an improvement with a [feature request](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=feature_request.yml).
 - Fix documentation. If an instruction did not work for you, that is a bug in the docs.
-- Pick an issue labeled [good first issue](https://github.com/anandkaranubc/git-into-gsoc/labels/good%20first%20issue) or [help wanted](https://github.com/anandkaranubc/git-into-gsoc/labels/help%20wanted). Practise the habit this tool teaches: run `git-into-gsoc issue anandkaranubc/git-into-gsoc#NUMBER` first to see whether someone already claimed it. If nobody has, you do not need to wait to be assigned: comment with what you plan to do, then start.
+- Pick an issue labeled [good first issue](https://github.com/anandkaranubc/git-into-gsoc/labels/good%20first%20issue) or [help wanted](https://github.com/anandkaranubc/git-into-gsoc/labels/help%20wanted). Practise the habit this tool teaches: run `git-into-gsoc issue anandkaranubc/git-into-gsoc#NUMBER` first to see whether someone already claimed it. If nobody has, you do not need to wait to be assigned: comment with what you plan to do, then start. Please take one good first issue at a time, so other newcomers get a chance too.
 - Improve the Agent Skill in `skills/git-into-gsoc/` or add an MCP tool.
 
 For larger changes, open an issue first so we can agree on the approach before you spend time on it.

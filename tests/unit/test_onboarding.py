@@ -91,6 +91,28 @@ def test_bare_command_shows_home_not_a_wall_of_commands(api: respx.MockRouter) -
     assert "git-into-gsoc start" in result.stdout
     assert "git-into-gsoc --help" in result.stdout
     assert "Usage:" not in result.stdout
+    # No token here (conftest removes them), so the one-line reminder is shown.
+    assert "Tip: run gh auth login once" in " ".join(result.stdout.split())
+
+
+def test_home_has_no_token_tip_when_a_token_is_set(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from git_into_gsoc import config
+
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    config.get_settings.cache_clear()
+
+    fresh = runner.invoke(app, [])
+    assert fresh.exit_code == 0, fresh.output
+    assert "Tip: run gh auth login" not in fresh.stdout
+
+    # The returning view is a different branch of _render_home; the tip stays gone there too.
+    GSoCToolkit().progress.set_profile(technologies=["python"], github="octocat")
+    returning = runner.invoke(app, [])
+    assert returning.exit_code == 0, returning.output
+    assert "Welcome back, @octocat." in returning.stdout
+    assert "Tip: run gh auth login" not in returning.stdout
 
 
 def test_help_still_lists_every_command() -> None:
