@@ -31,6 +31,74 @@ _UNDECIDED = re.compile(
 _SENTENCES = re.compile(r"(?<=[.!?\n])\s+")
 
 
+_ANY_YEAR = re.compile(r"(?<![#\d])20\d\d(?!\d)")
+
+
+def body_search_terms(since: str) -> list[str]:
+    """Qualifiers for issues updated since `since` whose body names GSoC."""
+    return ["is:issue", "gsoc", "in:body", f"updated:>={since}"]
+
+
+def upcoming_year(created: str) -> int | None:
+    """The GSoC a post written on `created` (YYYY-MM-DD) means by "this year".
+
+    From September, after a program ends, people talk about the next one; in January
+    and February the next one is the current calendar year. Between March and August
+    a program is under way, so "this year" is that one, not the coming one.
+    """
+    try:
+        year, month = int(created[:4]), int(created[5:7])
+    except (TypeError, ValueError):
+        return None
+    if month >= 9:
+        return year + 1
+    if month <= 2:
+        return year
+    return None
+
+
+def reported_statements(items: list[dict[str, Any]], *, year: int) -> list[dict[str, Any]]:
+    """Sentences in issue bodies that say an organization will skip, or has not decided
+    about, GSoC `year`, without naming the year: as posts with status "reported".
+
+    SymPy's tracker said, in October 2026 and with no year, "we will not participate
+    in GSoC this year". A sentence that names another year is left out, and so is one
+    whose year cannot be told from its date. These are reports, not the organization's
+    own word, so they never set a status by themselves.
+    """
+    found: list[dict[str, Any]] = []
+    for item in items:
+        if "pull_request" in item:
+            continue
+        created = str(item.get("created_at") or "")[:10]
+        body = str(item.get("body") or "")[:6000]
+        for sentence in _SENTENCES.split(body):
+            if not _GSOC.search(sentence) or _status(sentence) == "mentions":
+                continue
+            years = {int(y) for y in _ANY_YEAR.findall(sentence)}
+            if years and year not in years:
+                continue  # about another program
+            if not years and upcoming_year(created) != year:
+                continue
+            parts = str(item.get("repository_url") or "").rstrip("/").split("/")
+            found.append(
+                {
+                    "repo": "/".join(parts[-2:]),
+                    "number": int(item.get("number") or 0),
+                    "title": clean_untrusted(sentence.strip(" #*->[]"), limit=240),
+                    "url": str(item.get("html_url") or ""),
+                    "state": str(item.get("state") or ""),
+                    "created_at": created,
+                    "author": clean_untrusted((item.get("user") or {}).get("login"), limit=40),
+                    "by_maintainer": str(item.get("author_association") or "") in MAINTAINER_ROLES,
+                    "source": "body",
+                    "status": "reported",
+                }
+            )
+            break
+    return found
+
+
 def search_terms(year: int) -> list[str]:
     """Qualifiers for one issue search: both words anywhere in the title."""
     return ["is:issue", "gsoc", str(int(year)), "in:title"]

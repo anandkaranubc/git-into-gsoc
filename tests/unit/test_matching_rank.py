@@ -405,3 +405,23 @@ def test_readiness_says_whether_an_organization_labels_first_tasks_on_github() -
     )
     # Evidence only: the two still tie on everything that ranks them.
     assert ranked["Lab Without Labels"].score == ranked["Labelling Lab"].score
+
+
+def test_a_reported_statement_is_a_quoted_caveat_and_leaves_the_score() -> None:
+    org = _org("Symbolic Lab", tech=["python"], topics=["mathematics"])
+    said = {
+        "status": "reported",
+        "year": 2027,
+        "url": "https://github.com/lab/lab/issues/7",
+        "quote": "we will not participate in GSoC this year",
+        "date": "2026-10-04",
+        "by_maintainer": False,
+        "checked": "2026-10-22",
+    }
+    plain = _rank([org], interests=["mathematics"])[0]
+    signals = {"year": 2026, "organizations": {"symbolic-lab": {"participation": said}}}
+    reported = _rank([org], signals=signals, interests=["mathematics"])[0]
+    caveat = next(c for c in reported.caveats if "wrote in its tracker" in c)
+    assert "someone outside its team" in caveat and "2026-10-04" in caveat
+    assert "Not an official statement about GSoC 2027" in caveat
+    assert reported.score == plain.score

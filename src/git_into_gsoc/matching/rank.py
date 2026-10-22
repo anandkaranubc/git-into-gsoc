@@ -654,6 +654,15 @@ class OrgIndex:
                 f"Had not decided about GSoC {said_year} (checked {said.get('checked')}): "
                 f"{said.get('url')}"
             )
+        elif said.get("status") == "reported" and said_year > self.reference_year:
+            # Quoted, dated, and marked as a report: no year was named, so it is not
+            # the organization's word on GSoC {said_year}, and the score stays.
+            who = "a maintainer" if said.get("by_maintainer") else "someone outside its team"
+            caveats.append(
+                f'On {said.get("date")}, {who} wrote in its tracker: "{said.get("quote")}" '
+                f"Not an official statement about GSoC {said_year}; check its channels: "
+                f"{said.get('url')}"
+            )
         if profile.ideas.get("url") and (
             not profile.ideas.get("count") or _poorly_split(profile.ideas)
         ):

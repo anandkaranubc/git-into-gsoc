@@ -293,7 +293,7 @@ def keep_previous(
     return merged
 
 
-_SAID = {"not_taking_part", "undecided", "posted"}
+_SAID = {"not_taking_part", "undecided", "posted", "reported"}
 
 
 def _participation_for(toolkit: Any, owners: list[str], now: datetime) -> dict[str, Any]:
@@ -305,19 +305,24 @@ def _participation_for(toolkit: Any, owners: list[str], now: datetime) -> dict[s
     from git_into_gsoc.service import participation_from
 
     year = toolkit.settings.target_year
-    found = participation_from(toolkit.gsoc_posts_for(owners[:3], year=year))
+    found = participation_from(toolkit.gsoc_posts_for(owners[:3], year=year, bodies=True))
     if found["status"] == "unknown":
         return {"_participation_failed": True}
     if found["status"] not in _SAID:
         return {}
-    return {
-        "participation": {
-            "status": found["status"],
-            "url": found.get("url"),
-            "year": year,
-            "checked": now.date().isoformat(),
-        }
+    said = {
+        "status": found["status"],
+        "url": found.get("url"),
+        "year": year,
+        "checked": now.date().isoformat(),
     }
+    if found["status"] == "reported":
+        said.update(
+            quote=found.get("title"),
+            date=found.get("date"),
+            by_maintainer=found.get("by_maintainer"),
+        )
+    return {"participation": said}
 
 
 def build_signals(

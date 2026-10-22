@@ -11,7 +11,13 @@ from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError, RateLimitError
-from git_into_gsoc.github.announcements import gsoc_posts, search_terms, wiki_post
+from git_into_gsoc.github.announcements import (
+    body_search_terms,
+    gsoc_posts,
+    reported_statements,
+    search_terms,
+    wiki_post,
+)
 from git_into_gsoc.github.availability import (
     MAINTAINER_ROLES,
     assess_issue,
@@ -290,13 +296,23 @@ class GitHubClient:
             return None
         return int(data.get("total_count") or 0)
 
-    def gsoc_year_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
-        """Issues in these owners' repositories whose title names GSoC and `year` (one search)."""
+    def gsoc_year_posts(
+        self, owners: list[str], year: int, *, bodies: bool = False
+    ) -> list[dict[str, Any]]:
+        """Issues in these owners' repositories whose title names GSoC and `year` (one search).
+
+        With `bodies`, a second search reads recent issue bodies for a statement that
+        names no year (status "reported"), for the monthly evidence.
+        """
         logins = [validate_login(o, kind="organization") for o in dict.fromkeys(owners)]
         if not logins:
             return []
         query = build_issue_query(base=search_terms(year), labels=[], orgs=logins)
         posts = gsoc_posts(self.search_issues(query, per_page=30, sort="created"), year=year)
+        if bodies:
+            since = (datetime.now(UTC) - timedelta(days=150)).date().isoformat()
+            query = build_issue_query(base=body_search_terms(since), labels=[], orgs=logins)
+            posts += reported_statements(self.search_issues(query, per_page=30), year=year)
         return self._wiki_posts(logins[:2], year) + posts
 
     def _wiki_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:

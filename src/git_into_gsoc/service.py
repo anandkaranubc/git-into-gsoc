@@ -259,6 +259,17 @@ def participation_from(found: dict[str, Any]) -> dict[str, Any]:
                 "url": post.get("url"),
                 "title": post.get("title"),
             }
+    # Last: a sentence in an issue body that names no year, from anyone. It is shown,
+    # quoted and dated, but it is a report, not the organization's own statement.
+    reported = next((p for p in posts if p.get("status") == "reported"), None)
+    if reported:
+        return {
+            "status": "reported",
+            "url": reported.get("url"),
+            "title": reported.get("title"),
+            "date": reported.get("created_at"),
+            "by_maintainer": bool(reported.get("by_maintainer")),
+        }
     return {"status": "no_post"}
 
 
@@ -525,11 +536,21 @@ class GSoCToolkit:
             result["gsoc_posts"] = self.gsoc_posts_for(org.github_orgs[:3], year=year)
         return result
 
-    def gsoc_posts_for(self, owners: list[str], *, year: int | None = None) -> dict[str, Any]:
-        """What these GitHub owners posted about a GSoC year (the coming one by default)."""
+    def gsoc_posts_for(
+        self, owners: list[str], *, year: int | None = None, bodies: bool = False
+    ) -> dict[str, Any]:
+        """What these GitHub owners posted about a GSoC year (the coming one by default).
+
+        `bodies` adds a search of recent issue bodies (one more search), for the monthly
+        evidence; the live checks leave it off to stay within the search limit.
+        """
         year = year or self.settings.target_year
         try:
-            posts = self.github.gsoc_year_posts(owners, year)
+            posts = (
+                self.github.gsoc_year_posts(owners, year, bodies=True)
+                if bodies
+                else self.github.gsoc_year_posts(owners, year)
+            )
         except GigError as exc:
             return {"year": year, "posts": [], "error": exc.to_dict()}
         return {"year": year, "posts": posts[:6]}
@@ -557,8 +578,10 @@ class GSoCToolkit:
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 results = list(pool.map(one, targets))
             for org, participation in zip(targets, results, strict=True):
-                if participation["status"] == "unknown" and org.get("participation"):
-                    continue  # the monthly check's answer stands
+                if participation["status"] in {"unknown", "no_post"} and org.get("participation"):
+                    # The monthly check's answer stands: it also reads issue bodies, so a
+                    # live search of titles finding nothing does not undo it.
+                    continue
                 org["participation"] = participation
                 status = participation["status"]
                 if status == "not_taking_part":

@@ -67,3 +67,65 @@ def test_a_failed_check_is_unknown_and_never_raises(monkeypatch: Any) -> None:
     checked = toolkit.check_participation(ORGS[:2], year=2027, check=1)
     assert checked[0]["participation"] == {"status": "unknown"}
     assert "participation" not in checked[1]  # only the first `check` are looked at
+
+
+def test_this_year_in_a_post_means_the_coming_program_only_out_of_season() -> None:
+    from git_into_gsoc.github.announcements import upcoming_year
+
+    assert upcoming_year("2026-10-04") == 2027  # after a program ends
+    assert upcoming_year("2027-01-20") == 2027  # before organizations apply
+    assert upcoming_year("2026-05-10") is None  # a program is under way
+    assert upcoming_year("") is None
+
+
+def _issue(body: str, created: str, role: str = "CONTRIBUTOR") -> dict[str, Any]:
+    return {
+        "body": body,
+        "created_at": f"{created}T10:00:00Z",
+        "author_association": role,
+        "html_url": "https://github.com/lab/lab/issues/7",
+        "repository_url": "https://api.github.com/repos/lab/lab",
+        "number": 7,
+        "user": {"login": "reporter"},
+    }
+
+
+def test_a_statement_in_a_body_without_a_year_is_a_dated_report() -> None:
+    from git_into_gsoc.github.announcements import reported_statements
+
+    sympy = _issue(
+        "Please test the new assumptions. It's likely that as a result of this we will not "
+        "participate in GSoC this year.",
+        "2026-10-04",
+    )
+    found = reported_statements([sympy], year=2027)
+    assert len(found) == 1 and found[0]["status"] == "reported"
+    assert "will not participate in GSoC this year" in found[0]["title"]
+    assert found[0]["by_maintainer"] is False and found[0]["created_at"] == "2026-10-04"
+    # Another year named, mid-season with no year, or no statement at all: nothing.
+    past = _issue("We will not participate in GSoC 2026.", "2026-10-04", "MEMBER")
+    mid = _issue("We will not participate in GSoC this year.", "2026-05-10", "MEMBER")
+    plain = _issue("This is a GSoC idea about parsers.", "2026-10-04", "MEMBER")
+    assert reported_statements([past, mid, plain], year=2027) == []
+
+
+def test_a_report_is_used_only_when_nothing_better_was_posted() -> None:
+    from git_into_gsoc.service import participation_from
+
+    report = _post("reported", "https://x/report", by_maintainer=False) | {
+        "created_at": "2026-10-04"
+    }
+    alone = participation_from({"posts": [report]})
+    assert alone["status"] == "reported" and alone["date"] == "2026-10-04"
+    assert alone["by_maintainer"] is False
+    official = _post("mentions", "https://x/official")
+    assert participation_from({"posts": [report, official]})["status"] == "posted"
+
+
+def test_a_live_check_finding_nothing_keeps_the_monthly_statement(monkeypatch: Any) -> None:
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.github, "gsoc_year_posts", lambda owners, year: [])
+    said = {"status": "reported", "url": "https://x/report", "quote": "no GSoC this year"}
+    orgs = [{"name": "SymPy", "github_orgs": ["sympy"], "participation": said}]
+    checked = toolkit.check_participation(orgs, year=2027)
+    assert checked[0]["participation"] == said
