@@ -66,6 +66,17 @@ def or_group(qualifier: str, values: list[str]) -> str:
     return "(" + " OR ".join(terms) + ")"
 
 
+def language_family(languages: list[str]) -> list[str]:
+    """The languages and their close relatives, in order, without repeats."""
+    values: list[str] = []
+    for one in languages:
+        main = canonical(one)
+        for value in (main, *RELATED_LANGUAGES.get(main, [])):
+            if value not in values:
+                values.append(value)
+    return values
+
+
 def language_group(language: str | list[str]) -> str:
     """`language:x`, or an OR group of several and their close relatives (JS and TS)."""
     values: list[str] = []

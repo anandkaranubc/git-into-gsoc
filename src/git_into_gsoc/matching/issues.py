@@ -39,6 +39,19 @@ _EVENT_REPO = re.compile(
 )
 
 
+# Repositories for governance, tests, or experiments, not a project's code.
+_NOT_CODE_REPO = re.compile(
+    r"(?:^|[-_.])(?:tsc|governance|steering|working-groups?|rfcs?|community|meta|admin|"
+    r"test-actions|sandbox|playground|demo|scratch)(?:$|[-_.])|^\.github$|^test-",
+    re.I,
+)
+
+
+def is_not_code_repo(full_name: str) -> bool:
+    """True for a governance, test, or sandbox repository."""
+    return bool(_NOT_CODE_REPO.search(str(full_name).split("/")[-1]))
+
+
 def is_event_repo(full_name: str) -> bool:
     """True for a repository named after an event or a year, rather than a project."""
     return bool(_EVENT_REPO.search(str(full_name).split("/")[-1]))
@@ -70,6 +83,13 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     """Why an issue is not a good first task for this person, or None when it may be."""
     title = str(issue.get("title") or "")
     labels = {str(lab).lower() for lab in issue.get("labels") or []}
+    if is_not_code_repo(str(issue.get("repo") or "")):
+        return "in a governance, test, or sandbox repository"
+    body = str(issue.get("body_excerpt") or "")
+    if re.search(
+        r"\breserved for\b|\bassigned to @|\bi(?:'m| am) working on (?:this|it)\b", body, re.I
+    ):
+        return "reserved for someone or already being worked on"
     if _NOT_A_TASK_RE.search(title) or labels & _NOT_A_TASK_LABELS:
         return "an announcement, roadmap, or tracker rather than a task"
     not_ready = next((lab for lab in labels if _NOT_READY_RE.search(lab)), None)

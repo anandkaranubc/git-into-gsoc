@@ -377,3 +377,24 @@ def test_the_path_never_says_learn_the_organizations_own_product() -> None:
     steps = [s["step"] for s in learning_path(build_profile(technologies=["c++"]), orgs, fitting)]
     assert any(s.startswith("Learn Python") for s in steps)
     assert not any(s.startswith("Learn Blender") for s in steps)
+
+
+def test_governance_test_and_reserved_issues_are_not_first_tasks() -> None:
+    from git_into_gsoc.matching.issues import is_not_code_repo, starter_problem
+
+    for repo in (
+        "webpack/tsc",
+        "webpack/working-groups",
+        "learningequality/test-actions",
+        "zulip/.github",
+    ):
+        assert is_not_code_repo(repo), repo
+    assert not is_not_code_repo("sympy/sympy")
+    person = build_profile(technologies=["rust"])
+    reserved = {
+        "repo": "boa-dev/boa",
+        "title": "Audit the string handling",
+        "body_excerpt": "This issue is reserved for GSoC candidates.",
+        "created_at": "2026-01-01",
+    }
+    assert starter_problem(reserved, person) == "reserved for someone or already being worked on"

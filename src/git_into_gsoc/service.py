@@ -70,7 +70,12 @@ from git_into_gsoc.github.repos import (
     pick_beginner_label,
     repo_lead_score,
 )
-from git_into_gsoc.github.search import RELATED_LANGUAGES, build_issue_query, or_group
+from git_into_gsoc.github.search import (
+    RELATED_LANGUAGES,
+    build_issue_query,
+    language_family,
+    or_group,
+)
 from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
@@ -1266,7 +1271,7 @@ class GSoCToolkit:
             unique = list({(i["repo"], i["number"]): i for i in near}.values())
             free = [i for i in unique if _open(i)]
             good = [i for i in free if starter_problem(i, person) is None]
-            good = self._without_retired_repos(good)
+            good = self._without_retired_repos(good, languages)
             return good, len(unique) - len(free), len(free) - len(good)
 
         if issue_language or owners:
@@ -1297,7 +1302,9 @@ class GSoCToolkit:
                     # ideas page names and the beginner labels it really uses.
                     for o in taking_part[:2]:
                         try:
-                            own = self.find_issues(org=o["name"], max_results=4)
+                            own = self.find_issues(
+                                org=o["name"], language=issue_language, max_results=4
+                            )
                         except GigError:
                             continue
                         candidates += own["issues"]
@@ -1356,10 +1363,14 @@ class GSoCToolkit:
             "evidence_note": note,
         }
 
-    def _without_retired_repos(self, issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Leave out issues in repositories that are retired or have gone quiet for a year."""
+    def _without_retired_repos(
+        self, issues: list[dict[str, Any]], languages: list[str] | None = None
+    ) -> list[dict[str, Any]]:
+        """Leave out issues in repositories that are retired or have gone quiet for a year,
+        and, given the person's languages, in repositories mostly written in another one."""
         keep = []
         verdicts: dict[str, bool] = {}
+        wanted = {canonical(x) for x in language_family(languages or [])}
         for issue in issues:
             repo = str(issue.get("repo") or "")
             if repo not in verdicts:
@@ -1368,7 +1379,11 @@ class GSoCToolkit:
                 except (GigError, ValueError):
                     verdicts[repo] = True
                 else:
-                    verdicts[repo] = not (_retired_repo(raw) or _dormant_days(raw))
+                    main = canonical(str(raw.get("language") or ""))
+                    off_language = bool(wanted) and bool(main) and main not in wanted
+                    verdicts[repo] = not (
+                        _retired_repo(raw) or _dormant_days(raw) or off_language
+                    )
             if verdicts[repo]:
                 keep.append(issue)
         return keep

@@ -249,3 +249,22 @@ def test_starter_issues_search_every_language_more_owners_and_beginner_labels(
     first = seen[0]
     assert first["language"] == ["python", "javascript"]
     assert "starter" in first["labels"] and "help wanted" in first["labels"]
+
+
+def test_starter_issues_in_a_repository_written_in_another_language_are_left_out(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repos = {
+        "listenbrainz-android": {"language": "Kotlin", "description": "Android app"},
+        "listenbrainz-server": {"language": "Python", "description": ""},
+    }
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.github, "get_repo", lambda owner, name: repos[name])
+    issues = [
+        {"repo": "metabrainz/listenbrainz-android", "number": 1},
+        {"repo": "metabrainz/listenbrainz-server", "number": 2},
+    ]
+    kept = toolkit._without_retired_repos(issues, ["python", "sql"])
+    assert [i["number"] for i in kept] == [2]
+    # With no languages known, the language is not a reason to leave an issue out.
+    assert len(toolkit._without_retired_repos(issues)) == 2
