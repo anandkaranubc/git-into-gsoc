@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.15.0...v0.16.0) (2026-10-22)
+
+
+### Features
+
+* **distribution:** one-click buttons run the PyPI release, and the registry lists it ([#203](https://github.com/anandkaranubc/git-into-gsoc/issues/203)) ([eee0219](https://github.com/anandkaranubc/git-into-gsoc/commit/eee02192165a3ec263153accadcb3e11a7c2e257))
+* **matching:** honest evidence, checked starter issues, eligibility notes, and sitting-out flags everywhere ([#202](https://github.com/anandkaranubc/git-into-gsoc/issues/202)) ([be7cb35](https://github.com/anandkaranubc/git-into-gsoc/commit/be7cb35411d44fffa617169edeb21798c618f1b5))
+
+
+### Bug Fixes
+
+* **matching:** counts that add up, fewer unsuitable starter issues, main-language caveats, and stricter fit levels ([#206](https://github.com/anandkaranubc/git-into-gsoc/issues/206)) ([ea9d42a](https://github.com/anandkaranubc/git-into-gsoc/commit/ea9d42ad66a0132c669437f0b4f81e5fb559230d))
+
 ## [0.15.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.14.1...v0.15.0) (2026-10-22)
 
 
