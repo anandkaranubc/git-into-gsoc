@@ -48,7 +48,7 @@ def manifest(version: str) -> dict[str, object]:
             "url": "https://github.com/anandkaranubc/git-into-gsoc",
         },
         "repository": {"type": "git", "url": "https://github.com/anandkaranubc/git-into-gsoc"},
-        "homepage": "https://github.com/anandkaranubc/git-into-gsoc",
+        "homepage": "https://anandkaranubc.github.io/git-into-gsoc/",
         "license": "MIT",
         "keywords": ["gsoc", "google-summer-of-code", "open-source", "onboarding", "github"],
         "server": {
