@@ -149,8 +149,8 @@ class GitHubClient:
     message that says what to try. Reads that only feed a score or a list
     (`community_profile`, `list_labels`, `get_issue_timeline`, ...) swallow HTTP
     errors and return an empty value or None, so one failed call cannot sink a whole
-    report; the caller says what was not checked. A token raises the request limit
-    and turns on the GraphQL path in `repo_health`; nothing needs one.
+    report (some callers then read the gap as missing). A token raises the request
+    limit and turns on the GraphQL path in `repo_health`; nothing needs one.
     """
 
     def __init__(
