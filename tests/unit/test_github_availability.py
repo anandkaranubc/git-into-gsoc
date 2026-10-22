@@ -523,10 +523,36 @@ def test_an_open_pr_in_another_repository_named_in_a_comment_counts() -> None:
 
 def test_a_pr_from_another_repository_is_named_with_its_repository() -> None:
     issue = _issue(number=3, html_url="https://github.com/acme/app/issues/3")
-    other = _pr(12, "open", "dev")
-    other["source"]["issue"]["html_url"] = "https://github.com/dev/fork-tool/pull/12"
-    found = assess_issue(issue, [other], now=NOW)
-    assert found.reason == "Open PR dev/fork-tool#12 by @dev references it"
+    # A fork keeps the project's name, and a sibling repository has the same owner:
+    # their pull requests can fix the issue.
+    for source in (
+        "https://github.com/dev/app/pull/12",
+        "https://github.com/acme/app-docs/pull/12",
+    ):
+        other = _pr(12, "open", "dev")
+        other["source"]["issue"]["html_url"] = source
+        found = assess_issue(issue, [other], now=NOW)
+        where = source.split("github.com/")[1].split("/pull")[0]
+        assert found.reason == f"Open PR {where}#12 by @dev references it", source
+
+
+def test_a_pr_in_an_unrelated_project_that_mentions_the_issue_is_not_a_fix() -> None:
+    # This tool's own repository once named a CircuitVerse issue in a merged pull
+    # request, and `issue` then said "A merged PR references this issue; it may already
+    # be partly fixed".
+    issue = _issue(
+        number=1411, html_url="https://github.com/CircuitVerse/cv-frontend-vue/issues/1411"
+    )
+    mention = _pr(154, "closed", "anandkaranubc", merged=True)
+    mention["source"]["issue"]["html_url"] = (
+        "https://github.com/anandkaranubc/git-into-gsoc/pull/154"
+    )
+    mention["source"]["issue"]["repository"] = {"full_name": "anandkaranubc/git-into-gsoc"}
+    found = assess_issue(issue, [mention], now=NOW)
+    assert found.availability == Availability.AVAILABLE
+    assert found.linked_prs == []
+    assert not any("may already be partly fixed" in c for c in found.caveats)
+    assert any("anandkaranubc/git-into-gsoc#154" in c for c in found.caveats)
 
 
 @pytest.mark.parametrize(

@@ -370,6 +370,26 @@ def _pull_key(pr: LinkedPullRequest, repo: str) -> tuple[str, int | None]:
     return ((match.group(1) if match else repo).lower(), pr.number)
 
 
+def _source_repo(source: dict[str, Any]) -> str:
+    """owner/name of the repository a cross-referencing issue or PR lives in."""
+    named = str((source.get("repository") or {}).get("full_name") or "")
+    return named or _issue_repo(source)
+
+
+def _related_repo(source: str, repo: str) -> bool:
+    """A pull request that can fix an issue: in its repository, a sibling repository of
+    the same owner, or a fork (same name). A pull request in an unrelated project that
+    only mentions the issue is not one: this tool's own repository once named a
+    CircuitVerse issue in a merged pull request, and `issue` then said a merged pull
+    request "may already" have fixed it.
+    """
+    if not source or not repo:
+        return True
+    s_owner, _, s_name = source.lower().partition("/")
+    r_owner, _, r_name = repo.lower().partition("/")
+    return s_owner == r_owner or s_name == r_name
+
+
 def _issue_repo(issue: dict[str, Any]) -> str:
     url = str(issue.get("html_url") or "")
     parts = url.split("github.com/", 1)[-1].split("/")
@@ -445,7 +465,14 @@ def assess_issue(
                 caveats.append(f"@{login} was unassigned later; the issue is open again")
         elif kind == "cross-referenced":
             source = (event.get("source") or {}).get("issue") or {}
-            if "pull_request" in source:
+            where = _source_repo(source)
+            if "pull_request" in source and not _related_repo(where, repo):
+                # Shown, so nothing is hidden, but it neither takes nor fixes the issue.
+                caveats.append(
+                    f"A pull request in another project, {where}#{source.get('number')}, "
+                    "mentions this issue; it does not change its status here"
+                )
+            elif "pull_request" in source:
                 merged_at = _dt((source.get("pull_request") or {}).get("merged_at"))
                 merged = merged_at is not None
                 number = source.get("number")
