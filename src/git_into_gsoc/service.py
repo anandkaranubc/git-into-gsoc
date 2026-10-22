@@ -1021,16 +1021,19 @@ class GSoCToolkit:
                 + (f" {limit.hint}" if limit.hint else "")
                 + f" {note}"
             )
+        person = self._saved_person()
+        # What in each issue fits the saved profile; the order above stands, except that
+        # issues with a caution come after the rest.
+        listed = _with_cautions(
+            personalize([_issue_dict(i) for i in issues], person, reorder=False), person
+        )
         return {
             "scope": "gsoc" if use_gsoc else "custom",
             "language_used": language,
             "labels_used": labels_used,
             "note": note,
             "count": len(issues),
-            # What in each issue fits the saved profile; the order above stands.
-            "issues": personalize(
-                [_issue_dict(i) for i in issues], self._saved_person(), reorder=False
-            ),
+            "issues": listed,
             "before_you_comment": BEFORE_YOU_COMMENT,
             "next_steps": [] if issues else _when_no_issues(language, org=asked_org, repo=repo),
         }
@@ -2894,6 +2897,25 @@ def _after(stamp: object, when: datetime) -> bool:
 
 def _open(issue: dict[str, Any]) -> bool:
     return issue.get("availability") in _OPEN_TO_NEWCOMERS
+
+
+def _with_cautions(
+    issues: list[dict[str, Any]], person: ContributorProfile
+) -> list[dict[str, Any]]:
+    """Say why an issue may not suit a first contribution, and list those after the rest.
+
+    `recommend` already leaves such issues out of its short list; a search shows them
+    all, so a beginner needs the reason next to the issue (a blind test, 2026-10-22,
+    found a years-old tracking issue at the top score with no warning).
+    """
+    for issue in issues:
+        reason = starter_problem(issue, person)
+        if reason:
+            issue["caution"] = reason
+    # Stable: within each group, the order by score and organization stands.
+    return sorted(
+        issues, key=lambda i: (i.get("availability") != "available", bool(i.get("caution")))
+    )
 
 
 def _issue_dict(issue: Any) -> dict[str, Any]:

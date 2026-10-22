@@ -1260,7 +1260,10 @@ def issues_cmd(
             ref += f"\n[dim]{issue['gsoc_org']}[/dim]"
         if issue.get("filed_by_maintainer"):
             ref += "\n[dim]filed by a maintainer[/dim]"
-        if any(str(s).startswith("No beginner label") for s in issue.get("signals") or []):
+        caution = str(issue.get("caution") or "")
+        if caution:
+            ref += f"\n[yellow]! {caution}[/yellow]"
+        elif any(str(s).startswith("No beginner label") for s in issue.get("signals") or []):
             ref += "\n[dim]no beginner label[/dim]"
         shown = f"[{_STATUS_STYLE.get(status, '')}]{status.replace('_', ' ')}[/]"
         if status == "available" and ((issue.get("assessment") or {}).get("claims")):
