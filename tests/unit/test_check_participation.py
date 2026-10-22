@@ -129,3 +129,11 @@ def test_a_live_check_finding_nothing_keeps_the_monthly_statement(monkeypatch: A
     orgs = [{"name": "SymPy", "github_orgs": ["sympy"], "participation": said}]
     checked = toolkit.check_participation(orgs, year=2027)
     assert checked[0]["participation"] == said
+
+
+def test_the_body_search_finds_either_name_of_the_program() -> None:
+    from git_into_gsoc.github.announcements import body_search_terms
+
+    terms = " ".join(body_search_terms("2026-05-25"))
+    assert '(gsoc OR "summer of code")' in terms and "in:body" in terms
+    assert "updated:>=2026-05-25" in terms

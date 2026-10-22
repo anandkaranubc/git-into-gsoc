@@ -35,8 +35,11 @@ _ANY_YEAR = re.compile(r"(?<![#\d])20\d\d(?!\d)")
 
 
 def body_search_terms(since: str) -> list[str]:
-    """Qualifiers for issues updated since `since` whose body names GSoC."""
-    return ["is:issue", "gsoc", "in:body", f"updated:>={since}"]
+    """Qualifiers for issues updated since `since` whose body names GSoC, by either name.
+
+    The OR group needs GitHub's advanced search, which `search_issues` asks for.
+    """
+    return ["is:issue", '(gsoc OR "summer of code")', "in:body", f"updated:>={since}"]
 
 
 def upcoming_year(created: str) -> int | None:

@@ -312,7 +312,9 @@ class GitHubClient:
         if bodies:
             since = (datetime.now(UTC) - timedelta(days=150)).date().isoformat()
             query = build_issue_query(base=body_search_terms(since), labels=[], orgs=logins)
-            posts += reported_statements(self.search_issues(query, per_page=30), year=year)
+            # Most recently updated first; a statement older than the newest 50 GSoC
+            # mentions in a busy organization is missed until it is updated again.
+            posts += reported_statements(self.search_issues(query, per_page=50), year=year)
         return self._wiki_posts(logins[:2], year) + posts
 
     def _wiki_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
