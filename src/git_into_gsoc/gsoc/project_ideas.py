@@ -30,6 +30,13 @@ _URL_RE = re.compile(r"https?://[^\s<>()\"'\]]+")
 _MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
 _HOURS_RE = re.compile(r"\b(90|175|350)\s*(?:h\b|hr|hrs|hours|-hour|hour)?", re.I)
 _SIZE_WORD_RE = re.compile(r"\b(small|medium|large)\b", re.I)
+# Hours other than 90, 175, or 350 ("300 hours", "80 to 160 hours", "360 hrs"); not a
+# weekly load ("40 hours per week").
+_ANY_HOURS_RE = re.compile(
+    r"\b(\d{2,3})(?:\s*(?:-|\u2013|to)\s*(\d{2,3}))?\s*(?:h\b|hrs?\b|hours?\b)"
+    r"(?!\s*(?:per|a|each|every|/)\s*week)",
+    re.I,
+)
 
 LABELS: dict[str, tuple[str, ...]] = {
     "difficulty": (
@@ -629,6 +636,13 @@ def normalize_size(value: str) -> tuple[str | None, int | None]:
     if hours:
         number = int(hours.group(1))
         return {90: "small", 175: "medium", 350: "large"}[number], number
+    # MetaBrainz's "300 hours" was dropped, so the idea had no size at all. Keep the
+    # hours the page states (a range's upper end), with the nearest GSoC size.
+    other = _ANY_HOURS_RE.search(value or "")
+    if other:
+        number = int(other.group(2) or other.group(1))
+        if 30 <= number <= 600:
+            return ("small" if number < 133 else "medium" if number < 263 else "large"), number
     word = _SIZE_WORD_RE.search(value or "")
     if word:
         size = word.group(1).lower()

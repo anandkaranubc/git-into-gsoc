@@ -1005,3 +1005,21 @@ def test_a_bold_line_ends_a_field_that_runs_on() -> None:
         ["Spyros Gasteratos"],
         ["Arkadii Yakovets", "Collins Wandji"],
     ]
+
+
+def test_hours_outside_the_three_sizes_are_kept() -> None:
+    # MetaBrainz's "300 hours", Swift's "160 hours" and "200-300 hours", Open Robotics'
+    # "80 to 160 hours": 20 ideas across 8 organizations had no size at all.
+    from git_into_gsoc.gsoc.project_ideas import normalize_size
+
+    assert normalize_size("300 hours") == ("large", 300)
+    assert normalize_size("160 hours") == ("medium", 160)
+    assert normalize_size("45 hours") == ("small", 45)
+    assert normalize_size("80 to 160 hours") == ("medium", 160)  # a range: its upper end
+    assert normalize_size("200-300 hours") == ("large", 300)
+    assert normalize_size("Large (300 hours)") == ("large", 300)  # the stated hours win
+    assert normalize_size("350 hours") == ("large", 350)
+    # A weekly load, a file size, or a response time is not a project's size.
+    assert normalize_size("40 hours per week") == (None, None)
+    assert normalize_size("2.8 MB") == (None, None)
+    assert normalize_size("within 24 hours") == (None, None)
