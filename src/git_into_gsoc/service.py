@@ -2538,12 +2538,7 @@ class GSoCToolkit:
                 "note": "This organization lists no ideas page. Check its contributor guide "
                 + (f"at {org.guide_url}." if org.guide_url else "and website."),
             }
-        ttl = self.settings.archive_ttl_seconds
-        issues_target = issues_page_target(org.ideas_url)
-        if issues_target:
-            doc = self._ideas_from_issues(org.ideas_url, *issues_target)
-        else:
-            doc = fetch_ideas_document(self.http, org.ideas_url, ttl)
+        doc, followed = self.read_ideas_page(org.ideas_url, follow=follow)
         if doc is None:
             return {
                 **base,
@@ -2552,61 +2547,6 @@ class GSoCToolkit:
                 "note": "The ideas page could not be fetched or read automatically. Open it in "
                 "a browser; some wikis block automated readers.",
             }
-        followed: list[dict[str, str]] = []
-        listed = (
-            ideas_from_link_list(doc, page_url=doc.fetched_url or org.ideas_url or "", section="")
-            if doc.layout == "index"
-            else []
-        )
-        if len(listed) >= 3:
-            # The index lists one link per idea (CERN-HSF's "Full List of Proposals"): the
-            # links are the ideas, and opening each page would read its headings
-            # ("Description", "Requirements") as ideas.
-            for idea in listed:
-                idea.section = None
-            doc.ideas = listed
-        elif follow and doc.layout == "index" and doc.sub_pages:
-            # Pages on the ideas page's own site first: ML4SCI's 18 project pages sat
-            # behind links to CERN, arXiv and the GSoC rules.
-            here = doc.fetched_url or org.ideas_url or ""
-            home = urlparse(here).netloc
-            pages = sorted(
-                (
-                    p
-                    for p in doc.sub_pages
-                    if _looks_like_ideas_page(p) and not _other_page(p, here)
-                ),
-                key=lambda p: urlparse(p["url"]).netloc != home,
-            )
-            same_site = [p for p in pages if urlparse(p["url"]).netloc == home]
-            if len(same_site) >= 3:
-                # An index of its own project pages: links elsewhere on it (CERN, arXiv
-                # papers) describe the projects and hold no ideas.
-                pages = same_site
-            for page in pages[:MAX_FOLLOWED_PAGES]:
-                child = fetch_ideas_document(self.http, page["url"], ttl)
-                if child is None:
-                    continue
-                if not child.ideas:
-                    # A project page that only lists its proposals as links.
-                    child.ideas = ideas_from_link_list(
-                        child, page_url=page["url"], section=page["title"]
-                    )
-                # A page that lists ideas already read under their own project (an
-                # institution's page on ML4SCI) adds nothing new.
-                known = {i.links[0] for i in doc.ideas if i.links}
-                child.ideas = [i for i in child.ideas if not (i.links and i.links[0] in known)]
-                if not child.ideas:
-                    continue
-                for idea in child.ideas:
-                    idea.section = page["title"]
-                doc.ideas.extend(child.ideas)
-                doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
-                followed.append(page)
-        if doc.layout == "index" and not followed and doc.fallback_ideas:
-            # The links led to no ideas, so the page's own prose blocks are the ideas.
-            doc.ideas = list(doc.fallback_ideas)
-            doc.layout = "headings"
         wanted = list(skills or []) or list(self.progress.profile().get("technologies") or [])
         saved = self.progress.profile()
         ranked = rank_ideas(
@@ -2650,6 +2590,80 @@ class GSoCToolkit:
                 "into a proposal; reviewers compare proposals with the ideas page."
             ),
         }
+
+    def read_ideas_page(
+        self, url: str, *, ttl: int | None = None, follow: bool = True
+    ) -> tuple[IdeasDocument | None, list[dict[str, str]]]:
+        """An ideas page read the one way `ideas` and the monthly snapshot both use it.
+
+        Returns the document (None when the page cannot be read) and the pages followed
+        from an index. The snapshot had its own, older way of following links, so it
+        listed two headings for ML4SCI ("Projects in 2026") where `ideas` found 70 ideas.
+        """
+        ttl = ttl or self.settings.archive_ttl_seconds
+        issues_target = issues_page_target(url)
+        if issues_target:
+            doc = self._ideas_from_issues(url, *issues_target)
+        else:
+            doc = fetch_ideas_document(self.http, url, ttl)
+        if doc is None:
+            return None, []
+        followed: list[dict[str, str]] = []
+        listed = (
+            ideas_from_link_list(doc, page_url=doc.fetched_url or url or "", section="")
+            if doc.layout == "index"
+            else []
+        )
+        if len(listed) >= 3:
+            # The index lists one link per idea (CERN-HSF's "Full List of Proposals"): the
+            # links are the ideas, and opening each page would read its headings
+            # ("Description", "Requirements") as ideas.
+            for idea in listed:
+                idea.section = None
+            doc.ideas = listed
+        elif follow and doc.layout == "index" and doc.sub_pages:
+            # Pages on the ideas page's own site first: ML4SCI's 18 project pages sat
+            # behind links to CERN, arXiv and the GSoC rules.
+            here = doc.fetched_url or url or ""
+            home = urlparse(here).netloc
+            pages = sorted(
+                (
+                    p
+                    for p in doc.sub_pages
+                    if _looks_like_ideas_page(p) and not _other_page(p, here)
+                ),
+                key=lambda p: urlparse(p["url"]).netloc != home,
+            )
+            same_site = [p for p in pages if urlparse(p["url"]).netloc == home]
+            if len(same_site) >= 3:
+                # An index of its own project pages: links elsewhere on it (CERN, arXiv
+                # papers) describe the projects and hold no ideas.
+                pages = same_site
+            for page in pages[:MAX_FOLLOWED_PAGES]:
+                child = fetch_ideas_document(self.http, page["url"], ttl)
+                if child is None:
+                    continue
+                if not child.ideas:
+                    # A project page that only lists its proposals as links.
+                    child.ideas = ideas_from_link_list(
+                        child, page_url=page["url"], section=page["title"]
+                    )
+                # A page that lists ideas already read under their own project (an
+                # institution's page on ML4SCI) adds nothing new.
+                known = {i.links[0] for i in doc.ideas if i.links}
+                child.ideas = [i for i in child.ideas if not (i.links and i.links[0] in known)]
+                if not child.ideas:
+                    continue
+                for idea in child.ideas:
+                    idea.section = page["title"]
+                doc.ideas.extend(child.ideas)
+                doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
+                followed.append(page)
+        if doc.layout == "index" and not followed and doc.fallback_ideas:
+            # The links led to no ideas, so the page's own prose blocks are the ideas.
+            doc.ideas = list(doc.fallback_ideas)
+            doc.layout = "headings"
+        return doc, followed
 
     def _ideas_from_issues(self, url: str, full_name: str, label: str) -> IdeasDocument | None:
         query = f"repo:{full_name} is:issue is:open label:{_quote_label(label)}"

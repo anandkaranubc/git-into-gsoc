@@ -210,3 +210,35 @@ def test_org_ideas_says_when_the_page_is_from_last_year(api: respx.MockRouter) -
     assert "2027" in data["note"]
     current = GSoCToolkit().org_ideas("SymPy", year=2026)
     assert "from GSoC 2026" not in current["note"]
+
+
+def test_the_snapshot_reads_an_ideas_page_as_ideas_does(api: respx.MockRouter) -> None:
+    # The monthly snapshot had its own way of following links: it listed two headings
+    # for ML4SCI ("Projects in 2026") where `ideas` found 70 ideas. One reader now.
+    from git_into_gsoc.matching import signals
+
+    api.get(SYMPY_RAW).mock(return_value=httpx.Response(200, text=_read("wiki_headings.md")))
+    api.get(PG_PAGE).mock(return_value=httpx.Response(200, text=_read("umbrella_index.md")))
+    api.get("https://alpha.example.org/gsoc/ideas").mock(
+        return_value=httpx.Response(200, text=_read("bullet_labels.md"))
+    )
+    api.get("https://raw.githubusercontent.com/wiki/beta/beta/GSoC-2026-Ideas.md").mock(
+        return_value=httpx.Response(404)
+    )
+    api.get("https://github.com/beta/beta/wiki/GSoC-2026-Ideas").mock(
+        return_value=httpx.Response(404)
+    )
+    api.get("https://gamma.example.org/summer-of-code").mock(
+        return_value=httpx.Response(200, text="# Gamma\n\nNothing here yet.\n")
+    )
+    toolkit = GSoCToolkit()
+    for name in ("SymPy", "PostgreSQL"):
+        shown = toolkit.org_ideas(name, limit=500)
+        url = toolkit.gsoc.get_organization(name).ideas_url
+        doc, _ = toolkit.read_ideas_page(url)
+        assert doc is not None
+        assert sorted(i.title for i in doc.ideas) == sorted(i["title"] for i in shown["ideas"])
+        snapshot = signals._ideas_for(toolkit, {"ideas_link": url}, 10)
+        expected = signals.summarize_ideas(shown["ideas"], layout=shown["layout"], url=url)
+        assert snapshot is not None
+        assert (snapshot["layout"], snapshot["count"]) == (shown["layout"], expected["count"])

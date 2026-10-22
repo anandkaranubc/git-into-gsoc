@@ -43,7 +43,6 @@ SIGNALS_FILE = "org_signals.json"
 _EDIT_LINK = re.compile(r"\s*\[\s*edit(?:\s+source)?\s*\]\s*$", re.I)
 MAX_IDEAS_KEPT = 40
 MAX_TITLE = 100
-_FOLLOW_SUB_PAGES = 8
 
 
 def _data_dir() -> Path:
@@ -187,30 +186,13 @@ def language_concepts(languages: dict[str, int]) -> dict[str, int]:
 
 
 def _ideas_for(toolkit: Any, raw: dict[str, Any], ttl: int) -> dict[str, Any] | None:
-    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document, issues_page_target
-    from git_into_gsoc.service import _looks_like_ideas_page
-
+    # The same reading `ideas` shows: one reader, so the snapshot cannot drift from it.
     url = raw.get("ideas_link")
     if not url:
         return None
-    target = issues_page_target(url)
-    doc = (
-        toolkit._ideas_from_issues(url, *target)
-        if target
-        else fetch_ideas_document(toolkit.http, url, ttl)
-    )
+    doc, _ = toolkit.read_ideas_page(str(url), ttl=ttl)
     if doc is None:
         return {"url": url, "layout": "unreachable", "count": 0}
-    if doc.layout == "index" and doc.sub_pages:
-        followed = 0
-        for page in [p for p in doc.sub_pages if _looks_like_ideas_page(p)][:_FOLLOW_SUB_PAGES]:
-            child = fetch_ideas_document(toolkit.http, page["url"], ttl)
-            if child is not None and child.ideas:
-                doc.ideas.extend(child.ideas)
-                followed += 1
-        if not followed and doc.fallback_ideas:
-            doc.ideas = list(doc.fallback_ideas)
-            doc.layout = "headings"
     return summarize_ideas([i.model_dump() for i in doc.ideas], layout=doc.layout, url=str(url))
 
 
