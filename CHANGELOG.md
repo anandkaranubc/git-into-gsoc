@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.18.1...v0.18.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **issues:** clearer statuses and fewer false alarms from a blind beginner test ([#245](https://github.com/anandkaranubc/git-into-gsoc/issues/245)) ([c064345](https://github.com/anandkaranubc/git-into-gsoc/commit/c064345f6e04d16985d270b43cf3ad8f0c92c156))
+* **orient:** no repeated or guessed paths, rules with real evidence, plain channel names ([#246](https://github.com/anandkaranubc/git-into-gsoc/issues/246)) ([86b7fde](https://github.com/anandkaranubc/git-into-gsoc/commit/86b7fde0e725744a3f66ca7d5e4aaa6bab38a37a))
+* plain setup and doctor output without an assistant, and a complete contributor quick start ([#239](https://github.com/anandkaranubc/git-into-gsoc/issues/239)) ([66c7c85](https://github.com/anandkaranubc/git-into-gsoc/commit/66c7c8507e0df94e333436821b2477b3c8d3bf8e))
+* **repo:** show where a grade lost its points ([#247](https://github.com/anandkaranubc/git-into-gsoc/issues/247)) ([cbaf715](https://github.com/anandkaranubc/git-into-gsoc/commit/cbaf7152b9165685fc5c6d38632ba0bd01e6f196))
+
+
+### Documentation
+
+* **guide:** true claim windows, six home steps, and SymPy as an example only ([#248](https://github.com/anandkaranubc/git-into-gsoc/issues/248)) ([a576594](https://github.com/anandkaranubc/git-into-gsoc/commit/a5765944bf9c6735effebe954667097adfdb2f8f))
+* **releasing:** say the release token is set, so checks start by themselves ([#241](https://github.com/anandkaranubc/git-into-gsoc/issues/241)) ([74d698f](https://github.com/anandkaranubc/git-into-gsoc/commit/74d698f35e661f414da40970ea69a04d67976a49))
+
 ## [0.18.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.18.0...v0.18.1) (2026-10-22)
 
 

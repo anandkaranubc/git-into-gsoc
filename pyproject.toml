@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "git-into-gsoc"
-version = "0.18.1"
+version = "0.18.2"
 description = "Find your first open-source contribution and prepare for Google Summer of Code: CLI, MCP server, and Agent Skill"
 # README.md, with its links rewritten for PyPI (see fancy-pypi-readme below).
 dynamic = ["readme"]

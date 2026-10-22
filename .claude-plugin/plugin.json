@@ -1,6 +1,6 @@
 {
   "name": "git-into-gsoc",
-  "version": "0.18.1",
+  "version": "0.18.2",
   "description": "Evidence-based preparation for Google Summer of Code: find organizations, repositories and free beginner issues, get oriented in a codebase, and prepare a proposal, with an Agent Skill and an MCP server.",
   "author": {
     "name": "git-into-gsoc contributors",
