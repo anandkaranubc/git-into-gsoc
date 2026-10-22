@@ -84,7 +84,7 @@ PATTERNS: tuple[Pattern, ...] = (
     ),
     _p(
         "permission",
-        r"Permission denied|EACCES|Operation not permitted",
+        r"Permission denied|\bEACCES\b|Operation not permitted",
         "The command tried to write somewhere your user cannot, often a system-wide install.",
         "Do not use sudo with pip or npm; install into a virtual environment or a user prefix instead.",
     ),
@@ -118,13 +118,69 @@ PATTERNS: tuple[Pattern, ...] = (
         "Run a smaller part of the test suite (one file or one test), or close other programs.",
     ),
     _p(
+        # A first pull request often fails here, not in the tests. SymPy's code-quality
+        # test failed a newcomer's branch (2026-10-22) on "File contains trailing
+        # whitespace: ..., line 445", and the only advice was that tests failed.
+        "style_check",
+        r"trailing whitespace:|\bW29[123]\b|\(trailing-whitespace\)|no-trailing-spaces|"
+        r":\d+:\d+: [A-Z]{1,4}\d{3,4}\b|line too long \(\d+|would reformat|"
+        r"files? would be reformatted|incorrectly sorted|\d+ problems? \(\d+ errors?|"
+        r"\d+ offenses? detected|Code style issues found|format violations|"
+        r"clang-format-violations|File is not (?:properly formatted|\S*-ed\b)|"
+        r"Diff in \S+(?: at line |:)\d+|fixable with the .?--fix.? option|"
+        # A failed pre-commit or prek hook, unless the hook runs tests or a type checker.
+        r"^(?!.*\b(?:tests?|pytest|unittest|jest|vitest|mypy|pyright|type[ _-]?check\w*)\b)"
+        r".*\.{3,}\s*Failed$",
+        "A style check failed. Your code may work, but its layout breaks one of the "
+        "project's rules, such as spaces at the end of a line, line length, or the order of "
+        "imports.",
+        "Run the formatter or linter the project uses and commit what it changes. The "
+        "contributing guide or the CI file names it: often pre-commit, ruff, black, flake8, "
+        "eslint, or prettier.",
+        "For trailing whitespace (spaces at the end of a line), delete them on the line "
+        "named above. Most editors can show them or remove them when you save.",
+    ),
+    _p(
         "test_failure",
-        r"^(?:FAILED|FAIL|--- FAIL:) |^E\s+AssertionError|\b\d+ failed\b|AssertionError",
+        r"^(?:FAILED|FAIL|--- FAIL:) |^(?:FAIL|ERROR): test\w* \(|^E\s+AssertionError|"
+        r"\b[1-9]\d* failed\b|AssertionError",
         "Tests ran and some failed. That is not always your doing: some fail on the main branch too.",
         "Run the same test on a clean checkout of the main branch; if it fails there as well, it is not your change.",
         "If only your change fails it, read the assertion and the values it shows before editing code.",
     ),
 )
+
+
+# `gh run view --log` starts each line with the job, the step, and a timestamp, and a
+# log downloaded from the Actions page starts it with the timestamp. Colour codes come
+# through too, and gh writes their escape character as the two characters "^[".
+# Without them the quote keeps the detail that matters, and patterns anchored at the
+# line start match.
+_CI_PREFIX = re.compile(r"^\ufeff?(?:[^\t]*\t[^\t]*\t)?\d{4}-\d\d-\d\dT[\d:.]+Z ?")
+_COLOUR = re.compile(r"(?:\x1b|\^\[)\[[\d;]*[A-Za-z]")
+# A test that passed, or failed as expected, is not evidence, even when its name says
+# "permission denied". unittest ends such lines with "... ok", pytest prints PASSED.
+_PASSED = re.compile(r" \.\.\. (?:ok|skipped\b.*|expected failure)$|\b(?:PASSED|XFAIL|XPASS)\b")
+_NAMED_TEST = re.compile(r"^(?:FAILED|FAIL|--- FAIL:) |^(?:FAIL|ERROR): test\w* \(")
+_STYLE = next(p for p in PATTERNS if p.id == "style_check")
+
+
+def _evidence(pattern: Pattern, lines: list[str]) -> tuple[int, str, re.Match[str]] | None:
+    """The first line that matches, or for failing tests the line that names one."""
+    hits = (
+        (n, line, m)
+        for n, line in enumerate(lines, 1)
+        if (m := pattern.regex.search(line)) and not _PASSED.search(line)
+    )
+    if pattern.id != "test_failure":
+        return next(hits, None)
+    # A style check can run as a test, as SymPy's does. style_check reports that one, so
+    # a test failure is only reported for another test.
+    others = [hit for hit in hits if not _STYLE.regex.search(hit[1])]
+    named = [hit for hit in others if _NAMED_TEST.search(hit[1])]
+    if not named and any(_NAMED_TEST.search(line) for line in lines):
+        return None
+    return named[0] if named else (others[0] if others else None)
 
 
 def diagnose_output(text: str, *, ci: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -133,29 +189,31 @@ def diagnose_output(text: str, *, ci: dict[str, Any] | None = None) -> dict[str,
     `ci` is optional: the `ci_environment` dictionary plus a `test_commands`
     list, used to add what CI sets up next to the causes that depend on it.
     """
-    lines = (text or "").splitlines()
+    lines = [
+        _COLOUR.sub("", _CI_PREFIX.sub("", line, count=1)) for line in (text or "").splitlines()
+    ]
     causes: list[dict[str, Any]] = []
     for pattern in PATTERNS:
-        for number, line in enumerate(lines, 1):
-            match = pattern.regex.search(line)
-            if not match:
-                continue
-            detail = next((g for g in match.groups() if g), None) if match.groups() else None
-            cause: dict[str, Any] = {
-                "id": pattern.id,
-                "line": number,
-                "quote": clean_untrusted(line.strip(), limit=200),
-                "means": pattern.means,
-                "try": list(pattern.try_),
-            }
-            if detail:
-                cause["name"] = detail
-            causes.append(cause)
-            break
+        found = _evidence(pattern, lines)
+        if not found:
+            continue
+        number, line, match = found
+        detail = next((g for g in match.groups() if g), None) if match.groups() else None
+        cause: dict[str, Any] = {
+            "id": pattern.id,
+            "line": number,
+            "quote": clean_untrusted(line.strip(), limit=200),
+            "means": pattern.means,
+            "try": list(pattern.try_),
+        }
+        if detail:
+            cause["name"] = detail
+        causes.append(cause)
 
-    # A test failure is usually a symptom when an environment cause is also present.
-    if len(causes) > 1:
-        causes = [c for c in causes if c["id"] != "test_failure"] or causes
+    # A test failure is usually a symptom when an environment cause is also present. A
+    # style failure is no such cause: a real failing test next to it still counts.
+    if any(c["id"] not in {"test_failure", "style_check"} for c in causes):
+        causes = [c for c in causes if c["id"] != "test_failure"]
 
     ci_notes: list[str] = []
     if ci:
@@ -180,7 +238,13 @@ def diagnose_output(text: str, *, ci: dict[str, Any] | None = None) -> dict[str,
                 f"{s['name']} ({s['image']})" if s.get("image") else s["name"] for s in services
             )
             ci_notes.append(f"CI starts these services for the tests: {names}")
-        if commands and ids & {"missing_module", "command_not_found", "test_failure", "lockfile"}:
+        if commands and ids & {
+            "missing_module",
+            "command_not_found",
+            "test_failure",
+            "style_check",
+            "lockfile",
+        }:
             ci_notes += [f"CI runs: {c['command']} ({c['source']})" for c in commands[:2]]
         if ci.get("runners"):
             ci_notes.append("CI runs on: " + ", ".join(ci["runners"]))

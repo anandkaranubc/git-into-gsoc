@@ -134,3 +134,109 @@ def test_a_stale_lock_file_gets_a_way_forward() -> None:
     cause = diagnose_output(line + " or npm-shrinkwrap.json are in sync.")["causes"][0]
     advice = " ".join(str(v) for v in cause.values())
     assert "npm install" in advice and "git checkout -- package-lock.json" in advice
+
+
+def test_style_checks_are_named_with_the_line_that_failed() -> None:
+    samples = [
+        "AssertionError: File contains trailing whitespace: sympy/core/add.py, line 445.",
+        "src/app.py:3:10: W291 trailing whitespace",
+        "src/app.py:12:80: E501 line too long (88 > 79 characters)",
+        "src/app.py:3:0: C0303: Trailing whitespace (trailing-whitespace)",
+        "W293 [*] Blank line contains whitespace",
+        "[*] 2 fixable with the `--fix` option.",
+        "would reformat src/app.py",
+        "1 file would be reformatted, 12 files would be left unchanged.",
+        "ERROR: src/app.py Imports are incorrectly sorted and/or formatted.",
+        "trim trailing whitespace.................................................Failed",
+        "✖ 3 problems (3 errors, 0 warnings)",
+        "[warn] Code style issues found in the above file. Run Prettier with --write to fix.",
+        "main.go:3: File is not `gofmt`-ed with `-s` (gofmt)",
+        "Diff in /home/runner/work/app/src/main.rs at line 3:",
+        "src/a.c:3:10: error: code should be clang-formatted [-Wclang-format-violations]",
+        "1 file inspected, 2 offenses detected, 2 offenses autocorrectable",
+    ]
+    for line in samples:
+        assert _ids(diagnose_output(line)) == ["style_check"], line
+    # A hook that runs tests or a type checker is not a style check.
+    for line in ("pytest.................................Failed", "mypy.........Failed"):
+        assert "style_check" not in _ids(diagnose_output(line)), line
+    # git's warning while it applies a patch is not a check that failed. scikit-learn's
+    # Pyodide build prints one for a patch it applies to a tool it downloads.
+    assert (
+        diagnose_output("emsdk/patches/0003-dylink.patch:38: trailing whitespace.")["causes"] == []
+    )
+
+
+def test_a_style_check_run_as_a_test_is_not_also_a_failing_test() -> None:
+    # SymPy's code-quality check is a test, so pytest reports it like any other failure.
+    # Lines as `gh run view --log` prints them: job, step, timestamp, then the output.
+    prefix = "Slow Tests\tUNKNOWN STEP\t2026-10-22T06:08:24.3039166Z "
+    output = "\n".join(
+        prefix + line
+        for line in [
+            "    def test_files():",
+            "          o no lines contains a trailing whitespace",
+            "E               AssertionError: File contains trailing whitespace: "
+            "/home/runner/work/sympy/sympy/sympy/parsing/autolev/_listener_autolev_antlr.py, "
+            "line 445.",
+            "sympy/testing/tests/test_code_quality.py:238: AssertionError",
+            "FAILED sympy/testing/tests/test_code_quality.py::test_files - AssertionError: "
+            "File contains trailing whitespace: /home/runner/work/sympy/sympy/sympy/parsing/a.py",
+            "= 1 failed, 227 passed, 3 skipped in 1793.63s (0:29:53) =",
+        ]
+    )
+    report = diagnose_output(output)
+    assert _ids(report) == ["style_check"]
+    cause = report["causes"][0]
+    # The failure itself, not the test's description of what it checks, and the line
+    # number survives because the CI prefix is gone.
+    assert cause["line"] == 3 and cause["quote"].endswith("_listener_autolev_antlr.py, line 445.")
+    assert report["summary"].startswith("Most likely: A style check failed")
+
+    # Another test failing in the same run still counts, quoted by the line naming it.
+    other = (
+        "FAILED sympy/parsing/tests/test_autolev.py::test_rule_tests - "
+        "AssertionError: mismatch in ruletest1 in line no: 3"
+    )
+    report = diagnose_output(output + "\n" + prefix + other)
+    assert _ids(report) == ["style_check", "test_failure"]
+    assert report["causes"][1]["quote"] == other and report["causes"][1]["line"] == 7
+
+
+def test_a_style_check_does_not_hide_an_environment_cause() -> None:
+    output = (
+        "ModuleNotFoundError: No module named 'numpy'\nsrc/a.py:1:1: F401 'os' imported but unused"
+    )
+    assert _ids(diagnose_output(output)) == ["missing_module", "style_check"]
+
+
+def test_ci_logs_are_read_without_their_prefixes_and_colours() -> None:
+    # Apache Airflow's static checks (2026-10-22): prek prints the failed hook in colour,
+    # and `gh run view --log` writes the escape character as "^[".
+    line = (
+        "CI image checks / Static checks\tUNKNOWN STEP\t2026-10-22T04:05:58.9869118Z "
+        "^[[2m  ^[[0mCompile / format / lint UI^[[32m..........^[[39m^[[31;7mFailed^[[0m"
+    )
+    cause = diagnose_output(line)["causes"][0]
+    assert cause["id"] == "style_check"
+    assert cause["quote"] == "Compile / format / lint UI..........Failed"
+
+
+def test_a_passing_test_is_not_evidence() -> None:
+    # Django's test run (2026-10-22): a passing test's name said "permission denied",
+    # and the failing test was reported by unittest as "ERROR: test_... (...)".
+    output = """
+user is not authenticated after a backend raises permission denied ... ok
+tests/test_auth.py::test_permission_denied PASSED [ 10%]
+ERROR: test_unicode_file_name (i18n.test_extraction.BasicExtractorTests.test_unicode_file_name)
+FAILED (errors=1, skipped=1530, expected failures=7)
+"""
+    report = diagnose_output(output)
+    assert _ids(report) == ["test_failure"]
+    assert report["causes"][0]["quote"].startswith("ERROR: test_unicode_file_name")
+    # NumPy's Pixi build log (2026-10-22) printed a mangled path with "eacces" inside a
+    # word; only the error code on its own means permission denied.
+    assert diagnose_output("pixi-pack_plplaageacces/build/work")["causes"] == []
+    # The same log's import check: a count of zero is not a failure.
+    assert diagnose_output("Checked 115 modules (0 disabled, 0 failed on import)")["causes"] == []
+    assert _ids(diagnose_output("Error: EACCES: permission denied, mkdir")) == ["permission"]
