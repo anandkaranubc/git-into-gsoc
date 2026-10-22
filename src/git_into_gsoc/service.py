@@ -3008,10 +3008,18 @@ MAX_FOLLOWED_PAGES = 20
 _YEAR_RE = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
 
 
+# A wiki's own pages: OpenStreetMap's ideas page links its "Template:GSoC idea" and
+# "Category:Google Summer of Code ideas", which were read as ideas.
+_WIKI_NAMESPACE_RE = re.compile(
+    r"/(?:Template|Category|Special|User|Help|File|Talk|User_talk|Template_talk):", re.I
+)
+
+
 def _other_page(page: dict[str, str], here: str) -> bool:
-    """The ideas page itself, or one for another year (a site menu links them all)."""
+    """The ideas page itself, one for another year (a site menu links them all), or a
+    wiki's own template, category, or user page."""
     url = page.get("url", "")
-    if url.rstrip("/") == here.rstrip("/"):
+    if url.rstrip("/") == here.rstrip("/") or _WIKI_NAMESPACE_RE.search(url):
         return True
     years = set(_YEAR_RE.findall(here))
     named = set(_YEAR_RE.findall(f"{url} {page.get('title', '')}"))

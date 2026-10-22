@@ -32,7 +32,17 @@ _HOURS_RE = re.compile(r"\b(90|175|350)\s*(?:h\b|hr|hrs|hours|-hour|hour)?", re.
 _SIZE_WORD_RE = re.compile(r"\b(small|medium|large)\b", re.I)
 
 LABELS: dict[str, tuple[str, ...]] = {
-    "difficulty": ("difficulty", "difficulty level", "difficulty rating", "complexity"),
+    "difficulty": (
+        "difficulty",
+        "difficulty level",
+        "difficulty rating",
+        "complexity",
+        # omegaUp: "Skill level: High" is how hard the project is, not a skill.
+        "skill level",
+        "level",
+        "experience level",
+        "expertise level",
+    ),
     "size": (
         "project size",
         "expected size of project",
@@ -428,6 +438,7 @@ def _heading(line: str) -> tuple[int, str] | None:
 _LABEL_KEYWORDS = (
     ("difficult", "difficulty"),
     ("mentor", "mentors"),
+    ("level", "difficulty"),  # before "skill": "Required skill level" is a difficulty
     ("skill", "skills"),
     ("outcome", "expected_outcome"),
     ("deliverable", "expected_outcome"),
@@ -458,7 +469,9 @@ def _label(line: str) -> tuple[str, str, str] | None:
     field = _field_for_label(label)
     if field is None:
         return None
-    return field, label, match.group("value").strip()
+    # "**Estimated size of project:**" closes the bold after the colon; the value is on
+    # the next line, not "**".
+    return field, label, re.sub(r"^(?:\*\*|__)\s*", "", match.group("value")).strip()
 
 
 def _clean(value: str) -> str:
@@ -663,14 +676,32 @@ _PAGE_TITLE_RE = re.compile(
 
 
 def _is_non_idea(title: str) -> bool:
-    low = title.lower().strip(" :")
+    low = title.lower().strip(" :#")
     return (
         any(
-            low == word or low.startswith(word + " ") or low.endswith(" " + word)
+            low in (word, word + "s") or low.startswith(word + " ") or low.endswith(" " + word)
             for word in _NON_IDEA_HEADINGS
         )
         or bool(_PAGE_TITLE_RE.search(low))
         or len(low) < 3
+    )
+
+
+def _is_aside(section: str | None) -> bool:
+    """A whole heading that is about something else: "Communications", "FAQ".
+
+    Only the whole heading counts: a page titled "Summer of Code - Getting Started"
+    still holds its "Suggested projects".
+    """
+    low = (section or "").lower().strip(" :#")
+    return any(low in (word, word + "s") for word in _NON_IDEA_HEADINGS if "idea" not in word)
+
+
+def _is_list_heading(section: str) -> bool:
+    """A parent heading that only says "the ideas": "Ideas List", "Project Ideas"."""
+    low = section.lower().strip(" :#")
+    return bool(re.fullmatch(r"(?:list of )?(?:the )?(?:project )?ideas?(?: list)?", low)) or bool(
+        _PAGE_TITLE_RE.search(low)
     )
 
 
@@ -944,6 +975,12 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
             best = (*key, ideas, outside)
     assert best is not None
     _, _, _, ideas, outside = best
+    for idea in ideas:
+        if idea.section and _is_list_heading(idea.section):
+            idea.section = None  # "Ideas List / Cronjob Optimization" says nothing more
+    # omegaUp's "# Communications" holds "## If you have questions about ...": a block
+    # under a section that is not about ideas, with no idea fields, is not an idea.
+    ideas = [i for i in ideas if not (_is_aside(i.section) and not _labelled(i))]
     doc.ai_policy = ai_policy_sentences("\n".join(outside))
 
     # Pages show a blank template for new ideas ("Template / Title", mentors "Mentor,
@@ -1067,4 +1104,132 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         return None
     doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
+    if _MEDIAWIKI_RE.search(raw[:20_000]):
+        # OpenStreetMap writes each idea as a {{GSoC idea |title=... |skills=...}}
+        # template. The rendered page shows them as boxes this cannot tell apart from
+        # the wiki's own; the wikitext names every field.
+        wikitext_url = target + ("&" if "?" in target else "?") + "action=raw"
+        try:
+            ideas = wiki_template_ideas(http.get_text(wikitext_url, ttl=ttl), source_url=url)
+        except HttpError:
+            ideas = []
+        if len(ideas) >= MIN_IDEAS_FOR_LAYOUT:
+            doc.ideas, doc.fallback_ideas, doc.sub_pages = ideas, [], []
+            doc.layout = "templates"
+            doc.fetched_url = wikitext_url
     return doc
+
+
+_MEDIAWIKI_RE = re.compile(r'<meta name="generator" content="MediaWiki', re.I)
+# Template parameters, by the field they fill (OpenStreetMap's {{GSoC idea}} uses
+# title, summary, skills, useful_skills, length, difficulty, mentors).
+_WIKI_PARAMS = {
+    "title": "title",
+    "name": "title",
+    "project": "title",
+    "summary": "description",
+    "description": "description",
+    "skills": "skills",
+    "required_skills": "skills",
+    "useful_skills": "skills",
+    "preferred_skills": "skills",
+    "length": "size",
+    "size": "size",
+    "duration": "size",
+    "hours": "size",
+    "difficulty": "difficulty",
+    "level": "difficulty",
+    "mentors": "mentors",
+    "mentor": "mentors",
+    "possible_mentors": "mentors",
+    "outcome": "outcome",
+    "expected_outcome": "outcome",
+    "expected_results": "outcome",
+    "deliverables": "outcome",
+}
+
+
+def _wiki_blocks(text: str) -> list[tuple[int, str]]:
+    """(start, body) of each top-level {{...}} template, braces balanced."""
+    blocks: list[tuple[int, str]] = []
+    depth, start, i = 0, 0, 0
+    while i < len(text) - 1:
+        pair = text[i : i + 2]
+        if pair == "{{":
+            if depth == 0:
+                start = i
+            depth += 1
+            i += 2
+        elif pair == "}}" and depth:
+            depth -= 1
+            if depth == 0:
+                blocks.append((start, text[start + 2 : i]))
+            i += 2
+        else:
+            i += 1
+    return blocks
+
+
+def _wiki_params(body: str) -> dict[str, str]:
+    """`key=value` parameters of one template, split on top-level pipes only."""
+    parts: list[str] = []
+    depth, current = 0, list[str]()
+    for i, char in enumerate(body):
+        pair = body[i : i + 2]
+        if pair in ("{{", "[["):
+            depth += 1
+        elif pair in ("}}", "]]") and depth:
+            depth -= 1
+        if char == "|" and depth == 0:
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+    parts.append("".join(current))
+    params: dict[str, str] = {}
+    for part in parts[1:]:
+        key, sep, value = part.partition("=")
+        if sep:
+            params[key.strip().lower()] = value.strip()
+    return params
+
+
+def _wiki_text(value: str) -> str:
+    """Wiki markup to plain text: [[User:A|A]] is A, [https://x text] is text."""
+    value = re.sub(r"\{\{[^{}]*\}\}", " ", value)
+    value = re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", value)
+    value = re.sub(r"\[(?:https?|mailto):[^\s\]]+\s+([^\]]+)\]", r"\1", value)
+    value = re.sub(r"\[(https?://[^\s\]]+)\]", r"\1", value)
+    value = re.sub(r"'{2,}|<[^>]+>", " ", value)
+    return " ".join(value.split())
+
+
+def wiki_template_ideas(wikitext: str, *, source_url: str) -> list[ProjectIdea]:
+    """Ideas written as MediaWiki templates with a title parameter, one per template."""
+    headings = [
+        (m.start(), m.group(1).strip())
+        for m in re.finditer(r"^==+\s*(.+?)\s*==+\s*$", wikitext, re.M)
+    ]
+    ideas: list[ProjectIdea] = []
+    for start, body in _wiki_blocks(wikitext[:MAX_CHARS]):
+        params = _wiki_params(body)
+        title = _wiki_text(params.get("title") or params.get("name") or params.get("project") or "")
+        if not title:
+            continue
+        heading = next((h for pos, h in reversed(headings) if pos < start), "")
+        # Every value here is text strangers wrote: it goes through _clean, as the
+        # parameters do in _assign.
+        section = _clean(_wiki_text(heading))[:120] or None
+        idea = ProjectIdea(title=_clean(title)[:200], section=section, source_url=source_url)
+        for key, value in params.items():
+            field = _WIKI_PARAMS.get(key)
+            if field and field != "title" and (text := _wiki_text(value)):
+                _assign(idea, field, text)
+        for url in _URL_RE.findall(body):
+            cleaned = url.rstrip(".,;:]")
+            if cleaned not in idea.links:
+                idea.links.append(cleaned)
+        idea.links = idea.links[:10]
+        idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
+        ideas.append(idea)
+    return ideas

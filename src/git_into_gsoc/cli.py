@@ -832,8 +832,17 @@ def ideas_cmd(
     if data.get("hours_note"):
         console.print(f"[yellow]![/yellow] {escape(data['hours_note'])}")
     if data["ideas"]:
-        table = Table(title="Project ideas", caption="? marks a block with no labelled fields")
-        table.add_column("Fit", justify="right")
+        # Fit orders ideas against a saved profile; without one every idea scores alike.
+        show_fit = any(idea.get("match_reasons") for idea in data["ideas"])
+        caption = "? marks a block with no labelled fields"
+        if show_fit:
+            caption += (
+                ". Fit: how close the idea is to your saved skills and interests; higher is "
+                "closer. It orders the list and is not a chance of being picked."
+            )
+        table = Table(title="Project ideas", caption=caption)
+        if show_fit:
+            table.add_column("Fit", justify="right")
         table.add_column("Idea", overflow="fold")
         table.add_column("Size", justify="right")
         table.add_column("Level")
@@ -852,8 +861,9 @@ def ideas_cmd(
             )
             if idea.get("too_big_for_your_hours"):
                 hours = f"[yellow]{hours} too big[/yellow]"
+            fit = [f"{idea['match_score']:.0f}"] if show_fit else []
             table.add_row(
-                f"{idea['match_score']:.0f}" if idea["match_score"] else "",
+                *fit,
                 title,
                 hours,
                 idea.get("difficulty") or "",
