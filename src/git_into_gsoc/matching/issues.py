@@ -84,8 +84,8 @@ _NOT_READY_RE = re.compile(
 _MEDIUM_RE = re.compile(r"^(?:e-|difficulty[:/ -]*|level[:/ -]*|effort[:/ -]*)?medium$", re.I)
 OLD_ISSUE_YEARS = 3
 # Claims a curated first-task list leaves alone, though `issue` calls the older ones
-# stale: a newcomer's first comment should not land on someone else's work.
-RECENT_ASK_DAYS = 90
+# stale: a newcomer's first comment should not land on someone else's work. A single
+# old ask is not one of them; a blind reviewer still judged such issues good.
 GRANTED_DAYS = 180
 CROWDED_ASKS = 3
 
@@ -112,7 +112,8 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
         # In blind reviews, issues labelled only "help wanted" were mostly too big,
         # claimed, or unsettled: 1 of 12 was a good first task.
         return "has no beginner label" + (", only 'help wanted'" if "help wanted" in labels else "")
-    asked = _claim_problem((issue.get("assessment") or {}).get("claims") or [])
+    claims = (issue.get("assessment") or {}).get("claims") or []
+    asked = _claim_problem(claims, author=str(issue.get("author") or ""))
     if asked:
         return asked
     created = str(issue.get("created_at") or "")[:4]
@@ -130,16 +131,15 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     return None
 
 
-def _claim_problem(claims: list[dict[str, Any]]) -> str | None:
+def _claim_problem(claims: list[dict[str, Any]], *, author: str = "") -> str | None:
     """Why the people who asked for an issue keep it off a first-task list, if they do."""
-    days = [int(c.get("days_ago") or 0) for c in claims]
     if len(claims) >= CROWDED_ASKS:
         return f"{len(claims)} people have asked to work on it"
+    if author and any(str(c.get("login") or "").lower() == author.lower() for c in claims):
+        return "its author said they are working on it"
     granted = [int(c.get("days_ago") or 0) for c in claims if c.get("granted")]
     if granted and min(granted) <= GRANTED_DAYS:
         return f"a maintainer gave it to someone {min(granted)} days ago"
-    if days and min(days) <= RECENT_ASK_DAYS:
-        return f"someone asked to work on it {min(days)} days ago"
     return None
 
 

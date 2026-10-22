@@ -428,15 +428,20 @@ def test_issues_others_asked_for_stay_off_the_starter_list() -> None:
             "title": "Fix the parser",
             "labels": ["good first issue"],
             "created_at": "2026-01-01",
+            "author": "opener",
             "assessment": {"claims": list(claims)},
         }
 
     # Three people over two years: crowded, though each claim is old.
-    crowded = asked({"days_ago": 240}, {"days_ago": 340}, {"days_ago": 680})
+    crowded = asked(
+        {"login": "a", "days_ago": 240}, {"login": "b", "days_ago": 340}, {"login": "c"}
+    )
     assert starter_problem(crowded, person) == "3 people have asked to work on it"
     # The author said "I'm working on this" 73 days ago: stale for `issue`, still theirs.
-    assert "73 days ago" in str(starter_problem(asked({"days_ago": 73}), person))
-    granted = asked({"days_ago": 128, "granted": True})
+    mine = asked({"login": "Opener", "days_ago": 73})
+    assert starter_problem(mine, person) == "its author said they are working on it"
+    granted = asked({"login": "a", "days_ago": 128, "granted": True})
     assert "a maintainer gave it to someone" in str(starter_problem(granted, person))
-    assert starter_problem(asked({"days_ago": 200}), person) is None
+    # One ask from someone else 56 days ago, never approved: still a fair first task.
+    assert starter_problem(asked({"login": "a", "days_ago": 56}), person) is None
     assert starter_problem(asked(), person) is None
