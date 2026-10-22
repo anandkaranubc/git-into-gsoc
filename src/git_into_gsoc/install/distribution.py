@@ -19,6 +19,7 @@ Two kinds of launch command exist:
 from __future__ import annotations
 
 import base64
+import html
 import json
 from typing import Any
 from urllib.parse import quote, urlencode
@@ -176,15 +177,47 @@ def install_badges() -> str:
 
 
 def goose_install_link(command: list[str] | None = None) -> str:
-    """Goose's extension install link (goose://extension?cmd=...&arg=...)."""
+    """Goose's extension install link (goose://extension?cmd=...&arg=...).
+
+    Goose accepts only a few commands here, uvx among them, and its docs list
+    ``timeout`` (seconds) as required.
+    """
     cmd = command or remote_command()
     params = [("cmd", cmd[0]), *(("arg", a) for a in cmd[1:])]
     params += [
         ("id", SERVER_NAME),
         ("name", SERVER_NAME),
         ("description", "Google Summer of Code preparation"),
+        ("timeout", "300"),
     ]
     return "goose://extension?" + urlencode(params, quote_via=quote)
+
+
+def raycast_install_link(command: list[str] | None = None) -> str:
+    """Raycast's install link: the server as percent-encoded JSON that includes its name."""
+    config = {"name": SERVER_NAME, "type": "stdio", **stdio_entry(command or remote_command())}
+    return f"raycast://mcp/install?{quote(_compact(config), safe='')}"
+
+
+def site_install_links() -> str:
+    """The one-click links on the project site, as an HTML list.
+
+    A web page keeps links to app schemes such as goose://, which GitHub removes
+    from READMEs, so the site can offer Goose and Raycast too.
+    """
+    links = [
+        ("Cursor", cursor_install_link()),
+        ("VS Code", vscode_install_link()),
+        ("Visual Studio", visual_studio_install_link()),
+        ("Kiro", kiro_install_link()),
+        ("Goose", goose_install_link()),
+        ("Raycast", raycast_install_link()),
+        ("Claude Desktop (download)", claude_desktop_bundle_link()),
+    ]
+    items = "\n".join(
+        f'            <li><a href="{html.escape(link)}">{name}</a></li>' for name, link in links
+    )
+    return f'          <ul class="clients" aria-label="Add the server with one click">\n{items}\n          </ul>'
 
 
 # ---------------------------------------------------------------------- manifests
