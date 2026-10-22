@@ -30,19 +30,40 @@ This is a fair but strict test: other organizations may suit the same profile ju
 
 ## Dev and test halves
 
-Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py` were tuned only on the dev half; the test half was looked at only after each round of tuning (twice so far). To keep it honest, tune on `--split dev` and look at `--split test` only to confirm. `holdout2.json` is a newer set of personas from a second blind reviewer, never used for tuning but no longer blind. `holdout3.json` is a third set, sealed for the next round (see below).
+Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py` were tuned only on the dev half; the test half was looked at only after each round of tuning (three times so far). To keep it honest, tune on `--split dev` and look at `--split test` only to confirm. `holdout2.json` is a newer set of personas from a second blind reviewer, never used for tuning but no longer blind. `holdout3.json` is a third set, sealed for the next round (see below).
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
-| Personas: nDCG@10 | 0.643 | **0.790** |
-| Personas: P@5 | 0.537 | **0.625** |
-| Personas: strong@10 | 0.763 | **0.857** |
-| Personas: wrong@5 | 14 | **5** |
-| Accepted projects: hit@5 | 0.521 | **0.647** |
-| Accepted projects: hit@10 | 0.622 | **0.756** |
-| Accepted projects: MRR | 0.363 | **0.450** |
+| Personas: nDCG@10 | 0.643 | **0.810** |
+| Personas: P@5 | 0.537 | **0.637** |
+| Personas: strong@10 | 0.763 | **0.885** |
+| Personas: wrong@5 | 14 | **6** |
+| Accepted projects: hit@5 | 0.521 | **0.664** |
+| Accepted projects: hit@10 | 0.622 | **0.765** |
+| Accepted projects: MRR | 0.363 | **0.455** |
 
 `holdout2.json` (12 personas in ecosystems the first set does not cover: Swift, Elixir, Scala and Spark, Lua, MATLAB, C#, embedded Rust, NLP, D3 with no language named, Java and Spring, documentation only, several with misspellings) was written and graded by a second reviewer who never saw the code or the first set. At its first and only blind look, the keyword ranker scored nDCG@10 0.451 (P@5 0.317, wrong@5 21) and the current ranker 0.566 (P@5 0.483, wrong@5 11). Its typed words then showed four vocabulary gaps (Phoenix, NLTK, Leaflet, "realtime chat"), now fixed, which moved it to 0.573; treat it as no longer blind. It is harder by design: four of its personas have no strong fit among the 2026 organizations.
+
+## `dev2.json` (a second development set)
+
+15 personas from a fourth reviewer who, like the others, saw only the official 2026 list and the organizations' own pages. They are the kinds of people `holdout3` showed the ranker handles worst, but different ones: bioinformatics pipelines, game scripting, screen readers, digital humanities, climate models in Fortran, database internals, real-time operating systems, R dashboards, computer vision in C++, speech models, hospital software in Java, music notation, software supply chain security, a React developer who typed "open source AI tools", and a Java student who typed only "backend". Three have no strong fit among the 2026 organizations.
+
+It is for tuning, so its per-persona rows can be read. Like `holdout3` it is left out of `all`. Its first look, and the changes it led to:
+
+| `dev2` | Keyword ranker | First look | After round 5 |
+|---|---|---|---|
+| nDCG@10 | 0.347 | 0.550 | **0.623** |
+| P@5 | 0.173 | 0.307 | **0.347** |
+| strong@10 | 0.672 | 0.889 | **0.911** |
+| wrong@5 | 14 | 9 | **8** |
+
+Round 5 made general fixes it pointed to:
+
+- **Tags with hyphens.** These are read both with and without the hyphen. "r-project" and "objective-c" are spellings only with it, so the R project did not count as using R.
+- **Software supply chain security** is now its own subject under security. Before, an SBOM or signing interest matched any security organization as strongly as one that works on supply chains.
+- **Phrases that name a common and a rare subject.** In "audio machine learning", the rare subject counts most. A match on machine learning alone now counts for less.
+- **A small penalty when most of an organization's active code is in a language the person did not list.** It was already a caveat; now it is a small score penalty too.
+- **New spellings:** "camera pipelines" and "archiving".
 
 ## `holdout3.json` (sealed)
 
@@ -65,7 +86,9 @@ At its first look, before any change was made for it:
 
 The current ranker finds more of the right organizations, but it puts one more wrong one in a top five than the keyword ranker. That is a real weakness on unseen kinds of people, and the test keeps it visible instead of hiding it.
 
-Measured on 2026-10-21 with the data shipped then, after the third round of changes. That round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
+Second look, once, after round 5 was tuned on `dev` and `dev2` and before anything else changed: nDCG@10 0.493 (from 0.488), P@5 0.320 (unchanged), strong@10 0.700 (from 0.667), wrong@5 6 (unchanged). The round carried over only a little to these people, and the wrong-pick gap remains. It was not used to choose between changes, so it stays sealed for one more round.
+
+Measured on 2026-10-21 with the data shipped then, after the fifth round of changes. Round 5 added one wrong pick on the test half (5 to 6) and improved every other number there. Before that, the third round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
 
 ## Adding to the benchmark
 

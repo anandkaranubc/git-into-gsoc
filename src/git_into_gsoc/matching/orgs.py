@@ -120,7 +120,10 @@ def build_org_profile(
     )
     for kind, values in (("tech", org.technologies), ("topic", org.topics)):
         for tag in values:
-            for concept in find_tag_concepts(tag.replace("-", " ")):
+            # Both forms: "cloud-native" reads as "cloud native", but "r-project" and
+            # "objective-c" are spellings only with the hyphen.
+            found = {**find_tag_concepts(tag.replace("-", " ")), **find_tag_concepts(tag)}
+            for concept in found:
                 profile.add(concept, TAG, "tag", _tag_detail(kind, tag))
     for category in (org.category or "").split(","):
         name = category.strip()

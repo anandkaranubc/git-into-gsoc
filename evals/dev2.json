@@ -1,0 +1,267 @@
+{
+  "about": "A second development set: personas written and graded by a fourth reviewer who never saw the ranking code, the tool's output, or the other sets. Used for tuning. See evals/README.md.",
+  "org_list": "official GSoC 2026 accepted organizations",
+  "personas": [
+    {
+      "id": "bioinfo-pipelines-python",
+      "split": "dev2",
+      "about": "A biology student who writes Python and shell scripts to process sequencing data. They want to work on workflow pipelines for genomics.",
+      "profile": {"technologies": ["python", "bash"], "interests": ["bioinformatics pipelines", "sequencing data", "workflow managers"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "Genome Assembly and Annotation": 3,
+        "Global Alliance for Genomics and Health": 3,
+        "MalariaGEN": 2,
+        "St. Jude Children's Research Hospital": 2,
+        "UC OSPO": 1,
+        "NumFOCUS": 1,
+        "Open Genome Informatics": 1,
+        "OpenMS Inc": 1
+      },
+      "wrong_top5": ["Metaflow", "Kubeflow", "Jenkins", "Konflux", "DeepChem", "Neuroinformatics Unit", "Git"],
+      "judge_notes": "EMBL-EBI (Genome Assembly and Annotation) has several 2026 Nextflow pipeline projects in Python and Bash, and GA4GH has two Python projects on workflow engines and the Workflow Execution Service. MalariaGEN works on sequencing reads in Python, but it is analysis rather than pipelines, and St. Jude's workflow language tooling is mostly Rust. NumFOCUS counts only through scikit-bio, and OpenMS is proteomics, not sequencing. Metaflow, Kubeflow, Jenkins and Konflux share the words pipeline or workflow but have nothing to do with biology."
+    },
+    {
+      "id": "game-scripting-new",
+      "split": "dev2",
+      "about": "A new contributor who has made small games with the scripting language inside a game engine. They know Lua style scripting and little else.",
+      "profile": {"technologies": ["lua"], "interests": ["game devlopment", "game engines"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "Processing Foundation": 2,
+        "LabLua": 1,
+        "Tiled": 1,
+        "ScummVM": 1,
+        "International Catrobat Association": 1,
+        "Sugar Labs": 1,
+        "Python Software Foundation": 1,
+        "KDE Community": 1
+      },
+      "wrong_top5": ["Blender Foundation", "Gambit: The package for computation in game theory", "Neovim", "ArduPilot", "OpenWISP"],
+      "judge_notes": "No organization is a strong fit, so there is no grade 3. Processing Foundation's 2026 L5 project uses Lua on a game framework at medium difficulty, which is the closest match. LabLua, Tiled, ScummVM, KDE (Mankala) and Catrobat touch games but need C, C++, Kotlin or C#, and Python Software Foundation counts only through pocketpy's Python game agent. Neovim, ArduPilot and OpenWISP match only the Lua tag, Gambit is game theory, and Blender's 2026 ideas are not about games."
+    },
+    {
+      "id": "screen-reader-python",
+      "split": "dev2",
+      "about": "A Python developer who uses screen readers and cares about how they work. They want to build assistive technology.",
+      "profile": {"technologies": ["python"], "interests": ["screen readers", "assistive technology"], "experience": "some", "hours_per_week": 10},
+      "grades": {
+        "Sugar Labs": 2,
+        "Learning Equality": 2,
+        "Uramaki LAB": 1,
+        "KDE Community": 1,
+        "Oppia Foundation": 1,
+        "Joplin": 1
+      },
+      "wrong_top5": ["Wagtail", "Django Software Foundation", "Python Software Foundation", "GNOME Foundation", "CCExtractor Development", "SymPy"],
+      "judge_notes": "No 2026 ideas list has screen reader work in Python, so there is no grade 3. Sugar Labs has a small Python text to speech project aimed at accessibility, and Learning Equality has screen reader and WCAG work in Kolibri, though that work is mostly Vue. GNOME has no Orca idea this year and Wagtail has no accessibility idea, so their tags should not lift them. Python only matches like Django, the PSF and SymPy have nothing to do with assistive technology."
+    },
+    {
+      "id": "digital-humanities-new",
+      "split": "dev2",
+      "about": "A history student who knows a little JavaScript. They want to help libraries, archives or digital humanities projects.",
+      "profile": {"technologies": ["javascript", "html"], "interests": ["digital humanities", "library and archive software"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "Internet Archive": 3,
+        "Cuneiform Digital Library Initiative (CDLI)": 3,
+        "Wikimedia Foundation": 2,
+        "Kiwix": 1,
+        "HumanAI": 1,
+        "JabRef e.V.": 1,
+        "MetaBrainz Foundation Inc": 1
+      },
+      "wrong_top5": ["stdlib", "webpack", "Boa", "GNU Mailman", "Ste||ar group", "CGAL Project"],
+      "judge_notes": "Internet Archive (Open Library search and onboarding, medium) and CDLI are library and archive work with JavaScript in the stack, though CDLI's projects are rated medium to hard for a new person. Wikimedia's Wikisource OCR tool is JavaScript, but most of its ideas are not library work. HumanAI is humanities work in Python machine learning, and JabRef is library software in Java. stdlib, Ste||ar group and CGAL only match the word library, and webpack and Boa only match JavaScript."
+    },
+    {
+      "id": "climate-fortran-experienced",
+      "split": "dev2",
+      "about": "A researcher who has run and changed weather and climate models in Fortran and analyses the output in Python.",
+      "profile": {"technologies": ["fortran", "python"], "interests": ["climate modelling", "weather forecasting"], "experience": "experienced", "hours_per_week": 20},
+      "grades": {
+        "MLLAM": 3,
+        "IOOS": 2,
+        "Fortran-lang": 2,
+        "52°North Spatial Information Research GmbH": 1,
+        "PEcAn Project": 1,
+        "NumFOCUS": 1
+      },
+      "wrong_top5": ["R project for statistical computing", "GNU Octave", "GNU Compiler Collection (GCC)", "CERN-HSF", "Machine Learning for Science (ML4SCI)", "German Center for Open Source AI", "OpenAstronomy"],
+      "judge_notes": "MLLAM is weather forecasting in Python, which fits an experienced modeller even though it uses PyTorch rather than Fortran. IOOS works on ocean forecast checks and ocean model meshes in Python, and Fortran-lang uses the Fortran skill but is tooling, not climate. 52°North (weather routing data), PEcAn (ecosystem models in R) and NumFOCUS (pvlib) are partial. The R project and GCC mention Fortran, and the science and AI umbrellas match Python, but none of their 2026 work is climate modelling."
+    },
+    {
+      "id": "database-internals-experienced",
+      "split": "dev2",
+      "about": "An experienced systems programmer who writes C++ and Rust. They want to work inside a database on query execution or storage.",
+      "profile": {"technologies": ["c++", "rust"], "interests": ["database internals", "query engines", "storage engines"], "experience": "experienced", "hours_per_week": 20},
+      "grades": {
+        "MariaDB": 3,
+        "PostgreSQL": 3,
+        "Apache Software Foundation": 2,
+        "CERN-HSF": 2,
+        "Ceph": 1,
+        "OpenAFS": 1,
+        "EROFS filesystem": 1
+      },
+      "wrong_top5": ["The Rust Foundation", "Boa", "Ste||ar group", "CGAL Project", "LLVM Compiler Infrastructure", "OpenStreetMap", "DBpedia", "MetaBrainz Foundation Inc"],
+      "judge_notes": "MariaDB's 2026 ideas include query execution and storage handler work in C++. PostgreSQL has B-tree and lock contention work in C, which an experienced C++ developer can pick up. Apache counts through query engine and storage ideas in AsterixDB, HugeGraph and IoTDB, mostly in Java, and CERN-HSF through C++ storage work such as an S3 backend for RNTuple. Ceph's 2026 ideas are gateway tooling rather than storage internals, and Rust or C++ matches like Boa, LLVM and Ste||ar group are compilers or HPC, not databases."
+    },
+    {
+      "id": "embedded-rtos-c",
+      "split": "dev2",
+      "about": "A student who has written C for microcontroller boards. They want to work on a real-time operating system.",
+      "profile": {"technologies": ["c"], "interests": ["embedded systems", "real-time operating systems"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "RTEMS Project": 3,
+        "The Linux Foundation": 3,
+        "Eclipse Foundation": 3,
+        "Apache Software Foundation": 3,
+        "Open Technologies Alliance - GFOSS": 2,
+        "ArduPilot": 1,
+        "Open Robotics": 1,
+        "LabLua": 1,
+        "FOSSASIA": 1
+      },
+      "wrong_top5": ["Git", "libssh", "FFmpeg", "KolibriOS Project Team", "Haiku", "GNU Image Manipulation Program", "Unikraft", "CCExtractor Development"],
+      "judge_notes": "RTEMS is itself an RTOS. The Linux Foundation counts through its Zephyr sub-project, which has four intermediate C ideas, Eclipse through ThreadX getting started samples, and Apache through NuttX. GFOSS has CubeSat flight software with FreeRTOS, while ArduPilot, Open Robotics, LabLua and FOSSASIA have firmware-adjacent work that is harder or less focused. Git, libssh, FFmpeg and GIMP only share the C language, and KolibriOS and Haiku are desktop operating systems."
+    },
+    {
+      "id": "r-dashboards-new",
+      "split": "dev2",
+      "about": "A statistics student who only knows R. They want to build web dashboards that show data and statistics.",
+      "profile": {"technologies": ["r"], "interests": ["data dashboards", "statistics web apps"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "R project for statistical computing": 3,
+        "PEcAn Project": 1,
+        "IOOS": 1,
+        "GeomScale": 1
+      },
+      "wrong_top5": ["stdlib", "Liquid Galaxy project", "TARDIS RT Collaboration", "CERN-HSF", "Machine Learning for Science (ML4SCI)", "52°North Spatial Information Research GmbH"],
+      "judge_notes": "The R project umbrella has two 2026 Shiny app projects (nicheR shiny and an ecotourism app), so it is the clear first choice. PEcAn and IOOS use R, but their 2026 R work is models and packages, not dashboards. GeomScale is R statistics with C++ underneath. stdlib matches the word statistics but is JavaScript, and the other visualization and data orgs here use Python or other stacks."
+    },
+    {
+      "id": "computer-vision-cpp",
+      "split": "dev2",
+      "about": "A developer with some C++ experience who has written image filters and worked with camera input. They want to work on computer vision.",
+      "profile": {"technologies": ["c++"], "interests": ["computer vision", "image processing", "camera pipelines"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "OpenVINO Toolkit": 3,
+        "GNU Image Manipulation Program": 2,
+        "Kornia": 2,
+        "Blender Foundation": 2,
+        "KDE Community": 1,
+        "JdeRobot": 1
+      },
+      "wrong_top5": ["CGAL Project", "Ste||ar group", "LLVM Compiler Infrastructure", "BRL-CAD", "Open Robotics", "Neuroinformatics Unit", "Synfig", "Tiled"],
+      "judge_notes": "OpenVINO has several 2026 vision projects in C++, such as object tracking, face detection and multi-camera tracking. GIMP has image processing work like in-painting and segmentation, but in C, and Kornia has camera pipeline projects, but in Rust. Blender's compositor ideas are C++ image processing at easy or medium level, and KDE counts only through a hard digiKam idea. CGAL, Ste||ar group and LLVM match C++ only, and Open Robotics has no camera or vision idea in 2026."
+    },
+    {
+      "id": "speech-audio-ml",
+      "split": "dev2",
+      "about": "A student who has trained small speech models in Python with PyTorch. They want to work on speech recognition or audio machine learning.",
+      "profile": {"technologies": ["python", "pytorch"], "interests": ["speech recognition", "audio machine learning"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "HumanAI": 3,
+        "OpenVINO Toolkit": 3,
+        "Open Technologies Alliance - GFOSS": 2,
+        "FOSSASIA": 2,
+        "Sugar Labs": 2,
+        "Mixxx": 1,
+        "The Linux Foundation": 1,
+        "INCF": 1,
+        "The Mifos Initiative": 1
+      },
+      "wrong_top5": ["DeepChem", "MLLAM", "Neuroinformatics Unit", "German Center for Open Source AI", "GRAME", "FFmpeg", "Machine Learning for Science (ML4SCI)", "Kubeflow"],
+      "judge_notes": "HumanAI's AutoEIT project builds speech to text for language learner audio in Python and PyTorch at medium difficulty. OpenVINO has a medium Python speech recognition project for noisy places. GFOSS fine-tunes transcription models but asks for Greek, FOSSASIA's live interpretation project is advanced, and Sugar Labs' text to speech project is small. DeepChem, MLLAM and similar orgs only share PyTorch, and GRAME and FFmpeg do audio without machine learning."
+    },
+    {
+      "id": "healthcare-java",
+      "split": "dev2",
+      "about": "A developer with some Java experience who has worked on a clinic's software. They want to work on health data standards and hospital systems.",
+      "profile": {"technologies": ["java", "sql"], "interests": ["healthcare data standards", "hospital sofware"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "OpenMRS": 3,
+        "OpenELIS Global": 3,
+        "LibreHealth": 2,
+        "Open HealthCare Network": 2,
+        "Global Alliance for Genomics and Health": 1,
+        "Data for the Common Good": 1,
+        "cBioPortal for Cancer Genomics": 1
+      },
+      "wrong_top5": ["Jenkins", "checkstyle", "The JPF team", "JabRef e.V.", "The Mifos Initiative", "SW360", "Kotlin Foundation", "Open Food Facts"],
+      "judge_notes": "OpenMRS has Java, Spring and Hibernate backend ideas for its medical record system. OpenELIS has Java and Spring ideas, including a FHIR facade, for a lab system used in hospitals. LibreHealth and Open HealthCare Network are hospital software, but their 2026 work is not mainly Java. Jenkins, checkstyle, Mifos and SW360 only match Java, and Open Food Facts only matches the word health."
+    },
+    {
+      "id": "music-notation-qt-new",
+      "split": "dev2",
+      "about": "A new contributor who knows some C++ and Qt and plays an instrument. They want to work on an app for writing or editing scores.",
+      "profile": {"technologies": ["c++", "qt"], "interests": ["music notation", "score editing"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "Mixxx": 2,
+        "KDE Community": 1,
+        "GRAME": 1,
+        "Sugar Labs": 1,
+        "MoganLab": 1
+      },
+      "wrong_top5": ["VideoLAN", "Tiled", "Pharo Consortium", "CGAL Project", "FreeCAD", "GNU Radio", "MetaBrainz Foundation Inc"],
+      "judge_notes": "No 2026 organization I could check lists music notation work, so there is no grade 3. Mixxx is a C++ and Qt music app with a medium QML theme project, which is the closest fit. KDE uses C++ and Qt but has no music idea this year, GRAME builds audio tools without Qt, Sugar Labs' Music Blocks is JavaScript, and MoganLab is a Qt document editor. VideoLAN, Tiled, FreeCAD and GNU Radio match Qt only, and MetaBrainz is music metadata in Python."
+    },
+    {
+      "id": "supply-chain-go",
+      "split": "dev2",
+      "about": "A Go developer who has added signing and SBOM steps to a build pipeline at work. They want to work on software supply chain security.",
+      "profile": {"technologies": ["go"], "interests": ["software supply chain security", "code signing", "sboms"], "experience": "some", "hours_per_week": 12},
+      "grades": {
+        "Konflux": 3,
+        "The Mifos Initiative": 2,
+        "FOSSology": 2,
+        "AboutCode": 1,
+        "CNCF": 1,
+        "SW360": 1,
+        "The Linux Foundation": 1,
+        "Eclipse Foundation": 1,
+        "Open Technologies Alliance - GFOSS": 1
+      },
+      "wrong_top5": ["OWASP Foundation", "Meshery", "KubeVirt", "The Honeynet Project", "Metasploit", "Jenkins", "Kubeflow", "libssh"],
+      "judge_notes": "Konflux is a supply chain security platform, and its 2026 reproducible builds project is in Go. Mifos has a medium project to add SBOMs and Sigstore image signing to its build pipelines, and FOSSology has SBOM report work that can be done in Go. AboutCode, SW360, SPDX under The Linux Foundation, Eclipse Dash and GFOSS touch SBOMs or vulnerabilities, but in Python or Java. OWASP has no supply chain or Go idea in 2026, and Meshery and KubeVirt only share Go."
+    },
+    {
+      "id": "ts-react-ai-tools",
+      "split": "dev2",
+      "about": "A web developer who builds React apps in TypeScript and has about 8 hours a week. They typed open source AI tools as their only interest.",
+      "profile": {"technologies": ["typescript", "react"], "interests": ["open source AI tools"], "experience": "some", "hours_per_week": 8},
+      "grades": {
+        "Joplin": 3,
+        "rocket.chat": 3,
+        "API Dash": 2,
+        "Accord Project": 2,
+        "Gemini CLI": 2,
+        "OpenVINO Toolkit": 1,
+        "CNCF": 1,
+        "Jenkins": 1,
+        "Internet Archive": 1,
+        "Uramaki LAB": 1
+      },
+      "wrong_top5": ["MoFA Org", "German Center for Open Source AI", "DeepChem", "Machine Learning for Science (ML4SCI)", "HumanAI", "webpack", "Kubeflow", "Kornia"],
+      "judge_notes": "Joplin has several AI features to build in TypeScript and React, and Rocket.Chat has TypeScript AI tooling projects, including a 90 hour one that suits 8 hours a week. API Dash and Accord have TypeScript AI projects, but API Dash is mostly Flutter and Accord's AI work is about legal contracts. Gemini CLI is a TypeScript AI tool, but its 2026 ideas are evals and test tooling. MoFA, DeepChem and the other AI orgs work in Python or Rust, so the word AI alone should not put them in the top five."
+    },
+    {
+      "id": "java-backend-student",
+      "split": "dev2",
+      "about": "A university student who learned Java in courses. They typed backend as their interest and can give 20 hours a week.",
+      "profile": {"technologies": ["java"], "interests": ["backend"], "experience": "new", "hours_per_week": 20},
+      "grades": {
+        "OpenMRS": 3,
+        "OpenELIS Global": 3,
+        "SW360": 3,
+        "Apache Software Foundation": 2,
+        "The Mifos Initiative": 2,
+        "JBoss Community": 2,
+        "Jenkins": 1,
+        "Eclipse Foundation": 1,
+        "JabRef e.V.": 1,
+        "LibreHealth": 1
+      },
+      "wrong_top5": ["The JPF team", "checkstyle", "Kotlin Foundation", "Swift", "Ruby", "Typelevel", "Open Transit Software Foundation", "Django Software Foundation"],
+      "judge_notes": "OpenMRS, OpenELIS and SW360 all have Java and Spring backend ideas, and SW360 marks some small ones as good for students. Apache (Fineract, Wayang), Mifos (Fineract and Payment Hub) and JBoss (Debezium) have Java backend work, but it is larger or rated intermediate. The JPF team and checkstyle are Java but are research or code checking tools, not backend services. Swift and Ruby mention servers but use other languages, and Open Transit's 2026 server work moved to Go."
+    }
+  ]
+}

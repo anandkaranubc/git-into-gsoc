@@ -69,6 +69,11 @@ HARD_FOR_NEW = 0.85
 # An organization that said it will not take part in the coming year goes far down.
 SITTING_OUT = 0.3
 TIME_MISFIT = 0.85
+# Most of its active code is in a language the person did not list, so a tag naming
+# theirs is likely a side project (tuned on the dev sets of evals/).
+OTHER_MAIN_LANGUAGE = 0.95
+# How much a phrase's common concept counts against its rarest one (see match_term).
+SPECIFIC_POWER = 1.0
 FIT_STRONG, FIT_GOOD, FIT_MIN = 0.7, 0.45, 0.12
 DIVERSITY = 0.08
 STANDARD_WEEKS = 12
@@ -171,9 +176,14 @@ def _word_pattern(word: str) -> re.Pattern[str]:
     return re.compile(rf"(?<![\w+#]){re.escape(word)}(?![\w+#])")
 
 
-def match_term(profile: OrgProfile, want: Want) -> TermMatch:
-    """How strongly an organization covers one thing the person asked for."""
+def match_term(profile: OrgProfile, want: Want, idf: dict[str, float] | None = None) -> TermMatch:
+    """How strongly an organization covers one thing the person asked for.
+
+    With `idf`, a phrase that names several concepts ("audio machine learning") counts
+    a match on its common one (machine learning) for less than one on its rare one.
+    """
     best = TermMatch(want=want, strength=0.0, how="none")
+    rarest = max((idf.get(c, 0.0) for c in want.concepts), default=0.0) if idf else 0.0
 
     def central(concept: str) -> float:
         share = min(1.0, profile.sources(concept) / CENTRAL_SOURCES)
@@ -182,7 +192,10 @@ def match_term(profile: OrgProfile, want: Want) -> TermMatch:
         )
 
     for concept in want.concepts:
-        own = central(concept)
+        share = 1.0
+        if idf and len(want.concepts) > 1 and rarest > 0:
+            share = (idf.get(concept, rarest) / rarest) ** SPECIFIC_POWER
+        own = central(concept) * share
         if own > best.strength:
             best = TermMatch(want, own, "direct", None, profile.best_evidence(concept))
         is_skill = kind_of(concept) == SKILL
@@ -192,7 +205,7 @@ def match_term(profile: OrgProfile, want: Want) -> TermMatch:
             # and "science" or "web" is too broad to stand for any one interest.
             if (kind_of(parent) == SKILL) != is_skill or parent in GENERIC_PARENTS:
                 continue
-            value = factor * profile.strength.get(parent, 0.0)
+            value = factor * profile.strength.get(parent, 0.0) * share
             if value > best.strength:
                 best = TermMatch(
                     want, value, "broader", label(parent), profile.best_evidence(parent)
@@ -201,7 +214,7 @@ def match_term(profile: OrgProfile, want: Want) -> TermMatch:
         for other in () if is_skill else _related_index().get(concept, ()):
             if kind_of(other) == SKILL:
                 continue
-            value = VIA_RELATED * profile.strength.get(other, 0.0)
+            value = VIA_RELATED * profile.strength.get(other, 0.0) * share
             if value > best.strength:
                 best = TermMatch(want, value, "related", label(other), profile.best_evidence(other))
     word = want.literal
@@ -538,8 +551,8 @@ class OrgIndex:
             if not (org.category and category in org.category.lower()):
                 return None
             extra.append(f"Category: {org.category}")
-        interests = [match_term(profile, w) for w in person.interests]
-        skills = [match_term(profile, w) for w in person.skills]
+        interests = [match_term(profile, w, self.idf) for w in person.interests]
+        skills = [match_term(profile, w, self.idf) for w in person.skills]
         skill_scale, domain_scale = self.breadth.get(org.name, (1.0, 1.0))
         for term in skills:
             term.strength *= skill_scale
@@ -626,6 +639,7 @@ class OrgIndex:
         main = _main_language(profile, person)
         if main:
             caveats.append(main)
+            score *= OTHER_MAIN_LANGUAGE
         said = profile.participation
         said_year = int(said.get("year") or 0)
         if said.get("status") == "not_taking_part" and said_year > self.reference_year:
@@ -698,9 +712,9 @@ def _named_after(name: str, terms: list[TermMatch]) -> str | None:
     """The asked-for thing an organization is named after, when its evidence agrees.
 
     The name is read like any other text, so "game theory" in Gambit's name is
-    mathematics, not games.
+    mathematics, not games. A broad word ("Open Science ...") names no one subject.
     """
-    named = set(find_concepts(name))
+    named = set(find_concepts(name)) - GENERIC_PARENTS
     for term in terms:
         if term.how == "direct" and term.strength >= 0.5 and named & set(term.want.concepts):
             return term.want.shown

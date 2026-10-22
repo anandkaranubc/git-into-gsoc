@@ -16,9 +16,11 @@ checked at the end).
 
 ``holdout2.json`` and ``holdout3.json`` are later persona sets from other blind
 reviewers. ``holdout3`` is sealed: it is left out of ``all``, its per-persona
-rows are never printed, and it must never be used for tuning.
+rows are never printed, and it must never be used for tuning. ``dev2.json`` is a
+second development set for tuning, also left out of ``all`` so the numbers
+documented for the first 46 personas keep their meaning.
 
-Usage: python scripts/eval_matching.py [--split dev|test|holdout2|holdout3|all] [--ranker both|current|baseline] [--json]
+Usage: python scripts/eval_matching.py [--split dev|dev2|test|holdout2|holdout3|all] [--ranker both|current|baseline] [--json]
 """
 
 from __future__ import annotations
@@ -107,12 +109,14 @@ def _dcg(gains: list[int]) -> float:
 
 # Splits kept blind for later rounds: only their totals are ever shown.
 SEALED = frozenset({"holdout3"})
+# Splits shown on their own and left out of `all`.
+OUTSIDE_ALL = SEALED | {"dev2"}
 
 
 def load_personas() -> list[dict[str, Any]]:
     """Personas from personas.json (dev and test) and the later blind sets."""
     out: list[dict[str, Any]] = []
-    for name in ("personas.json", "holdout2.json", "holdout3.json"):
+    for name in ("personas.json", "dev2.json", "holdout2.json", "holdout3.json"):
         path = EVALS / name
         if path.is_file():
             out.extend(json.loads(path.read_text(encoding="utf-8"))["personas"])
@@ -129,7 +133,7 @@ def persona_metrics(ranker: Ranker, split: str = "all") -> dict[str, Any]:
     for persona in load_personas():
         if split != "all" and persona["split"] != split:
             continue
-        if split == "all" and persona["split"] in SEALED:
+        if split == "all" and persona["split"] in OUTSIDE_ALL:
             continue
         grades: dict[str, int] = persona["grades"]
         order = ranker(persona["profile"])[:10]
@@ -216,7 +220,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument(
         "--split",
-        choices=("dev", "test", "holdout2", "holdout3", "all"),
+        choices=("dev", "dev2", "test", "holdout2", "holdout3", "all"),
         default="all",
         help="Which personas and cases to score; holdout3 is sealed and left out of all",
     )
@@ -226,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     names = ["baseline", "current"] if args.ranker == "both" else [args.ranker]
     present = {p["split"] for p in load_personas()}
-    order = [x for x in ("dev", "test", "holdout2", "holdout3") if x in present]
+    order = [x for x in ("dev", "dev2", "test", "holdout2", "holdout3") if x in present]
     splits = [*order, "all"] if args.split == "all" else [args.split]
     results = [evaluate(name, split) for split in splits for name in names]
     for result in results:

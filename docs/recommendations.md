@@ -110,16 +110,18 @@ Each has a dev half, used while tuning, and a test half, checked only after tuni
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
-| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.790** |
-| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.625** |
-| Personas: strong fits found in the top 10 | 0.763 | **0.857** |
-| Personas: picks in the top 5 that judges called wrong | 14 | **5** |
-| Accepted projects: accepting organization in the top 5 | 52.1% | **64.7%** |
-| Accepted projects: accepting organization in the top 10 | 62.2% | **75.6%** |
+| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.810** |
+| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.637** |
+| Personas: strong fits found in the top 10 | 0.763 | **0.885** |
+| Personas: picks in the top 5 that judges called wrong | 14 | **6** |
+| Accepted projects: accepting organization in the top 5 | 52.1% | **66.4%** |
+| Accepted projects: accepting organization in the top 10 | 62.2% | **76.5%** |
 
 A third set of 12 personas from a second blind reviewer, in ecosystems the first set does not cover (Swift, Elixir, Scala, Lua, C#, embedded Rust, documentation only), confirmed the gain on first sight: nDCG@10 0.451 for the keyword ranker against 0.566 now, and judged-wrong picks in the top five down from 21 to 11.
 
 A fourth set of 15 personas from a third blind reviewer (quantum computing, browser engines, FPGA, cheminformatics, localization, a near-empty profile, and more) is sealed: only its totals are shown, and nothing is tuned on it. At its first look the current ranker scored nDCG@10 0.488 against 0.332 for the keyword ranker, but put 6 judged-wrong organizations in top fives against the keyword ranker's 5. People unlike any earlier persona are where matching is weakest.
+
+So a fifth set of 15 such people, from a fourth blind reviewer, became a second development set (screen readers, supply chain security, R dashboards, speech models, hospital software, and more). It showed vocabulary and matching gaps, fixed in a fifth round: on that set nDCG@10 went from 0.550 to 0.623 and wrong picks from 9 to 8. On the sealed set, read once afterwards, nDCG@10 went from 0.488 to 0.493 and strong fits found from 0.667 to 0.700, with wrong picks unchanged at 6. The gain carries over to new kinds of people, but only a little.
 
 Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/test_match_benchmark.py`) fails if a change makes them clearly worse, and CI runs it on the monthly data refresh too.
 

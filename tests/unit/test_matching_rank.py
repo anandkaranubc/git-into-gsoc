@@ -344,3 +344,40 @@ def test_an_unnamed_interest_is_at_most_a_partial_fit_and_main_language_is_named
     ranked = _rank([rusty], signals=signals, technologies=["python"], interests=["astronomy"])
     assert ranked[0].fit == "partial"  # astronomy is only near (physics), never named
     assert any(c.startswith("Its code is mostly Rust") for c in ranked[0].caveats)
+
+
+def test_hyphenated_tags_keep_spellings_that_need_the_hyphen() -> None:
+    # The R project tags itself "r-project"; reading the tag only as "r project" lost R.
+    stats = _org("Stats Home", tech=["c", "r-project"], topics=["statistics"])
+    other = _org("Plot Lab", tech=["javascript"], topics=["statistics", "visualization"])
+    ranked = _rank([stats, other], technologies=["r"], interests=["statistics"])
+    assert ranked[0].org.name == "Stats Home"
+    assert ranked[0].skills[0].how == "direct"
+    assert "r-project" in " ".join(ranked[0].skills[0].evidence)
+
+
+def test_supply_chain_security_is_its_own_subject_under_security() -> None:
+    factory = _org("Build Factory", tech=["go"], topics=["SLSA", "supplychain"])
+    malware = _org("Malware Watch", tech=["go"], topics=["malware analysis"])
+    ranked = _rank([malware, factory], technologies=["go"], interests=["sboms and code signing"])
+    assert ranked[0].org.name == "Build Factory"
+    watch = next(m for m in ranked if m.org.name == "Malware Watch")
+    assert watch.interests[0].how == "broader"  # security in general, not this subject
+
+
+def test_a_phrase_with_a_common_and_a_rare_subject_leans_on_the_rare_one() -> None:
+    sound = _org("Sound Lab", tech=["python"], topics=["audio"])
+    models = [
+        _org(f"Model Lab {n}", tech=["python"], topics=["machine learning"]) for n in range(6)
+    ]
+    ranked = _rank([*models, sound], technologies=["python"], interests=["audio machine learning"])
+    # Machine learning is everywhere; audio is what this person asked for.
+    assert ranked[0].org.name == "Sound Lab"
+    model = next(m for m in ranked if m.org.name.startswith("Model Lab"))
+    assert model.interests[0].strength < 0.5 < ranked[0].interests[0].strength
+
+
+def test_a_broad_word_in_a_name_is_not_what_an_organization_is_named_after() -> None:
+    perfusion = _org("Open Science Imaging Group", tech=["python"], topics=["science"])
+    ranked = _rank([perfusion], technologies=["python"], interests=["science"], experience="some")
+    assert not any(r.startswith("Named after") for r in ranked[0].reasons())
