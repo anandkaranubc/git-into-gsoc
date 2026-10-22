@@ -137,3 +137,30 @@ def test_the_body_search_finds_either_name_of_the_program() -> None:
     terms = " ".join(body_search_terms("2026-05-25"))
     assert '(gsoc OR "summer of code")' in terms and "in:body" in terms
     assert "updated:>=2026-05-25" in terms
+
+
+def test_a_maintainer_naming_the_year_in_a_body_speaks_for_the_organization() -> None:
+    from git_into_gsoc.github.announcements import reported_statements
+    from git_into_gsoc.service import participation_from
+
+    osm = _issue(
+        "OpenStreetMap has not yet decided whether or not to participate in Google Summer of "
+        "Code in 2027.",
+        "2026-10-16",
+        "MEMBER",
+    )
+    found = reported_statements([osm], year=2027)
+    assert found[0]["status"] == "undecided" and found[0]["by_maintainer"]
+    assert participation_from({"posts": found})["status"] == "undecided"
+
+
+def test_a_quoted_statement_drops_markdown_link_syntax() -> None:
+    from git_into_gsoc.github.announcements import reported_statements
+
+    linked = _issue(
+        "[It's likely that we will not participate in GSoC this year.]"
+        "(https://web.archive.org/web/1/https://groups.google.com/g/x)",
+        "2026-10-04",
+    )
+    quote = reported_statements([linked], year=2027)[0]["title"]
+    assert quote == "It's likely that we will not participate in GSoC this year."

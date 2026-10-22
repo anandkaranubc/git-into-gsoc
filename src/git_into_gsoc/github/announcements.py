@@ -32,6 +32,9 @@ _SENTENCES = re.compile(r"(?<=[.!?\n])\s+")
 
 
 _ANY_YEAR = re.compile(r"(?<![#\d])20\d\d(?!\d)")
+# Markdown around a quoted sentence: "[text](url)" keeps the text, a stray "](url)" goes.
+_MD_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
+_MD_TAIL = re.compile(r"\]\([^)]*\)")
 
 
 def body_search_terms(since: str) -> list[str]:
@@ -83,19 +86,23 @@ def reported_statements(items: list[dict[str, Any]], *, year: int) -> list[dict[
                 continue  # about another program
             if not years and upcoming_year(created) != year:
                 continue
+            by_maintainer = str(item.get("author_association") or "") in MAINTAINER_ROLES
+            # A maintainer naming the year speaks for the organization, as in a title.
+            status = _status(sentence) if by_maintainer and year in years else "reported"
+            text = _MD_TAIL.sub("", _MD_LINK.sub(r"\1", sentence))
             parts = str(item.get("repository_url") or "").rstrip("/").split("/")
             found.append(
                 {
                     "repo": "/".join(parts[-2:]),
                     "number": int(item.get("number") or 0),
-                    "title": clean_untrusted(sentence.strip(" #*->[]"), limit=240),
+                    "title": clean_untrusted(text.strip(" #*->[]"), limit=240),
                     "url": str(item.get("html_url") or ""),
                     "state": str(item.get("state") or ""),
                     "created_at": created,
                     "author": clean_untrusted((item.get("user") or {}).get("login"), limit=40),
-                    "by_maintainer": str(item.get("author_association") or "") in MAINTAINER_ROLES,
+                    "by_maintainer": by_maintainer,
                     "source": "body",
-                    "status": "reported",
+                    "status": status,
                 }
             )
             break
