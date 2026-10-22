@@ -48,6 +48,12 @@ the first step of `learning_path`. The
 `get_started` MCP prompt runs exactly this. In a terminal, `git-into-gsoc start`
 asks the same questions itself.
 
+Some organizations say publicly that they will sit out the coming year. Before you
+suggest one, make sure no result says so (its `participation`, `caveats`, or
+`gsoc_posts`). `gsoc_recommend_path` checks its top picks. A name that came only
+from `gsoc_search_orgs` has not been checked, so look it up with
+`gsoc_org_details` first, or leave it out.
+
 When the first message already asks for everything at once ("which organization,
 which issue, and can you write my proposal"), use what they told you, ask at most
 one question (usually what they care about), and answer each part honestly:
