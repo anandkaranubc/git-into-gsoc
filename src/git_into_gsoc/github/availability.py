@@ -210,6 +210,25 @@ MAX_PR_LOOKUPS = 3
 
 _PULL_URL_RE = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)", re.IGNORECASE)
 
+# Issues moved from Jira keep their old key, and pull requests often name only that key
+# ("Fixes JENKINS-43785"), so GitHub never links them. Each importer leaves a marker; a
+# key merely mentioned in an issue is not enough. On 2026-10-22, 20 of the 27 open
+# Jenkins "good first issue" issues imported from Jira had a pull request naming the key.
+_JIRA_IMPORT_RES = (
+    re.compile(r"\[jira_issue_key=([A-Z][A-Z0-9]+-\d+)\]"),  # Jenkins' importer
+    re.compile(r'imported from: <a href="[^"]*/jira/browse/([A-Z][A-Z0-9]+-\d+)"'),  # Apache's
+)
+
+
+def imported_jira_key(body: str | None) -> str | None:
+    """The Jira key of an issue imported from Jira, such as 'JENKINS-43785'."""
+    for pattern in _JIRA_IMPORT_RES:
+        found = pattern.search(body or "")
+        if found:
+            return found.group(1)
+    return None
+
+
 # (repository, number) -> the pull request, or None
 PullLookup = Callable[[str, int], dict[str, Any] | None]
 _CLAIM_RE = re.compile("|".join(_CLAIM_PATTERNS), re.IGNORECASE | re.MULTILINE)

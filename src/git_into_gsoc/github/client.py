@@ -12,7 +12,12 @@ from urllib.parse import quote
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.errors import InputError, RateLimitError
 from git_into_gsoc.github.announcements import gsoc_posts, search_terms, wiki_post
-from git_into_gsoc.github.availability import MAINTAINER_ROLES, assess_issue, unverified_assessment
+from git_into_gsoc.github.availability import (
+    MAINTAINER_ROLES,
+    assess_issue,
+    imported_jira_key,
+    unverified_assessment,
+)
 from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
@@ -656,7 +661,11 @@ class GitHubClient:
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
             futures = {
                 key: pool.submit(
-                    self.get_issue_timeline, key[0].split("/")[0], key[0].split("/")[1], key[1]
+                    self._timeline_with_imports,
+                    key[0].split("/")[0],
+                    key[0].split("/")[1],
+                    key[1],
+                    issues_by_key.get(key, {}),
                 )
                 for key in raw_by_key
             }
@@ -692,7 +701,7 @@ class GitHubClient:
                 f"{owner}/{repo}#{number} is a pull request, not an issue",
                 hint="Pass the issue number the PR addresses.",
             )
-        timeline = self.get_issue_timeline(owner, repo, number)
+        timeline = self._timeline_with_imports(owner, repo, number, issue)
         if timeline is None:
             return issue, unverified_assessment()
         return issue, assess_issue(issue, timeline, pull_lookup=self._pull_lookup())
@@ -719,6 +728,34 @@ class GitHubClient:
                 f"{owner}/{repo} has GitHub issues turned off",
                 hint="Its README or CONTRIBUTING file says where it tracks bugs.",
             )
+
+    def _timeline_with_imports(
+        self, owner: str, repo: str, number: int, issue: dict[str, Any]
+    ) -> list[dict[str, Any]] | None:
+        """The issue's timeline, plus pull requests that name its old Jira key.
+
+        GitHub does not link those, so they read as cross-references here.
+        """
+        timeline = self.get_issue_timeline(owner, repo, number)
+        key = imported_jira_key(issue.get("body"))
+        if timeline is None or not key:
+            return timeline
+        try:
+            found = self.search_issues(f'repo:{owner}/{repo} is:pr "{key}"', per_page=10)
+        except HttpError:
+            return timeline  # the timeline alone still says something
+        named = re.compile(rf"\b{re.escape(key)}\b")
+        pulls = [
+            item
+            for item in found
+            if "pull_request" in item
+            and named.search(f"{item.get('title') or ''} {item.get('body') or ''}")
+        ]
+        events = [
+            {"event": "cross-referenced", "created_at": p.get("created_at"), "source": {"issue": p}}
+            for p in pulls
+        ]
+        return [*timeline, *events]
 
     def _pull_lookup(self) -> Callable[[str, int], dict[str, Any] | None]:
         """Fetch a pull request by repository and number; None for an issue or an error."""
