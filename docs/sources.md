@@ -52,7 +52,7 @@ Each signal adds points, and the points add up to exactly 100. A repository with
 
 The outside merge rate is worth more than the merge rate of all PRs, because most PRs in a busy project come from the core team. The grade follows the score: A from 85, B from 72, C from 58, D from 45, and F below that. Two rules can then hold it down, however many points the rest earns: the outside merge rate limits described above (a B or a C at best), and a year without a push (a D at best). An archived repository is an F.
 
-A figure that rests on too few PRs is shown but scores nothing, since a handful of PRs is not evidence either way. The single-commit count comes from a community service (ecosyste.ms). When it has no commit history for the repository, the count is left out and the score is out of the other 94 points, because a gap in someone else's data says nothing about the project.
+A figure that rests on too few PRs is shown but scores nothing, since a handful of PRs is not evidence either way. The single-commit count comes from a community service (ecosyste.ms). When it has no commit history for the repository, the count is left out and the score is out of the other 94 points, because a gap in someone else's data says nothing about the project. When GitHub does not answer a read, often because of a rate limit, the signals that come from it (the CONTRIBUTING guide, Code of Conduct and templates, the README's contributing section, CI, or open beginner issues) are left out the same way, with a note to run it again later. They never count as missing.
 
 The advice under the grade follows the grade: "Strong candidate" for an A, "Promising, with caveats" for a B, "Risky" for a C or a D, and "Poor fit" for an F.
 
