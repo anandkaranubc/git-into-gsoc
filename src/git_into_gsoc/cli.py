@@ -21,6 +21,7 @@ from typer.core import TyperGroup
 
 from git_into_gsoc import __version__, onboarding
 from git_into_gsoc.errors import GigError, InputError
+from git_into_gsoc.github.availability import pull_ref
 from git_into_gsoc.guidance import journey_overview
 from git_into_gsoc.models import LogEntry
 from git_into_gsoc.service import GSoCToolkit
@@ -1224,8 +1225,13 @@ def issue_cmd(
         lines.append("Maintainers have commented in this thread.")
     for pr in assessment["linked_prs"]:
         gitlab = "/merge_requests/" in str(pr.get("url") or "")
-        ref = f"MR !{pr['number']}" if gitlab else f"PR #{pr['number']}"
-        lines.append(f"{ref} ({pr['state']}) by @{pr['author']}")
+        ref = (
+            f"MR !{pr['number']}"
+            if gitlab
+            else "PR " + pull_ref(pr["number"], pr.get("url"), str(data["repo"]))
+        )
+        via = ", linked in a comment" if pr.get("via_comment") else ""
+        lines.append(f"{ref} ({pr['state']}) by @{pr['author']}{via}")
     for claim in assessment["claims"][:5]:
         granted = ", approved by a maintainer" if claim["granted"] else ""
         lines.append(f"Claim: @{claim['login']}, last active {claim['days_ago']}d ago{granted}")

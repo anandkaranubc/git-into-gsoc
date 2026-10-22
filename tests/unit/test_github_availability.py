@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import httpx
+import pytest
 import respx
 
 from git_into_gsoc.github.availability import assess_issue, is_claim, is_grant
@@ -462,10 +463,10 @@ def test_a_comment_pointing_at_an_open_pr_marks_the_issue_taken() -> None:
         _comment("someone", "I think this is already covered by #1293.", 8, "CONTRIBUTOR"),
         _comment("other", "Could you confirm PR #1293 addresses this? See #12 too.", 2),
     ]
-    looked_up: list[int] = []
+    looked_up: list[tuple[str, int]] = []
 
-    def pull(number: int) -> dict[str, Any] | None:
-        looked_up.append(number)
+    def pull(repo: str, number: int) -> dict[str, Any] | None:
+        looked_up.append((repo, number))
         if number != 1293:
             return None
         return {"number": 1293, "state": "open", "user": {"login": "author"}, "updated_at": _iso(8)}
@@ -473,21 +474,158 @@ def test_a_comment_pointing_at_an_open_pr_marks_the_issue_taken() -> None:
     found = assess_issue(issue, timeline, now=NOW, pull_lookup=pull)
     assert found.availability == Availability.LIKELY_TAKEN
     assert found.reason == "A comment says open PR #1293 by @author covers it"
-    assert looked_up == [1293]  # "#12 too" is not a PR mention; each number is read once
+    # "#12 too" is not a PR mention; each pull request is read once
+    assert looked_up == [("acme/app", 1293)]
     # Without a way to look pull requests up, nothing changes.
     assert assess_issue(issue, timeline, now=NOW).availability == Availability.AVAILABLE
 
 
-def test_a_closed_or_other_repo_pr_in_a_comment_does_not_count() -> None:
+def test_a_closed_pr_in_a_comment_does_not_count() -> None:
     issue = _issue(number=5, html_url="https://github.com/acme/app/issues/5")
     timeline = [
         _comment("a", "Fixed in #7 maybe?", 3),
         _comment("b", "Like https://github.com/other/lib/pull/9 did.", 2),
     ]
+    looked_up: list[tuple[str, int]] = []
+
+    def pull(repo: str, number: int) -> dict[str, Any] | None:
+        looked_up.append((repo, number))
+        return {"number": number, "state": "closed"}
+
+    found = assess_issue(issue, timeline, now=NOW, pull_lookup=pull)
+    assert found.availability == Availability.AVAILABLE
+    assert looked_up == [("acme/app", 7), ("other/lib", 9)]
+
+
+def test_an_open_pr_in_another_repository_named_in_a_comment_counts() -> None:
+    # A Haskell security-advisories issue read "available" (2026-10-21) although a
+    # collaborator wrote that it was "Completed in the pending" pull request in the
+    # tool that consumes the advisories, a different repository.
+    issue = _issue(number=215, html_url="https://github.com/acme/advisories/issues/215")
+    timeline = [
+        _comment(
+            "helper",
+            "Completed in the pending https://github.com/someone/audit-tool/pull/77",
+            30,
+            "COLLABORATOR",
+        )
+    ]
+
+    def pull(repo: str, number: int) -> dict[str, Any] | None:
+        assert (repo, number) == ("someone/audit-tool", 77)
+        return {"number": 77, "state": "open", "user": {"login": "someone"}, "updated_at": _iso(9)}
+
+    found = assess_issue(issue, timeline, now=NOW, pull_lookup=pull)
+    assert found.availability == Availability.LIKELY_TAKEN
+    # "#77" alone would send people to this repository's #77, a different pull request.
+    assert found.reason == "A comment says open PR someone/audit-tool#77 by @someone covers it"
+
+
+def test_a_pr_from_another_repository_is_named_with_its_repository() -> None:
+    issue = _issue(number=3, html_url="https://github.com/acme/app/issues/3")
+    other = _pr(12, "open", "dev")
+    other["source"]["issue"]["html_url"] = "https://github.com/dev/fork-tool/pull/12"
+    found = assess_issue(issue, [other], now=NOW)
+    assert found.reason == "Open PR dev/fork-tool#12 by @dev references it"
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "status: needs discussion",
+        "needs:discussion",
+        "needs-discussion",
+        "Needs: Community Discussion",
+        "further discussion required",
+        "type: discussion",
+        "status: in discussion",
+        "todo: needs decisions",
+        "status:needs design decision",
+        "needs:design",
+        "issue/design required",
+        "status: blocked",
+        "state: blocked",
+        "blocked: upstream",
+        "temporarily-blocked-from-assignment",
+        "status: on hold",
+    ],
+)
+def test_labels_that_hold_an_issue_back_count_however_they_are_spelled(label: str) -> None:
+    # Measured on 24,779 labels from the top repositories of 153 GSoC organizations
+    # (2026-10-21). An App Inventor issue labelled "status: needs discussion" read
+    # "available" because only the exact name "needs discussion" counted.
+    found = assess_issue(_issue(labels=[{"name": "help wanted"}, {"name": label}]), [], now=NOW)
+    assert found.availability == Availability.NOT_OPEN
+    assert label in found.reason
+
+
+@pytest.mark.parametrize(
+    "label",
+    ["blocker", "priority:blocker", "design", "redesign", "lifecycle/frozen", "unblocked"],
+)
+def test_labels_that_only_sound_like_a_hold_do_not_count(label: str) -> None:
+    # "blocker" is a priority, "design" a topic, and "lifecycle/frozen" only stops a
+    # bot from closing the issue.
     found = assess_issue(
-        issue, timeline, now=NOW, pull_lookup=lambda n: {"number": n, "state": "closed"}
+        _issue(labels=[{"name": "good first issue"}, {"name": label}]), [], now=NOW
     )
     assert found.availability == Availability.AVAILABLE
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "This issue is reserved for gsoc, do not take over it",
+        "@someone This issue is currently reserved for GSoC candidates, so I would suggest "
+        "not putting work on this.",
+        "Hey, this issue is reserved for a GSoC project.",
+        "It falls under the GSoC scope, which is reserved for the selected contributor.",
+        "This issue will be reserved for Google Summer of Code participation.",
+    ],
+)
+def test_a_maintainer_reserving_an_issue_for_a_gsoc_project_holds_it(body: str) -> None:
+    # Real wordings from GitHub comments (2026-10-21). The issue is the GSoC project
+    # itself: the contributor selected for it does the work, so a newcomer should not.
+    found = assess_issue(_issue(), [_comment("lead", body, 20, "MEMBER")], now=NOW)
+    assert found.availability == Availability.NOT_OPEN
+    assert "pick another issue" in found.reason
+
+
+def test_issues_reserved_for_gsoc_applicants_stay_open() -> None:
+    # The opposite meaning: these are kept for people preparing to apply.
+    for body in [
+        "The issues in this repo are reserved for gsoc applicants to solve and get familiar.",
+        "We ask that this issue be reserved for those who are interested in applying to GSoC.",
+    ]:
+        found = assess_issue(_issue(), [_comment("lead", body, 20, "MEMBER")], now=NOW)
+        assert found.availability == Availability.AVAILABLE, body
+    # A newcomer asking is not the project saying so.
+    asked = _comment("new", "Can I try this or is it reserved for GSoC?", 2)
+    assert assess_issue(_issue(), [asked], now=NOW).availability != Availability.NOT_OPEN
+
+
+def test_saying_you_already_tried_a_fix_is_a_claim() -> None:
+    # Missed on a JPF issue and an App Inventor issue (2026-10-21): both people had
+    # started the work, but the issue still read "available" with no word about them.
+    assert is_claim("So I have tried to implement a solution for this issue; I hope it works.")
+    assert is_claim("I've been looking into implementing SSE support on the Android side.")
+    assert not is_claim("Have you tried to implement it with the old API first?")
+
+
+def test_a_merged_pr_linked_as_an_example_is_not_said_to_reference_the_issue() -> None:
+    # On a JPF issue (2026-10-21) a maintainer linked a sibling repository's merged PR
+    # as the change to copy. It does not reference the issue and fixes nothing here.
+    issue = _issue(number=8, html_url="https://github.com/jpf/nhandler/issues/8")
+    body = "The idea is to apply changes from PR 373 here: https://github.com/jpf/core/pull/373"
+    merged = {"number": 373, "state": "closed", "merged_at": _iso(800), "user": {"login": "v"}}
+    found = assess_issue(
+        issue, [_comment("lead", body, 700, "MEMBER")], now=NOW, pull_lookup=lambda r, n: merged
+    )
+    assert found.availability == Availability.AVAILABLE
+    assert found.caveats == [
+        "A comment links merged PR jpf/core#373; read it first, it may already fix this or "
+        "show how to"
+    ]
 
 
 C = "\u2019"  # the curly apostrophe phone keyboards type
@@ -602,3 +740,19 @@ THIRD_SAMPLE_NOT_CLAIMS = [
 def test_third_sample_phrasings() -> None:
     assert [text for text in THIRD_SAMPLE_CLAIMS if not is_claim(text)] == []
     assert [text for text in THIRD_SAMPLE_NOT_CLAIMS if is_claim(text)] == []
+
+
+def test_many_old_requests_say_how_many_people_asked() -> None:
+    # A cBioPortal issue had three requests over two years (2026-10-21). That is not
+    # contested, but a beginner should know they would be the fourth.
+    timeline = [
+        _comment("a", "Can I work on this?", 300),
+        _comment("b", "I'd like to work on this.", 200),
+        _comment("c", "Is this still open for work?", 100),
+    ]
+    found = assess_issue(_issue(), timeline, now=NOW)
+    assert found.availability == Availability.AVAILABLE
+    assert found.caveats == [
+        "3 people asked to work on this, the latest 100d ago, and none opened a PR; post a "
+        "concrete plan instead of another request, or pick another issue"
+    ]

@@ -15,10 +15,10 @@ from urllib.parse import quote
 
 from git_into_gsoc.errors import GigError, NotFoundError
 from git_into_gsoc.github.availability import (
-    NOT_OPEN_LABELS,
     RESERVED_LABELS,
     STALE_DAYS,
     assess_issue,
+    is_not_open_label,
 )
 from git_into_gsoc.http_client import CachedHttpClient
 from git_into_gsoc.models import Availability
@@ -90,7 +90,7 @@ def _status(
         if mr["idle_days"] is not None and mr["idle_days"] >= 90:
             reason += f"; it has been idle for {mr['idle_days']} days"
         return Availability.LIKELY_TAKEN, reason, linked, caveats
-    held = sorted(lowered & NOT_OPEN_LABELS)
+    held = sorted(label for label in labels if is_not_open_label(label))
     if held:
         return Availability.NOT_OPEN, f"Labelled '{held[0]}'; pick another issue", linked, caveats
     reserved = sorted(lowered & RESERVED_LABELS)

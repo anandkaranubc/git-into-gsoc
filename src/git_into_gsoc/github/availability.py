@@ -50,9 +50,38 @@ NOT_OPEN_LABELS = {
     "on hold",
     "blocked",
 }
-# A project bot or maintainer telling claimants the issue cannot be assigned.
+# Projects spell these many ways ("Status: Needs-Discussion", "needs:design", "state:
+# blocked"), so a label is matched after lower-casing it and turning each run of
+# punctuation into one space. On 24,779 labels from the top repositories of 153 GSoC
+# organizations (2026-10-21), the exact names above matched 9 spellings and this
+# matches 95, none of them wrongly on review. "blocker" is a priority, "design" a
+# topic, and "lifecycle/frozen" only stops a bot from closing the issue.
+_NOT_OPEN_LABEL_RE = re.compile(
+    r"\bneeds?\s+(?:(?:further|more|community|team|a)\s+)?(?:discussion|decisions?|design)\b"
+    r"|\b(?:discussion|decision|design)\s+(?:needed|required)\b"
+    r"|\b(?:further|more)\s+discussion\b"
+    r"|\b(?:under|in)\s+discussion\b|\bdiscussion\s+ongoing\b"
+    r"|\b(?:waitfor|waiting\s+for|awaiting)\s+(?:discussion|decision)\b"
+    r"|\bidea\s+for\s+discussion\b|\bnot\s+ready\b|\bon\s+hold\b|\bblocked\b"
+    r"|^(?:(?:status|state|type|kind|stage|issue|todo|s|t)\s+)?discussion$"
+)
+
+
+def is_not_open_label(name: str) -> bool:
+    """True for a label saying the issue is not ready for anyone to work on yet."""
+    words = " ".join(re.sub(r"[^0-9a-z]+", " ", name.lower()).split())
+    return bool(_NOT_OPEN_LABEL_RE.search(words))
+
+
+# A project bot or maintainer telling claimants the issue cannot be assigned, or that
+# it is the GSoC project itself, which the contributor selected for it will do
+# ("reserved for gsoc, do not take over it"). "Reserved for GSoC applicants" means the
+# opposite, an issue kept for people preparing to apply, so it does not count.
 _NOT_OPEN_RE = re.compile(
-    r"not (?:currently |yet )?(?:available|open) for (?:assignment|claims?|contributions?)", re.I
+    r"not (?:currently |yet )?(?:available|open) for (?:assignment|claims?|contributions?)"
+    r"|reserved for (?:a |the )?(?:gsoc|google summer of code)\b(?!\s+(?:applicants?|aspirants?))"
+    r"|reserved for the (?:selected|chosen) (?:gsoc )?(?:contributor|student|intern)",
+    re.I,
 )
 RECENT_CLAIM_DAYS = 30
 STALE_PR_DAYS = 90
@@ -104,6 +133,9 @@ _CLAIM_PATTERNS = [
     r"\b(?:assign|delegate|give) (?:this|it|the issue|this issue) to (?:me|us)\b",
     r"\bi(?:'m| am) planning to\b|\bi plan to\b",
     r"\b(?:i(?:'ll| will)|will) get started\b",
+    # Work already begun, missed in two Java issues (2026-10-21).
+    r"\bi(?:'ve| have) (?:tried|attempted) to (?:implement|fix|solve|resolve|address)\b",
+    r"\bi(?:'ve| have) been looking into (?:implementing|fixing|solving|this|it)\b",
     r"\bi wanna (?:take|work|fix|try|do)\b",
     r"\bi have (?:the |a )?(?:change|changes|fix|patch|pr) ready\b",
     r"\bi(?:'m| am) (?:nearly|almost) (?:done|finished)\b",
@@ -176,7 +208,10 @@ _PR_MENTION_RE = re.compile(
 )
 MAX_PR_LOOKUPS = 3
 
-PullLookup = Callable[[int], dict[str, Any] | None]
+_PULL_URL_RE = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)", re.IGNORECASE)
+
+# (repository, number) -> the pull request, or None
+PullLookup = Callable[[str, int], dict[str, Any] | None]
 _CLAIM_RE = re.compile("|".join(_CLAIM_PATTERNS), re.IGNORECASE | re.MULTILINE)
 _GRANT_RE = re.compile("|".join(_GRANT_PATTERNS), re.IGNORECASE)
 _RELEASE_RE = re.compile("|".join(_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
@@ -229,15 +264,36 @@ def is_release(text: str) -> bool:
     return bool(_RELEASE_RE.search(straight_quotes(text)))
 
 
-def _mentioned_pulls(body: str, repo: str) -> list[int]:
-    """Pull request numbers in this repository that a comment points at."""
-    numbers: list[int] = []
+def _mentioned_pulls(body: str, repo: str) -> list[tuple[str, int]]:
+    """Pull requests a comment points at, as (repository, number).
+
+    A link can name another repository: work on a tool's issue sometimes lands in
+    the repository that uses it.
+    """
+    found: list[tuple[str, int]] = []
     for match in _PR_MENTION_RE.finditer(body):
         short, covered, other_repo, linked_number = match.groups()
-        if other_repo and other_repo.lower() != repo.lower():
-            continue
-        numbers.append(int(short or covered or linked_number))
-    return numbers
+        found.append((other_repo or repo, int(short or covered or linked_number)))
+    return found
+
+
+def pull_ref(number: int | None, url: str | None, repo: str) -> str:
+    """'#12' for a pull request of this repository, 'owner/name#12' for another one."""
+    if not number:
+        return ""
+    match = _PULL_URL_RE.search(url or "")
+    where = match.group(1) if match else repo
+    same = not repo or where.lower() == repo.lower()
+    return f"#{number}" if same else f"{where}#{number}"
+
+
+def _pull_ref(pr: LinkedPullRequest, repo: str) -> str:
+    return pull_ref(pr.number, pr.url, repo)
+
+
+def _pull_key(pr: LinkedPullRequest, repo: str) -> tuple[str, int | None]:
+    match = _PULL_URL_RE.search(pr.url or "")
+    return ((match.group(1) if match else repo).lower(), pr.number)
 
 
 def _issue_repo(issue: dict[str, Any]) -> str:
@@ -255,15 +311,15 @@ def assess_issue(
 ) -> IssueAssessment:
     """Classify one issue from its payload and timeline.
 
-    `pull_lookup(number)` returns a pull request of the same repository, or None.
-    With it, a comment such as "this is covered by #1293" counts when that pull
-    request is open, even though the pull request itself never links the issue.
+    `pull_lookup(repository, number)` returns that pull request, or None. With it, a
+    comment such as "this is covered by #1293" counts when that pull request is open,
+    even though the pull request itself never links the issue.
     """
     now = now or datetime.now(UTC)
     caveats: list[str] = []
     claims: dict[str, IssueClaim] = {}
     linked: dict[str, LinkedPullRequest] = {}
-    mentioned: list[int] = []
+    mentioned: list[tuple[str, int]] = []
     repo = _issue_repo(issue)
     maintainer_engaged = False
     last_activity = _dt(issue.get("updated_at"))
@@ -280,6 +336,8 @@ def assess_issue(
                 _is_bot(user) or str(event.get("author_association") or "") in MAINTAINER_ROLES
             ):
                 not_open = f"The project said it is {said.group(0)}"
+                if said.group(0).lower().startswith("reserved"):
+                    not_open += ": the contributor chosen for that GSoC project does this work"
             if _is_bot(user):
                 if is_release(body):
                     _release(claims, body, caveats, who=None)
@@ -331,9 +389,10 @@ def assess_issue(
         if at and (last_activity is None or at > last_activity):
             last_activity = at
 
-    known = {p.number for p in linked.values()} | {issue.get("number")}
-    for number in [n for n in dict.fromkeys(mentioned) if n not in known][:MAX_PR_LOOKUPS]:
-        pull = pull_lookup(number) if pull_lookup else None
+    known = {_pull_key(p, repo) for p in linked.values()} | {(repo.lower(), issue.get("number"))}
+    wanted = [(r, n) for r, n in dict.fromkeys(mentioned) if (r.lower(), n) not in known]
+    for where, number in wanted[:MAX_PR_LOOKUPS]:
+        pull = pull_lookup(where, number) if pull_lookup else None
         if not pull:
             continue  # not a pull request, or it could not be read
         merged = bool(pull.get("merged_at"))
@@ -341,9 +400,9 @@ def assess_issue(
         if state == "closed":
             continue
         touched = _dt(pull.get("updated_at"))
-        linked[f"comment-{number}"] = LinkedPullRequest(
+        linked[f"comment-{where}-{number}"] = LinkedPullRequest(
             number=number,
-            url=pull.get("html_url"),
+            url=pull.get("html_url") or f"https://github.com/{where}/pull/{number}",
             state=state,
             author=_login(pull.get("user")),
             draft=bool(pull.get("draft")),
@@ -358,11 +417,18 @@ def assess_issue(
     claim_list = sorted(claims.values(), key=lambda c: c.at, reverse=True)
     activity_days = (now - last_activity).days if last_activity else None
 
-    if any(p.state == "merged" for p in prs):
+    merged_prs = [p for p in prs if p.state == "merged"]
+    if any(not p.via_comment for p in merged_prs):
         caveats.append("A merged PR references this issue; it may already be partly fixed")
+    # A comment can link a merged pull request as the fix or as an example to copy.
+    for p in [p for p in merged_prs if p.via_comment][:2]:
+        caveats.append(
+            f"A comment links merged PR {_pull_ref(p, repo)}; read it first, it may already "
+            "fix this or show how to"
+        )
     abandoned = [p for p in prs if p.state == "closed"]
     if abandoned and not any(p.state in {"open", "merged"} for p in prs):
-        refs = ", ".join(f"#{p.number}" for p in abandoned[:3] if p.number) or "an earlier PR"
+        refs = ", ".join(_pull_ref(p, repo) for p in abandoned[:3] if p.number) or "an earlier PR"
         caveats.append(
             f"{refs} tried this and was closed without merging; read its review comments "
             "first, they show what the maintainers expect"
@@ -388,7 +454,7 @@ def assess_issue(
     open_prs = [p for p in prs if p.state == "open"]
     if open_prs:
         pr = open_prs[0]
-        ref = f"#{pr.number}" if pr.number else ""
+        ref = _pull_ref(pr, repo)
         who = f" by @{pr.author}" if pr.author else ""
         draft = " (draft)" if pr.draft else ""
         reason = (
@@ -409,7 +475,7 @@ def assess_issue(
     names = [
         str(lab.get("name") if isinstance(lab, dict) else lab) for lab in issue.get("labels") or []
     ]
-    held = [name for name in names if name.strip().lower() in NOT_OPEN_LABELS]
+    held = [name for name in names if is_not_open_label(name)]
     if held or not_open:
         reason = (
             f"Labelled '{held[0]}': the project is not taking claims on it yet"
@@ -445,7 +511,15 @@ def assess_issue(
             Availability.CLAIMED,
             f"@{c.login} asked to work on it; the claim was last active {c.days_ago}d ago",
         )
-    if claim_list:
+    if len(claim_list) >= CONTESTED_MIN_CLAIMANTS:
+        # Spread over months it is not CONTESTED, but a fourth "can I work on this?"
+        # is still the noise maintainers dread.
+        caveats.append(
+            f"{len(claim_list)} people asked to work on this, the latest "
+            f"{claim_list[0].days_ago}d ago, and none opened a PR; post a concrete plan "
+            "instead of another request, or pick another issue"
+        )
+    elif claim_list:
         c = claim_list[0]
         caveats.append(
             f"@{c.login} asked {c.days_ago}d ago with no PR; ask politely in the thread first"

@@ -101,6 +101,9 @@ def test_comments_it_cannot_read_make_the_status_unknown() -> None:
         ({"state": "closed"}, "closed"),
         ({"assignees": [{"username": "sajal64"}]}, "assigned"),
         ({"labels": ["Needs Design"]}, "not_open"),
+        # GitLab's scoped labels put a prefix before the status.
+        ({"labels": ["Status::Needs Discussion"]}, "not_open"),
+        ({"labels": ["workflow::blocked"]}, "not_open"),
         ({"labels": ["In Progress"]}, "claimed"),
         ({"updated_at": _iso(500)}, "stale"),
     ],

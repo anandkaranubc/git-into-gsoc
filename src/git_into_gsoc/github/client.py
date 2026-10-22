@@ -664,7 +664,7 @@ class GitHubClient:
                     assessment = assess_issue(
                         issues_by_key.get(key, {}),
                         timeline,
-                        pull_lookup=self._pull_lookup(owner_name, repo_name),
+                        pull_lookup=self._pull_lookup(),
                     )
                 candidate.assessment = assessment
                 candidate.availability = assessment.availability
@@ -689,7 +689,7 @@ class GitHubClient:
         timeline = self.get_issue_timeline(owner, repo, number)
         if timeline is None:
             return issue, unverified_assessment()
-        return issue, assess_issue(issue, timeline, pull_lookup=self._pull_lookup(owner, repo))
+        return issue, assess_issue(issue, timeline, pull_lookup=self._pull_lookup())
 
     def _explain_missing_issues(self, owner: str, repo: str) -> None:
         """Raise a clearer error when the repository keeps no issues on GitHub at all.
@@ -714,9 +714,17 @@ class GitHubClient:
                 hint="Its README or CONTRIBUTING file says where it tracks bugs.",
             )
 
-    def _pull_lookup(self, owner: str, repo: str) -> Callable[[int], dict[str, Any] | None]:
-        """Fetch a pull request of this repository by number; None for an issue or an error."""
-        return lambda number: self.get_pull(owner, repo, number)
+    def _pull_lookup(self) -> Callable[[str, int], dict[str, Any] | None]:
+        """Fetch a pull request by repository and number; None for an issue or an error."""
+
+        def lookup(full_name: str, number: int) -> dict[str, Any] | None:
+            owner, _, repo = full_name.partition("/")
+            try:
+                return self.get_pull(owner, repo, number)
+            except InputError:  # a malformed name in someone's comment
+                return None
+
+        return lookup
 
     def contribution_guide(self, full_name: str) -> ContributionGuide:
         owner, repo = parse_repo(full_name)
