@@ -82,6 +82,13 @@ Choose one:
 
 Installed plugins are listed in the Extensions view under `@agentPlugins`, where you can manage or remove them. To remove a server added with the button, run **MCP: Open User Configuration** and delete the `git-into-gsoc` entry.
 
+## Visual Studio (GitHub Copilot, Windows)
+
+Visual Studio 2026, or Visual Studio 2022 version 17.14 or newer, adds the server with the Visual Studio button below. It asks you to confirm, then runs the newest release with uv. The button adds the server only, not the skill.
+
+- **Update:** the server checks PyPI and runs the newest release each time it starts.
+- **Remove:** delete the `git-into-gsoc` entry from the `.mcp.json` file that lists it. For servers in every solution, that is `%USERPROFILE%\.mcp.json`.
+
 ## Cursor
 
 Run `git-into-gsoc setup` after the [one-line installer](guide/02-install.md). This is the route we test, and it gives Cursor both the skill and the server. Or use the Cursor button below for the server alone. Cursor asks you to confirm, then adds it to `~/.cursor/mcp.json`. To add the skill too, run `npx skills add anandkaranubc/git-into-gsoc -g -a cursor`.
@@ -118,7 +125,10 @@ Run `git-into-gsoc setup` after the [one-line installer](guide/02-install.md). I
 
 ## Claude Desktop (without the plugin)
 
-Every [release](https://github.com/anandkaranubc/git-into-gsoc/releases/latest) has a `git-into-gsoc.mcpb` file, an MCP bundle. Download it and open it, or drag it into Claude Desktop's Settings, Extensions. A bundle does not update itself: install the new file from a later release to update.
+Every [release](https://github.com/anandkaranubc/git-into-gsoc/releases/latest) has a `git-into-gsoc.mcpb` file, an MCP bundle. [Download the newest one](https://github.com/anandkaranubc/git-into-gsoc/releases/latest/download/git-into-gsoc.mcpb) and open it, or drag it into Claude Desktop's Settings, Extensions. Claude Desktop shows what it installs and asks you to confirm. It also offers an optional GitHub token field; leave it empty unless you hit GitHub's limit of 60 requests an hour.
+
+- **Update:** a bundle does not update itself. Download the newest file again and open it.
+- **Remove:** Settings, Extensions, then uninstall `git-into-gsoc`.
 
 ## Any other assistant
 
@@ -133,10 +143,10 @@ The first copies the skill; the second asks which assistants to add the server t
 
 ## One-click buttons
 
-These add only the MCP server. They run the newest release from [PyPI](https://pypi.org/project/git-into-gsoc/) with `uvx git-into-gsoc@latest mcp`, so they need only uv. uv checks for a newer release each time the assistant starts the server, so it stays current. For a server that also starts offline, use a plugin or `git-into-gsoc setup` instead.
+These add only the MCP server. Each opens a web page that hands the server to the app, and the app asks you to confirm. Most run the newest release from [PyPI](https://pypi.org/project/git-into-gsoc/) with `uvx git-into-gsoc@latest mcp`, so they need only uv. uv checks for a newer release each time the assistant starts the server, so it stays current. The Claude Desktop button downloads the newest release's bundle instead; see [Claude Desktop](#claude-desktop-without-the-plugin). For a server that also starts offline, use a plugin or `git-into-gsoc setup` instead.
 
 <!-- generated:install-links -->
-[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=git-into-gsoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJnaXQtaW50by1nc29jQGxhdGVzdCIsIm1jcCJdfQ%3D%3D) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22git-into-gsoc%40latest%22%2C%22mcp%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22git-into-gsoc%40latest%22%2C%22mcp%22%5D%7D&quality=insiders) [![Add to Kiro](https://img.shields.io/badge/Kiro-Add_server-7138CC?style=flat-square&logo=kiro&logoColor=white)](https://kiro.dev/launch/mcp/add?name=git-into-gsoc&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22git-into-gsoc%40latest%22%2C%22mcp%22%5D%7D)
+[![Add to Cursor](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=git-into-gsoc&config=eyJjb21tYW5kIjoidXZ4IiwiYXJncyI6WyJnaXQtaW50by1nc29jQGxhdGVzdCIsIm1jcCJdfQ%3D%3D) [![Install in VS Code](https://img.shields.io/badge/VS_Code-Install_server-0098FF?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22git-into-gsoc%40latest%22%2C%22mcp%22%5D%7D) [![Install in VS Code Insiders](https://img.shields.io/badge/VS_Code_Insiders-Install_server-24bfa5?style=flat-square&logo=visualstudiocode&logoColor=white)](https://vscode.dev/redirect/mcp/install?name=git-into-gsoc&config=%7B%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22git-into-gsoc%40latest%22%2C%22mcp%22%5D%7D&quality=insiders) [![Add to Kiro](https://kiro.dev/images/add-to-kiro.svg)](https://kiro.dev/launch/mcp/add?name=git-into-gsoc&config=%7B%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22git-into-gsoc%40latest%22%2C%22mcp%22%5D%7D) [![Install in Visual Studio](https://img.shields.io/badge/Visual_Studio-Install_server-5C2D91?style=flat-square&logo=visualstudio&logoColor=white)](https://vs-open.link/mcp-install?%7B%22name%22%3A%22git-into-gsoc%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22uvx%22%2C%22args%22%3A%5B%22git-into-gsoc%40latest%22%2C%22mcp%22%5D%7D) [![Download for Claude Desktop](https://img.shields.io/badge/Claude_Desktop-Download_extension-D97757?style=flat-square&logo=claude&logoColor=white)](https://github.com/anandkaranubc/git-into-gsoc/releases/latest/download/git-into-gsoc.mcpb)
 <!-- /generated:install-links -->
 
 ## Plugin or setup?
@@ -153,7 +163,7 @@ Use one route per assistant. Setup skips an assistant that already has the plugi
 
 ## What we test
 
-`scripts/check_agents.py` installs git-into-gsoc into each assistant command it finds, the way that assistant's users would. It uses a throwaway home folder, signs in nowhere, and calls no model. Then it checks that the assistant can start the server. Buttons cannot be clicked in a script, so for those it writes exactly what the app writes after you confirm, and lets the app start the server. CI runs it on Linux on every change to the files these assistants read, and weekly with each assistant's newest release, installing from GitHub.
+`scripts/check_agents.py` installs git-into-gsoc into each assistant command it finds, the way that assistant's users would. It uses a throwaway home folder, signs in nowhere, and calls no model. Then it checks that the assistant can start the server. Before installing from a checkout, it runs each format's own validator where one exists. Buttons cannot be clicked in a script, so for those it writes exactly what the app writes after you confirm, and lets the app start the server. CI runs it on Linux on every change to the files these assistants read, and weekly with each assistant's newest release, installing from GitHub.
 
 | Assistant | What is checked |
 |---|---|
@@ -164,7 +174,8 @@ Use one route per assistant. Setup skips an assistant that already has the plugi
 | Antigravity | Plugin and setup: the converted plugin's server answers |
 | Cursor | The button's config and setup: Cursor's agent CLI starts the server and lists its tools |
 | VS Code | The button's config: VS Code accepts it and the server answers |
-| Claude Desktop | The bundle, unpacked and started the way Desktop runs it |
+| Visual Studio | Not in CI, because Visual Studio runs only on Windows. A test decodes the button's link, and its redirect to Visual Studio was checked on 2026-10-22 |
+| Claude Desktop | The bundle passes the MCP bundle validator, then is unpacked and started the way Desktop runs it |
 
 Not checked automatically: the click itself in each app, VS Code's Install Plugin From Source, and Devin Desktop. Each follows its vendor's documented format. Please [report a problem](https://github.com/anandkaranubc/git-into-gsoc/issues) if one does not work for you.
 

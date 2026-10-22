@@ -7,17 +7,38 @@
     "url": "https://github.com/anandkaranubc/git-into-gsoc",
     "source": "github"
   },
-  "websiteUrl": "https://github.com/anandkaranubc/git-into-gsoc",
+  "websiteUrl": "https://anandkaranubc.github.io/git-into-gsoc/",
+  "icons": [
+    {
+      "src": "https://anandkaranubc.github.io/git-into-gsoc/brand/logo/mark-tile-512.png",
+      "mimeType": "image/png",
+      "sizes": [
+        "512x512"
+      ]
+    },
+    {
+      "src": "https://anandkaranubc.github.io/git-into-gsoc/brand/logo/mark-tile.svg",
+      "mimeType": "image/svg+xml",
+      "sizes": [
+        "any"
+      ]
+    }
+  ],
   "version": "0.18.2",
   "packages": [
     {
-      "registryType": "mcpb",
-      "identifier": "https://github.com/anandkaranubc/git-into-gsoc/releases/download/v0.2.0/git-into-gsoc.mcpb",
-      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "registryType": "pypi",
+      "identifier": "git-into-gsoc",
+      "runtimeHint": "uvx",
       "transport": {
         "type": "stdio"
       },
-      "version": "0.2.0"
+      "packageArguments": [
+        {
+          "type": "positional",
+          "value": "mcp"
+        }
+      ]
     }
   ]
 }

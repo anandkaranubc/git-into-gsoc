@@ -25,6 +25,7 @@ from urllib.parse import quote, urlencode
 
 REPO = "anandkaranubc/git-into-gsoc"
 REPO_URL = f"https://github.com/{REPO}"
+SITE_URL = "https://anandkaranubc.github.io/git-into-gsoc/"
 SERVER_NAME = "git-into-gsoc"
 REGISTRY_NAME = "io.github.anandkaranubc/git-into-gsoc"
 PYPI_PACKAGE = "git-into-gsoc"
@@ -45,6 +46,18 @@ SHORT_DESCRIPTION = (
 REGISTRY_DESCRIPTION = (
     "Evidence-based GSoC preparation: organizations, repositories, free beginner issues, proposals."
 )
+
+# Icons for the registry entry and the server's own `serverInfo`, in the MCP icon shape.
+# The registry accepts only https URLs, so they point at the project site, which serves
+# the brand folder. Every client that shows icons must read PNG; SVG is optional.
+ICONS = [
+    {
+        "src": f"{SITE_URL}brand/logo/mark-tile-512.png",
+        "mimeType": "image/png",
+        "sizes": ["512x512"],
+    },
+    {"src": f"{SITE_URL}brand/logo/mark-tile.svg", "mimeType": "image/svg+xml", "sizes": ["any"]},
+]
 
 # Token variables the server reads. Some hosts hide them from MCP servers unless they
 # are named: Gemini CLI removes anything that looks like a token, and Codex passes on
@@ -82,11 +95,11 @@ def cursor_install_link(command: list[str] | None = None) -> str:
     """Cursor's web install link. GitHub strips cursor:// links, so READMEs need this form.
 
     Cursor decodes ``config`` as base64 JSON, asks the person to confirm, and adds the
-    server to ~/.cursor/mcp.json.
+    server to ~/.cursor/mcp.json. The older /en/install-mcp path redirects here.
     """
     config = base64.b64encode(_compact(stdio_entry(command or remote_command())).encode())
     query = urlencode({"name": SERVER_NAME, "config": config.decode()})
-    return f"https://cursor.com/en/install-mcp?{query}"
+    return f"https://cursor.com/install-mcp?{query}"
 
 
 def vscode_install_link(command: list[str] | None = None, *, insiders: bool = False) -> str:
@@ -108,8 +121,27 @@ def kiro_install_link(command: list[str] | None = None) -> str:
     return f"https://kiro.dev/launch/mcp/add?name={SERVER_NAME}&config={config}"
 
 
+def visual_studio_install_link(command: list[str] | None = None) -> str:
+    """Visual Studio's web install link (17.14 or newer, Windows).
+
+    vs-open.link redirects to vsweb+mcp://install with the same query: the server as
+    URL-encoded JSON that includes its name, as in Microsoft's own examples.
+    """
+    config = {"name": SERVER_NAME, "type": "stdio", **stdio_entry(command or remote_command())}
+    return f"https://vs-open.link/mcp-install?{quote(_compact(config), safe='')}"
+
+
+def claude_desktop_bundle_link() -> str:
+    """The newest release's MCP bundle. Opening the file installs it in Claude Desktop."""
+    return f"{REPO_URL}/releases/latest/download/git-into-gsoc.mcpb"
+
+
 def install_badges() -> str:
-    """The one-click install buttons shown in the README and the assistant guide."""
+    """The one-click install buttons shown in the README and the assistant guide.
+
+    Each opens an https page, because GitHub removes links to app schemes such as
+    cursor:// or goose://. The apps' own badges are used where they publish one.
+    """
     shield = "https://img.shields.io/badge/{0}-{1}-{2}?style=flat-square&logo={3}&logoColor=white"
     buttons = [
         (
@@ -127,7 +159,17 @@ def install_badges() -> str:
             shield.format("VS_Code_Insiders", "Install_server", "24bfa5", "visualstudiocode"),
             vscode_install_link(insiders=True),
         ),
-        ("Add to Kiro", shield.format("Kiro", "Add_server", "7138CC", "kiro"), kiro_install_link()),
+        ("Add to Kiro", "https://kiro.dev/images/add-to-kiro.svg", kiro_install_link()),
+        (
+            "Install in Visual Studio",
+            shield.format("Visual_Studio", "Install_server", "5C2D91", "visualstudio"),
+            visual_studio_install_link(),
+        ),
+        (
+            "Download for Claude Desktop",
+            shield.format("Claude_Desktop", "Download_extension", "D97757", "claude"),
+            claude_desktop_bundle_link(),
+        ),
     ]
     return " ".join(f"[![{alt}]({image})]({link})" for alt, image, link in buttons)
 
@@ -245,6 +287,36 @@ def gemini_extension(version: str) -> dict[str, Any]:
     }
 
 
+REGISTRY_SCHEMA = "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json"
+
+
+def registry_entry(version: str) -> dict[str, Any]:
+    """The MCP registry entry (server.json) as committed.
+
+    It lists the PyPI package with no version, which means the newest release. At each
+    release, .github/workflows/mcp-registry.yml replaces ``packages`` with that
+    release's MCPB bundle and its PyPI version, and keeps every other field.
+    """
+    pypi = {
+        "registryType": "pypi",
+        "identifier": PYPI_PACKAGE,
+        "runtimeHint": "uvx",
+        "transport": {"type": "stdio"},
+        "packageArguments": [{"type": "positional", "value": "mcp"}],
+    }
+    return {
+        "$schema": REGISTRY_SCHEMA,
+        "name": REGISTRY_NAME,
+        "title": SERVER_NAME,
+        "description": REGISTRY_DESCRIPTION,
+        "repository": {"url": REPO_URL, "source": "github"},
+        "websiteUrl": SITE_URL,
+        "icons": ICONS,
+        "version": version,
+        "packages": [pypi],
+    }
+
+
 def manifests(version: str) -> dict[str, dict[str, Any]]:
     """Every generated manifest, by path relative to the repository root."""
     return {
@@ -252,4 +324,5 @@ def manifests(version: str) -> dict[str, dict[str, Any]]:
         ".claude-plugin/marketplace.json": claude_marketplace(),
         ".codex-plugin/plugin.json": codex_plugin(version),
         "gemini-extension.json": gemini_extension(version),
+        "server.json": registry_entry(version),
     }

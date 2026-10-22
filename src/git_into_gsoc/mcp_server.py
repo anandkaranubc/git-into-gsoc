@@ -11,13 +11,14 @@ from typing import Any, TypeVar
 
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
-from mcp.types import ClientCapabilities, ElicitationCapability, ToolAnnotations
+from mcp.types import ClientCapabilities, ElicitationCapability, Icon, ToolAnnotations
 from pydantic import BaseModel, Field
 
 from git_into_gsoc import __version__
 from git_into_gsoc.config import PROJECT_URL
 from git_into_gsoc.errors import GigError
 from git_into_gsoc.guidance import ANTI_SPAM_RULES, OFFICIAL_SOURCES, journey_overview
+from git_into_gsoc.install.distribution import ICONS, SHORT_DESCRIPTION
 from git_into_gsoc.models import JourneyPhase, LogEntry
 from git_into_gsoc.onboarding import TOPIC_CHOICES
 from git_into_gsoc.service import GSoCToolkit
@@ -28,7 +29,9 @@ mcp = MCPServer(
     name="git-into-gsoc",
     title="git-into-gsoc",
     version=__version__,
+    description=SHORT_DESCRIPTION,
     website_url=PROJECT_URL,
+    icons=[Icon.model_validate(icon) for icon in ICONS],
     # Some clients keep only the start of this text (Codex asks for the first 512
     # characters to stand on their own), so the safety rules come first.
     instructions=(

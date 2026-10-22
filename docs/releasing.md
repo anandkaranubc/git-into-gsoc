@@ -55,7 +55,7 @@ To rebuild the assets for a tag, run the workflow from the Actions tab with the 
 
 ## 5. Plugins and one-click links (automatic)
 
-Release Please also bumps `version` in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, and `gemini-extension.json`, so Claude Code, Codex, Copilot, and Gemini CLI offer the update. The one-click install buttons run `main` from GitHub, so they need no change at release. See [distribution](distribution.md) for how the manifests are generated and checked, and for directory listings that need the owner.
+Release Please also bumps `version` in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `gemini-extension.json`, and `server.json`, so Claude Code, Codex, Copilot, and Gemini CLI offer the update. The one-click install buttons run the newest release from PyPI, and the Claude Desktop button downloads the newest release's bundle, so they need no change at release. See [distribution](distribution.md) for how the manifests are generated and checked, and for directory listings that need the owner.
 
 ## Checks before merging a release
 

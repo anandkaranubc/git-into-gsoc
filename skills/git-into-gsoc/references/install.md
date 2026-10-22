@@ -4,36 +4,44 @@ This skill works as written guidance on its own. Live searches need the Python
 package. The repository's [installation guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/02-install.md)
 has the full walkthrough, Windows steps, and troubleshooting.
 
-## Quick install (macOS, Linux, or WSL)
+## Quick install
 
-You need Git and Python 3.11 or newer.
+The one-line installer needs only an internet connection: no Git, and no Python
+unless the person already has it. Before showing a command that pipes a script
+into a shell, say what it does. People can read the script at the same URL first.
 
-```bash
-git clone https://github.com/anandkaranubc/git-into-gsoc.git
-cd git-into-gsoc
-./install.sh
-source .venv/bin/activate
-git-into-gsoc doctor
-```
-
-The installer creates a virtual environment in `.venv`, installs the package,
-and runs the project-scoped assistant setup described below. The `source` line
-turns the tool on in the current terminal; repeat it in every new terminal.
-`doctor` prints the version, where cache and progress files live, whether a
-GitHub token was found, and which assistants have the skill and the MCP server.
-
-Package only, with no assistant setup:
+On macOS, Linux, or WSL:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
+curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
 ```
 
-On Windows PowerShell, run `.\install.ps1` from the clone, or create the
-environment with `py -3 -m venv .venv` and install with
-`.\.venv\Scripts\python -m pip install -e .`. Then use
-`.\.venv\Scripts\git-into-gsoc.exe` wherever these notes say `git-into-gsoc`.
+On Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
+```
+
+It installs the newest release from PyPI (or from GitHub when PyPI lags) with uv
+or pipx, or with Python 3.11 or newer into a private folder. With none of them,
+it offers to install [uv](https://docs.astral.sh/uv/), a free tool that brings
+its own Python. Then it runs `git-into-gsoc setup`, which connects every
+assistant it finds. After it finishes, open a new terminal and run
+`git-into-gsoc doctor`. It prints the version, where cache and progress files
+live, whether a GitHub token was found, and which assistants have the skill and
+the MCP server.
+
+People who already use uv or pipx can install the
+[PyPI package](https://pypi.org/project/git-into-gsoc/) themselves:
+
+```bash
+uv tool install git-into-gsoc    # or: pipx install git-into-gsoc
+git-into-gsoc setup
+```
+
+Contributors who cloned the repository can run `./install.sh` (or
+`.\install.ps1` on Windows) from the clone instead. It installs the package
+into `.venv` inside the clone and sets up assistants for that folder only.
 
 ## GitHub token (optional)
 
@@ -88,9 +96,10 @@ runs the project-scoped setup and `./install.sh --user-skills` runs the
 user-wide one.
 
 If the installed version has no `setup` command, register the server by hand.
-The command is the full path to the executable
-(`/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc`, or
-`.venv\Scripts\git-into-gsoc.exe` on Windows) with the single argument `mcp`.
+The command is the full path to the executable (`command -v git-into-gsoc`
+prints it; on Windows, `(Get-Command git-into-gsoc).Source`) with the single
+argument `mcp`. Without the terminal tool, any MCP client can run
+`uvx git-into-gsoc@latest mcp`, which needs only uv.
 [mcp.example.json](../assets/mcp.example.json) shows the shape for clients
 that read a JSON file, such as Cursor. The repository's
 [assistant setup guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md)

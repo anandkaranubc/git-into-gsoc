@@ -1,6 +1,15 @@
 from __future__ import annotations
 
 
+def test_server_describes_itself_like_its_registry_entry() -> None:
+    # Clients that list servers show this name, description, and icon.
+    from git_into_gsoc.install.distribution import ICONS, SHORT_DESCRIPTION
+    from git_into_gsoc.mcp_server import mcp
+
+    assert mcp.description == SHORT_DESCRIPTION
+    assert [icon.model_dump(by_alias=True, exclude_none=True) for icon in mcp.icons or []] == ICONS
+
+
 def test_mcp_server_imports_and_registers_tools() -> None:
     from git_into_gsoc.mcp_server import mcp
 

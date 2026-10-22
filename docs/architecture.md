@@ -88,7 +88,7 @@ Scoring lives in `scoring/` and `matching/` and is pure Python with no network, 
 | `coach.py` | `next`: turns the program phase, saved progress, and live checks into the next few actions |
 | `drafts.py` | `draft`: message skeletons grounded in maintainers' own rules |
 | `proposal.py` | `proposal FILE`: the draft check for what organizations reject on |
-| `install/` | `setup`: where each assistant keeps skills and MCP settings, and the plan that writes or removes them. `distribution.py` defines the plugin and extension manifests, launch commands, and install links, which `scripts/sync_integrations.py` writes ([distribution](distribution.md)) |
+| `install/` | `setup`: where each assistant keeps skills and MCP settings, and the plan that writes or removes them. `distribution.py` defines the plugin and extension manifests, the MCP registry entry, launch commands, and install links, which `scripts/sync_integrations.py` writes ([distribution](distribution.md)) |
 | `programs.py` | Finds external programs (`gh`, `claude`, and the other assistants' commands) on absolute PATH entries only, never in the current folder, which may be a cloned repository. On Windows it also stops the system from searching the current folder first. |
 
 ## Design choices

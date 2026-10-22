@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -21,7 +22,7 @@ def test_remote_command_runs_the_newest_pypi_release() -> None:
 
 def test_cursor_link_decodes_to_the_remote_server() -> None:
     link = urlparse(d.cursor_install_link())
-    assert (link.scheme, link.netloc, link.path) == ("https", "cursor.com", "/en/install-mcp")
+    assert (link.scheme, link.netloc, link.path) == ("https", "cursor.com", "/install-mcp")
     query = parse_qs(link.query)
     assert query["name"] == ["git-into-gsoc"]
     config = json.loads(base64.b64decode(query["config"][0]))
@@ -77,6 +78,26 @@ def test_kiro_link_decodes_to_the_remote_server() -> None:
     assert config == {"command": "uvx", "args": d.remote_command()[1:]}
 
 
+def test_visual_studio_link_decodes_to_the_remote_server() -> None:
+    link = urlparse(d.visual_studio_install_link())
+    assert (link.scheme, link.netloc, link.path) == ("https", "vs-open.link", "/mcp-install")
+    config = json.loads(unquote(link.query))
+    assert config == {
+        "name": "git-into-gsoc",
+        "type": "stdio",
+        "command": "uvx",
+        "args": d.remote_command()[1:],
+    }
+
+
+def test_claude_desktop_link_downloads_the_newest_bundle() -> None:
+    link = d.claude_desktop_bundle_link()
+    assert link.endswith("/releases/latest/download/git-into-gsoc.mcpb")
+    # The release workflow attaches the bundle under exactly this name.
+    workflow = (ROOT / ".github" / "workflows" / "mcp-registry.yml").read_text(encoding="utf-8")
+    assert "dist/git-into-gsoc.mcpb --clobber" in workflow
+
+
 def test_the_readme_buttons_carry_every_link() -> None:
     badges = d.install_badges()
     for link in (
@@ -84,7 +105,12 @@ def test_the_readme_buttons_carry_every_link() -> None:
         d.vscode_install_link(),
         d.vscode_install_link(insiders=True),
         d.kiro_install_link(),
+        d.visual_studio_install_link(),
+        d.claude_desktop_bundle_link(),
     ):
         assert f"]({link})" in badges
     for page in ("README.md", "docs/assistants.md"):
         assert badges in (ROOT / page).read_text(encoding="utf-8"), page
+    # GitHub removes links to app schemes such as cursor:// from rendered Markdown.
+    for target in re.findall(r"\]\(([^)]+)\)(?: |$)", badges):
+        assert target.startswith("https://"), target

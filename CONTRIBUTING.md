@@ -169,7 +169,7 @@ You are welcome to use AI assistants while contributing. You are responsible for
 
 The skill is written for AI assistants that read `skills/git-into-gsoc/SKILL.md`. Keep `SKILL.md` short and move depth into `references/`. The description in the front matter (the `---` block at the top of `SKILL.md`) should say what the skill does and when to use it. Tests in `tests/unit/test_skill_package.py` check the structure. The copies under `.agents/skills/` and `.claude/skills/` are written by `git-into-gsoc setup` (which the installers run) and are not tracked.
 
-The plugin and extension manifests (`.claude-plugin/`, `.codex-plugin/`, `gemini-extension.json`) and the install buttons in the README are generated from `src/git_into_gsoc/install/distribution.py`. Change that file, run `python scripts/sync_integrations.py`, and commit the result; a test fails if they differ. `python scripts/check_agents.py --setup` installs the plugin into every AI assistant command you have, in throwaway folders, and checks that each can start the server. [Distribution](docs/distribution.md) explains the whole setup.
+The plugin and extension manifests (`.claude-plugin/`, `.codex-plugin/`, `gemini-extension.json`), the MCP registry entry `server.json`, and the install buttons in the README are generated from `src/git_into_gsoc/install/distribution.py`. Change that file, run `python scripts/sync_integrations.py`, and commit the result; a test fails if they differ. `python scripts/check_agents.py --setup` installs the plugin into every AI assistant command you have, in throwaway folders, and checks that each can start the server. [Distribution](docs/distribution.md) explains the whole setup.
 
 ## Community and security
 

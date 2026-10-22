@@ -48,6 +48,9 @@ NAME = "git-into-gsoc"
 PLUGIN_ID = f"{NAME}@{NAME}"
 REPO = "anandkaranubc/git-into-gsoc"
 TIMEOUT = 300.0
+# The MCP bundle validator. Bump it from time to time, like the agent versions in
+# .github/workflows/agents.yml.
+MCPB_CLI = "@anthropic-ai/mcpb@2.1.2"
 # Never let a check sign in anywhere or reach a paid model.
 SECRET_VARS = (
     "GITHUB_TOKEN",
@@ -173,7 +176,9 @@ def _json(output: str) -> dict[str, Any]:
 
 def plugin_claude(box: Sandbox, source: str) -> tuple[str, str]:
     if not source.startswith(("http", REPO)):
-        box.run(["claude", "plugin", "validate", source])
+        # The directory profile adds the checks Anthropic's plugin directory runs on a
+        # submission, such as a README and readable MCP files.
+        box.run(["claude", "plugin", "validate", source, "--profile", "directory"])
     box.run(["claude", "plugin", "marketplace", "add", source])
     box.run(["claude", "plugin", "install", PLUGIN_ID])
     line = _line_with(box.run(["claude", "mcp", "list"]), f"plugin:{NAME}")
@@ -210,6 +215,8 @@ def plugin_copilot(box: Sandbox, source: str) -> tuple[str, str]:
 
 def plugin_gemini(box: Sandbox, source: str) -> tuple[str, str]:
     box.trust_for_gemini()
+    if not source.startswith(("http", REPO)):
+        box.run(["gemini", "extensions", "validate", source])
     box.run(["gemini", "extensions", "install", source, "--consent"], stdin="y\n")
     return "ok", _gemini_connected(box)
 
@@ -359,6 +366,11 @@ def bundle_claude_desktop(box: Sandbox, source: str) -> tuple[str, str]:
     with zipfile.ZipFile(bundle) as archive:
         archive.extractall(folder)
     manifest = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
+    if manifest.get("icon") and not (folder / manifest["icon"]).is_file():
+        raise CheckFailed(f"the bundle names the icon {manifest['icon']} but does not contain it")
+    if shutil.which("npx"):
+        # The bundle format's own validator, as Claude Desktop's directory uses it.
+        box.run(["npx", "--yes", MCPB_CLI, "validate", str(folder / "manifest.json")])
     config = manifest["server"]["mcp_config"]
 
     # Claude Desktop fills ${__dirname} with the unpacked folder and leaves an unset

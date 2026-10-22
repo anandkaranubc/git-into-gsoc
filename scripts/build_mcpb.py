@@ -21,6 +21,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]  # overridden by --root
 INCLUDE_FILES = ("pyproject.toml", "README.md", "LICENSE")
+# Claude Desktop shows this next to the extension. Older tags may lack it.
+ICON = "brand/logo/mark-tile-512.png"
 INCLUDE_TREES = ("src/git_into_gsoc", "skills/git-into-gsoc")
 EXCLUDE_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".venv"}
 
@@ -33,8 +35,9 @@ def package_version(root: Path = ROOT) -> str:
     return match.group(1)
 
 
-def manifest(version: str) -> dict[str, object]:
-    return {
+def manifest(version: str, *, icon: bool = False) -> dict[str, object]:
+    repo = "https://github.com/anandkaranubc/git-into-gsoc"
+    data: dict[str, object] = {
         "manifest_version": "0.4",
         "name": "git-into-gsoc",
         "display_name": "git-into-gsoc",
@@ -49,8 +52,15 @@ def manifest(version: str) -> dict[str, object]:
         },
         "repository": {"type": "git", "url": "https://github.com/anandkaranubc/git-into-gsoc"},
         "homepage": "https://anandkaranubc.github.io/git-into-gsoc/",
+        "documentation": f"{repo}/blob/main/docs/assistants.md",
+        "support": f"{repo}/issues",
+        # It reads public data and sends an optional GitHub token to GitHub only.
+        "privacy_policies": [
+            f"{repo}/blob/main/docs/privacy.md",
+            "https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement",
+        ],
         "license": "MIT",
-        "keywords": ["gsoc", "google-summer-of-code", "open-source", "onboarding", "github"],
+        "keywords": ["gsoc", "google-summer-of-code", "open-source", "onboarding", "github", "mcp"],
         "server": {
             "type": "uv",
             "entry_point": "src/git_into_gsoc/mcp_server.py",
@@ -74,10 +84,13 @@ def manifest(version: str) -> dict[str, object]:
             "runtimes": {"python": ">=3.11"},
         },
     }
+    if icon:
+        data["icon"] = ICON
+    return data
 
 
 def bundle_files(root: Path = ROOT) -> list[Path]:
-    files = [root / name for name in INCLUDE_FILES if (root / name).is_file()]
+    files = [root / name for name in (*INCLUDE_FILES, ICON) if (root / name).is_file()]
     for tree in INCLUDE_TREES:
         for path in sorted((root / tree).rglob("*")):
             if path.is_file() and not (EXCLUDE_PARTS & set(path.parts)):
@@ -114,7 +127,8 @@ def build(out: Path, root: Path = ROOT) -> tuple[Path, str]:
     stamp = entry_timestamp()
     out.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-        manifest_bytes = (json.dumps(manifest(version), indent=2) + "\n").encode("utf-8")
+        data = manifest(version, icon=(root / ICON).is_file())
+        manifest_bytes = (json.dumps(data, indent=2) + "\n").encode("utf-8")
         zf.writestr(_entry("manifest.json", mode=0o644, stamp=stamp), manifest_bytes)
         for path in bundle_files(root):
             mode = 0o755 if path.stat().st_mode & 0o111 else 0o644
@@ -137,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     root = args.root.resolve()
     if args.manifest_only:
-        print(json.dumps(manifest(package_version(root)), indent=2))
+        print(json.dumps(manifest(package_version(root), icon=(root / ICON).is_file()), indent=2))
         return 0
     path, digest = build(args.out, root)
     print(f"{path} sha256={digest} size={path.stat().st_size}")

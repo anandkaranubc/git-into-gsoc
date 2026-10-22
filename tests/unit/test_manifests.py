@@ -32,10 +32,25 @@ def test_manifest_versions_match_the_package() -> None:
         assert _load(name)["version"] == __version__, name
     server = _load("server.json")
     assert server["version"] == __version__
-    assert len(server["description"]) <= 100  # the registry rejects longer descriptions
-    package = server["packages"][0]
-    assert package["registryType"] == "mcpb"
-    assert "mcp" in package["identifier"] and len(package["fileSha256"]) == 64
+    # Committed, it lists the newest PyPI release; the release workflow pins the version
+    # and puts that release's bundle first.
+    (package,) = server["packages"]
+    assert package["registryType"] == "pypi" and "version" not in package
+    assert package["identifier"] == "git-into-gsoc"
+
+
+def test_the_registry_entry_follows_the_official_schema() -> None:
+    import jsonschema
+
+    server = _load("server.json")
+    schema_file = "mcp-server-" + server["$schema"].split("/")[-2] + ".schema.json"
+    schema = _load(f"tests/fixtures/{schema_file}")  # a copy, as tests never use the network
+    assert schema["$id"] == server["$schema"]
+    jsonschema.validate(server, schema)
+    # The registry only takes https icons, and the site must keep serving them.
+    for icon in server["icons"]:
+        assert icon["src"].startswith("https://anandkaranubc.github.io/git-into-gsoc/brand/")
+        assert (ROOT / icon["src"].split("/git-into-gsoc/", 1)[1]).is_file()
 
 
 def test_release_please_bumps_every_versioned_manifest() -> None:
@@ -93,3 +108,6 @@ def test_mcpb_bundle_builds_with_a_uv_manifest(tmp_path: Path) -> None:
     assert manifest["server"]["type"] == "uv"
     assert manifest["version"] == __version__
     assert manifest["server"]["mcp_config"]["args"][-2:] == ["git-into-gsoc", "mcp"]
+    # Claude Desktop shows the icon, and its directory asks for support and privacy links.
+    assert manifest["icon"] in names
+    assert manifest["support"].endswith("/issues") and manifest["privacy_policies"]
