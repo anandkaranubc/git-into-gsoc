@@ -163,5 +163,9 @@ def test_a_search_can_cover_several_languages_and_their_relatives() -> None:
 def test_competency_words_count_when_typed_but_not_in_an_ideas_page() -> None:
     # "Write code with good code quality" asks for a habit, not a subject (see #292).
     assert find_concepts("Write good code quality and fix linting issues") == {}
+    # 115 of 183 organizations list a mailing list as a contact channel: "ask on our
+    # mailing list" in an ideas page is how to reach them, not what they work on.
+    assert find_concepts("Ask on our mailing list; we run style checkers in CI") == {}
+    assert find_tag_concepts("mailing lists") == {"communication": 1}
     assert find_tag_concepts("code quality") == {"developer tools": 1}
     assert resolve("hardware design").concepts == ("embedded",)
