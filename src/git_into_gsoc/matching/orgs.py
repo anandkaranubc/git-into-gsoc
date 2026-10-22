@@ -105,6 +105,8 @@ def build_org_profile(
     signals: dict[str, Any] | None = None,
     signals_year: int | None = None,
 ) -> OrgProfile:
+    """An organization's profile from its listing, its long description, and the
+    shipped evidence (ideas page and repositories) for it, when there is any."""
     signals = signals or {}
     ideas = dict(signals.get("ideas") or {})
     github = dict(signals.get("github") or {})
