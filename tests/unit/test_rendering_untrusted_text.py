@@ -205,3 +205,27 @@ def test_the_repos_table_says_what_its_score_means(
     result = CliRunner().invoke(cli.app, ["repos", "SymPy"])
     assert result.exit_code == 0, result.output[-800:]
     assert "Not a grade or a chance of acceptance" in result.output
+
+
+def test_recommend_marks_a_starter_issue_someone_asked_for_before(
+    monkeypatch: pytest.MonkeyPatch, wide_console: None
+) -> None:
+    # rust-lang/beyond-refs#27 was shown as "available" with nothing more; `issues`
+    # said "asked before" for the same issue (an ask 177 days old, no PR).
+    data = load("recommend")
+    data["starter_issues"] = [
+        {
+            "repo": "rust-lang/beyond-refs",
+            "number": 27,
+            "title": "Document the field projection design",
+            "availability": "available",
+            "fits_you": ["Uses Rust"],
+            "assessment": {"claims": [{"login": "someone", "days_ago": 177}]},
+            "caution": "Needs design context first",
+        }
+    ]
+    monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit("recommend_path", data))
+    result = CliRunner().invoke(cli.app, ["recommend", "--tech", "rust"])
+    assert result.exit_code == 0, result.output
+    assert "asked before" in result.output
+    assert "! Needs design context first" in result.output

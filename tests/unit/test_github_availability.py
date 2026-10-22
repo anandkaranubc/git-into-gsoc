@@ -929,3 +929,88 @@ def test_claims_from_a_fifth_sample_of_new_organizations() -> None:
     ]
     for text in not_claims:
         assert not is_claim(text), text
+
+
+def _merged_pr(number: int, body: str, *, merged_days_ago: int = 1) -> dict[str, Any]:
+    event = _pr(number, "closed", merged=True)
+    event["source"]["issue"]["body"] = body
+    event["source"]["issue"]["title"] = "Remove dead config"
+    event["source"]["issue"]["pull_request"]["merged_at"] = _iso(merged_days_ago)
+    return event
+
+
+def test_a_merged_pr_that_says_it_fixes_the_issue_makes_it_likely_taken() -> None:
+    # mofa's issue 671 stayed open for seven months after "- Fixes issue #671" was
+    # merged: GitHub closes issues only for "Fixes #671". `recommend` showed it as free.
+    issue = _issue(number=671, html_url="https://github.com/acme/lib/issues/671")
+    found = assess_issue(issue, [_merged_pr(672, "Summary\n- Fixes issue #671\n")], now=NOW)
+    assert found.availability == Availability.LIKELY_TAKEN
+    assert found.reason.startswith("Merged PR #672 says it fixes this, though the issue is still")
+    assert not any("partly fixed" in c for c in found.caveats)
+    # A merged PR that only mentions the issue is still a caveat, as before.
+    mention = assess_issue(issue, [_merged_pr(673, "Related to #671.")], now=NOW)
+    assert mention.availability == Availability.AVAILABLE
+    assert any("partly fixed" in c for c in mention.caveats)
+
+
+def test_which_words_say_a_pr_fixes_an_issue() -> None:
+    from git_into_gsoc.github.availability import says_it_fixes
+
+    for text in (
+        "Fixes #671",
+        "fixes issue #671",
+        "Closes acme/lib#671",
+        "Resolved: #671",
+        "Fix for #671's crash",
+        "fixes https://github.com/acme/lib/issues/671",
+    ):
+        assert says_it_fixes(text, "acme/lib", 671), text
+    for text in (
+        "Related to #671",
+        "Fixes #6710",
+        "Fixes #12. Mentioned in #671",
+        "See #671; this fixes the docs",
+        "Fixes #671",
+        "",
+    ):
+        number = 999 if text == "Fixes #671" else 671
+        assert not says_it_fixes(text, "acme/lib", number), text
+
+
+def test_a_real_issue_fixed_by_an_unlinked_merge_is_likely_taken() -> None:
+    # Recorded from mofa's issue 671 (names replaced): "- Fixes issue #671" was merged
+    # in March 2026, GitHub never closed the issue, and `recommend` offered it as free.
+    import json
+    from pathlib import Path
+
+    data = json.loads(
+        (Path(__file__).parents[1] / "fixtures" / "issue_fixed_by_unlinked_merge.json").read_text()
+    )
+    found = assess_issue(data["issue"], data["timeline"], now=NOW)
+    assert found.availability == Availability.LIKELY_TAKEN
+    assert "Merged PR #672 says it fixes this" in found.reason
+
+
+def test_a_sibling_repos_bare_issue_number_is_its_own_issue() -> None:
+    # A frontend pull request saying "Fixes #671" fixes the frontend's issue 671; it
+    # must name "acme/lib#671" or link the issue to count for acme/lib.
+    from git_into_gsoc.github.availability import says_it_fixes
+
+    assert not says_it_fixes("Fixes #671", "acme/lib", 671, pr_repo="acme/frontend")
+    assert says_it_fixes("Fixes acme/lib#671", "acme/lib", 671, pr_repo="acme/frontend")
+    assert not says_it_fixes("Fixes other/lib#671", "acme/lib", 671, pr_repo="acme/lib")
+    issue = _issue(number=671, html_url="https://github.com/acme/lib/issues/671")
+    sibling = _merged_pr(90, "Fixes #671")
+    sibling["source"]["issue"]["html_url"] = "https://github.com/acme/frontend/pull/90"
+    sibling["source"]["issue"]["repository"] = {"full_name": "acme/frontend"}
+    assert assess_issue(issue, [sibling], now=NOW).availability == Availability.AVAILABLE
+
+
+def test_a_fix_merged_before_the_issue_was_opened_does_not_count() -> None:
+    issue = _issue(
+        number=671, created_at=_iso(10), html_url="https://github.com/acme/lib/issues/671"
+    )
+    old = _merged_pr(500, "Fixes #671", merged_days_ago=40)
+    found = assess_issue(issue, [old], now=NOW)
+    assert found.availability == Availability.AVAILABLE
+    assert not any(p.fixes for p in found.linked_prs)

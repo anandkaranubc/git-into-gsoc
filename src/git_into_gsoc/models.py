@@ -56,6 +56,8 @@ class LinkedPullRequest(BaseModel):
     idle_days: int | None = None
     # True when only a comment on the issue points at the PR, not GitHub's links.
     via_comment: bool = False
+    # True when the PR's title or body says it fixes this issue ("Fixes issue #671").
+    fixes: bool = False
 
 
 class IssueAssessment(BaseModel):

@@ -2,6 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.23.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.22.0...v0.23.0) (2026-10-22)
+
+
+### Features
+
+* **pr-check:** quote what a failed CI job printed, read from the end of its log ([#313](https://github.com/anandkaranubc/git-into-gsoc/issues/313)) ([aa66763](https://github.com/anandkaranubc/git-into-gsoc/commit/aa667633f29c0a8f0950afad9010b3c31600317b))
+
+
+### Bug Fixes
+
+* **draft:** a claim asks whoever asked about the issue before ([#306](https://github.com/anandkaranubc/git-into-gsoc/issues/306)) ([0ccbb42](https://github.com/anandkaranubc/git-into-gsoc/commit/0ccbb42f92ed56526f7a1ca3973cf352a3327e76))
+* **draft:** a contributing guide GitHub did not send is unread, not missing ([#322](https://github.com/anandkaranubc/git-into-gsoc/issues/322)) ([c2f6468](https://github.com/anandkaranubc/git-into-gsoc/commit/c2f64688884d67febb776c20962980639a34cb32))
+* **ideas:** read ideas in collapsible blocks and definition lists, and stop past projects passing as ideas ([#302](https://github.com/anandkaranubc/git-into-gsoc/issues/302)) ([a9dbe9f](https://github.com/anandkaranubc/git-into-gsoc/commit/a9dbe9f6cbf0c5b4218465d3da6c0aad03511d1f))
+* **input:** read GitLab links without https://, and point a pull request to pr-check ([#314](https://github.com/anandkaranubc/git-into-gsoc/issues/314)) ([9add356](https://github.com/anandkaranubc/git-into-gsoc/commit/9add35644f553ba2325743f9334393d244ccc2db))
+* **install:** do not use a pipx that runs on Python older than 3.11, and say why ([#316](https://github.com/anandkaranubc/git-into-gsoc/issues/316)) ([6cc3724](https://github.com/anandkaranubc/git-into-gsoc/commit/6cc3724e7228df28f85bc57b983cf8f8a5d52ac4))
+* **issue:** a merged PR that says it fixes an open issue makes it likely taken, and recommend shows earlier asks ([#332](https://github.com/anandkaranubc/git-into-gsoc/issues/332)) ([4c22f44](https://github.com/anandkaranubc/git-into-gsoc/commit/4c22f44c18844dfa46a6eb2d66d2d8baa71427dd))
+* **matching:** read linting, code quality, mailing lists and hardware design as people mean them ([#323](https://github.com/anandkaranubc/git-into-gsoc/issues/323)) ([844bda9](https://github.com/anandkaranubc/git-into-gsoc/commit/844bda9070d7e758f358350a06960783fd9f5aed))
+* **mcp:** map guessed argument names, accept lists, and name unknown arguments instead of dropping them ([#324](https://github.com/anandkaranubc/git-into-gsoc/issues/324)) ([a6aa0cb](https://github.com/anandkaranubc/git-into-gsoc/commit/a6aa0cb91928281defc3371dddaaae237a02836d))
+
+
+### Documentation
+
+* **assistants:** one page for every assistant, and a shorter guide chapter that points to it ([#315](https://github.com/anandkaranubc/git-into-gsoc/issues/315)) ([8cb1bfd](https://github.com/anandkaranubc/git-into-gsoc/commit/8cb1bfdc0d3333457f49bb709a2ab6bf4e727f39))
+* **cli:** say what the command module is, and that command docstrings are help text ([#312](https://github.com/anandkaranubc/git-into-gsoc/issues/312)) ([ccef3fa](https://github.com/anandkaranubc/git-into-gsoc/commit/ccef3faf02147f0b488adfda13e37ac7d6f69edd))
+* **configuration:** point at privacy for the list of services, which was incomplete here ([#331](https://github.com/anandkaranubc/git-into-gsoc/issues/331)) ([ed71f51](https://github.com/anandkaranubc/git-into-gsoc/commit/ed71f51501ae5f3669feda521e4bd28b1c9b589f))
+* **core:** docstrings for the toolkit, the models, and the HTTP cache a newcomer meets first ([#307](https://github.com/anandkaranubc/git-into-gsoc/issues/307)) ([8e73f35](https://github.com/anandkaranubc/git-into-gsoc/commit/8e73f3571c1898c5f02afeb5ee8b432a74f1a787))
+* **github:** say what the client raises and what it swallows, in plain words ([#303](https://github.com/anandkaranubc/git-into-gsoc/issues/303)) ([7e1db9b](https://github.com/anandkaranubc/git-into-gsoc/commit/7e1db9be63457a146d10e9651fbf3cf6477ed1bf))
+* **guide:** keep what the grade means in guide 5, and the point table in sources ([#317](https://github.com/anandkaranubc/git-into-gsoc/issues/317)) ([76d8ca3](https://github.com/anandkaranubc/git-into-gsoc/commit/76d8ca32e99a40e12cd4aae1205672b8005b0292))
+* **guide:** say that pipx needs a Python of 3.11 or newer to install the tool ([#320](https://github.com/anandkaranubc/git-into-gsoc/issues/320)) ([0f29a0b](https://github.com/anandkaranubc/git-into-gsoc/commit/0f29a0b68e854ed5f4d08394e1edbda83d1f0934))
+* **ideas:** write down fit_idea's scoring rule, which nothing stated ([#310](https://github.com/anandkaranubc/git-into-gsoc/issues/310)) ([a444f90](https://github.com/anandkaranubc/git-into-gsoc/commit/a444f9001bca0a1200b77c1e652f8683fede7cb3))
+* **ranking:** say which ranker is live, and fix two docstrings that were out of date ([#305](https://github.com/anandkaranubc/git-into-gsoc/issues/305)) ([264c496](https://github.com/anandkaranubc/git-into-gsoc/commit/264c4962e5281955bb7db0e883f1de4e48a9d7d2))
+* **readme:** one plugin example and a pointer, instead of a table that repeats the assistants page ([#319](https://github.com/anandkaranubc/git-into-gsoc/issues/319)) ([23e7b90](https://github.com/anandkaranubc/git-into-gsoc/commit/23e7b908dc80ddad55a256a0641b1513fd84b641))
+* **skill:** point the install reference at the assistants page for per-client commands ([#318](https://github.com/anandkaranubc/git-into-gsoc/issues/318)) ([883bda9](https://github.com/anandkaranubc/git-into-gsoc/commit/883bda9c53929f4940be8c19e7ff4116600a161b))
+* **tests:** say what each test module covers, so a newcomer knows where a test goes ([#309](https://github.com/anandkaranubc/git-into-gsoc/issues/309)) ([04a593d](https://github.com/anandkaranubc/git-into-gsoc/commit/04a593d559c831864493104717144b2fffafeaa7))
+* **tests:** the last two test modules say what they cover ([#328](https://github.com/anandkaranubc/git-into-gsoc/issues/328)) ([fa1e235](https://github.com/anandkaranubc/git-into-gsoc/commit/fa1e23545aa7aca1cef484ff2d37af374f342642))
+
 ## [0.22.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.21.0...v0.22.0) (2026-10-22)
 
 
