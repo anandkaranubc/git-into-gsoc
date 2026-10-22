@@ -280,7 +280,10 @@ class GitHubClient:
             base=["is:issue", f"created:>={since}"], labels=labels, orgs=logins
         )
         try:
-            data = self._api("search/issues", params={"q": query, "per_page": 1})
+            # The label OR group needs the advanced engine; the classic one returns 0.
+            data = self._api(
+                "search/issues", params={"q": query, "per_page": 1, "advanced_search": "true"}
+            )
         except HttpError:
             return None
         if not isinstance(data, dict) or "total_count" not in data:

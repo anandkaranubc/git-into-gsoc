@@ -678,14 +678,17 @@ class OrgIndex:
         labelled = profile.github.get("beginner_issues_year")
         if labelled == 0 and active:
             # First, so it is seen: there is no labelled first task to look for here.
+            # Only the common spellings are counted; a project with its own label
+            # ("Easy to Fix") may still mark first tasks, so say what was measured.
             readiness_lines.insert(
                 0,
-                "Labelled no issues for beginners on GitHub in the past year: ask its "
-                "mentors for a first task, starting from its ideas page",
+                "No GitHub issue with a common beginner label (good first issue, beginner, "
+                "easy, starter) opened in the past year: ask its mentors for a first task, "
+                "starting from its ideas page",
             )
         elif labelled:
             readiness_lines.append(
-                f"Labelled {labelled} issue(s) for beginners on GitHub in the past year"
+                f"{labelled} GitHub issue(s) with a common beginner label opened in the past year"
             )
 
         # A fit needs something to fit: a category or a bare listing has none.

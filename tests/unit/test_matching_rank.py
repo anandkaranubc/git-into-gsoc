@@ -398,8 +398,10 @@ def test_readiness_says_whether_an_organization_labels_first_tasks_on_github() -
         },
     }
     ranked = {m.org.name: m for m in _rank([quiet, busy], signals=signals, interests=["physics"])}
-    assert ranked["Lab Without Labels"].readiness[0].startswith("Labelled no issues for beginners")
-    assert "mentors" in ranked["Lab Without Labels"].readiness[0]
-    assert any("Labelled 14 issue(s)" in line for line in ranked["Labelling Lab"].readiness)
+    first = ranked["Lab Without Labels"].readiness[0]
+    assert first.startswith("No GitHub issue with a common beginner label") and "mentors" in first
+    assert any(
+        "14 GitHub issue(s) with a common" in line for line in ranked["Labelling Lab"].readiness
+    )
     # Evidence only: the two still tie on everything that ranks them.
     assert ranked["Lab Without Labels"].score == ranked["Labelling Lab"].score

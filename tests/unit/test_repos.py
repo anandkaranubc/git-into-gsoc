@@ -796,5 +796,7 @@ def test_beginner_issues_opened_counts_one_search_over_owners_and_labels() -> No
         ["ML4SCI", "other"], since="2025-10-22", labels=["good first issue", "beginner"]
     )
     assert count == 17
-    query = route.calls[0].request.url.params["q"]
+    params = route.calls[0].request.url.params
+    assert params["advanced_search"] == "true"  # without it the label OR group finds nothing
+    query = params["q"]
     assert "created:>=2025-10-22" in query and "good first issue" in query and "ML4SCI" in query
