@@ -15,6 +15,8 @@ from datetime import UTC, datetime
 from typing import Any
 
 from git_into_gsoc.github.repos import is_beginner_label
+from git_into_gsoc.github.repos import is_event_repo as is_event_repo
+from git_into_gsoc.github.repos import is_not_code_repo as is_not_code_repo
 from git_into_gsoc.matching.concepts import (
     SKILL,
     find_concepts,
@@ -36,33 +38,6 @@ _GENTLE_WORDS = ("documentation", "docs", "typo", "readme", "test", "tests")
 # An unticked box in an issue template ("- [ ] Accessibility") names an area the issue
 # is not about, so it must not count as a subject. Items are a few words at most.
 _UNTICKED = re.compile(r"[-*]?\s*\[ \]\s*[^\s\[\]]+(?:[ \t]+[^\s\[\]*-]+){0,2}")
-
-
-# Repositories for an event or its notes ("disc-unconference-2023-projects",
-# "hackathon-2024"), not code a contributor can build on.
-_EVENT_REPO = re.compile(
-    r"(?:^|[-_.])(?:unconference|hackathon|conference|summit|meetup|workshop|sprints?|"
-    r"events?|talks|slides)(?:$|[-_.])|(?:^|[-_.])20\d\d(?:$|[-_.])",
-    re.I,
-)
-
-
-# Repositories for governance, tests, or experiments, not a project's code.
-_NOT_CODE_REPO = re.compile(
-    r"(?:^|[-_.])(?:tsc|governance|steering|working-groups?|rfcs?|community|meta|admin|"
-    r"test-actions|sandbox|playground|demo|scratch)(?:$|[-_.])|^\.github$|^test-",
-    re.I,
-)
-
-
-def is_not_code_repo(full_name: str) -> bool:
-    """True for a governance, test, or sandbox repository."""
-    return bool(_NOT_CODE_REPO.search(str(full_name).split("/")[-1]))
-
-
-def is_event_repo(full_name: str) -> bool:
-    """True for a repository named after an event or a year, rather than a project."""
-    return bool(_EVENT_REPO.search(str(full_name).split("/")[-1]))
 
 
 # Titles and labels of things that are not a first task: announcements, roadmaps,

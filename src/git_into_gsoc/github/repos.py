@@ -379,6 +379,73 @@ _BEGINNER_WORDS = re.compile(
 )
 
 
+# Repositories for an event or its notes ("disc-unconference-2023-projects",
+# "hackathon-2024"), not code a contributor can build on.
+_EVENT_REPO = re.compile(
+    r"(?:^|[-_.])(?:unconference|hackathon|conference|summit|meetup|workshop|sprints?|"
+    r"events?|talks|slides)(?:$|[-_.])|(?:^|[-_.])20\d\d(?:$|[-_.])",
+    re.I,
+)
+# Repositories for governance, GSoC applications, tests, or experiments.
+_NOT_CODE_REPO = re.compile(
+    r"(?:^|[-_.])(?:tsc|governance|steering|working-groups?|rfcs?|community|meta|admin|"
+    r"enhancements|proposals|meetings?|minutes|status-reports?|gsoc\d*|summer-of-code|"
+    r"outreachy|test-actions|sandbox|playground|demo|scratch)(?:$|[-_.])|^\.github$|^test-",
+    re.I,
+)
+# Build, CI, packaging, and release tooling around a project, not the project.
+_PLUMBING_REPO = re.compile(
+    r"(?:^|[-_.])(?:docker|dockerized|dockerfiles?|containers?|ci|infra|infrastructure|"
+    r"buildbot|buildfarm|build-farm|actionhub|actions|workflows?|publish|deploy|deployment|"
+    r"helm|terraform|ansible|homebrew|release-pipeline|templates?)(?:$|[-_.])",
+    re.I,
+)
+# A site for one deployment: a domain as the name, or a website, blog, or homepage.
+_WEBSITE_REPO = re.compile(
+    r"\.(?:org|com|io|net|dev|bio|info|eu)$|^www\.|(?:^|[-_.])(?:website|homepage|blog|"
+    r"site|sites|hugo-website)(?:$|[-_.])",
+    re.I,
+)
+
+
+def is_not_code_repo(full_name: str) -> bool:
+    """True for a governance, GSoC application, test, or sandbox repository."""
+    return bool(_NOT_CODE_REPO.search(str(full_name).split("/")[-1]))
+
+
+def is_event_repo(full_name: str) -> bool:
+    """True for a repository named after an event or a year, rather than a project."""
+    return bool(_EVENT_REPO.search(str(full_name).split("/")[-1]))
+
+
+def repo_kind(full_name: str) -> str | None:
+    """'not code', 'plumbing', or 'website' for a repository around a project, else None.
+
+    A repository named like its owner (helm/helm) is the project itself.
+    """
+    owner, _, name = str(full_name).rpartition("/")
+    if owner and _flat(name) == _flat(owner):
+        return None
+    if is_event_repo(name) or is_not_code_repo(name):
+        return "not code"
+    if _PLUMBING_REPO.search(name):
+        return "plumbing"
+    if _WEBSITE_REPO.search(name):
+        return "website"
+    return None
+
+
+def _flat(name: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", name.lower())
+
+
+def is_main_repo(full_name: str, *, most_starred: bool = False) -> bool:
+    """The repository a project's code lives in: named like its owner (kubevirt/kubevirt,
+    scummvm/scummvm), or its owner's most-starred active repository."""
+    owner, _, name = str(full_name).rpartition("/")
+    return most_starred or (bool(owner) and _flat(name) == _flat(owner))
+
+
 def is_beginner_label(name: str) -> bool:
     """True for a label that marks an issue as suitable for a newcomer."""
     low = name.strip().lower()
@@ -440,6 +507,17 @@ def channels_in(text: str) -> list[str]:
 LARGE_REPO_KB = 1_000_000  # about 1 GB on GitHub's own count
 
 
+# Main repositories first; repositories around the project (an ideas page often links
+# its GSoC or governance repository) after them. Set from a blind review of 20 live runs.
+MAIN_REPO_POINTS = 12.0
+_KIND_PENALTY = {"not code": 45.0, "plumbing": 30.0, "website": 25.0}
+_KIND_REASON = {
+    "not code": "A GSoC, event, or governance repository, not the project's code",
+    "plumbing": "Build, CI, packaging, or release tooling around the project",
+    "website": "A website repository: fine for a docs or web fix, but not the main code",
+}
+
+
 def repo_lead_score(
     repo: dict[str, Any],
     *,
@@ -448,6 +526,7 @@ def repo_lead_score(
     language: str | None,
     now: datetime | None = None,
     person: ContributorProfile | None = None,
+    main_repo: bool = False,
 ) -> tuple[float, list[str]]:
     """Points for a first contribution here, and the reasons.
 
@@ -474,6 +553,19 @@ def repo_lead_score(
             reasons.append(f"Pushed {days}d ago")
     stars = int(repo.get("stargazers_count") or 0)
     score += min(8.0, 1.0 * math.log2(1 + stars))
+    full = str(repo.get("full_name") or "")
+    if main_repo:
+        score += MAIN_REPO_POINTS
+        reasons.append("The project's main repository")
+    kind = repo_kind(full)
+    if kind:
+        score -= _KIND_PENALTY[kind]
+        reasons.append(_KIND_REASON[kind])
+    if repo.get("has_issues") is False:
+        reasons.append(
+            "Its GitHub issues are turned off: its README or website says where it tracks "
+            "bugs and tasks"
+        )
     repo_language = str(repo.get("language") or "")
     credited = False
     if language and canonical(repo_language) == canonical(language):

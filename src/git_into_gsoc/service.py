@@ -65,9 +65,12 @@ from git_into_gsoc.github.repos import (
     beginner_labels,
     channels_in,
     is_bot,
+    is_event_repo,
+    is_main_repo,
     mentioned_repos,
     mirror_source,
     pick_beginner_label,
+    repo_kind,
     repo_lead_score,
 )
 from git_into_gsoc.github.search import (
@@ -94,7 +97,6 @@ from git_into_gsoc.matching.concepts import resolve as resolve_concept
 from git_into_gsoc.matching.ideas import ideas_for
 from git_into_gsoc.matching.issues import (
     OLD_ISSUE_YEARS,
-    is_event_repo,
     personalize,
     starter_problem,
 )
@@ -696,19 +698,25 @@ class GSoCToolkit:
         leads: list[RepoLead] = []
         for owner, via in [*((o, None) for o in owners), *linked_owners]:
             try:
-                listed = self.github.list_owner_repos(owner)
+                listed = self.github.list_owner_repos(owner, pages=2)
             except GigError:
                 if via is None:
                     raise
                 continue
+            # Repositories with GitHub issues turned off stay: ScummVM's and Mifos's main
+            # code track bugs elsewhere. Deprecated ones and mirrors go.
             repos = [
                 r
                 for r in listed
-                if not r.get("archived")
-                and not r.get("fork")
-                and r.get("has_issues", True)
+                if not r.get("fork")
+                and not _retired_repo(r)
                 and (_parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
             ]
+            ranked_by_stars = sorted(
+                (r for r in repos if repo_kind(str(r.get("full_name"))) is None),
+                key=lambda r: -int(r.get("stargazers_count") or 0),
+            )
+            top_starred = str(ranked_by_stars[0].get("full_name")) if ranked_by_stars else ""
             counts = self.github.beginner_issue_counts(owner) if repos else {}
             mentioned = mentioned_repos(ideas, [owner], repos) if ideas else set()
             for repo in repos:
@@ -721,6 +729,7 @@ class GSoCToolkit:
                     ideas_mention=in_ideas,
                     language=language,
                     person=person,
+                    main_repo=is_main_repo(full, most_starred=full == top_starred),
                 )
                 if via:
                     reasons.append(f"Linked from the umbrella ideas page ({via})")

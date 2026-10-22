@@ -832,14 +832,29 @@ class GitHubClient:
             beginner_issue_labels=beginner or ["good first issue"],
         )
 
-    def list_owner_repos(self, owner: str) -> list[dict[str, Any]]:
+    def list_owner_repos(self, owner: str, *, pages: int = 1) -> list[dict[str, Any]]:
+        """An owner's public repositories, most recently pushed first.
+
+        A second page is read when the first is full: at openMF, a hundred bot-pushed
+        connector repositories hid the main Android apps on page two.
+        """
         owner = validate_login(owner, kind="GitHub org/user")
-        params = {"sort": "pushed", "per_page": 100, "type": "public"}
+        params: dict[str, Any] = {"sort": "pushed", "per_page": 100, "type": "public"}
+        path = f"orgs/{owner}/repos"
         try:
-            data = self._api(f"orgs/{owner}/repos", params=params)
+            data = self._api(path, params=params)
         except NotFoundError:
-            data = self._api(f"users/{owner}/repos", params={**params, "type": "owner"})
-        return data if isinstance(data, list) else []
+            path, params = f"users/{owner}/repos", {**params, "type": "owner"}
+            data = self._api(path, params=params)
+        found = list(data) if isinstance(data, list) else []
+        for page in range(2, pages + 1):
+            if len(found) < 100 * (page - 1):
+                break
+            more = self._api(path, params={**params, "page": page})
+            if not isinstance(more, list) or not more:
+                break
+            found.extend(more)
+        return found
 
     def beginner_issue_counts(self, owner: str) -> dict[str, int]:
         """Open, unassigned beginner issues per repo for one GitHub owner (1 search call)."""

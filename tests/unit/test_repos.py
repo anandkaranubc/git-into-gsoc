@@ -12,9 +12,11 @@ from git_into_gsoc.github.repos import (
     contributing_path,
     detect_toolchain,
     is_bot,
+    is_main_repo,
     mentioned_repos,
     pick_beginner_label,
     pull_stats,
+    repo_kind,
     repo_lead_score,
 )
 from git_into_gsoc.gsoc.ideas import ideas_fetch_url, to_text
@@ -450,3 +452,84 @@ def test_repo_language_matches_common_short_forms() -> None:
             repo, beginner_issues=0, ideas_mention=False, language=spelling
         )
         assert "Written in C++" in reasons
+
+
+def test_repositories_around_a_project_are_told_apart_from_its_code() -> None:
+    # Names from a blind review of live `repos` runs, each graded bad as a first stop.
+    for name in ("GeomScale/gsoc26", "ioos/gsoc", "kubevirt/community", "kubevirt/enhancements"):
+        assert repo_kind(name) == "not code", name
+    for name in (
+        "openMF/mifos-x-actionhub-publish-android-on-playstore-beta",
+        "scummvm/dockerized-bb",
+        "tardis-sn/release-pipeline-template",
+        "ros2/buildfarm_perf_tests",
+    ):
+        assert repo_kind(name) == "plumbing", name
+    for name in (
+        "joomla/framework.joomla.org",
+        "Rust-GCC/Rust-GCC.github.io",
+        "gnuradio/hugo-website",
+    ):
+        assert repo_kind(name) == "website", name
+    for name in ("scummvm/scummvm", "joomla/joomla-cms", "openMF/mifos-mobile", "helm/helm"):
+        assert repo_kind(name) is None, name  # helm/helm is Helm itself, not plumbing
+    assert is_main_repo("kubevirt/kubevirt")
+    assert not is_main_repo("kubevirt/kubevirt-tekton-tasks")
+    assert is_main_repo("openMF/mifos-mobile", most_starred=True)
+
+
+def test_the_main_repository_outranks_a_gsoc_repository_the_ideas_page_names() -> None:
+    gsoc = {"full_name": "geom/gsoc26", "pushed_at": _iso(3), "stargazers_count": 2}
+    main = {"full_name": "geom/volesti", "pushed_at": _iso(3), "stargazers_count": 150}
+    gsoc_score, reasons = repo_lead_score(
+        gsoc, beginner_issues=0, ideas_mention=True, language=None
+    )
+    main_score, _ = repo_lead_score(
+        main, beginner_issues=0, ideas_mention=False, language=None, main_repo=True
+    )
+    assert main_score > gsoc_score
+    assert any("not the project's code" in r for r in reasons)
+
+
+def test_a_main_repository_with_issues_turned_off_is_still_ranked(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: None)
+
+    def repo(name: str, stars: int, *, issues: bool = True) -> dict[str, Any]:
+        return {
+            "full_name": f"scummvm/{name}",
+            "html_url": f"https://github.com/scummvm/{name}",
+            "language": "C++",
+            "stargazers_count": stars,
+            "pushed_at": _iso(1),
+            "archived": False,
+            "fork": False,
+            "has_issues": issues,
+        }
+
+    listed = [
+        repo("dockerized-bb", 30),
+        repo("scummvm-icons", 20),
+        repo("scummvm", 2400, issues=False),
+    ]
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, pages=1: listed)
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
+    found = toolkit.discover_repos("scummvm")
+    assert found["repos"][0]["full_name"] == "scummvm/scummvm"
+    assert any("issues are turned off" in r for r in found["repos"][0]["reasons"])
+
+
+@respx.mock
+def test_a_full_first_page_of_repositories_reads_the_second() -> None:
+    api = "https://api.github.com/orgs/openMF/repos"
+    first = [{"full_name": f"openMF/connector-{n}"} for n in range(100)]
+    respx.get(api, params={"page": "2"}).mock(
+        return_value=httpx.Response(200, json=[{"full_name": "openMF/mifos-mobile"}])
+    )
+    respx.get(api).mock(return_value=httpx.Response(200, json=first))
+    repos = GitHubClient().list_owner_repos("openMF", pages=2)
+    assert len(repos) == 101 and repos[-1]["full_name"] == "openMF/mifos-mobile"
