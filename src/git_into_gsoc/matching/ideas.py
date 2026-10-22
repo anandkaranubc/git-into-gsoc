@@ -218,6 +218,7 @@ def fit_idea(
     domain_keys: list[str],
     difficulty: str | None = None,
     size: str | None = None,
+    hours: int | None = None,
 ) -> IdeaFit:
     """Score an idea for the person from what it names and what the page states.
 
@@ -243,7 +244,8 @@ def fit_idea(
         score += 0.15 * _DIFFICULTY_FOR[level].get(difficulty, 0.5)
         notes.append(f"stated difficulty: {difficulty}")
     if size:
-        hours = PROJECT_HOURS.get(size)
+        # The hours the page states win over the size's usual ones (FreeBSD's 500).
+        hours = hours or PROJECT_HOURS.get(size)
         notes.append(f"{size} ({hours} hours)" if hours else size)
         if person.hours_per_week and hours:
             if hours > person.hours_per_week * LONGEST_CODING_WEEKS:
@@ -290,6 +292,7 @@ def ideas_for(
             domain_keys=domain_keys,
             difficulty=idea.get("d"),
             size=idea.get("s"),
+            hours=idea.get("h"),
         )
         if fit.score <= 0.15 or not (fit.have or fit.topics) or fit.too_big:
             continue
