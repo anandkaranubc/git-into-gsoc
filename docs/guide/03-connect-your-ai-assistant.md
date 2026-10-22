@@ -34,9 +34,11 @@ For Claude Code at user scope, setup runs `claude mcp add` for you when the `cla
 
 ```bash
 claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc     # Claude Code
-gemini extensions install https://github.com/anandkaranubc/git-into-gsoc          # Gemini CLI
 agy plugin install https://github.com/anandkaranubc/git-into-gsoc                 # Antigravity
+gemini extensions install https://github.com/anandkaranubc/git-into-gsoc          # Gemini CLI, paid plans only
 ```
+
+Since 18 June 2026, Gemini CLI no longer works with a free Google account or a Google AI Pro or Ultra plan. Google moved those accounts to Antigravity, so use the `agy` line instead ([Google's notice](https://docs.cloud.google.com/gemini/docs/codeassist/release-notes)).
 
 [Use git-into-gsoc in your AI assistant](../assistants.md) has the command for every assistant (Codex, Copilot, VS Code, Cursor, Windsurf, Claude Desktop, and others), one-click buttons, and how to update and remove each one.
 

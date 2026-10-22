@@ -52,8 +52,10 @@ or extension. Each needs [uv](https://docs.astral.sh/uv/) to start the server:
 - Claude Code: `claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc`
 - Codex: `codex plugin marketplace add anandkaranubc/git-into-gsoc`, then `codex plugin add git-into-gsoc@git-into-gsoc`
 - Copilot CLI: `copilot plugin marketplace add anandkaranubc/git-into-gsoc`, then `copilot plugin install git-into-gsoc@git-into-gsoc`
-- Gemini CLI: `gemini extensions install https://github.com/anandkaranubc/git-into-gsoc`
 - Antigravity: `agy plugin install https://github.com/anandkaranubc/git-into-gsoc`
+- Gemini CLI, paid plans only: `gemini extensions install https://github.com/anandkaranubc/git-into-gsoc`.
+  Since 18 June 2026 it refuses free Google accounts and Google AI Pro or Ultra
+  plans, so point those people to Antigravity.
 
 The repository's [assistant page](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/assistants.md)
 covers VS Code, Cursor, Windsurf, Claude Desktop, and others, with update and
