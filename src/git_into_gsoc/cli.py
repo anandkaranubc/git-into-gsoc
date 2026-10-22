@@ -1103,6 +1103,8 @@ def orient_cmd(
         f"Last push: {data.get('pushed_days_ago')}d ago",
         f"[dim]As of commit {head} on {data['default_branch']}[/dim]",
     ]
+    if data.get("work_branch"):
+        lines.append(f"[yellow]! {escape(data['work_branch']['note'])}[/yellow]")
     console.print(Panel(Text.from_markup("\n".join(lines)), title="Orientation"))
 
     table = Table(title="Code map (purpose is a guess from the directory name)")

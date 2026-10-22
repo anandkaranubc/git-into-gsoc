@@ -45,6 +45,7 @@ from git_into_gsoc.github.orientation import (
     rank_workflows,
     reading_plan,
     since_iso,
+    work_branch,
     workflow_gates,
 )
 from git_into_gsoc.github.pointers import (
@@ -2014,6 +2015,7 @@ class GSoCToolkit:
             "url": raw.get("html_url") or f"https://github.com/{owner}/{repo}",
             "description": clean_untrusted(raw.get("description"), limit=300),
             "default_branch": branch,
+            "work_branch": work_branch(merged, default=branch),
             "as_of_commit": tree.get("sha"),
             "tree_truncated": bool(tree.get("truncated")),
             "stars": int(raw.get("stargazers_count") or 0),

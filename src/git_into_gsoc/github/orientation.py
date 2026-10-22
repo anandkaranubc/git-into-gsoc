@@ -1037,3 +1037,33 @@ def codetour_from_orientation(data: dict[str, Any]) -> dict[str, Any]:
         "ref": data.get("as_of_commit") or data.get("default_branch") or "HEAD",
         "steps": steps,
     }
+
+
+def work_branch(merged: list[dict[str, Any]], *, default: str) -> dict[str, Any] | None:
+    """The branch most recent merged pull requests went to, when it is not the default.
+
+    metabrainz/listenbrainz-android merged its recent outside pull requests into `cmp`
+    (a Compose Multiplatform migration) while `main` had not moved for two months: a
+    newcomer who branches from `main` may fix code that is being moved.
+    """
+    bases = Counter(
+        str((p.get("base") or {}).get("ref") or "")
+        for p in merged
+        if (p.get("base") or {}).get("ref")
+    )
+    total = sum(bases.values())
+    if total < 4:
+        return None
+    branch, count = bases.most_common(1)[0]
+    if branch == default or count * 2 < total:
+        return None
+    return {
+        "branch": branch,
+        "merged": count,
+        "of": total,
+        "note": (
+            f"{count} of the last {total} merged pull requests went to `{branch}`, not "
+            f"`{default}`. Ask the maintainers which branch new work should start from "
+            "before you branch."
+        ),
+    }

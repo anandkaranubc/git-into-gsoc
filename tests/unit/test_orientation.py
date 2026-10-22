@@ -755,3 +755,25 @@ def test_a_standard_test_runner_comes_before_a_project_script() -> None:
         c["command"]
         for c in ci_test_commands({"d.yml": other + "          bash scripts/run-tests.sh\n"})
     ] == ["bash scripts/run-tests.sh"]
+
+
+def test_orient_says_when_merged_work_goes_to_another_branch() -> None:
+    from git_into_gsoc.github.orientation import work_branch
+
+    # metabrainz/listenbrainz-android (2026-10-22): recent outside pull requests merged
+    # into `cmp`, a Compose Multiplatform migration, while `main` sat still.
+    merged = [{"base": {"ref": "cmp"}}] * 5 + [{"base": {"ref": "main"}}] * 2
+    found = work_branch(merged, default="main")
+    assert found is not None and found["branch"] == "cmp"
+    assert found["note"].startswith(
+        "5 of the last 7 merged pull requests went to `cmp`, not `main`"
+    )
+    # Most work on the default branch, or too few pull requests to tell: nothing to say.
+    assert work_branch([{"base": {"ref": "main"}}] * 6, default="main") is None
+    assert work_branch([{"base": {"ref": "cmp"}}] * 3, default="main") is None
+    even = (
+        [{"base": {"ref": "cmp"}}] * 2
+        + [{"base": {"ref": "dev"}}] * 2
+        + [{"base": {"ref": "main"}}] * 2
+    )
+    assert work_branch(even, default="main") is None
