@@ -2358,8 +2358,10 @@ class GSoCToolkit:
                     context["test_commands"] = [c["command"] for c in ci["test_commands"]]
                     context["install_commands"] = [c["command"] for c in ci["install_commands"]]
                     context["commands_source"] = "CI"
-                    if not context["test_commands"]:
-                        # No test step in CI: use the project's own manifest, and say so.
+                    if not context["test_commands"] or not context["install_commands"]:
+                        # No test step in CI, or an install hidden in a setup action this does
+                        # not read (Rocket.Chat's CI runs `yarn testunit` after its own
+                        # setup-node action): use the project's own manifest, and say so.
                         root = self.github.root_listing(owner_name, repo_name)
                         names = {str(e.get("name")) for e in root}
                         package = (
@@ -2368,14 +2370,15 @@ class GSoCToolkit:
                             else None
                         )
                         install, check = manifest_commands(names, package_json=package)
-                        if install or check:
+                        source = next((n for n in _MANIFESTS if n in names), "the project's files")
+                        if not context["test_commands"] and (install or check):
                             context["install_commands"] = install
                             context["test_commands"] = [check] if check else []
                             context["test_is_build"] = bool(check and "build" in check)
-                            context["commands_source"] = next(
-                                (n for n in _MANIFESTS if n in names),
-                                "the project's files",
-                            )
+                            context["commands_source"] = source
+                        elif install:
+                            context["install_commands"] = install
+                            context["install_source"] = source
                 except GigError:
                     pass
             if kind in {"pr", "claim"}:

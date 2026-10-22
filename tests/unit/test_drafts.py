@@ -247,6 +247,46 @@ def test_pr_draft_uses_the_install_and_test_commands_ci_runs(monkeypatch) -> Non
     assert "python3 -m venv .venv" in draft["template"]  # before any pip install
 
 
+def test_pr_draft_installs_from_the_manifest_when_ci_installs_out_of_sight(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc.models import ContributionGuide
+    from git_into_gsoc.service import GSoCToolkit
+
+    # Rocket.Chat (2026-10-22): CI runs `yarn testunit` after a setup-node action of its
+    # own that installs, so the draft said to run the tests with nothing installed.
+    toolkit = GSoCToolkit()
+    gh = toolkit.github
+    monkeypatch.setattr(gh, "get_repo", lambda o, r: {"default_branch": "develop"})
+    monkeypatch.setattr(gh, "branch_rules", lambda *a: [])
+    monkeypatch.setattr(gh, "contribution_guide", lambda repo: ContributionGuide(repo="a/b"))
+    tree = {"tree": [{"path": ".github/workflows/ci-test-unit.yml", "type": "blob"}]}
+    monkeypatch.setattr(gh, "git_tree", lambda *a: tree)
+    monkeypatch.setattr(
+        gh, "root_listing", lambda *a: [{"name": "package.json"}, {"name": "yarn.lock"}]
+    )
+    workflow = (
+        "jobs:\n  t:\n    steps:\n      - uses: ./.github/actions/setup-node\n"
+        "      - run: yarn testunit --concurrency=1\n"
+    )
+    files = {"package.json": '{"scripts": {"testunit": "turbo run testunit"}}'}
+    monkeypatch.setattr(gh, "get_raw_file", lambda o, r, path: files.get(path, workflow))
+    draft = toolkit.draft("pr", repo="RocketChat/Rocket.Chat")["template"]
+    assert "yarn install   # install (from package.json)" in draft
+    assert "yarn testunit --concurrency=1   # run the tests once" in draft
+
+
+def test_one_node_install_however_it_is_spelled() -> None:
+    from git_into_gsoc.drafts import _distinct
+
+    # CircuitVerse's CI runs `npm ci` in one job and `npm install` in another.
+    assert _distinct(["npm ci", "npm install"]) == ["npm ci"]
+    assert _distinct(["npm ci", "npm install --legacy-peer-deps"]) == ["npm ci"]
+    assert _distinct(["yarn", "yarn install --frozen-lockfile"]) == ["yarn"]
+    # Installing a named package is another action.
+    assert _distinct(["npm ci", "npm install eslint"]) == ["npm ci", "npm install eslint"]
+    # Bare yarn installs; bare npm does nothing, so it is not the same action as npm ci.
+    assert _distinct(["npm ci", "npm"]) == ["npm ci", "npm"]
+
+
 def test_manifest_commands_fill_in_when_ci_has_no_tests() -> None:
     from git_into_gsoc.drafts import manifest_commands
 

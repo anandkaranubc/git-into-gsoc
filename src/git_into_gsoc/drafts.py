@@ -323,13 +323,23 @@ def manifest_commands(names: set[str], *, package_json: str | None) -> tuple[lis
     return [], None
 
 
+# Installing a Node project's dependencies, however it is spelled: "npm ci", "npm
+# clean-install", or "npm install" with only flags. CircuitVerse's CI has "npm ci" in one
+# job and "npm install" in another; listing both says to install twice.
+_NODE_DEPS_RE = re.compile(
+    r"^(?:(yarn)(?: install)?|(npm|pnpm) (?:ci|clean-install|install|i))(?: -\S+)*$"
+)
+
+
 def _distinct(commands: list[str] | None, limit: int = 2) -> list[str]:
     """One command per tool and action: "npm clean-install --ignore-scripts" repeats
-    "npm clean-install"."""
+    "npm clean-install", and "npm install" repeats "npm ci"."""
     seen: set[str] = set()
     out: list[str] = []
     for command in commands or []:
-        key = " ".join(command.split()[:2])
+        node = _NODE_DEPS_RE.match(command)
+        tool = node and (node.group(1) or node.group(2))
+        key = f"{tool} dependencies" if tool else " ".join(command.split()[:2])
         if key not in seen:
             seen.add(key)
             out.append(command)
@@ -337,7 +347,7 @@ def _distinct(commands: list[str] | None, limit: int = 2) -> list[str]:
 
 
 def _from(ctx: dict[str, Any]) -> str:
-    source = ctx.get("commands_source")
+    source = ctx.get("install_source") or ctx.get("commands_source")
     return f"(from {source})" if source and source != "CI" else "as CI does"
 
 
@@ -356,7 +366,7 @@ def _lockfile_line(ctx: dict[str, Any]) -> list[str]:
     CI would fail too if its own `npm ci` hit that, so this is only for commands
     read from package.json. ruxailab/web-eye-tracker-front was such a case.
     """
-    if ctx.get("commands_source") == "CI":
+    if (ctx.get("install_source") or ctx.get("commands_source")) == "CI":
         return []
     if "npm ci" not in (ctx.get("install_commands") or []):
         return []
