@@ -20,17 +20,19 @@ A scheduled workflow (`snapshot-refresh.yml`, Mondays) runs the same refresher a
 
 Release Please keeps a pull request titled `chore(main): release X.Y.Z` open whenever `main` has unreleased commits. Because the bot pushes that branch with the built-in Actions token, GitHub does not start CI on it, and the branch rules require passing checks. Trigger the checks yourself before merging: close and reopen the pull request, or rebase its branch onto `main` and push it (which also picks up any test or manifest fixes that landed after the bot last refreshed it). To make this automatic, store a fine-grained personal access token with contents and pull-request write permission as a repository secret and pass it to the action as `token:` in `release.yml`. It updates `CHANGELOG.md`, the version in `pyproject.toml`, `src/git_into_gsoc/__init__.py`, and the plugin manifests. While the project is below 1.0, `feat:` commits bump the minor version and `fix:` commits bump the patch version. Merging that pull request creates the Git tag and the GitHub release.
 
-## 3. Publish to PyPI (one-time setup)
+## 3. Publish to PyPI (automatic)
 
-The release workflow builds a wheel and publishes it with [PyPI trusted publishing](https://docs.pypi.org/trusted-publishers/), which needs no stored token. Until a trusted publisher is configured, the `Publish to PyPI` job fails (shown in red) without failing the release, and its run summary repeats the values to enter below; the GitHub release and its assets are published either way. A green `Publish to PyPI` job always means the upload happened.
+The release workflow builds the wheel and the source archive and publishes them to [PyPI](https://pypi.org/project/git-into-gsoc/) with [trusted publishing](https://docs.pypi.org/trusted-publishers/), which needs no stored token. It has done so since version 0.14.1. If the `Publish to PyPI` job fails, it shows in red without failing the release, and its run summary says what to check; the GitHub release and its assets are published either way. A green `Publish to PyPI` job always means the upload happened. To retry a failed upload, re-run that job: `gh run rerun <run id> --failed`. PyPI never accepts the same version twice, so a version that did upload cannot be replaced.
 
-To set it up once:
+The trusted publisher is already set up. A fork, or a new owner, sets it up once like this:
 
 1. On PyPI, open your account's **Publishing** page and add a pending publisher with project name `git-into-gsoc`, owner `anandkaranubc`, repository `git-into-gsoc`, workflow `release.yml`, and environment `release`.
 2. On GitHub, create an environment named `release` under **Settings > Environments** (no secrets needed; optionally require a reviewer).
 3. Merge the next release pull request. The `Publish to PyPI` job runs under that environment and uploads the wheel.
 
-After the first publish, users can install with `uv tool install git-into-gsoc` or `pipx install git-into-gsoc` instead of the Git URL. The installer scripts use PyPI only for the latest GitHub release, and only when PyPI's provenance record says this repository's workflow published it. PyPI checks that attestation on upload, and the publish action creates it by default with trusted publishing. The name is not reserved until the first upload, so someone else could claim it; the check makes the installers ignore such an upload and install from GitHub. Until then, every release carries the wheel and the source archive as release assets, so anyone can install a pinned version by URL (see the [install guide](guide/02-install.md)).
+The PyPI page shows `README.md`. PyPI does not have the rest of the repository, so the build rewrites relative images to raw GitHub files and relative links to GitHub pages (the `fancy-pypi-readme` settings in `pyproject.toml`). A version's page never changes after upload, so a README fix reaches PyPI with the next release. CI builds the package and runs `twine check --strict` on every pull request.
+
+People can install with `uv tool install git-into-gsoc` or `pipx install git-into-gsoc`. The installer scripts use PyPI only for the latest GitHub release, and only when PyPI's provenance record says this repository's workflow published it. PyPI checks that attestation on upload, and the publish action creates it by default with trusted publishing. When the check fails, for example because the upload for the newest release failed, the installers use the wheel attached to the GitHub release instead. Every release carries the wheel and the source archive as release assets, so anyone can also install a pinned version by URL (see the [install guide](guide/02-install.md)).
 
 ## 4. Release assets and the MCP registry (automatic)
 

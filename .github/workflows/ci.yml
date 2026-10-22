@@ -45,6 +45,13 @@ jobs:
       - name: Dependency audit
         run: pip-audit
 
+      # PyPI shows this metadata, README included, and it can only change with a
+      # new release. Check that it builds and renders before then.
+      - name: Package metadata
+        run: |
+          python -m uv build --out-dir "$RUNNER_TEMP/dist"
+          python -m uv tool run twine check --strict "$RUNNER_TEMP"/dist/*
+
       # The other hooks in .pre-commit-config.yaml (end of file, whitespace,
       # merge markers, private keys, large files). Ruff and mypy ran above.
       # This also tests Dependabot's updates to those hooks.
