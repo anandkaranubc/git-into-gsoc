@@ -1,3 +1,7 @@
+"""Shared test setup: every test runs without the network, tokens, or the person's
+own cache and data folders. Mock HTTP with respx and keep sample responses in
+tests/fixtures/."""
+
 from __future__ import annotations
 
 import json

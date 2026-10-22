@@ -52,10 +52,10 @@ NOT_OPEN_LABELS = {
 }
 # Projects spell these many ways ("Status: Needs-Discussion", "needs:design", "state:
 # blocked"), so a label is matched after lower-casing it and turning each run of
-# punctuation into one space. On 24,779 labels from the top repositories of 153 GSoC
-# organizations (2026-10-21), the exact names above matched 9 spellings and this
-# matches 95, none of them wrongly on review. "blocker" is a priority, "design" a
-# topic, and "lifecycle/frozen" only stops a bot from closing the issue.
+# punctuation into one space. On 24,779 labels from the top repositories of 144 GSoC
+# organizations' GitHub owners (2026-10-21), the exact names above matched 9 spellings
+# and this matches 95, none of them wrongly on review. "blocker" is a priority, "design"
+# a topic, and "lifecycle/frozen" only stops a bot from closing the issue.
 _NOT_OPEN_LABEL_RE = re.compile(
     r"\bneeds?\s+(?:(?:further|more|community|team|a)\s+)?(?:discussion|decisions?|design)\b"
     r"|\b(?:discussion|decision|design)\s+(?:needed|required)\b"

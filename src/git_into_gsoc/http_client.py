@@ -101,6 +101,12 @@ class CachedHttpClient:
         use_cache: bool = True,
         ttl: int | None = None,
     ) -> Any:
+        """GET `url` and parse the JSON body, through the cache.
+
+        A fresh cached copy is served without a request; a stale one is revalidated.
+        Raises HttpError (NotFoundError for a 404, RateLimitError for a limit) when
+        the request fails and no cached copy under a week old can stand in.
+        """
         merged = {"Accept": "application/json", **(headers or {})}
         return self._get(url, merged, params, use_cache, ttl, kind="json")
 
@@ -113,6 +119,7 @@ class CachedHttpClient:
         use_cache: bool = True,
         ttl: int | None = None,
     ) -> str:
+        """GET `url` as text, with the same caching and errors as `get_json`."""
         data = self._get(url, dict(headers or {}), params, use_cache, ttl, kind="text")
         return str(data)
 

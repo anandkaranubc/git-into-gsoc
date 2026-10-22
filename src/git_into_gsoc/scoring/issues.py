@@ -47,6 +47,12 @@ UMBRELLA_CAP = 35.0
 
 
 def score_issue(issue: IssueCandidate) -> IssueCandidate:
+    """Score an issue from 0 to 100 as a first task, and say why.
+
+    Sets `beginner_score` and `signals` on the candidate and returns it. Labels,
+    availability, freshness, and how well the issue is written each add or take
+    points; an epic or an issue with no beginner label is capped, never a top pick.
+    """
     score = 40.0
     signals: list[str] = []
     labels = {label.lower() for label in issue.labels}
