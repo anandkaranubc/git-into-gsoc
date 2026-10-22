@@ -1,3 +1,6 @@
+"""The ideas reader on real page shapes: headings, bullets, HTML, tables, MediaWiki
+templates, index pages, Google Docs, and the sentences that state an AI policy."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -834,3 +837,174 @@ def test_an_idea_laid_out_as_table_cells_is_read() -> None:
     # One label name alone, such as a "Mentors" link in a page's contents, labels nothing.
     toc = ["# Ideas", "## Contents", "Mentors", "Students", "## Add types", "Some prose here."]
     assert all(not i.mentors for i in extract_ideas(toc, source_url="https://x").ideas)
+
+
+def _c2si_idea(title: str, skills: str, mentors: str, length: str, level: str) -> str:
+    return (
+        f'<div class="accordion">{title}</div><div class="panel"><p><dl>\n'
+        "  <dt>Brief explanation</dt>\n  <dd>A tool that does useful things.<br /><br /></dd>\n"
+        f"  <dt>Skills Required:</dt>\n  <dd>{skills}</dd>\n"
+        f"  <dt>Mentors</dt>\n  <dd>{mentors}<br /><br /></dd>\n"
+        f"  <dt>Estimate Project Length</dt>\n  <dd>{length}</dd>\n"
+        f"  <dt>Difficulty</dt>\n  <dd>{level}</dd>\n"
+        "</dl></p></div>"
+    )
+
+
+def test_ideas_in_accordions_with_definition_lists_are_read() -> None:
+    # C2SI's 2026 page: each idea is a <div class="accordion"> title over a panel of
+    # <dt>label</dt><dd>value</dd>. No heading tag, so it read as 2 junk "ideas".
+    html = (
+        "<html><body><h1>Idea List for 2026</h1>"
+        + _c2si_idea(
+            "1. B0Bot",
+            "Python, Flask",
+            "Hardik Jindal (hardik1408), Kavishka ([email protected])",
+            "350 hours",
+            "Hard",
+        )
+        + _c2si_idea("2. WebiU", "Angular, Node.js", "Mahender Goud Thanda", "175 hours", "Medium")
+        + "</body></html>"
+    )
+    first, second = extract_ideas(
+        to_lines(html, "https://c2si.org/gsoc/"), source_url="https://x"
+    ).ideas
+    assert (first.title, second.title) == ("B0Bot", "WebiU")  # numbering dropped
+    assert (first.skills, first.mentors, first.hours, first.difficulty) == (
+        ["Python", "Flask"],
+        ["Hardik Jindal (hardik1408)", "Kavishka"],
+        350,
+        "hard",
+    )
+    assert (second.mentors, second.hours, second.difficulty) == (
+        ["Mahender Goud Thanda"],
+        175,
+        "medium",
+    )
+    # Bootstrap wraps all items in one <div class="accordion">; its content is not a title.
+    wrapper = (
+        '<html><body><h2>Ideas</h2><div class="accordion" id="ideas">'
+        '<div class="accordion-item"><h3 class="accordion-header">Parser</h3>'
+        '<div class="accordion-body"><p>Mentors: Ann Lee</p><p>Size: 90 hours</p></div></div>'
+        '<div class="accordion-item"><h3 class="accordion-header">Plotter</h3>'
+        '<div class="accordion-body"><p>Mentors: Bo Chen</p><p>Size: 175 hours</p></div></div>'
+        "</div></body></html>"
+    )
+    lines = to_lines(wrapper, "https://x")
+    assert [line for line in lines if line.startswith("#")] == [
+        "## Ideas",
+        "### Parser",
+        "### Plotter",
+    ]
+
+
+def test_ideas_in_details_blocks_are_read() -> None:
+    # The Neuroinformatics Unit's 2026 page: each idea is a <details> whose <summary> is
+    # the title, under a group heading. Fields are a label paragraph, then the value:
+    # sometimes in the same paragraph after a break, and mentors one per line or a list.
+    html = (
+        "<html><body><h1>GSoC 2026</h1><h2>BrainGlobe</h2>"
+        "<details><summary><span>Maintenance work on BrainGlobe</span></summary><div>"
+        "<p>Tools live in many repositories.</p>"
+        '<p class="rubric">Duration</p><p>Large (~350 hours)</p>'
+        '<p class="rubric">Difficulty</p><p>Suited for an intermediate contributor.</p>'
+        '<p class="rubric">Potential mentors</p><p>@alessandrofelder\n@IgorTatarnikov</p>'
+        "</div></details>"
+        "<details><summary><span>Refactor brainglobe-heatmap</span></summary><div>"
+        "<p><strong>Duration</strong>\nSmall (~90 hours)</p>"
+        "<p><strong>Potential mentors</strong></p>"
+        "<ul><li><p>@alessandrofelder</p></li><li><p>@adamltyson</p></li></ul>"
+        "<p><strong>Further reading</strong>\nIssue 103 in brainglobe-heatmap</p>"
+        "</div></details>"
+        "<h2>Team</h2><p>Adam Tyson</p></body></html>"
+    )
+    doc = extract_ideas(to_lines(html, "https://x"), source_url="https://x")
+    first, second = doc.ideas
+    assert first.title == "Maintenance work on BrainGlobe"
+    assert (first.hours, first.mentors) == (350, ["@alessandrofelder", "@IgorTatarnikov"])
+    assert (second.hours, second.mentors) == (90, ["@alessandrofelder", "@adamltyson"])
+    assert [i.section for i in doc.ideas] == ["BrainGlobe", "BrainGlobe"]
+
+
+def test_one_idea_under_each_group_heading_takes_the_idea_title() -> None:
+    # LibreOffice's 2026 page: "## Filters" holds "### Add JPEG XL import support" and its
+    # fields as <dt>/<dd>; groups such as "## Draw" are empty. The groups won on count, so
+    # "Filters" became the idea's title (and before <dt> was read, past projects were).
+    def idea(title: str, mentor: str) -> str:
+        return (
+            f"<h3>{title}</h3><p>Some work to do.</p><dl>"
+            "<dt>Required skills / knowledge</dt><dd>C++</dd><dt>Size</dt><dd>175 hours</dd>"
+            f"<dt>Difficulty</dt><dd>Medium</dd><dt>Potential mentors</dt><dd>{mentor}</dd></dl>"
+        )
+
+    html = (
+        "<html><body><h1>GSoC Ideas</h1><h2>Draw</h2><h2>Filters</h2>"
+        + idea("Add JPEG XL import support", "Xisco Fauli")
+        + "<h2>Impress</h2><h2>Tests</h2>"
+        + idea("Improve word processor test coverage", "Jonathan Clark")
+        + "</body></html>"
+    )
+    ideas = extract_ideas(to_lines(html, "https://x"), source_url="https://x").ideas
+    assert [(i.title, i.section, i.hours, i.skills) for i in ideas] == [
+        ("Add JPEG XL import support", "Filters", 175, ["C++"]),
+        ("Improve word processor test coverage", "Tests", 175, ["C++"]),
+    ]
+
+
+def test_a_heading_with_no_text_does_not_start_an_idea() -> None:
+    # Oppia's 2026 wiki has a stray "### </p>" inside idea 4.1; it read as an idea with
+    # no title that took 4.1's mentors.
+    lines = [
+        "## Android team",
+        "### 4.1 Support for Lesson Progress",
+        "Project size: Medium",
+        "### </p>",
+        "**Mentors:** @MohitGupta121",
+        "### 4.2 Streamlining Release Automation",
+        "Project size: Large",
+        "**Mentors:** @adhiamboperes",
+    ]
+    ideas = extract_ideas(lines, source_url="https://x").ideas
+    assert [(i.title, i.mentors) for i in ideas] == [
+        ("4.1 Support for Lesson Progress", ["@MohitGupta121"]),
+        ("4.2 Streamlining Release Automation", ["@adhiamboperes"]),
+    ]
+
+
+def test_a_bold_line_ends_a_field_that_runs_on() -> None:
+    # Kubeflow's 2026 page: "**Mentors:**" with the names on the next lines, then labels
+    # this reader does not know ("**Contributor:**"); a table header "Backend" and
+    # "Rationale" later read as one more mentor, "BackendRationale".
+    lines = [
+        "# Ideas",
+        "### Project 10: Dynamic LLM Trainer Framework",
+        "**Mentors:**\n@tariq-hasan (https://github.com/tariq-hasan),\n@andreyvelich",
+        "**Contributor:**",
+        "**Initial backends to explore:**",
+        "BackendRationale",
+        "**Difficulty:** Hard",
+        "### Project 11: Composable Kale Notebooks",
+        "**Mentors:** Eder Ignatowicz",
+        "**Difficulty:** Hard",
+    ]
+    first, second = extract_ideas(to_lines("\n".join(lines)), source_url="https://x").ideas
+    assert first.mentors == ["@tariq-hasan", "@andreyvelich"]
+    assert (first.difficulty, second.mentors) == ("hard", ["Eder Ignatowicz"])
+    # OWASP's names are bold lines, after a bold group label: neither ends the list.
+    owasp = [
+        "## OpenCRE",
+        "Project text.",
+        "#### Mentors",
+        "**For OpenCRE Scraper & Indexer (Project OIE) Module Projects (A, B, C, D):**",
+        "- Spyros Gasteratos",
+        "## OWASP Nest",
+        "Project text.",
+        "#### Mentors",
+        "**Arkadii Yakovets**",
+        "**Collins Wandji**",
+    ]
+    ideas = extract_ideas(owasp, source_url="https://x").ideas
+    assert [i.mentors for i in ideas] == [
+        ["Spyros Gasteratos"],
+        ["Arkadii Yakovets", "Collins Wandji"],
+    ]

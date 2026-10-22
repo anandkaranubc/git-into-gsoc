@@ -1177,10 +1177,36 @@ class GitHubClient:
             return []
         runs = data.get("check_runs") if isinstance(data, dict) else None
         return [
-            {"name": r.get("name"), "status": r.get("status"), "conclusion": r.get("conclusion")}
+            {
+                "name": r.get("name"),
+                "status": r.get("status"),
+                "conclusion": r.get("conclusion"),
+                # For GitHub Actions the check run's id is the job's id, which has a log.
+                "id": r.get("id"),
+                "app": ((r.get("app") or {}).get("slug") or "")
+                if isinstance(r.get("app"), dict)
+                else "",
+            }
             for r in runs or []
             if isinstance(r, dict)
         ]
+
+    def job_log_tail(self, owner: str, repo: str, job_id: int) -> str:
+        """The end of a GitHub Actions job's log, where the failure is.
+
+        GitHub shows job logs only to signed-in requests, so this needs a token.
+        """
+        if not self.token:
+            raise HttpError(
+                "Reading a CI log needs a GitHub token.",
+                hint="Run `gh auth login`, or set GITHUB_TOKEN.",
+            )
+        owner, repo = parse_repo(f"{owner}/{repo}")
+        url = (
+            f"{self.settings.github_api_url.rstrip('/')}/repos/{owner}/{repo}"
+            f"/actions/jobs/{int(job_id)}/logs"
+        )
+        return self.http.get_tail(url, headers=self._headers())
 
     def branch_rules(self, owner: str, repo: str, branch: str) -> list[dict[str, Any]]:
         """Active ruleset rules on a branch (readable without a token for public repos).
