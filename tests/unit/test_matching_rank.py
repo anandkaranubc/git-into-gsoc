@@ -402,9 +402,12 @@ def test_readiness_says_whether_an_organization_labels_first_tasks_on_github() -
     ranked = {m.org.name: m for m in _rank([quiet, busy], signals=signals, interests=["physics"])}
     # Zero is never stated: the project may use its own label ("Difficulty-easy").
     assert not any("beginner label" in line for line in ranked["Lab Without Labels"].readiness)
-    assert any(
-        "14 GitHub issue(s) with a common" in line for line in ranked["Labelling Lab"].readiness
+    line = next(x for x in ranked["Labelling Lab"].readiness if "beginner label" in x)
+    # Said as a habit, never as issues open now.
+    assert line.startswith(
+        "14 GitHub issues with a common beginner label were opened in the past year"
     )
+    assert "open or since closed" in line and "issues --org" in line
     # Evidence only: the two still tie on everything that ranks them.
     assert ranked["Lab Without Labels"].score == ranked["Labelling Lab"].score
 
@@ -445,3 +448,17 @@ def test_most_ideas_needing_an_unlisted_skill_costs_a_little(monkeypatch: Any) -
     assert any("Most of its ideas need PHP" in c for c in costed.caveats)
     monkeypatch.setattr(rank, "MOSTLY_NEEDS", 1.0)
     assert costed.score == pytest.approx(judge().score * 0.95, abs=0.2)
+
+
+def test_one_or_two_beginner_issues_in_a_year_are_not_shown() -> None:
+    lab = _org("Small Lab", tech=["python"], topics=["physics"])
+    signals = {
+        "year": 2026,
+        "organizations": {
+            "small-lab": {
+                "github": {"active_repos": 8, "languages": {"Python": 8}, "beginner_issues_year": 2}
+            }
+        },
+    }
+    ranked = _rank([lab], signals=signals, interests=["physics"])
+    assert not any("beginner label" in line for line in ranked[0].readiness)

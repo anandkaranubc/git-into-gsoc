@@ -74,6 +74,8 @@ OTHER_MAIN_LANGUAGE = 0.95
 # Most of its ideas need a skill the person did not list: a caveat, and a small cost
 # (tuned on the dev sets of evals/ after a blind beginner test).
 MOSTLY_NEEDS = 0.95
+# Beginner-labelled issues in a year below which the count says nothing useful.
+MIN_LABELLED = 3
 # How much a phrase's common concept counts against its rarest one (see match_term).
 SPECIFIC_POWER = 1.0
 FIT_STRONG, FIT_GOOD, FIT_MIN = 0.7, 0.45, 0.12
@@ -696,11 +698,13 @@ class OrgIndex:
         if active:
             readiness_lines.append(f"{active} GitHub repositories pushed in the last year")
         labelled = int(profile.github.get("beginner_issues_year") or 0)
-        if labelled:
-            # Only a count is shown. Zero is not: MDAnalysis marks first tasks
-            # "Difficulty-easy" and Neovim "complexity:low", which the common spellings miss.
+        if labelled >= MIN_LABELLED:
+            # A habit, not a list of open issues: an assistant read "1 beginner-labelled
+            # issue" as one open now. Zero is not shown either: MDAnalysis marks first
+            # tasks "Difficulty-easy" and Neovim "complexity:low", which are not counted.
             readiness_lines.append(
-                f"{labelled} GitHub issue(s) with a common beginner label opened in the past year"
+                f"{labelled} GitHub issues with a common beginner label were opened in the "
+                "past year (open or since closed); `issues --org` shows the ones open now"
             )
 
         # A fit needs something to fit: a category or a bare listing has none.
