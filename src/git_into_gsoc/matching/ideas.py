@@ -37,6 +37,10 @@ _DIFFICULTY_FOR = {
 
 @dataclass
 class IdeaFit:
+    """How one idea fits a person: a score from 0 to 1, the skills they have and would
+    learn, the interests it matches, the facts the page states, and whether it is too
+    big for their hours."""
+
     score: float
     have: list[str] = field(default_factory=list)
     to_learn: list[str] = field(default_factory=list)
@@ -60,6 +64,8 @@ def known_skills(person: ContributorProfile) -> set[str]:
 
 
 def wanted_domains(person: ContributorProfile) -> set[str]:
+    """The subjects the person cares about, with the narrower ones under each; a broad
+    word such as "web" is not widened."""
     wanted: set[str] = set()
     for want in person.interests:
         for concept in want.concepts:
@@ -213,6 +219,13 @@ def fit_idea(
     difficulty: str | None = None,
     size: str | None = None,
 ) -> IdeaFit:
+    """Score an idea for the person from what it names and what the page states.
+
+    Half the score is the share of the idea's skills the person has. A wanted
+    subject adds 0.3. A stated difficulty adds up to 0.15, most for the level it
+    suits. A size that fits the person's hours in the longest coding period adds
+    0.05; one that does not costs 0.3 and marks the idea too big.
+    """
     known = known_skills(person)
     wanted = wanted_domains(person)
     have = [c for c in skill_keys if c in known]
