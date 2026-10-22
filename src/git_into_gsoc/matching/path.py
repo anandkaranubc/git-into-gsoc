@@ -12,15 +12,42 @@ from __future__ import annotations
 import math
 from typing import Any
 
+from git_into_gsoc.coach import GSOC_FAQ_URL, LONGEST_CODING_WEEKS, PROJECT_HOURS
 from git_into_gsoc.matching.profile import ContributorProfile
 
 GUIDE = "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide"
-# The longest a GSoC coding period can run (official FAQ).
-MAX_WEEKS = 22
+# The standard coding period; longer, up to LONGEST_CODING_WEEKS, needs the mentor's yes.
+STANDARD_WEEKS = 12
+# A project "fits" with room for exams and setbacks, not right at the limit.
+COMFORTABLE_WEEKS = LONGEST_CODING_WEEKS - 4
 
 
 def _quote(name: str) -> str:
     return '"' + name.replace('"', "") + '"'
+
+
+def _pace(hours: int) -> str:
+    """Which project size fits these hours, with the weeks worked out and room to spare."""
+    small = math.ceil(PROJECT_HOURS["small"] / hours)
+    medium = math.ceil(PROJECT_HOURS["medium"] / hours)
+    longer = (
+        f"longer than the standard {STANDARD_WEEKS}, which your mentor has to agree to; GSoC "
+        f"allows at most {LONGEST_CODING_WEEKS} weeks"
+    )
+    if medium <= STANDARD_WEEKS:
+        return f"a 175-hour project fits the standard {STANDARD_WEEKS} weeks (about {medium})"
+    if medium <= COMFORTABLE_WEEKS:
+        return f"a 175-hour project fits in about {medium} weeks, {longer}"
+    if small <= COMFORTABLE_WEEKS:
+        stretch = f", {longer}" if small > STANDARD_WEEKS else ""
+        return (
+            f"plan for a 90-hour project (about {small} weeks{stretch}); a 175-hour one would "
+            f"take about {medium}, too close to the limit"
+        )
+    return (
+        f"even a 90-hour project would take about {small} weeks, too close to the "
+        f"{LONGEST_CODING_WEEKS}-week limit, so find more hours before you apply"
+    )
 
 
 def learning_path(
@@ -83,23 +110,18 @@ def learning_path(
             )
     hours = person.hours_per_week
     if hours and hours <= 10:
-        small, medium = math.ceil(90 / hours), math.ceil(175 / hours)
-        if medium <= MAX_WEEKS:
-            plan = f"a 175-hour project fits (about {medium} weeks)"
-        elif small <= MAX_WEEKS:
-            plan = (
-                f"plan for a 90-hour project (about {small} weeks); a 175-hour one would take "
-                f"about {medium}"
-            )
-        else:
-            plan = (
-                f"even a 90-hour project would take about {small} weeks, so find more hours "
-                "before you apply"
-            )
         add(
-            f"Plan around {hours} hours a week: {plan}. GSoC allows at most {MAX_WEEKS} weeks.",
+            f"Plan around {hours} hours a week: {_pace(hours)}.",
             "Mentors ask how much time you have; a project that fits it is one you can finish.",
             None,
+        )
+    if level == "experienced":
+        add(
+            "Check that you can take part: GSoC is for students and beginners to open source, "
+            "and you must be 18 when you register.",
+            "Its FAQ says regular open source contributors are not beginners; check before you "
+            "put in the time.",
+            f"Read {GSOC_FAQ_URL}",
         )
     if level == "new":
         add(

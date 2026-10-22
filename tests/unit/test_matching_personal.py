@@ -528,3 +528,22 @@ def test_too_few_hours_for_any_project_is_said_plainly() -> None:
     path = learning_path(build_profile(technologies=["python"], hours_per_week=3), [])
     assert path[0]["step"].startswith("Plan around 3 hours a week: even a 90-hour project")
     assert "find more hours" in path[0]["step"]
+
+
+def test_the_pace_leaves_room_and_says_when_the_mentor_must_agree() -> None:
+    from git_into_gsoc.matching.path import _pace
+
+    # 8 hours: 175 hours is 22 weeks, the very limit, so plan for 90 (12 weeks).
+    assert _pace(8).startswith("plan for a 90-hour project (about 12 weeks)")
+    # 10 hours: 175 hours in 18 weeks fits, but only with a longer timeline.
+    assert _pace(10).startswith("a 175-hour project fits in about 18 weeks")
+    assert "your mentor has to agree to" in _pace(10)
+    assert _pace(15).startswith("a 175-hour project fits the standard 12 weeks")
+    assert "find more hours" in _pace(4)
+
+
+def test_an_experienced_person_is_asked_to_check_eligibility_first() -> None:
+    path = learning_path(build_profile(technologies=["go"], experience="experienced"), [])
+    assert any("GSoC is for students and beginners to open source" in s["step"] for s in path)
+    newcomer = learning_path(build_profile(technologies=["go"], experience="new"), [])
+    assert not any("Check that you can take part" in s["step"] for s in newcomer)
