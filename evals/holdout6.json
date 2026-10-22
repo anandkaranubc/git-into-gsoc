@@ -1,0 +1,650 @@
+{
+  "about": "A sixth sealed set: specialists the earlier sets do not cover, written and graded by a seventh reviewer who never saw the ranking code, the tool's output, or the other sets. Sealed: never used for tuning. See evals/README.md.",
+  "org_list": "official GSoC 2026 accepted organizations",
+  "personas": [
+    {
+      "id": "compiler-backend-cpp",
+      "split": "holdout6",
+      "about": "An experienced C++ developer who has written toy compilers and wants to work on the parts of a real compiler that turn code into fast machine instructions.",
+      "profile": {
+        "technologies": [
+          "C++",
+          "compiler construction",
+          "intermediate representations",
+          "x86 and ARM assembly",
+          "CMake"
+        ],
+        "interests": [
+          "compiler backends",
+          "code generation",
+          "optimization passes",
+          "register allocation"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 25
+      },
+      "grades": {
+        "LLVM Compiler Infrastructure": 3,
+        "GNU Compiler Collection (GCC)": 3,
+        "Swift": 2,
+        "Fortran-lang": 2,
+        "CERN-HSF": 2,
+        "The P4 Language Consortium": 2,
+        "Free and Open Source Silicon Foundation": 2,
+        "Pharo Consortium": 2,
+        "D Language Foundation": 1,
+        "Open Science Labs": 1,
+        "GRAME": 1,
+        "The FreeBSD Project": 1,
+        "Kotlin Foundation": 1,
+        "The Rust Foundation": 1,
+        "Boa": 1
+      },
+      "wrong_top5": [
+        "Graphite",
+        "Haskell.org",
+        "checkstyle",
+        "Dart",
+        "webpack",
+        "Ste||ar group",
+        "Tiled"
+      ],
+      "judge_notes": "The two big C and C++ compiler projects are the clear first picks: the 2026 list of the first has backend, codegen and IR fuzzing work, and the second offers hard middle end, offloading and optimization pass work that suits an experienced person. Grade 2 goes to places with real compiler internals in C++ but a different language or domain: the Swift compiler projects that touch SIL and LLVM IR lowering, the Fortran compiler that emits LLVM IR, the particle physics umbrella with its Clang based differentiation tools, the P4 and hardware compiler projects built on MLIR, and the Smalltalk VM ideas on SSA optimization and JIT register allocation. Grade 1 covers compiler adjacent work in other languages, such as the D compute backends, a Python LLVM IR generator, the audio DSP compiler, a debugger port, a Kotlin compiler fuzzer, the Rust compiler on Windows and a JavaScript engine VM. The wrong list holds orgs tagged with compilers, C++ or programming languages whose 2026 ideas are graphics, static style checks, IDE tooling, bundling, parallel libraries or a level editor."
+    },
+    {
+      "id": "linux-kernel-drivers-c",
+      "split": "holdout6",
+      "about": "Knows C well, has built and booted custom kernels on small boards, and wants to write or fix hardware drivers inside the kernel.",
+      "profile": {
+        "technologies": [
+          "C",
+          "Linux",
+          "device drivers",
+          "Make",
+          "shell scripting"
+        ],
+        "interests": [
+          "kernel development",
+          "hardware drivers",
+          "embedded boards",
+          "operating systems"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "The Linux Foundation": 3,
+        "EROFS filesystem": 2,
+        "The NetBSD Foundation": 2,
+        "The FreeBSD Project": 2,
+        "QEMU": 2,
+        "CRIU": 2,
+        "Free and Open Source Silicon Foundation": 2,
+        "Haiku": 1,
+        "KolibriOS Project Team": 1,
+        "Unikraft": 1,
+        "Apache Software Foundation": 1,
+        "Debian": 1
+      },
+      "wrong_top5": [
+        "GNOME Foundation",
+        "CCExtractor Development",
+        "Neutralinojs",
+        "Git",
+        "Neovim",
+        "libssh",
+        "FFmpeg"
+      ],
+      "judge_notes": "The Linux Foundation is the only grade 3: its 2026 list has an intermediate industrial IO driver for a real chip, device tree binding conversions and kernel workflow tooling, all in C. Grade 2 orgs have real kernel or driver work with one gap: the read only kernel filesystem (mostly hard userspace tools plus a BSD port), the two BSDs (network, Wi Fi and sound drivers but not the kernel this person knows), the machine emulator (device emulation rather than drivers), checkpoint and restore (deep kernel interfaces from userspace), and the open hardware umbrella (OpenRISC kernel patches, marked advanced). Grade 1 covers driver work in other systems such as Haiku in C++, an assembly OS, a unikernel, an RTOS inside the Apache umbrella, and one livepatching idea at Debian. The RTOS org focused on space was left ungraded because its idea list only renders with scripts. The wrong list holds orgs tagged C or Linux whose ideas are desktop apps, video, editors, an SSH library or version control."
+    },
+    {
+      "id": "robotics-middleware-cpp-python",
+      "split": "holdout6",
+      "about": "Builds hobby robots and has written navigation nodes for a widely used robot middleware in both C++ and Python, and wants to help the tools behind it.",
+      "profile": {
+        "technologies": [
+          "C++",
+          "Python",
+          "robot middleware",
+          "SLAM",
+          "CMake"
+        ],
+        "interests": [
+          "robotics",
+          "robot simulation",
+          "autonomous navigation",
+          "motion control"
+        ],
+        "experience": "some",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "Open Robotics": 3,
+        "JdeRobot": 3,
+        "dora-rs": 2,
+        "ArduPilot": 2,
+        "Kornia": 1,
+        "Apache Software Foundation": 1,
+        "Open Technologies Alliance - GFOSS": 1
+      },
+      "wrong_top5": [
+        "Eclipse Foundation",
+        "The ns-3 Network Simulator Project",
+        "Stichting SU2",
+        "Project Mesa",
+        "OpenVINO Toolkit",
+        "LibreCube Initiative",
+        "MoFA Org"
+      ],
+      "judge_notes": "Open Robotics maintains the middleware, simulator and control stack this person uses, with C++ and Python ideas at several levels. JdeRobot builds teaching exercises on the same middleware, including a project to extend C++ support. The robot dataflow framework gets 2 because its SLAM, obstacle avoidance and bag reader ideas fit but the core is Rust. The drone autopilot gets 2 because the work is C++ and Python robotics but on its own vehicle stack. Grade 1 covers a Rust vision library with SLAM work, a micro robotics middleware port inside the Apache embedded RTOS, and an educational robot simulator at the Greek umbrella. The wrong list holds orgs that match on simulation, C++, Python or a robotics tag but have no robotics work in 2026, including the Eclipse list, which is all IoT and web tooling. The multiphysics coupling org was kept off the wrong list because its ideas page now returns not found."
+    },
+    {
+      "id": "astronomy-data-pipelines-python",
+      "split": "holdout6",
+      "about": "Has processed telescope images and catalogs in Python for a university course and wants to help build the open tools astronomers use to turn raw data into results.",
+      "profile": {
+        "technologies": [
+          "Python",
+          "FITS files",
+          "pandas",
+          "scientific Python",
+          "HDF5"
+        ],
+        "interests": [
+          "astronmy",
+          "telescope data processing",
+          "data pipelines",
+          "spectroscopy"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "OpenAstronomy": 3,
+        "NumFOCUS": 2,
+        "Machine Learning for Science (ML4SCI)": 2,
+        "TARDIS RT Collaboration": 2,
+        "CERN-HSF": 1,
+        "IOOS": 1,
+        "Apache Software Foundation": 1
+      },
+      "wrong_top5": [
+        "LibreCube Initiative",
+        "Kubeflow",
+        "Jenkins",
+        "Konflux",
+        "Data for the Common Good",
+        "Liquid Galaxy project"
+      ],
+      "judge_notes": "The interests list has a deliberate typo. OpenAstronomy is the clear fit: its 2026 projects include large spectroscopic database processing with Python dataframes, solar radio spectra tooling and a nested array speedup for time domain surveys, mostly medium to high difficulty, which suits some experience at 15 hours. NumFOCUS gets 2 for a single gamma ray astronomy serialization project inside a large umbrella. The machine learning in science umbrella gets 2 for its lensing and astrophysics pipelines, which lean on deep learning. The supernova code gets 2 because it is Python astrophysics simulation rather than observational data. Grade 1 covers particle physics analysis pipelines, ocean data pipelines in Python and a Python streaming pipeline idea inside Apache. The wrong list holds space, pipeline and data keyword matches: a CubeSat hardware group, ML and CI pipeline tools, a health data org and a Google Earth display project. The machine learning workflow org with pipeline tags was kept off because its ideas page returns not found."
+    },
+    {
+      "id": "gis-raster-vector-python",
+      "split": "holdout6",
+      "about": "Works with satellite rasters and map layers in Python at a small consultancy and wants to contribute to open GIS tools.",
+      "profile": {
+        "technologies": [
+          "Python",
+          "GeoTIFF",
+          "shapefiles",
+          "SQL",
+          "coordinate reference systems"
+        ],
+        "interests": [
+          "GIS",
+          "remote sensing",
+          "spatial analysis",
+          "mapping"
+        ],
+        "experience": "some",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "OSGeo (Open Source Geospatial Foundation)": 3,
+        "NumFOCUS": 3,
+        "52°North Spatial Information Research GmbH": 2,
+        "Project Mesa": 2,
+        "OpenStreetMap": 2,
+        "Alaska": 2,
+        "IOOS": 1,
+        "MLLAM": 1,
+        "PEcAn Project": 1,
+        "The Julia Language": 1
+      },
+      "wrong_top5": [
+        "Kornia",
+        "Liquid Galaxy project",
+        "Open Transit Software Foundation",
+        "gprMax",
+        "CGAL Project",
+        "GeomScale",
+        "Graphite"
+      ],
+      "judge_notes": "OSGeo is a 3: its 2026 page points to desktop GIS, sensor data and routing projects, with Python work on vector and raster data. NumFOCUS is also a 3 because its 2026 umbrella includes a raster GIS (parallel raster reprojection, Jupyter and test work) and a Python spatial analysis library with medium sized projects. Grade 2: 52 North has Python weather routing and a desktop GIS plugin, but the focus is ship routing. Mesa has one strong idea to rebuild its geospatial raster and vector layers, inside an agent based modeling org. OpenStreetMap has a Python geocoder plus map rendering, though much of it is C++, Java or Rust. Alaska has a Python coastline extraction project that turns satellite rasters into vector lines, a hidden gem that a tag based matcher would miss. Grade 1 covers ocean and weather gridded data, an ecosystem model in R and Julia geospatial tooling. The wrong list holds geometry, maps, transit and spatial AI keyword matches with no GIS data work."
+    },
+    {
+      "id": "security-fuzzing-c",
+      "split": "holdout6",
+      "about": "A security engineer who finds memory bugs in C code with coverage guided fuzzers and wants to bring fuzzing to more open source projects.",
+      "profile": {
+        "technologies": [
+          "C",
+          "Python",
+          "coverage guided fuzzing",
+          "sanitizers",
+          "Linux"
+        ],
+        "interests": [
+          "security",
+          "fuzz testing",
+          "memory safety bugs",
+          "vulnerability research"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "The Linux Foundation": 3,
+        "The NetBSD Foundation": 3,
+        "EROFS filesystem": 3,
+        "Qubes OS": 3,
+        "GNU Image Manipulation Program": 3,
+        "The FreeBSD Project": 2,
+        "LLVM Compiler Infrastructure": 2,
+        "Kotlin Foundation": 2,
+        "MetaCall": 1,
+        "Mixxx": 1,
+        "libssh": 1,
+        "Rizin": 1,
+        "Python Software Foundation": 1,
+        "Metasploit": 1,
+        "FLARE": 1
+      },
+      "wrong_top5": [
+        "OWASP Foundation",
+        "AboutCode",
+        "Konflux",
+        "SW360",
+        "The Honeynet Project",
+        "C2SI",
+        "Joplin"
+      ],
+      "judge_notes": "I searched every 2026 ideas page for fuzzing work. Grade 3 orgs have a fuzzing project in C or Python: the printing stack under The Linux Foundation (automated fuzz harness generation for C code already in continuous fuzzing), NetBSD (libFuzzer and sanitizer integration plus kernel syscall fuzzer support), the read only kernel filesystem (an advanced image fuzzer, medium), Qubes (a fuzzer for its admin API, Python, medium) and GIMP (a fuzz testing suite in C, intermediate). Grade 2: FreeBSD has one kernel fuzzer improvement idea, LLVM has fuzzing of IR passes in C++, and the Kotlin compiler fuzzer is a strong fuzzing idea in another language. Grade 1 covers fuzzing that is about test generation in other stacks, a C library where fuzzing is only a plus, and nearby security tools like reverse engineering, a debugger for exploit work, penetration testing and malware analysis. The wrong list holds security tagged orgs whose 2026 work is web app security dashboards, supply chain metadata, license compliance, honeypots or note taking."
+    },
+    {
+      "id": "elixir-distributed-systems",
+      "split": "holdout6",
+      "about": "Writes Elixir at work on fault tolerant backend services and has a few spare hours a week to learn more about distributed systems in the open.",
+      "profile": {
+        "technologies": [
+          "Elixir",
+          "Erlang",
+          "Docker",
+          "message queues"
+        ],
+        "interests": [
+          "distributed systems",
+          "fault tolerance",
+          "concurrency",
+          "functional programming"
+        ],
+        "experience": "some",
+        "hours_per_week": 5
+      },
+      "grades": {
+        "Ceph": 1,
+        "Apache Software Foundation": 1,
+        "CNCF": 1,
+        "Typelevel": 1
+      },
+      "wrong_top5": [
+        "Git",
+        "The JPF team",
+        "Zulip",
+        "rocket.chat",
+        "Meshery",
+        "Kubeflow",
+        "Jitsi"
+      ],
+      "judge_notes": "No org in the 2026 list works on Erlang or Elixir, and the Apache list has no Erlang database ideas this year, so there is no grade 2 or 3. Five hours a week also rules out most 175 hour projects. Grade 1 marks places where the distributed systems ideas could transfer: Ceph storage gateway work in C++, Apache distributed databases and RPC frameworks in Java and Go, an actor runtime idea in the cloud native list, and functional concurrency libraries in Scala. The wrong list holds orgs a matcher would pull in on the word distributed or on chat and real time messaging, whose stacks are C, Java, Python, Go or JavaScript with no distributed systems work."
+    },
+    {
+      "id": "haskell-functional-programming",
+      "split": "holdout6",
+      "about": "Learned Haskell through a university course and personal projects, likes strong type systems, and wants a first open source project in a functional language.",
+      "profile": {
+        "technologies": [
+          "Haskel",
+          "OCaml",
+          "type systems",
+          "property based testing"
+        ],
+        "interests": [
+          "functional programming",
+          "programming languages",
+          "developer tools",
+          "type checkers"
+        ],
+        "experience": "some",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "Haskell.org": 3,
+        "Typelevel": 2,
+        "NixOS Foundation": 1,
+        "GRAME": 1
+      },
+      "wrong_top5": [
+        "Kotlin Foundation",
+        "Dart",
+        "Swift",
+        "D Language Foundation",
+        "Fortran-lang",
+        "Pharo Consortium",
+        "The Julia Language"
+      ],
+      "judge_notes": "The technologies list has a deliberate typo. Haskell.org is a 3 with medium difficulty ideas in language server tooling, a Parquet library, refinement types and notebook support. Typelevel is a 2: deeply functional work, but in Scala. NixOS gets 1 because its functional package language is close but the ideas are packaging and infrastructure, with one linter that accepts Rust or Haskell. GRAME gets 1 for its functional audio language, though the ideas are C++ and plugins. The wrong list holds orgs a matcher would surface on programming languages or compilers whose languages are not functional."
+    },
+    {
+      "id": "audio-dsp-plugins-cpp",
+      "split": "holdout6",
+      "about": "Builds audio effect plugins and small synthesizers in C++ as a hobby and wants to work on open source audio and DSP code.",
+      "profile": {
+        "technologies": [
+          "C++",
+          "C",
+          "digital signal processing",
+          "audio plugins",
+          "MIDI"
+        ],
+        "interests": [
+          "audio effects",
+          "synthesizers",
+          "music technology",
+          "real time audio"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "GRAME": 3,
+        "VideoLAN": 3,
+        "Mixxx": 2,
+        "Blender Foundation": 2,
+        "GNU Radio": 2,
+        "Pharo Consortium": 1,
+        "Synfig": 1,
+        "Processing Foundation": 1,
+        "FFmpeg": 1,
+        "The Linux Foundation": 1,
+        "Sugar Labs": 1,
+        "Jitsi": 1
+      },
+      "wrong_top5": [
+        "MetaBrainz Foundation Inc",
+        "CCExtractor Development",
+        "HumanAI",
+        "Internet Archive",
+        "Graphite",
+        "GNU Image Manipulation Program"
+      ],
+      "judge_notes": "GRAME is a 3: an audio DSP language whose ideas include plugin embedding, web audio UIs and DSP tooling in C++. VideoLAN is a 3 because its 2026 list has an advanced audio filters project in C (upmixing, 3D effects, scriptable filters, plugin library integration). Grade 2: the DJ app has beat and key analysis in C++, Blender has one idea for new sound modifiers in its video editor that asks for signal processing skills, and the radio DSP toolkit matches skills but works on radio, not audio. Grade 1 covers small audio pieces in other stacks: Smalltalk synthesis and DJ ideas, an animation audio backend, a sound library translation, video streaming at FFmpeg, an embedded audio pipeline, a music blocks app and an ultrasound data over sound experiment. The wrong list holds orgs that match on music, media or plugins with no audio processing work, such as music metadata, subtitles, AI for the arts and archiving."
+    },
+    {
+      "id": "cad-3d-modeling",
+      "split": "holdout6",
+      "about": "A mechanical engineer turned developer who has scripted CAD tools for years and wants to improve open source CAD and 3D modeling software.",
+      "profile": {
+        "technologies": [
+          "C++",
+          "Python",
+          "Qt",
+          "computational geometry",
+          "B rep modeling"
+        ],
+        "interests": [
+          "CAD",
+          "3D modeling tools",
+          "parametric design",
+          "geometry kernels"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 30
+      },
+      "grades": {
+        "FreeCAD": 3,
+        "BRL-CAD": 3,
+        "Blender Foundation": 3,
+        "CGAL Project": 2,
+        "Invesalius": 1
+      },
+      "wrong_top5": [
+        "The OpenROAD Initiative",
+        "Free and Open Source Silicon Foundation",
+        "Graphite",
+        "Tiled",
+        "Synfig",
+        "GNU Image Manipulation Program",
+        "Kornia"
+      ],
+      "judge_notes": "FreeCAD is a 3 with C++ and Python ideas such as threads on holes, assembly with FEM and drawing tools. The CAx umbrella is a 3: solid modeling, script based CAD, STEP import and export, NURBS editing, BIM and a FreeCAD hidden line project, mostly C and C++ with Python. Blender is a 3 for 3D modeling tools, with mesh smoothing, edge loop and face filling ideas in C and C++. CGAL is a 2 because the work is a C++ geometry library (meshing, remeshing, booleans) rather than a modeling app. InVesalius gets 1 for 3D surface extraction and 3MF export in a medical tool. The wrong list holds orgs a matcher would surface on CAD, 3D, graphics or geometry tags: chip design tools, hardware design, 2D graphics, a level editor, 2D animation, an image editor and a vision library."
+    },
+    {
+      "id": "fhir-health-web-developer",
+      "split": "holdout6",
+      "about": "A web developer who builds React apps and has worked with FHIR APIs at a clinic software company, and wants to help open health software share data better.",
+      "profile": {
+        "technologies": [
+          "JavaScript",
+          "TypeScript",
+          "React",
+          "Node.js",
+          "FHIR",
+          "REST APIs"
+        ],
+        "interests": [
+          "healthcare",
+          "health data standards",
+          "interoperability",
+          "patient facing apps"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "Data for the Common Good": 3,
+        "OpenMRS": 2,
+        "OpenELIS Global": 2,
+        "LibreHealth": 2,
+        "Global Alliance for Genomics and Health": 1,
+        "Alaska": 1,
+        "JSON Schema": 1,
+        "cBioPortal for Cancer Genomics": 1
+      },
+      "wrong_top5": [
+        "Invesalius",
+        "Open Science Initiative for Perfusion Imaging",
+        "Open Food Facts",
+        "DeepChem",
+        "Genome Assembly and Annotation",
+        "MalariaGEN",
+        "Open Genome Informatics"
+      ],
+      "judge_notes": "Data for the Common Good is the 3: its 2026 list has three medium SMART on FHIR projects, including a JavaScript frontend for patient controlled sharing and a FHIR resource viewer. OpenMRS is a 2 for React and TypeScript work on a medical record system, though no 2026 idea names FHIR. OpenELIS is a 2 because it has a FHIR facade project, but that work is Java and Spring, and its React projects are not about standards. LibreHealth is a 2 for a web component form designer that talks to FHIR APIs, among mostly radiology and device ideas. Grade 1 covers genomics data standards, DICOM and health workflow tools, JSON Schema tooling and a cancer genomics web portal. Open HealthCare Network was left ungraded and off the wrong list: its listed ideas page shows no 2026 projects, so I could not check the current work. The wrong list holds medical imaging, food data and genomics orgs a matcher would surface on health words."
+    },
+    {
+      "id": "php-education-platform",
+      "split": "holdout6",
+      "about": "A teaching assistant who knows PHP and MySQL from building course websites and wants a first open source contribution to an education platform.",
+      "profile": {
+        "technologies": [
+          "PHP",
+          "MySQL",
+          "JavaScript",
+          "HTML",
+          "CSS"
+        ],
+        "interests": [
+          "education",
+          "learning management systems",
+          "online courses",
+          "grading tools"
+        ],
+        "experience": "new",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "Submitty": 3,
+        "omegaUp": 3,
+        "Joomla!": 2,
+        "Learning Equality": 2,
+        "Learning Unlimited": 2,
+        "Oppia Foundation": 2,
+        "Drupal Association": 1,
+        "Wikimedia Foundation": 1,
+        "Cuneiform Digital Library Initiative (CDLI)": 1,
+        "FOSSology": 1,
+        "Sugar Labs": 1,
+        "CircuitVerse.org": 1,
+        "MIT App Inventor": 1
+      },
+      "wrong_top5": [
+        "AnkiDroid",
+        "SageMath",
+        "JdeRobot",
+        "International Catrobat Association",
+        "UC OSPO",
+        "Processing Foundation"
+      ],
+      "judge_notes": "No dedicated PHP learning management system is in the 2026 list. Submitty is the closest: course management and autograding with a PHP backend, ideas on grading pages and Vue interfaces, though it asks for moderate skills, which is a stretch for someone new. omegaUp is a 3 too: a programming education platform on PHP and MySQL with query optimization and frontend migration ideas. Grade 2: Joomla has classic PHP CMS work but no education angle, and three education platforms fit the interest but use Python, Django, Vue or Angular instead of PHP. Grade 1 covers PHP work outside education (Drupal AI modules, MediaWiki testing, a CakePHP digital library, license scanning UI) and education tools in other stacks. The wrong list holds education tagged orgs that are mobile apps, math software, robotics teaching, research software or creative coding."
+    },
+    {
+      "id": "formal-methods-theorem-proving",
+      "split": "holdout6",
+      "about": "A PhD researcher who writes proofs in an interactive proof assistant and uses SMT solvers, and wants to apply formal methods to real open source software.",
+      "profile": {
+        "technologies": [
+          "Coq",
+          "OCaml",
+          "SMT solvers",
+          "Python"
+        ],
+        "interests": [
+          "theorem proving",
+          "formal verification",
+          "program correctness",
+          "model checking"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "Haskell.org": 2,
+        "The JPF team": 2,
+        "Free and Open Source Silicon Foundation": 2,
+        "SymPy": 1,
+        "The Julia Language": 1,
+        "LLVM Compiler Infrastructure": 1,
+        "The P4 Language Consortium": 1
+      },
+      "wrong_top5": [
+        "SageMath",
+        "checkstyle",
+        "GeomScale",
+        "Gambit: The package for computation in game theory",
+        "stdlib",
+        "MoganLab"
+      ],
+      "judge_notes": "No 2026 org works on a proof assistant, so there is no grade 3. Grade 2: Haskell.org has a refinement type project for its SMT based verifier, the Java verification team has symbolic execution, solver portfolio and model based testing ideas in Java, and the open hardware umbrella has a bounded model checking counterexample project in C++ on MLIR with Z3. Grade 1: SymPy has logical inference and quantifier elimination ideas inside a symbolic math library, Julia lists an SMT interface and reachability analysis, LLVM has static analyzer work with an SMT solver, and P4 has a documentation project for a mechanized language specification. The wrong list holds math, static analysis and logic sounding keyword matches with no verification work."
+    },
+    {
+      "id": "bioimage-analysis-python",
+      "split": "holdout6",
+      "about": "A biology student who segments cells in microscope images with Python scripts and wants to start contributing to open image analysis tools.",
+      "profile": {
+        "technologies": [
+          "Python",
+          "image processing",
+          "PyTorch",
+          "scientific Python"
+        ],
+        "interests": [
+          "bioimage analysis",
+          "microscopy",
+          "cell segmentation",
+          "neuroscience imaging"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "Neuroinformatics Unit": 3,
+        "Python Software Foundation": 3,
+        "INCF": 2,
+        "UC OSPO": 1,
+        "Invesalius": 1,
+        "Open Science Initiative for Perfusion Imaging": 1,
+        "OpenMS Inc": 1
+      },
+      "wrong_top5": [
+        "MDAnalysis",
+        "Genome Assembly and Annotation",
+        "Open Genome Informatics",
+        "DeepChem",
+        "National Resource for Network Biology (NRNB)",
+        "cBioPortal for Cancer Genomics",
+        "Kornia"
+      ],
+      "judge_notes": "The Neuroinformatics Unit is a 3: Python tools for brain image analysis with small 90 hour projects marked for intermediate contributors, which suits a newcomer at 10 hours. The Python Software Foundation is a 3 because its 2026 sub orgs include a cell segmentation tool with medium Python projects and a medical imaging library with a beginner registration project. INCF is a 2 for an image segmentation plugin, but that work is Java. Grade 1 covers an advanced histology project, medical 3D imaging, MRI perfusion analysis and a mass spectrometry imaging parser in C++. The wrong list holds biology and vision orgs a matcher would surface that have no image analysis work: molecular simulation, genomics, chemistry, network biology, cancer genomics and a robotics vision library."
+    },
+    {
+      "id": "scientific-visualization-js-python",
+      "split": "holdout6",
+      "about": "A data journalist turned programmer who builds interactive charts in JavaScript and Python notebooks and wants to help make scientific data easier to see.",
+      "profile": {
+        "technologies": [
+          "JavaScript",
+          "Python",
+          "D3.js",
+          "WebGL",
+          "Jupyter notebooks"
+        ],
+        "interests": [
+          "scientific visualization",
+          "interactive plots",
+          "3D rendering",
+          "dashboards"
+        ],
+        "experience": "new",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "NumFOCUS": 3,
+        "Python Software Foundation": 3,
+        "stdlib": 2,
+        "INCF": 2,
+        "CERN-HSF": 2,
+        "National Resource for Network Biology (NRNB)": 2,
+        "TARDIS RT Collaboration": 2,
+        "IOOS": 2,
+        "Neuroinformatics Unit": 2,
+        "R project for statistical computing": 2,
+        "Invesalius": 1,
+        "OpenAstronomy": 1,
+        "Processing Foundation": 1,
+        "Project Mesa": 1,
+        "Gambit: The package for computation in game theory": 1
+      },
+      "wrong_top5": [
+        "Liquid Galaxy project",
+        "Submitty",
+        "QC-Devs",
+        "Meshery",
+        "Graphite",
+        "Synfig",
+        "PEcAn Project"
+      ],
+      "judge_notes": "NumFOCUS is a 3 because its 2026 umbrella includes a core Python plotting library (transform and interactive overlay ideas, medium) and a dashboard and plotting suite. The Python Software Foundation is a 3 for a scientific 3D visualization library with beginner and intermediate projects. Grade 2 orgs each have one or two real visualization ideas with a gap in domain or stack: a JavaScript numerics library plot API, a JavaScript neuroimaging viewer, a particle physics event display, Cytoscape style network rendering, supernova plots and Sankey diagrams, ocean sonar dashboards, brain atlas heatmaps, and animated interactive plots that are written in R with a JavaScript renderer. Grade 1 covers small visualization parts of larger projects. The wrong list holds orgs tagged with visualization or visual design whose 2026 ideas are Google Earth apps, grading, quantum chemistry, cloud infrastructure, 2D graphics, animation or ecosystem model pipelines."
+    }
+  ]
+}

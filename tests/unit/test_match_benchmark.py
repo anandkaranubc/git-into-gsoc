@@ -43,6 +43,8 @@ FLOORS = {
     # Common kinds of beginners: dev3 for tuning, holdout5 sealed (same reviewer and batch).
     "dev3": (0.44, 0.40, 11, None),
     "holdout5": (0.54, 0.46, 6, None),
+    # Specialists the other sets do not cover, sealed.
+    "holdout6": (0.60, 0.43, 6, None),
     # A second development set from a fourth blind reviewer, used for tuning. Its wrong@5
     # floor and test's P@5 floor were reset around the ideas refresh that the rule in
     # evals/README.md ("Deciding the 2026-10-22 ideas refresh") passed.
@@ -50,7 +52,17 @@ FLOORS = {
 }
 
 
-SPLITS = ["dev", "dev2", "dev3", "test", "holdout2", "holdout3", "holdout4", "holdout5"]
+SPLITS = [
+    "dev",
+    "dev2",
+    "dev3",
+    "test",
+    "holdout2",
+    "holdout3",
+    "holdout4",
+    "holdout5",
+    "holdout6",
+]
 
 
 @pytest.mark.parametrize("split", SPLITS)
@@ -101,12 +113,13 @@ def test_benchmark_data_holds_no_personal_details(bench: ModuleType) -> None:
 def test_the_sealed_set_stays_out_of_all_and_shows_totals_only(
     bench: ModuleType, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    sealed = [p for p in bench.load_personas() if p["split"] in {"holdout4", "holdout5"}]
-    assert len(sealed) == 25 and set(bench.SEALED) == {"holdout4", "holdout5"}
+    sealed_splits = {"holdout4", "holdout5", "holdout6"}
+    sealed = [p for p in bench.load_personas() if p["split"] in sealed_splits]
+    assert len(sealed) == 40 and set(bench.SEALED) == sealed_splits
     apart = [p for p in bench.load_personas() if p["split"] in {"dev2", "dev3", "holdout3"}]
     everyone = bench.evaluate("current", "all")["personas"]["personas"]
     assert everyone == len(bench.load_personas()) - len(sealed) - len(apart) == 46
-    for split in ("holdout4", "holdout5"):
+    for split in sorted(sealed_splits):
         assert bench.main(["--split", split, "--json"]) == 0
         shown = json.loads(capsys.readouterr().out)
         assert shown and all(not r["personas"]["rows"] for r in shown)
