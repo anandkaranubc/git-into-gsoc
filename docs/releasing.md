@@ -18,9 +18,11 @@ A scheduled workflow (`snapshot-refresh.yml`, Mondays) runs the same refresher a
 
 ## 2. Merge the release pull request
 
-Release Please keeps a pull request titled `chore(main): release X.Y.Z` open whenever `main` has unreleased commits. Because the bot pushes that branch with the built-in Actions token, GitHub does not start CI on it, and the branch rules require passing checks. Trigger the checks yourself before merging: close and reopen the pull request, or rebase its branch onto `main` and push it (which also picks up any test or manifest fixes that landed after the bot last refreshed it).
+Release Please keeps a pull request titled `chore(main): release X.Y.Z` open whenever `main` has unreleased commits. This repository gives Release Please a token of its own, the `RELEASE_PLEASE_TOKEN` secret, so CI and CodeQL start on that pull request by themselves. Release Please does not refresh its pull request for `chore:` or `ci:` commits, so when the last merge was one of those, update the branch from the pull request page before you merge.
 
-To make the checks start by themselves, give Release Please a token of your own. `release.yml` uses the `RELEASE_PLEASE_TOKEN` secret when it exists and the built-in token otherwise. To set it up:
+Without the secret, `release.yml` falls back to the built-in Actions token. GitHub does not start CI on a branch pushed with that token, and the branch rules require passing checks. Then trigger the checks yourself: close and reopen the pull request, or rebase its branch onto `main` and push it (which also picks up any test or manifest fixes that landed after the bot last refreshed it).
+
+To set up the secret, or to replace an expired token:
 
 1. Create a fine-grained personal access token at https://github.com/settings/personal-access-tokens/new. Choose the resource owner `anandkaranubc`, **Only select repositories** with `git-into-gsoc`, and set **Contents**, **Issues**, and **Pull requests** to **Read and write**. Release Please uses Issues for the labels it puts on its pull requests. Pick an expiration date you will remember.
 2. Store it: run `gh secret set RELEASE_PLEASE_TOKEN --repo anandkaranubc/git-into-gsoc` and paste the token when asked. It is not shown on screen.
