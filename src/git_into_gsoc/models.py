@@ -141,6 +141,15 @@ class HealthPoints(BaseModel):
 
 
 class RepoHealth(BaseModel):
+    """A repository's facts and its health score.
+
+    The pull request figures come from GraphQL with a token or REST without
+    (`pr_source`). `insiders_known` says whether the people who can be assigned issues
+    were read; without them, "outside" rests on GitHub's author labels alone, which
+    count a private member of the organization as an outsider. `unread` names what
+    GitHub did not answer, left out of the score rather than counted as missing.
+    """
+
     full_name: str
     url: str
     description: str | None = None
@@ -160,6 +169,9 @@ class RepoHealth(BaseModel):
     has_issue_template: bool = False
     has_pr_template: bool = False
     has_ci: bool = False
+    # Reads GitHub did not answer (a rate limit, a server error): their signals are left
+    # out of the score instead of counting as missing.
+    unread: list[str] = Field(default_factory=list)
     prs_sampled: int = 0
     merge_rate: float | None = None
     median_pr_hours: float | None = None
