@@ -2411,6 +2411,8 @@ class GSoCToolkit:
                 if guide.unread and not text
                 else claim_convention(text)
             )
+            if guide.unread and not text:
+                context["guide_unread"] = ", ".join(guide.unread)
             context["dco"] = bool(
                 re.search(r"Signed-off-by|git commit -s|Developer Certificate", text)
             )
@@ -2429,6 +2431,14 @@ class GSoCToolkit:
             if k in {"org", "channels", "issue", "claim_convention", "contributing_url"}
         }
         warnings: list[str] = []
+        if kind == "pr" and context.get("guide_unread"):
+            # The sign-off and AI-disclosure lines come from the guide; unread, they are
+            # left out without saying so, though the project may require them.
+            warnings.append(
+                f"GitHub did not answer for this project's {context['guide_unread']}, so its "
+                "contributing guide was not read. Check it on GitHub for a sign-off or "
+                "AI-disclosure rule before you open the pull request."
+            )
         if context.get("issue", {}).get("availability") not in (None, "available"):
             issue_info = context["issue"]
             if issue_info["availability"] == "not_open" and kind == "claim":

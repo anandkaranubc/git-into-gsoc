@@ -431,17 +431,17 @@ class GitHubClient:
         except NotFoundError:
             return None
 
-    def readme_contributing_path(
-        self, owner: str, repo: str, profile: dict[str, Any]
-    ) -> str | None:
+    def _readme_guide_path(self, owner: str, repo: str, profile: dict[str, Any]) -> str | None:
         """The README's path when it has a section on contributing worth following.
 
-        One cached request, made only for a repository with no CONTRIBUTING file.
+        One cached request, made only for a repository with no CONTRIBUTING file. Raises
+        HttpError when GitHub does not send the README: that is unread, not a README
+        without a guide.
         """
         if (profile.get("files") or {}).get("contributing"):
             return None
         path = readme_path(profile)
-        text = self.get_raw_file(owner, repo, path) if path else None
+        text = self._raw_file(owner, repo, path) if path else None
         return path if text and readme_contributing_section(text) else None
 
     def community_profile(self, owner: str, repo: str) -> dict[str, Any]:
@@ -639,18 +639,14 @@ class GitHubClient:
                 stats = pull_stats(source_pulls, insiders=source_insiders, landed=frozenset(landed))
         files = profile.get("files") or {}
         contributing_source = "file" if files.get("contributing") else None
-        readme = readme_path(profile) if contributing_source is None else None
-        if readme:
-            # The same check as `readme_contributing_path`, but a README GitHub did not
-            # send is unread, not a README without a guide. It runs after the pull
-            # request reads, so it is the read most likely to meet the limit.
+        if contributing_source is None:
+            # It runs after the pull request reads, so it is the read most likely to
+            # meet the limit.
             try:
-                text = self._raw_file(owner, repo, readme)
+                if self._readme_guide_path(owner, repo, profile):
+                    contributing_source = "readme"
             except HttpError:
                 unread.append("README")
-            else:
-                if text and readme_contributing_section(text):
-                    contributing_source = "readme"
         label = pick_beginner_label(labels)
         if label and raw.get("has_issues") is False:
             # Issues are turned off (the project tracks work elsewhere), yet GitHub's
@@ -956,14 +952,11 @@ class GitHubClient:
             language = None
         toolchain, devcontainer = detect_toolchain(root, language=language)
         readme = None
-        if not path and (readme_file := readme_path(profile)):
+        if not path:
             try:
-                readme_text = self._raw_file(owner, repo, readme_file)
+                readme = self._readme_guide_path(owner, repo, profile)
             except HttpError:
                 unread.append("README")
-            else:
-                if readme_text and readme_contributing_section(readme_text):
-                    readme = readme_file
         hints = list(toolchain)
         if devcontainer:
             hints.insert(0, "Dev container available: open in Codespaces/VS Code for a ready env")

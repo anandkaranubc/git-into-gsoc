@@ -104,3 +104,20 @@ def test_draft_claim_marks_the_rule_unread_when_the_guide_was_not_read(
     draft = toolkit.draft("claim", repo="acme/lib")
     assert draft["context"]["claim_convention"]["kind"] == "unread"
     assert draft["rules"][0]["rule"].startswith("GitHub did not answer")
+
+
+@respx.mock
+def test_draft_pr_warns_when_the_guide_was_not_read(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The sign-off and AI-disclosure lines come from the guide; unread, they were left
+    # out with nothing said.
+    from git_into_gsoc.models import ContributionGuide
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    unread = ContributionGuide(repo="acme/lib", unread=["contributing guide"])
+    monkeypatch.setattr(toolkit.github, "contribution_guide", lambda repo: unread)
+    monkeypatch.setattr(toolkit, "_add_pr_rules", lambda repo, context: None)
+    # Everything else a pr draft reads (metadata, branch rules, CI, manifests) is missing.
+    respx.route(host="api.github.com").mock(return_value=httpx.Response(404, json={}))
+    draft = toolkit.draft("pr", repo="acme/lib")
+    assert "sign-off or AI-disclosure rule" in draft["warning"]
