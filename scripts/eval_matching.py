@@ -14,7 +14,11 @@ Everything runs offline against the embedded snapshot, so results are
 repeatable. Each set has a dev half (used while tuning) and a test half (only
 checked at the end).
 
-Usage: python scripts/eval_matching.py [--split dev|test|holdout2|all] [--ranker both|current|baseline] [--json]
+``holdout2.json`` and ``holdout3.json`` are later persona sets from other blind
+reviewers. ``holdout3`` is sealed: it is left out of ``all``, its per-persona
+rows are never printed, and it must never be used for tuning.
+
+Usage: python scripts/eval_matching.py [--split dev|test|holdout2|holdout3|all] [--ranker both|current|baseline] [--json]
 """
 
 from __future__ import annotations
@@ -101,10 +105,14 @@ def _dcg(gains: list[int]) -> float:
     return sum((2**g - 1) / math.log2(i + 2) for i, g in enumerate(gains))
 
 
+# Splits kept blind for later rounds: only their totals are ever shown.
+SEALED = frozenset({"holdout3"})
+
+
 def load_personas() -> list[dict[str, Any]]:
-    """Personas from personas.json (dev and test) and holdout2.json (a later blind set)."""
+    """Personas from personas.json (dev and test) and the later blind sets."""
     out: list[dict[str, Any]] = []
-    for name in ("personas.json", "holdout2.json"):
+    for name in ("personas.json", "holdout2.json", "holdout3.json"):
         path = EVALS / name
         if path.is_file():
             out.extend(json.loads(path.read_text(encoding="utf-8"))["personas"])
@@ -120,6 +128,8 @@ def persona_metrics(ranker: Ranker, split: str = "all") -> dict[str, Any]:
     rows = []
     for persona in load_personas():
         if split != "all" and persona["split"] != split:
+            continue
+        if split == "all" and persona["split"] in SEALED:
             continue
         grades: dict[str, int] = persona["grades"]
         order = ranker(persona["profile"])[:10]
@@ -192,7 +202,9 @@ def _print(result: dict[str, Any], *, detail: bool) -> None:
         f"wrong@5={p['wrong5']:2d} empty={p['empty']} | projects={a['cases']} "
         f"hit@1={a['hit1']:.3f} hit@5={a['hit5']:.3f} hit@10={a['hit10']:.3f} MRR={a['mrr']:.3f}"
     )
-    if detail:
+    if detail and result["split"] in SEALED:
+        print("    (sealed: per-persona rows are not shown)")
+    elif detail:
         for row in p["rows"]:
             print(
                 f"    {row['id']:20s} nDCG={row['ndcg10']:.2f} P@5={row['p5']:.1f} "
@@ -202,16 +214,24 @@ def _print(result: dict[str, Any], *, detail: bool) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
-    parser.add_argument("--split", choices=("dev", "test", "holdout2", "all"), default="all")
+    parser.add_argument(
+        "--split",
+        choices=("dev", "test", "holdout2", "holdout3", "all"),
+        default="all",
+        help="Which personas and cases to score; holdout3 is sealed and left out of all",
+    )
     parser.add_argument("--ranker", choices=("both", "current", "baseline"), default="both")
     parser.add_argument("--detail", action="store_true", help="Show every persona")
     parser.add_argument("--json", action="store_true", help="Print the results as JSON")
     args = parser.parse_args(argv)
     names = ["baseline", "current"] if args.ranker == "both" else [args.ranker]
     present = {p["split"] for p in load_personas()}
-    order = [x for x in ("dev", "test", "holdout2") if x in present]
+    order = [x for x in ("dev", "test", "holdout2", "holdout3") if x in present]
     splits = [*order, "all"] if args.split == "all" else [args.split]
     results = [evaluate(name, split) for split in splits for name in names]
+    for result in results:
+        if result["split"] in SEALED:
+            result["personas"]["rows"] = []  # totals only, so the set stays blind
     if args.json:
         print(json.dumps(results, indent=1))
     else:

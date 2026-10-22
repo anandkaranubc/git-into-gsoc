@@ -1,0 +1,271 @@
+{
+  "about": "A third set of contributor personas, written and graded by a reviewer who never saw the ranking code or the earlier sets. Never used for tuning. See evals/README.md.",
+  "org_list": "official GSoC 2026 accepted organizations",
+  "personas": [
+    {
+      "id": "quantum-curious-newcomer",
+      "split": "holdout3",
+      "about": "A first-year student who took linear algebra and is curious about quantum computers. They write Python but have never contributed to open source.",
+      "profile": {"technologies": ["python", "linear algebra"], "interests": ["quantum computing", "quantum algorithms"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "NumFOCUS": 3,
+        "Machine Learning for Science (ML4SCI)": 2,
+        "The Julia Language": 1,
+        "SymPy": 1
+      },
+      "wrong_top5": ["QC-Devs", "Python Software Foundation", "Django Software Foundation", "CERN-HSF", "TARDIS RT Collaboration", "gprMax", "SageMath"],
+      "judge_notes": "NumFOCUS gets a 3 because two of its 2026 member projects are quantum toolkits in Python, and one asks for exactly Python plus linear algebra. ML4SCI has a quantum machine learning project, so it is good but leans on ML. Julia has quantum packages but in another language. QC-Devs is quantum chemistry, not quantum computing, so it is a word match only. No other org in the list does quantum computing work."
+    },
+    {
+      "id": "web-engine-hacker",
+      "split": "holdout3",
+      "about": "An experienced systems programmer who has read browser source code for fun. They want to work on the parts of a browser that parse, run, and draw pages.",
+      "profile": {"technologies": ["c++", "rust"], "interests": ["browser engines", "javascript engines", "page rendering"], "experience": "experienced", "hours_per_week": 20},
+      "grades": {
+        "Boa": 3,
+        "Haiku": 3,
+        "Graphite": 1,
+        "Neutralinojs": 1,
+        "CNCF": 1,
+        "MetaCall": 1
+      },
+      "wrong_top5": ["webpack", "Kiwix", "The Rust Foundation", "LLVM Compiler Infrastructure", "Project Mesa", "rocket.chat", "KolibriOS Project Team", "Joomla!"],
+      "judge_notes": "Boa is a JavaScript engine in Rust, and Haiku's 2026 ideas include work on its native web engine port in C++. Both are strong fits. Graphite has renderer work in Rust, and CNCF has a WebAssembly runtime in C++, so they are partial. Kiwix and webpack mention browsers but do not work on engine internals."
+    },
+    {
+      "id": "packet-and-routing-tinkerer",
+      "split": "holdout3",
+      "about": "A student who likes capturing packets and reading how routing protocols work. They have written small tools in C and Python.",
+      "profile": {"technologies": ["c", "python"], "interests": ["computer networking", "packet capture", "routing protocols"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "The ns-3 Network Simulator Project": 3,
+        "The P4 Language Consortium": 2,
+        "OpenWISP": 2,
+        "The NetBSD Foundation": 2,
+        "The Honeynet Project": 2,
+        "libssh": 1,
+        "The Libreswan Project": 1,
+        "The FreeBSD Project": 1,
+        "OpenAFS": 1,
+        "GNU Radio": 1,
+        "CNCF": 1
+      },
+      "wrong_top5": ["OpenStreetMap", "OSGeo (Open Source Geospatial Foundation)", "Liquid Galaxy project", "Open Transit Software Foundation", "Django Software Foundation", "Python Software Foundation"],
+      "judge_notes": "ns-3 has 2026 ideas on IP routing, ping and traceroute, and a Python network tester, so it is the best fit. P4 is packet processing but mostly C++ and harder. OpenWISP, NetBSD, and Honeynet all have real network work at a fitting level. Map and transit orgs say routing but mean route finding on roads, so they are word traps."
+    },
+    {
+      "id": "cheminformatics-student",
+      "split": "holdout3",
+      "about": "A chemistry student who uses Python notebooks to look at molecules. They want to help build tools for finding new medicines.",
+      "profile": {"technologies": ["python", "pandas"], "interests": ["cheminformatics", "drug discovery"], "experience": "new", "hours_per_week": 12},
+      "grades": {
+        "DeepChem": 3,
+        "MDAnalysis": 2,
+        "QC-Devs": 2,
+        "OpenMS Inc": 1,
+        "National Resource for Network Biology (NRNB)": 1
+      },
+      "wrong_top5": ["Genome Assembly and Annotation", "cBioPortal for Cancer Genomics", "CGAL Project", "Global Alliance for Genomics and Health", "MalariaGEN", "Open Genome Informatics"],
+      "judge_notes": "DeepChem is built for drug discovery in Python and welcomes students. MDAnalysis and QC-Devs are chemistry tools in Python with easy projects, so they are good fits. OpenMS is mass spectrometry and mostly C++. The genomics orgs share biology and Python words, and EMBL-EBI's 2026 ideas have no chemistry projects."
+    },
+    {
+      "id": "brain-imaging-analyst",
+      "split": "holdout3",
+      "about": "A psychology graduate who processes brain scans in Python for a lab. They want to give back to the tools they use.",
+      "profile": {"technologies": ["python", "numpy"], "interests": ["nueroscience", "brain imaging"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "INCF": 3,
+        "Neuroinformatics Unit": 3,
+        "Python Software Foundation": 3,
+        "Open Science Initiative for Perfusion Imaging": 2,
+        "Invesalius": 2,
+        "Alaska": 1,
+        "UC OSPO": 1
+      },
+      "wrong_top5": ["MetaBrainz Foundation Inc", "Ruby", "Kotlin Foundation", "cBioPortal for Cancer Genomics", "Genome Assembly and Annotation", "Django Software Foundation"],
+      "judge_notes": "INCF and the Neuroinformatics Unit are neuroscience orgs with Python tools. The Python Software Foundation gets a 3 because its 2026 sub-orgs include a brain signal toolkit and a brain MRI library. Perfusion imaging and InVesalius work on medical scans that include the brain. MetaBrainz and Ruby only match on the words brain and MRI. The interest has a typo on purpose."
+    },
+    {
+      "id": "fpga-hobbyist",
+      "split": "holdout3",
+      "about": "An electronics student who has built a few designs on an FPGA board. They want to work on open hardware and its tools.",
+      "profile": {"technologies": ["verilog", "vhdl"], "interests": ["fpga", "digital hardware design"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "Free and Open Source Silicon Foundation": 3,
+        "The OpenROAD Initiative": 2,
+        "CircuitVerse.org": 2,
+        "RTEMS Project": 1,
+        "QEMU": 1,
+        "FOSSASIA": 1
+      },
+      "wrong_top5": ["LLVM Compiler Infrastructure", "GNU Compiler Collection (GCC)", "Project Mesa", "The ns-3 Network Simulator Project", "Rizin", "Open Technologies Alliance - GFOSS", "preCICE"],
+      "judge_notes": "FOSSi has 2026 projects in SystemVerilog on FPGA boards, one marked for beginners. OpenROAD is chip design but most work is hard C++. CircuitVerse teaches digital logic and has a Verilog synthesis project, though the code is web code. Compiler and simulation orgs only share words like compiler, simulation, or debug."
+    },
+    {
+      "id": "video-codec-learner",
+      "split": "holdout3",
+      "about": "A developer who has written a small video player in C and wants to learn how codecs and streaming really work.",
+      "profile": {"technologies": ["c"], "interests": ["video processing", "codecs", "streaming"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "FFmpeg": 3,
+        "VideoLAN": 3,
+        "CCExtractor Development": 2,
+        "Jitsi": 1,
+        "Mixxx": 1,
+        "GRAME": 1,
+        "Haiku": 1,
+        "GNU Image Manipulation Program": 1
+      },
+      "wrong_top5": ["Learning Equality", "The FreeBSD Project", "dora-rs", "Kubeflow", "EROFS filesystem", "Synfig", "Processing Foundation", "Internet Archive"],
+      "judge_notes": "FFmpeg and VideoLAN are the main open video projects and are written in C. CCExtractor works on video subtitles in C and Rust. Jitsi does video calls but in JavaScript and Java. Learning Equality and FreeBSD only mention video or streams in passing."
+    },
+    {
+      "id": "qt-desktop-newcomer",
+      "split": "holdout3",
+      "about": "A Linux user who learned C++ and Qt from online courses. They want their first contribution to be in a desktop app they use every day.",
+      "profile": {"technologies": ["c++", "qt"], "interests": ["linux desktop apps"], "experience": "new", "hours_per_week": 15},
+      "grades": {
+        "KDE Community": 3,
+        "Tiled": 2,
+        "LibreOffice": 2,
+        "FreeCAD": 2,
+        "Mixxx": 2,
+        "MoganLab": 1,
+        "Rizin": 1,
+        "VideoLAN": 1,
+        "GNOME Foundation": 1
+      },
+      "wrong_top5": ["Swift", "Kotlin Foundation", "Dart", "Zulip", "rocket.chat", "Sugar Labs", "Neutralinojs", "The NetBSD Foundation"],
+      "judge_notes": "KDE builds Linux desktop apps in C++ and Qt and has many ideas each year. Tiled, FreeCAD, and Mixxx are Qt desktop apps, but their 2026 ideas are medium or harder. LibreOffice is a big C++ desktop app with easy starter tasks. GNOME is a Linux desktop but uses C and GTK, so it is partial. I could not open the LibreOffice and FreeCAD ideas pages, so those grades come from the org descriptions."
+    },
+    {
+      "id": "vue-angular-part-timer",
+      "split": "holdout3",
+      "about": "A working front end developer with a full-time job. They know Vue and Angular and want to improve an app many real people use, but only have about six hours a week.",
+      "profile": {"technologies": ["javascript", "vue", "angular"], "interests": ["front end", "apps real people use"], "experience": "some", "hours_per_week": 6},
+      "grades": {
+        "Learning Equality": 3,
+        "omegaUp": 3,
+        "Oppia Foundation": 2,
+        "The Mifos Initiative": 2,
+        "CircuitVerse.org": 2,
+        "Submitty": 2,
+        "Wikimedia Foundation": 2,
+        "FOSSASIA": 2,
+        "Kiwix": 1,
+        "Open Genome Informatics": 1
+      },
+      "wrong_top5": ["webpack", "stdlib", "Boa", "Neutralinojs", "GRAME", "Gemini CLI"],
+      "judge_notes": "Learning Equality and omegaUp have 2026 Vue projects in learning apps with many users. Oppia and Mifos use Angular, but Oppia's projects are full stack and large, which is hard at six hours a week. Wikimedia has a small 90 hour Vue project that suits the time limit. webpack, stdlib, and Boa are JavaScript tools, not apps people use."
+    },
+    {
+      "id": "react-native-newcomer",
+      "split": "holdout3",
+      "about": "A bootcamp graduate who built one phone app with React Native. They want to work on a real mobile app.",
+      "profile": {"technologies": ["javascript", "react native"], "interests": ["mobile apps"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "rocket.chat": 3,
+        "Joplin": 2,
+        "Jitsi": 1,
+        "MIT App Inventor": 1
+      },
+      "wrong_top5": ["Dart", "AnkiDroid", "International Catrobat Association", "Kiwix", "Open Transit Software Foundation", "Zulip", "The Mifos Initiative", "Liquid Galaxy project"],
+      "judge_notes": "Rocket.Chat lists several 2026 mobile ideas that ask for React Native. Joplin's mobile app uses React Native, but this year's ideas are mostly AI and sync work. Jitsi's mobile app is React Native too, but its 2026 ideas are for the web. Many orgs tag mobile but build with Flutter or Kotlin, so they are traps."
+    },
+    {
+      "id": "symbolic-math-student",
+      "split": "holdout3",
+      "about": "A math major who uses Python to check number theory homework. They want to help build math software.",
+      "profile": {"technologies": ["python"], "interests": ["symbolic math", "number theory"], "experience": "some", "hours_per_week": 12},
+      "grades": {
+        "SymPy": 3,
+        "SageMath": 3,
+        "GNU Octave": 1,
+        "GeomScale": 1,
+        "Gambit: The package for computation in game theory": 1,
+        "MoganLab": 1,
+        "The Julia Language": 1,
+        "NumFOCUS": 1
+      },
+      "wrong_top5": ["The JPF team", "Oppia Foundation", "International Catrobat Association", "R project for statistical computing", "stdlib", "Django Software Foundation"],
+      "judge_notes": "SymPy is symbolic math in Python, and SageMath's 2026 ideas are about algebra and number systems in Python. Octave, GeomScale, and Gambit are math software but numeric and often C++. JPF says symbolic but means symbolic execution of programs. Oppia and Catrobat teach math to children, which is a different kind of work."
+    },
+    {
+      "id": "privacy-crypto-builder",
+      "split": "holdout3",
+      "about": "A backend developer who writes Go at work and Rust at home. They care about privacy and want to work on encryption code.",
+      "profile": {"technologies": ["rust", "go"], "interests": ["cryptograpy", "privacy"], "experience": "some", "hours_per_week": 15},
+      "grades": {
+        "libssh": 3,
+        "Jitsi": 2,
+        "The Libreswan Project": 2,
+        "Qubes OS": 1,
+        "Global Alliance for Genomics and Health": 1,
+        "Konflux": 1,
+        "Joplin": 1,
+        "Python Software Foundation": 1
+      },
+      "wrong_top5": ["AboutCode", "KubeVirt", "Internet Archive", "The Rust Foundation", "Kornia", "Submitty", "C2SI", "MoFA Org"],
+      "judge_notes": "libssh has a 2026 idea to bring Rust into its SSH code, which fits all three parts. Jitsi has a Rust encryption library project, though it is marked hard. Libreswan is VPN encryption in C, and Qubes is a privacy OS whose ideas are mostly Python. Many orgs list Go or Rust but do no crypto work. The interest has a typo on purpose."
+    },
+    {
+      "id": "localization-newcomer",
+      "split": "holdout3",
+      "about": "A bilingual student who has translated apps as a volunteer. They have no strong programming language yet but want to help software work in many languages.",
+      "profile": {"technologies": ["html", "spanish", "english"], "interests": ["translation", "localization", "software in many languages"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "Oppia Foundation": 3,
+        "Wikimedia Foundation": 2,
+        "KDE Community": 2,
+        "Python Software Foundation": 2,
+        "Zulip": 1,
+        "Joomla!": 1
+      },
+      "wrong_top5": ["QEMU", "cBioPortal for Cancer Genomics", "Cuneiform Digital Library Initiative (CDLI)", "Jenkins", "openSUSE Project", "Accord Project"],
+      "judge_notes": "Oppia has two 2026 projects about its translation system, and it is known for helping beginners. KDE has three projects on its translation tool, but they need C++. Wikimedia has language-related projects, and a Python Software Foundation sub-org has a small localization project. QEMU and cBioPortal say translation but mean code translation and translational research."
+    },
+    {
+      "id": "vague-beginner",
+      "split": "holdout3",
+      "about": "Someone who has just started learning to code and does not yet know what they like. They typed very little.",
+      "profile": {"technologies": ["coding"], "interests": ["something useful"], "experience": "new", "hours_per_week": 10},
+      "grades": {
+        "Oppia Foundation": 2,
+        "Zulip": 2,
+        "Wikimedia Foundation": 2,
+        "Open Food Facts": 2,
+        "Learning Equality": 2,
+        "Sugar Labs": 1,
+        "Processing Foundation": 1,
+        "Joplin": 1,
+        "OpenMRS": 1,
+        "Kiwix": 1,
+        "International Catrobat Association": 1,
+        "CircuitVerse.org": 1
+      },
+      "wrong_top5": ["LLVM Compiler Infrastructure", "GNU Compiler Collection (GCC)", "KolibriOS Project Team", "The NetBSD Foundation", "CERN-HSF", "checkstyle", "The JPF team", "Haskell.org"],
+      "judge_notes": "With so little to go on, no org earns a 3. The best picks are welcoming orgs with clear useful goals and starter tasks, like Oppia, Zulip, and Wikimedia. Compilers, kernels, and physics are poor first steps for someone this new. checkstyle matches the word coding through coding standards, but it is a narrow Java tool."
+    },
+    {
+      "id": "public-data-career-changer",
+      "split": "holdout3",
+      "about": "A former office analyst who knows SQL and Excel and a little Python. They are changing careers and want to work with public health or open government data.",
+      "profile": {"technologies": ["sql", "excel", "python"], "interests": ["public health", "open government data"], "experience": "new", "hours_per_week": 8},
+      "grades": {
+        "MalariaGEN": 2,
+        "Data for the Common Good": 2,
+        "Open Food Facts": 2,
+        "Open Technologies Alliance - GFOSS": 2,
+        "OpenELIS Global": 1,
+        "Open HealthCare Network": 1,
+        "OpenMRS": 1,
+        "IOOS": 1,
+        "United Nations Office of Information Communication Technology": 1,
+        "R project for statistical computing": 1,
+        "NumFOCUS": 1
+      },
+      "wrong_top5": ["PostgreSQL", "MariaDB", "LibreOffice", "Submitty", "Drupal Association", "MetaBrainz Foundation Inc", "Wagtail", "Cuneiform Digital Library Initiative (CDLI)"],
+      "judge_notes": "No org is a clean 3, because the health data orgs need more coding than this person has. MalariaGEN supports public health with Python data tools but its project is hard. Data for the Common Good has health data table tools. GFOSS has a 2026 project on city budget data and one on open data with SQL. PostgreSQL and MariaDB match the word SQL, but the work is building the database itself in C."
+    }
+  ]
+}

@@ -111,6 +111,8 @@ Each has a dev half, used while tuning, and a test half, checked only after tuni
 
 A third set of 12 personas from a second blind reviewer, in ecosystems the first set does not cover (Swift, Elixir, Scala, Lua, C#, embedded Rust, documentation only), confirmed the gain on first sight: nDCG@10 0.451 for the keyword ranker against 0.566 now, and judged-wrong picks in the top five down from 21 to 11.
 
+A fourth set of 15 personas from a third blind reviewer (quantum computing, browser engines, FPGA, cheminformatics, localization, a near-empty profile, and more) is sealed: only its totals are shown, and nothing is tuned on it. At its first look the current ranker scored nDCG@10 0.488 against 0.332 for the keyword ranker, but put 6 judged-wrong organizations in top fives against the keyword ranker's 5. People unlike any earlier persona are where matching is weakest.
+
 Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/test_match_benchmark.py`) fails if a change makes them clearly worse, and CI runs it on the monthly data refresh too.
 
 ## What independent reviewers found

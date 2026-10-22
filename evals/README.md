@@ -30,7 +30,7 @@ This is a fair but strict test: other organizations may suit the same profile ju
 
 ## Dev and test halves
 
-Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py` were tuned only on the dev half; the test half was looked at only after each round of tuning (twice so far). To keep it honest, tune on `--split dev` and look at `--split test` only to confirm. `holdout2.json` is a newer set of personas from a second blind reviewer, never used for tuning.
+Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py` were tuned only on the dev half; the test half was looked at only after each round of tuning (twice so far). To keep it honest, tune on `--split dev` and look at `--split test` only to confirm. `holdout2.json` is a newer set of personas from a second blind reviewer, never used for tuning but no longer blind. `holdout3.json` is a third set, sealed for the next round (see below).
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
@@ -43,6 +43,27 @@ Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py`
 | Accepted projects: MRR | 0.363 | **0.450** |
 
 `holdout2.json` (12 personas in ecosystems the first set does not cover: Swift, Elixir, Scala and Spark, Lua, MATLAB, C#, embedded Rust, NLP, D3 with no language named, Java and Spring, documentation only, several with misspellings) was written and graded by a second reviewer who never saw the code or the first set. At its first and only blind look, the keyword ranker scored nDCG@10 0.451 (P@5 0.317, wrong@5 21) and the current ranker 0.566 (P@5 0.483, wrong@5 11). Its typed words then showed four vocabulary gaps (Phoenix, NLTK, Leaflet, "realtime chat"), now fixed, which moved it to 0.573; treat it as no longer blind. It is harder by design: four of its personas have no strong fit among the 2026 organizations.
+
+## `holdout3.json` (sealed)
+
+15 personas written and graded by a third reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover kinds of people the other sets miss: quantum computing, browser engines, networking, cheminformatics, brain imaging, FPGA and open hardware, video codecs, Qt desktop apps, Vue or Angular with six hours a week, React Native, symbolic math, privacy and cryptography, translation and localization, someone who types almost nothing, and a career changer who knows SQL and Excel. Two have a typo on purpose, and two have no strong fit among the 2026 organizations.
+
+It is **sealed** so that a later round of changes still has a blind test:
+
+- Only its totals are ever shown. `--detail` and `--json` leave out its per-persona rows, and `all` leaves it out, so the numbers above keep their meaning.
+- Never tune on it, and never read the ranker's output for its personas. Judge a change on `dev` first, then look at these totals once.
+- When it has been used to choose between changes, say so here and write a new sealed set.
+
+At its first look, before any change was made for it:
+
+| `holdout3` | Keyword ranker | Current |
+|---|---|---|
+| nDCG@10 | 0.332 | **0.488** |
+| P@5 | 0.227 | **0.320** |
+| strong@10 | 0.589 | **0.667** |
+| wrong@5 | **5** | 6 |
+
+The current ranker finds more of the right organizations, but it puts one more wrong one in a top five than the keyword ranker. That is a real weakness on unseen kinds of people, and the test keeps it visible instead of hiding it.
 
 Measured on 2026-10-21 with the data shipped then, after the third round of changes. That round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
 
