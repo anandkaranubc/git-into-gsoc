@@ -769,8 +769,16 @@ class GSoCToolkit:
         searched = [*owners, *(o for o, _ in linked_owners)]
         leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
-        self._weigh_outside_merges(leads[:OUTSIDE_CHECKED])
-        leads.sort(key=lambda lead: (-lead.score, -lead.stars))
+        # Twice: a quiet repository that drops lets one below it rise into the top,
+        # and that one is checked too.
+        checked: set[str] = set()
+        for _ in range(2):
+            fresh = [lead for lead in leads[:OUTSIDE_CHECKED] if lead.full_name not in checked]
+            if not fresh:
+                break
+            self._weigh_outside_merges(fresh)
+            checked.update(lead.full_name for lead in fresh)
+            leads.sort(key=lambda lead: (-lead.score, -lead.stars))
         return {
             "org": gsoc_org.name if gsoc_org else owners[0],
             "github_owners": [*owners, *(o for o, _ in linked_owners)],
