@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.2...v0.16.3) (2026-10-22)
+
+
+### Bug Fixes
+
+* **recommend:** starter issues a beginner can really start on ([#223](https://github.com/anandkaranubc/git-into-gsoc/issues/223)) ([0527c89](https://github.com/anandkaranubc/git-into-gsoc/commit/0527c8996bc1cb6dbdedc947d4505b021edd0b8b))
+
 ## [0.16.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.1...v0.16.2) (2026-10-22)
 
 
