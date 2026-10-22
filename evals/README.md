@@ -210,7 +210,7 @@ The rule was written before any held-out read: both arms pinned (before: main a4
 | `holdout4` nDCG@10, P@5, strong@10, wrong@5 | 0.477, 0.227, 0.811, 13 | 0.479, 0.227, 0.811, 13 |
 | `test` nDCG@10, P@5, strong@10, wrong@5 | 0.816, 0.600, 0.927, 7 | 0.821, 0.600, 0.927, 7 |
 
-All held, so it ships. This was `holdout5`'s first reading after its first look, and `holdout4`'s third reading.
+All held, so it ships. This was `holdout5`'s first reading after its first look, and `holdout4`'s third (after its first look and the ideas refresh decision). With three readings, `holdout4` retires as a deciding set, as `holdout3` did: it stays in the benchmark, sealed, and its floors still guard against regressions, but the next change is decided on `holdout5` and a new sealed set of specialists.
 
 ## Tried and not kept
 
