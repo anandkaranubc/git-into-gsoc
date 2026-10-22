@@ -199,10 +199,31 @@ _CLAIM_PATTERNS = [
     r"^\s*(?:in progress|pr soon)\b",
     r"\bdo you want me to (?:work on|take|fix)\b",
     r"\b(?:we|i) (?:could|can) work (?:on (?:this|it) )?together\b",  # a second claimant
+    # A fifth sample (568 comments, 21 organizations never sampled, labelled blind)
+    # measured 78% recall held out; these come from its tuning half only, split by
+    # issue thread, so the other half still measures them fairly.
+    r"\bi(?:'ll| will| shall) (?:work on|take|handle|fix) (?:this|it)\b",
+    r"\b(?:can|could|may) i (?:please )?(?:address|do) (?:this|it)\b",
+    r"\b(?:please )?let me (?:work on|take|fix|handle|tackle|try)\b",
+    r"\bplease assign (?:it|this)\s*(?:[.!]|$)|\badd me as (?:a |an )?(?:co-?)?assignee\b",
+    r"\bi can (?:also )?(?:take|pick) up (?:this|it)\b",
+    r"\bi(?:'ll| will) (?:raise|open|submit|create|send) (?:a |the |my )?(?:pr|pull request)\b",
+    r"\bi(?:'m| am) (?:raising|opening|submitting|creating) (?:a |the |my )?(?:pr|pull request)\b",
+    r"\bi (?:have )?(?:started|began) (?:implementing|working|looking into (?:this|it)|on (?:this|it))\b",
+    r"\btaking (?:this|it) up\b|\bself[- ]?assigned\b",
+    # Work already done on it: "I have made minimal changes to fix this".
+    r"\bi(?:'ve| have) (?:just )?(?:implemented (?:it|this|the)|fixed (?:it|this)|"
+    r"made (?:the |some |minimal |a few )?changes to (?:fix|resolve|address|solve))\b",
+    r"\b(?:my|the) (?:work|changes|fix) (?:is|are) ready\b",
+    r"\b(?:i want to|can (?:we|i)|could (?:we|i)|we can) (?:both )?collab(?:orate)?\b",
+    r"\bi(?:'ll| will) (?:take a look|look) into (?:this|it)\b",
+    r"^\s*(?:hi,?\s*)?i(?:'m| am) interested[.!]?\s*$",
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
     r"^\s*/(?:assign(?:-me)?|take|claim|attempt)\s*$",
     r"^\s*\.take(?:-issue)?\s*$",
-    r"^\s*@\w+bot\s+claim\b",
+    r"^\s*@[\w-]+\s+(?:claim|assign)\s*$",  # "@zulipbot claim", "@openwisp-companion assign"
+    # Git Bash on Windows turns a typed /assign into a path.
+    r"^\s*[a-z]:/program files/git/(?:assign|take|claim)\s*$",
 ]
 _RELEASE_PATTERNS = [
     r"^\s*/(?:unassign(?:-me)?|release|unclaim)\s*$",

@@ -864,3 +864,39 @@ def test_a_second_person_asking_to_work_together_is_a_claim() -> None:
     # one's "we could work together" was not seen.
     assert is_claim("Sure, if possible we could work together @spyke7. Thank you.")
     assert not is_claim("Could you work together with the docs team on this?")
+
+
+def test_claims_from_a_fifth_sample_of_new_organizations() -> None:
+    # Forms from the tuning half of a fifth sample (568 comments from 21 organizations
+    # never sampled before, labelled blind, 2026-10-22).
+    claims = [
+        "I shall work on it",
+        "may I address this issue?",
+        "please let me work on this",
+        "Please assign it.",
+        "could you please add me as a co-assignee",
+        "I can take up this issue",
+        "I will open PR soon.",
+        "I have just implemented it and I'm raising the PR.",
+        "I started implementing the requested mode",
+        "taking this up as discussed on Slack!",
+        "I have self assigned this issue.",
+        "I have made minimal changes to fix this.",
+        "My work is ready for PR",
+        "Can we both collab?",
+        "I will take a look into this issue.",
+        "I am interested",
+        "@openwisp-companion assign",
+        "C:/Program Files/Git/assign",  # Git Bash on Windows rewrote "/assign"
+    ]
+    for text in claims:
+        assert is_claim(text), text
+    not_claims = [
+        "Please assign it to someone who knows the parser.",
+        "I am interested in how this works internally.",
+        "Can we both agree this is a duplicate?",
+        "I will take a look at the logs tomorrow and report the error.",
+        "@reviewer please take another look",
+    ]
+    for text in not_claims:
+        assert not is_claim(text), text
