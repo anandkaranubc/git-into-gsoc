@@ -28,6 +28,7 @@ EXCLUDE_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".venv"}
 
 
 def package_version(root: Path = ROOT) -> str:
+    """The version in pyproject.toml, which the bundle carries too."""
     text = (root / "pyproject.toml").read_text(encoding="utf-8")
     match = re.search(r'^version\s*=\s*"([^"]+)"', text, flags=re.M)
     if not match:
@@ -36,6 +37,8 @@ def package_version(root: Path = ROOT) -> str:
 
 
 def manifest(version: str, *, icon: bool = False) -> dict[str, object]:
+    """The bundle's manifest.json. `icon` is named only when the tagged source has
+    the file, so a rebuild of an older tag still validates."""
     repo = "https://github.com/anandkaranubc/git-into-gsoc"
     data: dict[str, object] = {
         "manifest_version": "0.4",
@@ -90,6 +93,7 @@ def manifest(version: str, *, icon: bool = False) -> dict[str, object]:
 
 
 def bundle_files(root: Path = ROOT) -> list[Path]:
+    """Every file that goes into the bundle, in a fixed order, so rebuilds match."""
     files = [root / name for name in (*INCLUDE_FILES, ICON) if (root / name).is_file()]
     for tree in INCLUDE_TREES:
         for path in sorted((root / tree).rglob("*")):
@@ -123,6 +127,7 @@ def _entry(name: str, *, mode: int, stamp: tuple[int, int, int, int, int, int]) 
 
 
 def build(out: Path, root: Path = ROOT) -> tuple[Path, str]:
+    """Write the bundle to `out` and return its path and sha256."""
     version = package_version(root)
     stamp = entry_timestamp()
     out.parent.mkdir(parents=True, exist_ok=True)

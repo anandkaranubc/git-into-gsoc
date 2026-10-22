@@ -1,3 +1,5 @@
+"""The `pointers` command end to end, with and without code search."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

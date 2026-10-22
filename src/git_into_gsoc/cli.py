@@ -1,4 +1,11 @@
-"""Typer CLI for git-into-gsoc."""
+"""The command line: most commands call one GSoCToolkit method and render the result.
+
+Command docstrings are the `--help` text people read, so they are written for people;
+a test checks that every command and option has help text and is listed in
+docs/cli.md. Every string from data goes through `escape` (`_markup_safe`) before
+rich renders it: issue titles, labels, and project pages are text strangers wrote,
+and the person's own notes must print literally.
+"""
 
 from __future__ import annotations
 
@@ -1078,13 +1085,19 @@ def _lost_points_lines(health: dict[str, Any]) -> list[str]:
         for p in missed
     ]
     out_of = sum(p["most"] for p in scored)
+    # One line for everything left out, grouped by reason: a rate limit can leave out
+    # four signals at once, and four near-identical lines read as four problems.
+    left: dict[str, list[str]] = {}
     for p in points:
         if not p["most"]:
-            earned = sum(q["earned"] for q in scored)
-            lines.append(
-                f"Left out: {p['signal'].lower()} ({p['why']}), so {earned:g} of {out_of:g} "
-                f"points counts as {earned * 100 / out_of:.0f} of 100"
-            )
+            left.setdefault(str(p["why"] or "no data"), []).append(p["signal"].lower())
+    if left and out_of:
+        earned = sum(q["earned"] for q in scored)
+        reasons = "; ".join(f"{', '.join(names)} ({why})" for why, names in left.items())
+        lines.append(
+            f"Left out: {reasons}, so {earned:g} of {out_of:g} points counts as "
+            f"{earned * 100 / out_of:.0f} of 100"
+        )
     if health.get("capped_by"):
         lines.append(f"Held down: {health['capped_by']}")
     return lines

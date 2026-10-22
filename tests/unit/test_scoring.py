@@ -1,3 +1,6 @@
+"""Scores: repository health points and caps, issue scores, and the keyword organization
+matcher."""
+
 from __future__ import annotations
 
 import re

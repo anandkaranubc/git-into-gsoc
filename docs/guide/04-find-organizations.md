@@ -14,9 +14,9 @@ To see a longer list, or to try other languages and topics, search directly:
 git-into-gsoc orgs --tech python --topics science -n 5
 ```
 
-Expect a table with a fit score, the organization, why it matched ("Uses python", "Topic: science"), how many years it has mentored, and how many projects it ran in recent years. The caption tells you which year's list you are looking at. Until Google announces the next year's organizations, the tool shows the latest official list, because last year's participants are the best predictor of who returns.
+Expect a table with a fit (strong, good, or partial), the organization, why it matched ("Uses python", "Topic: science"), how many years it has mentored, and how many projects it ran in recent years. The caption tells you which year's list you are looking at. Until Google announces the next year's organizations, the tool shows the latest official list, because last year's participants are the best predictor of who returns.
 
-Technologies and topics decide whether an organization matches at all; continuity and capacity decide the order among matches. Aliases such as `js`, `golang`, or `ml` are understood. Use `--query` to search names and descriptions, and `--category` for GSoC categories such as "Science and medicine".
+Your skills and interests decide whether an organization matches at all; its track record and size only break ties. Aliases such as `js`, `golang`, or `ml` are understood. Use `--query` to search names and descriptions, and `--category` for GSoC categories such as "Science and medicine".
 
 ```bash
 git-into-gsoc orgs --query "symbolic math" -n 5
@@ -67,17 +67,16 @@ Contribution instructions and discussion channel:
 Next thing to investigate:
 ```
 
-## Optional recommendations
+## Optional: a fuller recommendation
 
 ```bash
+git-into-gsoc recommend
 git-into-gsoc recommend --tech python --interests science --experience new --hours 10
 ```
 
-Each organization comes with a fit (strong, good, or partial) and the evidence for it, such as "topic tag 'astronomy' on its official GSoC listing" or "main language of 17 of its 28 GitHub repositories". Read the caveats too: an ideas page where nearly every idea is hard, or ideas too big for your hours. You also get ideas from each top organization's latest ideas page that fit what you know, with the skills each would teach you, starter issues with what in them fits you, and a short path with a command for each step.
+`recommend` uses your saved profile, or the options you give it, and adds to the organization list: the evidence behind each fit ("topic tag 'astronomy' on its official GSoC listing"), caveats such as ideas too big for your hours, ideas from each top organization's latest ideas page that fit what you know, starter issues with what in each fits you, and a short path with a command for each step. `--experience` is `new`, `some`, or `experienced`. Adding `--github YOUR_USERNAME` reads your main language from your public repositories; a new or empty GitHub profile is fine.
 
-Adding `--github YOUR_USERNAME` uses your recent public repositories to infer your main language, and your merged pull requests to estimate your experience, and saves a profile locally. A new or empty GitHub profile is fine; supplying `--tech` yourself is enough. `--experience` is `new`, `some`, or `experienced`. The starter issues it lists come from repositories owned by the recommended organizations, then other GSoC organizations that use your language.
-
-Fit says how well the work matches you, not your chance of being selected. Until Google announces the coming year's organizations, the list shows last year's participants, and none is confirmed. See [how recommendations work](../recommendations.md).
+Fit says how well the work matches you, not your chance of being selected, and until Google announces the coming year's organizations none of them is confirmed. [How recommendations work](../recommendations.md) explains the ranking and how well it does.
 
 ## If results are missing or unhelpful
 

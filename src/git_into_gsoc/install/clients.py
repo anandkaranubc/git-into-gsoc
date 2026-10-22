@@ -77,6 +77,9 @@ class McpTarget:
 
 @dataclass(frozen=True)
 class Assistant:
+    """One assistant: where it reads skills, how it is detected, and how its MCP
+    server is registered."""
+
     key: str
     label: str
     skill_dir: str  # where it reads skills, relative to home (user scope) or the project
@@ -301,6 +304,7 @@ GEMINI_TOKEN_ENV = {name: f"${name}" for name in ("GIG_GITHUB_TOKEN", "GITHUB_TO
 
 
 def server_entry(command: list[str], fmt: str, style: EntryStyle = "plain") -> dict[str, Any]:
+    """The server's entry in the shape this assistant's config file expects."""
     entry: dict[str, Any] = {"command": command[0], "args": command[1:]}
     if fmt == "json-servers":
         return {"type": "stdio", **entry}
@@ -628,6 +632,8 @@ def skill_locations(assistant: Assistant, scope: Scope, root: Path) -> tuple[Pat
 
 
 def installed_skills(home: Path, project: Path | None = None) -> list[tuple[str, Path]]:
+    """Every copy of the skill in current and older locations, as (assistant label,
+    folder), for `doctor`."""
     found: dict[Path, str] = {}
     for assistant in ASSISTANTS.values():
         scopes: list[tuple[Scope, Path]] = [("user", home)]

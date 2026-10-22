@@ -49,7 +49,10 @@ def test_every_command_and_option_is_in_the_command_reference() -> None:
     doc = (ROOT / "docs" / "cli.md").read_text(encoding="utf-8")
     missing: list[str] = []
     for name, command in _commands():
-        if not re.search(rf"\b{re.escape(name)}\b", doc):
+        # In backticks, as a command is written ("`projects [KEYWORDS]`" or "`git-into-gsoc
+        # projects ...`"): the bare word "projects" is everywhere in prose, so a plain-word
+        # match would pass after the command's row was gone.
+        if not re.search(rf"`(?:git-into-gsoc |gsoc )?{re.escape(name)}(?=[\s`\[])", doc):
             missing.append(name)
         for option in _options(command):
             flags = [flag for flag in option.opts + option.secondary_opts if flag.startswith("--")]

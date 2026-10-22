@@ -48,6 +48,9 @@ query($owner: String!, $name: String!) {
 
 @dataclass(frozen=True)
 class PullAnalysis:
+    """One query's answer: the insider set, REST-shaped pull request dicts, and its
+    rate-limit cost in points."""
+
     insiders: frozenset[str]
     pulls: list[dict[str, Any]]
     cost: int = 0
