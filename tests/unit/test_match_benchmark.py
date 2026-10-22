@@ -36,12 +36,14 @@ def bench() -> ModuleType:
 # is sealed (see evals/README.md); its floors sit under its first look.
 FLOORS = {
     "dev": (0.76, 0.69, 12, 0.85),
-    "test": (0.77, 0.60, 7, 0.73),
+    "test": (0.77, 0.58, 7, 0.73),
     "holdout2": (0.53, 0.42, 14, None),
     "holdout3": (0.45, 0.28, 8, None),
     "holdout4": (0.43, 0.16, 14, None),
-    # A second development set from a fourth blind reviewer, used for tuning.
-    "dev2": (0.59, 0.32, 10, None),
+    # A second development set from a fourth blind reviewer, used for tuning. Its wrong@5
+    # floor and test's P@5 floor were reset around the ideas refresh that the rule in
+    # evals/README.md ("Deciding the 2026-10-22 ideas refresh") passed.
+    "dev2": (0.61, 0.32, 12, None),
 }
 
 

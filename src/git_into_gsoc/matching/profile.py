@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 from git_into_gsoc.matching.concepts import DOMAIN, SKILL, broader_of, kind_of, label, resolve
 from git_into_gsoc.validation import plain_skill
@@ -104,6 +104,9 @@ class Want:
     raw: str
     concepts: tuple[str, ...]
     corrected_from: str | None = None
+    # Words that narrow the subject: "notation" in "music notation", which reads as
+    # music. An organization that names one of them is the closer match.
+    qualifiers: tuple[str, ...] = ()
 
     @property
     def literal(self) -> str | None:
@@ -150,18 +153,115 @@ def _split(values: list[str] | None) -> list[str]:
     return out
 
 
+# Words that never narrow a subject on their own.
+_PLAIN_WORDS = frozenset(
+    {
+        "and",
+        "the",
+        "for",
+        "with",
+        "into",
+        "from",
+        "about",
+        "open",
+        "source",
+        "software",
+        "tools",
+        "tool",
+        "apps",
+        "app",
+        "applications",
+        "application",
+        "development",
+        "developer",
+        "programming",
+        "projects",
+        "project",
+        "systems",
+        "system",
+        "things",
+        "stuff",
+        "work",
+        "working",
+        "related",
+        "based",
+        "using",
+        "technology",
+        "technologies",
+        "real",
+        "people",
+        "user",
+        "users",
+        "help",
+        "helping",
+    }
+)
+
+
+def _stem(word: str) -> str:
+    return word[:-1] if len(word) > 4 and word.endswith("s") and not word.endswith("ss") else word
+
+
+def _qualifiers(phrase: str, concepts: tuple[str, ...]) -> tuple[str, ...]:
+    """Words of a phrase beyond the names of the subjects it was read as.
+
+    A hyphenated word stays whole ("real-time"), and two words that spell a
+    subject's name ("front end") are that name, not a narrower word.
+    """
+    if not concepts or any(kind_of(c) != DOMAIN for c in concepts):
+        return ()
+    named = {
+        _stem(w)
+        for c in concepts
+        for w in re.findall(r"[a-z0-9]+", f"{c} {label(c)}".lower().replace("-", ""))
+    }
+    words = re.findall(r"[a-z0-9]+(?:-[a-z0-9]+)*", phrase.lower())
+    out: list[str] = []
+    skip = False
+    for here, word in enumerate(words):
+        if skip:
+            skip = False
+            continue
+        following = words[here + 1] if here + 1 < len(words) else ""
+        if following and _stem(word + following) in named:
+            skip = True
+            continue
+        stem = _stem(word)
+        if (
+            len(stem.replace("-", "")) >= 4
+            and stem not in _PLAIN_WORDS
+            and stem.replace("-", "") not in named
+            and stem not in out
+        ):
+            out.append(stem)
+    return tuple(out)
+
+
 def _wants(values: list[str], notes: list[str]) -> list[Want]:
     wants: list[Want] = []
-    seen: set[tuple[str, ...]] = set()
+    seen: dict[tuple[str, ...], int] = {}
     for raw in values:
         found = resolve(raw)
         key = found.concepts or (raw.lower(),)
+        qualifiers = _qualifiers(found.corrected_from or raw, found.concepts)
         if key in seen:
+            # "query engines" after "database internals": one subject, more words for it.
+            first = wants[seen[key]]
+            more = tuple(q for q in qualifiers if q not in first.qualifiers)
+            if more:
+                wants[seen[key]] = replace(first, qualifiers=first.qualifiers + more)
             continue
-        seen.add(key)
+        seen[key] = len(wants)
         if found.corrected_from:
             notes.append(f"Read '{raw}' as '{found.corrected_from}'.")
-        wants.append(Want(raw=raw, concepts=found.concepts, corrected_from=found.corrected_from))
+        wants.append(
+            Want(
+                raw=raw,
+                concepts=found.concepts,
+                corrected_from=found.corrected_from,
+                qualifiers=qualifiers,
+            )
+        )
     return wants
 
 

@@ -45,6 +45,36 @@ def test_goose_link_repeats_arg_for_each_argument() -> None:
     assert link.startswith("goose://extension?cmd=uvx&")
     args = [unquote(p[4:]) for p in link.split("?", 1)[1].split("&") if p.startswith("arg=")]
     assert args == d.remote_command()[1:]
+    # Goose's docs list timeout as required.
+    assert parse_qs(urlparse(link).query)["timeout"] == ["300"]
+
+
+def test_raycast_link_decodes_to_the_remote_server() -> None:
+    link = urlparse(d.raycast_install_link())
+    assert (link.scheme, link.netloc, link.path) == ("raycast", "mcp", "/install")
+    assert json.loads(unquote(link.query)) == {
+        "name": "git-into-gsoc",
+        "type": "stdio",
+        "command": "uvx",
+        "args": d.remote_command()[1:],
+    }
+
+
+def test_the_site_lists_every_one_click_link() -> None:
+    from html import escape
+
+    site = (ROOT / "site" / "index.html").read_text(encoding="utf-8")
+    assert d.site_install_links() in site
+    for link in (
+        d.cursor_install_link(),
+        d.vscode_install_link(),
+        d.visual_studio_install_link(),
+        d.kiro_install_link(),
+        d.goose_install_link(),
+        d.raycast_install_link(),
+        d.claude_desktop_bundle_link(),
+    ):
+        assert f'href="{escape(link)}"' in site, link
 
 
 def test_the_smoke_check_talks_to_the_real_server(tmp_path: Path) -> None:

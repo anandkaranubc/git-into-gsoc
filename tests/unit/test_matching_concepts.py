@@ -130,6 +130,11 @@ def test_in_a_phrase_the_specific_word_wins_over_an_ambiguous_one() -> None:
     assert resolve("realtime chat").concepts == ("communication",)
     assert resolve("realtime").concepts == ("embedded",)
     assert resolve("real-time systems").concepts == ("embedded",)
+    # A quantum chemistry tag is chemistry, not quantum computing, and routing
+    # protocols are networking, not maps.
+    assert find_tag_concepts("quantum chemistry") == {"chemistry": 1}
+    assert resolve("routing protocols").concepts == ("networking",)
+    assert resolve("map routing").concepts == ("geospatial",)
 
 
 def test_skills_come_down_to_the_languages_github_searches() -> None:

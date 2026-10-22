@@ -65,6 +65,48 @@ Round 5 made general fixes it pointed to:
 - **A small penalty when most of an organization's active code is in a language the person did not list.** It was already a caveat; now it is a small score penalty too.
 - **New spellings:** "camera pipelines" and "archiving".
 
+Round 6 came from reading the wrong picks on `dev2`, `holdout2` and `holdout3`, so neither held-out set is blind for it; their numbers below are weak evidence. The blind checks are `test`, read once, and the sealed `holdout4`.
+
+- **Words that narrow an interest.** Someone who types "music notation", "database internals" or "realtime chat" means something narrower than the subject it reads as (music, databases, communication). The words beyond the subject's name ("notation", "internals", "storage engine", "chat") now count: an organization whose listing or ideas never name one of them matches that interest 15% less, and one that does says so in its evidence. A word only counts when at most 15% of organizations name it, so a common word changes nothing.
+- **Two readings fixed.** A "quantum chemistry" tag is chemistry, not quantum computing, and "routing protocols" or "packet capture" is networking, not maps.
+
+Tuned on `dev` and `dev2`. `test` was read twice, each time after the change had been chosen and only to check nothing got worse: after the narrowing words (personas unchanged, accepted-project MRR 0.455 to 0.471), and after the two readings (unchanged). Neither read chose between options.
+
+| | Before | After |
+|---|---|---|
+| `dev` nDCG@10 | 0.804 | 0.804 |
+| `dev2` nDCG@10 | 0.623 | **0.644** |
+| `test` nDCG@10, P@5, wrong@5 | 0.810, 0.637, 6 | 0.810, 0.637, 6 |
+| `holdout2` nDCG@10, wrong@5 (not blind) | 0.568, 10 | 0.578, 9 |
+| `holdout3` nDCG@10, wrong@5 (not blind) | 0.493, 6 | 0.529, 5 |
+| Accepted projects MRR, `test` | 0.455 | **0.471** |
+| Accepted projects MRR, all | 0.510 | **0.525** |
+
+No persona on `test` moved, so its gain is in the accepted projects only.
+
+### Deciding the 2026-10-22 ideas refresh (written before the deciding reads)
+
+The monthly snapshot refresh reads ideas pages with the shared reader, which finds real ideas on many more pages (Julia 5 to 67, ML4SCI 3 to 67, CERN-HSF 0 to 38) and drops junk (74 blog posts at UC OSPO). LibreOffice's count (4 to 106) includes past projects in this snapshot; most are its "Successfully Implemented Ideas" section, and the next reader fix corrects it. On the original grades it lowered P@5 on most splits, mostly because organizations it surfaced had never been graded, so they counted as misses. To score both versions fairly, the top ten of each, for every `dev`, `dev2` and `test` persona, were pooled, and every pair no reviewer had graded was graded blind (136 pairs), the way TREC completes judgments. The graders saw the persona, the earlier grades for calibration, the official listing, and the organization's ideas page when unsure. They never saw a ranking or which version surfaced an organization.
+
+Before reading `test` personas or `holdout4`, the rule is fixed. The refresh ships together with round 6 if all three hold:
+
+1. `holdout4`, read once on the refreshed data with round 6: nDCG@10 at least 0.459 (its first look, 0.469, less 0.01) and wrong@5 at most 13 (its first look, 12, plus 1).
+2. `test` personas on the completed grades, refreshed data: P@5 at least 0.60 and nDCG@10 at least 0.77, the floors.
+3. Accepted-project MRR over `dev` and `test` together is not lower with the refreshed data than with the shipped data, both with round 6.
+
+If any fails, the refresh does not ship and the numbers go to the owner; nothing is re-tuned to pass. Already read before this rule was written: `dev` and `dev2` on the completed grades (shipped 0.822 and 0.681 nDCG@10, refreshed 0.822 and 0.673; `dev2` wrong@5 8 against 11), and once, by mistake, the accepted projects of `test` (MRR 0.471 shipped, 0.481 refreshed). That reading chose nothing.
+
+The result, read once on the refreshed data with round 6 (`main` plus the shared reader's fixes):
+
+| | Shipped data | Refreshed data |
+|---|---|---|
+| `holdout4` nDCG@10, P@5, strong@10, wrong@5 | 0.469, 0.200, 0.778, 12 (first look) | 0.472, 0.227, 0.811, 12 |
+| `test` personas on completed grades | 0.829, 0.637, 0.885, 6 | 0.832, 0.600, 0.919, 7 |
+| Accepted projects MRR, `dev` and `test` | 0.525 | 0.542 |
+| `dev2` on completed grades (read before the rule) | 0.681, 0.387, 0.911, 8 | 0.673, 0.373, 0.911, 11 |
+
+All three conditions held, so the refresh ships. It finds more of the strong matches and puts accepted projects' organizations higher, at the cost of a slightly less precise top five: `test` P@5 falls from 0.637 to 0.600 whether or not the new grades are counted, and `dev2` gains three wrong picks at rank five (MetaBrainz, Ruby and Meshery, each from real new evidence). Keeping only grades made without an ideas page points the same way on every split. The floors were reset around the new result, as for every earlier round: `test` P@5 to 0.58 and `dev2` wrong@5 to 12.
+
 ## `holdout3.json` (no longer blind)
 
 15 personas written and graded by a third reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover kinds of people the other sets miss: quantum computing, browser engines, networking, cheminformatics, brain imaging, FPGA and open hardware, video codecs, Qt desktop apps, Vue or Angular with six hours a week, React Native, symbolic math, privacy and cryptography, translation and localization, someone who types almost nothing, and a career changer who knows SQL and Excel. Two have a typo on purpose, and two have no strong fit among the 2026 organizations.

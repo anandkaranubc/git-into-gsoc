@@ -450,3 +450,20 @@ def test_one_or_two_beginner_issues_in_a_year_are_not_shown() -> None:
     }
     ranked = _rank([lab], signals=signals, interests=["physics"])
     assert not any("beginner label" in line for line in ranked[0].readiness)
+
+
+def test_a_narrowing_word_favours_the_organization_that_names_it() -> None:
+    person = build_profile(interests=["database internals", "storage engines"])
+    assert person.interests[0].qualifiers == ("internal", "storage", "engine")
+    tables = _org("Tables Inc", tech=["c++"], topics=["databases"], description="A database.")
+    engine = _org(
+        "Engine Room", tech=["c++"], topics=["databases"], description="A storage engine."
+    )
+    ranked = _rank([*ORGS, tables, engine], interests=["database internals", "storage engines"])
+    assert [m.org.name for m in ranked[:2]] == ["Engine Room", "Tables Inc"]
+    assert "names 'storage' in its listing or ideas" in ranked[0].evidence()[0]
+
+
+def test_words_that_spell_the_subject_or_say_nothing_do_not_narrow_it() -> None:
+    person = build_profile(interests=["front end", "real-time operating systems", "web apps"])
+    assert [w.qualifiers for w in person.interests] == [(), ("real-time",), ()]

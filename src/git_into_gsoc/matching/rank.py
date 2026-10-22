@@ -82,6 +82,11 @@ DIVERSITY = 0.08
 STANDARD_WEEKS = 12
 # From this many matching organizations, a word is broad enough to suggest narrower ones.
 SHARPEN_AT = 25
+# "music notation" reads as music: an organization whose own text never names
+# "notation" matches it this much less. A word named by more than this share of
+# organizations says too little to count.
+QUALIFIER_MISS = 0.85
+QUALIFIER_MAX_SHARE = 0.15
 
 
 @dataclass
@@ -383,6 +388,7 @@ class OrgIndex:
     signals_date: str | None = None
     breadth: dict[str, tuple[float, float]] = field(default_factory=dict)
     _broad_cache: dict[tuple[str, ...], bool] = field(default_factory=dict, repr=False)
+    _qualifier_cache: dict[str, int] = field(default_factory=dict, repr=False)
 
     @classmethod
     def build(
@@ -426,6 +432,20 @@ class OrgIndex:
                 for w in person.interests
             )
         return self._broad_cache[key]
+
+    def _telling(self, want: Want) -> list[re.Pattern[str]]:
+        """Patterns for the words that narrow an interest and tell organizations apart."""
+        out = []
+        for word in want.qualifiers:
+            body = r"[\s-]?".join(re.escape(part) for part in word.split("-"))
+            pattern = re.compile(rf"(?<![a-z0-9]){body}[a-z0-9]*")
+            if word not in self._qualifier_cache:
+                self._qualifier_cache[word] = sum(
+                    1 for p in self.profiles if pattern.search(p.text)
+                )
+            if 0 < self._qualifier_cache[word] <= QUALIFIER_MAX_SHARE * len(self.profiles):
+                out.append(pattern)
+        return out
 
     def coverage(self, person: ContributorProfile) -> list[str]:
         """Skills that few or no organizations use, said plainly."""
@@ -556,6 +576,15 @@ class OrgIndex:
                 return None
             extra.append(f"Category: {org.category}")
         interests = [match_term(profile, w, self.idf) for w in person.interests]
+        for term in interests:
+            telling = self._telling(term.want) if term.how != "word" else []
+            if term.strength <= 0 or not telling:
+                continue
+            named = next((m.group(0) for t in telling if (m := t.search(profile.text))), None)
+            if named:
+                term.evidence = [f"names '{named}' in its listing or ideas", *term.evidence]
+            else:
+                term.strength *= QUALIFIER_MISS
         skills = [match_term(profile, w, self.idf) for w in person.skills]
         skill_scale, domain_scale = self.breadth.get(org.name, (1.0, 1.0))
         for term in skills:
