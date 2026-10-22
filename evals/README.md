@@ -107,6 +107,19 @@ The result, read once on the refreshed data with round 6 (`main` plus the shared
 
 All three conditions held, so the refresh ships. It finds more of the strong matches and puts accepted projects' organizations higher, at the cost of a slightly less precise top five: `test` P@5 falls from 0.637 to 0.600 whether or not the new grades are counted, and `dev2` gains three wrong picks at rank five (MetaBrainz, Ruby and Meshery, each from real new evidence). Keeping only grades made without an ideas page points the same way on every split. The floors were reset around the new result, as for every earlier round: `test` P@5 to 0.58 and `dev2` wrong@5 to 12.
 
+## `completed_grades.json` (grades for pairs the reviewers never graded)
+
+A reviewer grades the organizations they looked at, so an organization a better ranker or better data brings into a top ten often has no grade, and it counts as a miss. Before the 2026-10-22 refresh, only 57% of `dev2`'s top-ten entries had any grade (88% on `dev`), so a version that surfaced new organizations looked worse than it was.
+
+`completed_grades.json` holds 153 blind grades for such pairs (`dev` 31, `dev2` 88, `test` 34), from pooling the top ten of compared versions, as TREC does. Each grader saw the persona, the reviewer's grades and notes for calibration, the official listing, and the organization's 2026 ideas page when unsure, never a ranking or which version surfaced an organization. A reviewer's own grade or wrong pick is never overridden, and the held-out sets have none.
+
+`--grades completed` scores with them; `judged@10` (in every result) is the share of each top ten that has any grade. The documented numbers and the floors use the reviewers' grades alone. When a change brings new organizations into a top ten, grade the new pairs the same way before comparing, and add them here.
+
+| Shipped data, round 6 | Reviewers' grades | Completed grades |
+|---|---|---|
+| `dev` nDCG@10, P@5, judged@10 | 0.801, 0.767, 0.88 | 0.818, 0.778, 1.00 |
+| `dev2` nDCG@10, P@5, judged@10 | 0.618, 0.320, 0.57 | 0.657, 0.373, 1.00 |
+
 ## `holdout3.json` (no longer blind)
 
 15 personas written and graded by a third reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover kinds of people the other sets miss: quantum computing, browser engines, networking, cheminformatics, brain imaging, FPGA and open hardware, video codecs, Qt desktop apps, Vue or Angular with six hours a week, React Native, symbolic math, privacy and cryptography, translation and localization, someone who types almost nothing, and a career changer who knows SQL and Excel. Two have a typo on purpose, and two have no strong fit among the 2026 organizations.

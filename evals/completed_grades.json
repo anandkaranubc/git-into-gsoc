@@ -1,0 +1,1076 @@
+{
+ "about": "Grades for persona and organization pairs that the reviewers of personas.json and dev2.json never graded, added so that both sides of a comparison are scored on the same judgments (pooling, as TREC does). On 2026-10-22 the top ten of each compared version, for every dev, dev2 and test persona, were pooled, and each pair with no grade and not in wrong_top5 was graded blind by a grader who saw the persona, the earlier grades and notes for calibration, the official listing, and, when unsure, the organization's 2026 ideas page. Graders never saw a ranking or which version surfaced an organization. Same scale as the original grades; 0 is listed too. See evals/README.md.",
+ "grades": [
+  {
+   "persona": "android-java",
+   "org": "Dart",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Only one hard idea touches Android through Dart JNI bindings, and the Kotlin ideas are IntelliJ plugins, not mobile apps."
+  },
+  {
+   "persona": "android-java",
+   "org": "Oppia Foundation",
+   "grade": 3,
+   "ideas_page": true,
+   "why": "Oppia Android is a native Kotlin app and its 2026 ideas include a 175 hour, moderately easy Android UI project that suits an Android developer learning Kotlin."
+  },
+  {
+   "persona": "bioinfo-pipelines-python",
+   "org": "GeomScale",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 projects are geometric sampling and volume algorithms in C++ and R, with nothing on sequencing or pipelines."
+  },
+  {
+   "persona": "bioinfo-pipelines-python",
+   "org": "MDAnalysis",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Python science work on molecular simulation data, which is life science but not sequencing or genomics pipelines."
+  },
+  {
+   "persona": "bioinfo-pipelines-python",
+   "org": "National Resource for Network Biology (NRNB)",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Several medium Python biology projects, including a Galaxy tool for metabolic modeling, but the work is network biology rather than sequencing."
+  },
+  {
+   "persona": "bioinfo-pipelines-python",
+   "org": "cBioPortal for Cancer Genomics",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Cancer genomics data with a medium Python curation pipeline project, though most of its ideas are Java and JavaScript portal work."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "AOSSIE",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are blockchain, local AI apps and web tools, and the sustainability theme has no project this year."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "Alaska",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "One Python project extracts Arctic coastlines for erosion modeling, which touches climate impacts but is not climate or weather modelling."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "C2SI",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are security, web and AI tools, with no climate or weather modelling."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "International Catrobat Association",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Visual coding apps for education in Kotlin, Flutter and Unity have no climate, weather or Fortran work."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "OSGeo (Open Source Geospatial Foundation)",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Routing, GIS and sensor catalog projects with no climate or weather model work."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "Open Food Facts",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "A food product database whose environment angle is food impact scores, not climate models."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "UC OSPO",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Many research software projects, but none on climate, weather or Fortran models in 2026."
+  },
+  {
+   "persona": "climate-fortran-experienced",
+   "org": "United Nations Office of Information Communication Technology",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Its OG CLEWS project couples climate, land, energy and water policy models in Python, but the work is mostly interface and orchestration, not climate modelling."
+  },
+  {
+   "persona": "climate-new",
+   "org": "AOSSIE",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "A broad umbrella of web, AI and blockchain apps with no climate or environment work."
+  },
+  {
+   "persona": "climate-new",
+   "org": "DBpedia",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Open data in Python matches one interest, but it is knowledge graph work and not environmental."
+  },
+  {
+   "persona": "climate-new",
+   "org": "Open Genome Informatics",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Genomics tools that need biology knowledge, not climate or environment."
+  },
+  {
+   "persona": "climate-new",
+   "org": "Open Science Initiative for Perfusion Imaging",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "This is medical MRI imaging work that shares only Python with a climate and environment interest."
+  },
+  {
+   "persona": "climate-new",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Promotes open data and uses Python, but shows no climate or environment projects."
+  },
+  {
+   "persona": "compilers-exp",
+   "org": "Rizin",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Reverse engineering in C with disassembly and an intermediate language is near compiler work but is not a compiler."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "CERN-HSF",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Many C++ physics software projects, but none on computer vision or camera pipelines."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "HumanAI",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Image based projects such as multispectral art analysis and OCR fit the vision interest, but the work is machine learning rather than C++."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "OSGeo (Open Source Geospatial Foundation)",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "The only C++ idea is a hard QGIS processing layer that can output rasters, which is near image processing but not computer vision."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "OpenAstronomy",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are Julia, Python and Fortran astronomy tooling with no image processing project."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "OpenStreetMap",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "One project extracts text from camera images, but it is Android Java or Kotlin, and its C++ work is routing."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "R project for statistical computing",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Statistics software in R with no computer vision work."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "The P4 Language Consortium",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Network data plane and compiler projects in C++ with nothing on images or cameras."
+  },
+  {
+   "persona": "cpp-graphics-exp",
+   "org": "Gambit: The package for computation in game theory",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "It computes game theory equilibria and has nothing to do with graphics or game engines."
+  },
+  {
+   "persona": "cpp-robotics",
+   "org": "CGAL Project",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Shares C++ and geometry used in motion planning, but it is a general geometry library with no robotics or drone work."
+  },
+  {
+   "persona": "cpp-robotics",
+   "org": "International Catrobat Association",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are mostly Kotlin, Flutter and Unity apps, and only one Python project uses underwater vehicle data, so the robotics overlap is thin."
+  },
+  {
+   "persona": "data-eng",
+   "org": "omegaUp",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "A PHP web app that only uses MySQL as a backend, with no database engine work."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "C2SI",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "C2SI's ideas are web apps, security tools and a Rust cloud SDK that only use databases, with no query execution or storage engine work."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "FOSSology",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "License compliance tooling that only uses PostgreSQL, with no query engine or storage engine work."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "Global Alliance for Genomics and Health",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Genomics standards projects in Python, Go or Rust, none of them inside a database."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "NumFOCUS",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its sub projects are scientific Python, R and Julia libraries with no database internals idea."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "A broad umbrella centered on web, robotics and AI, with no sign of database or storage engine work."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "R project for statistical computing",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "The 2026 ideas are statistics and data analysis packages, so the only overlap is some C++ work with no query or storage engine projects."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "Submitty",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "A course grading web app that uses PostgreSQL but does not build database internals."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "VideoLAN",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Media player, codec and interface projects, with only an app level media library cache task."
+  },
+  {
+   "persona": "devops-new",
+   "org": "Fortran-lang",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Has build system and packaging tooling ideas, but they are in Fortran with no CI or Docker work."
+  },
+  {
+   "persona": "devops-new",
+   "org": "KubeVirt",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Cloud native Kubernetes work fits DevOps, but it is Go virtualization and hard for a newcomer."
+  },
+  {
+   "persona": "digital-humanities-new",
+   "org": "52°North Spatial Information Research GmbH",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Geoinformatics and weather routing projects in Python, unrelated to libraries or archives."
+  },
+  {
+   "persona": "digital-humanities-new",
+   "org": "DBpedia",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Knowledge graph and linked data work is close to library metadata, but the projects are Python language model work that is hard for a new person."
+  },
+  {
+   "persona": "digital-humanities-new",
+   "org": "Learning Equality",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "JavaScript and Vue work at medium level, including an ebook viewer, but it is education software rather than library or archive work."
+  },
+  {
+   "persona": "digital-humanities-new",
+   "org": "OSGeo (Open Source Geospatial Foundation)",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Geospatial routing, GIS and sensor data projects with no library, archive or humanities idea."
+  },
+  {
+   "persona": "digital-humanities-new",
+   "org": "Open Food Facts",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Open Food Facts is a food product database, not library or archive work, and only JavaScript is shared."
+  },
+  {
+   "persona": "digital-humanities-new",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "A broad umbrella with JavaScript web work and an open content mission, but no library or archive idea could be confirmed."
+  },
+  {
+   "persona": "embedded-iot",
+   "org": "EROFS filesystem",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Linux kernel C code that runs on devices, but it is a filesystem, not microcontroller work."
+  },
+  {
+   "persona": "embedded-rtos-c",
+   "org": "EROFS filesystem",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Kernel filesystem work in C, and a Rust reader for embedded use, but it is not an RTOS and most ideas are hard."
+  },
+  {
+   "persona": "embedded-rtos-c",
+   "org": "QEMU",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Machine emulation in C is useful for embedded boards, but it is not real time OS work."
+  },
+  {
+   "persona": "embedded-rtos-c",
+   "org": "The FreeBSD Project",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "A C operating system that also runs on embedded devices, but a general purpose kernel rather than an RTOS."
+  },
+  {
+   "persona": "embedded-rtos-c",
+   "org": "The NetBSD Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Kernel and driver work in C, including timer work, but on a general purpose Unix rather than an RTOS."
+  },
+  {
+   "persona": "embedded-rtos-c",
+   "org": "openSUSE Project",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Linux distribution tooling in Java, Python and Go with no embedded or RTOS idea."
+  },
+  {
+   "persona": "game-scripting-new",
+   "org": "Open Robotics",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are robotics middleware and simulation in C++, Rust and Python, with no game or Lua work."
+  },
+  {
+   "persona": "game-scripting-new",
+   "org": "VideoLAN",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Several VLC projects use Lua, but they also need C, are long, and are about a media player rather than games."
+  },
+  {
+   "persona": "gis-maps",
+   "org": "DBpedia",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Knowledge graph extraction in Python and Java with no map work."
+  },
+  {
+   "persona": "gis-maps",
+   "org": "NumFOCUS",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Its ideas include GRASS GIS and PySAL spatial analysis in Python, inside a broad science umbrella."
+  },
+  {
+   "persona": "gis-maps",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "General Python and JavaScript projects with no visible geospatial or map work."
+  },
+  {
+   "persona": "gis-maps",
+   "org": "OpenWISP",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Network management in Python and Django with no real map work."
+  },
+  {
+   "persona": "gis-maps",
+   "org": "Sugar Labs",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Learning software for children with no maps or geospatial work."
+  },
+  {
+   "persona": "gis-maps",
+   "org": "Tiled",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Its maps are 2D game levels in C++ and Qt, not geographic data."
+  },
+  {
+   "persona": "go-cloud-exp",
+   "org": "OWASP Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "No Go or Kubernetes ideas; only a small AWS observability task overlaps with SRE work."
+  },
+  {
+   "persona": "haskell-fp",
+   "org": "LibreOffice",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "An office suite in C++ and Java with no functional programming or compiler work."
+  },
+  {
+   "persona": "health-web",
+   "org": "Genome Assembly and Annotation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Its ideas are research genomics pipelines mostly in Python and Nextflow, with only a couple of React projects and nothing for hospitals or clinics."
+  },
+  {
+   "persona": "health-web",
+   "org": "Open Science Labs",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "The Hiperhealth sub project has a React clinical consultation UI idea, though it also needs Python and FastAPI and the rest of the org is unrelated."
+  },
+  {
+   "persona": "health-web",
+   "org": "UC OSPO",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Has a health assistant and medical imaging research, but these are AI projects and the only React work is an environmental sensor dashboard."
+  },
+  {
+   "persona": "healthcare-java",
+   "org": "52°North Spatial Information Research GmbH",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Geoinformatics and weather routing work in Python with no health data."
+  },
+  {
+   "persona": "healthcare-java",
+   "org": "Alaska",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "A small easy DICOM album tool can be written in Java, but the rest is research work, not hospital systems."
+  },
+  {
+   "persona": "healthcare-java",
+   "org": "DBpedia",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Knowledge graph extraction in Python with no health data standards work."
+  },
+  {
+   "persona": "healthcare-java",
+   "org": "Genome Assembly and Annotation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "EMBL EBI works on biological research data mostly in Python, with only one idea allowing Java and nothing on hospital systems or health data standards."
+  },
+  {
+   "persona": "healthcare-java",
+   "org": "IOOS",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Ocean data and forecasting tools, unrelated to health systems."
+  },
+  {
+   "persona": "html-css-new",
+   "org": "INCF",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "INCF has an AnalySim interface design project using HTML and CSS, but it is rated intermediate to advanced and needs Angular."
+  },
+  {
+   "persona": "html-css-new",
+   "org": "Jenkins",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "A few website and dashboard ideas want UI design and HTML and CSS, but most need React or plugin code and none are about accessibility."
+  },
+  {
+   "persona": "html-css-new",
+   "org": "LLVM Compiler Infrastructure",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Compiler work in C++; even the Clang Doc HTML idea needs intermediate C++ and has nothing to do with design or accessibility."
+  },
+  {
+   "persona": "html-css-new",
+   "org": "OWASP Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Nest has a small accessibility UI revamp and Cornucopia a site redesign, but they need React or JavaScript inside a security org."
+  },
+  {
+   "persona": "html-css-new",
+   "org": "OpenStreetMap",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Some front end and UI ideas exist, but all require JavaScript and none mention accessibility or HTML and CSS."
+  },
+  {
+   "persona": "html-css-new",
+   "org": "openSUSE Project",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are systems management, cloud and build tooling with nothing on web design or accessibility."
+  },
+  {
+   "persona": "java-backend-student",
+   "org": "C2SI",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Its projects have backend APIs, but they are in Python, Node and Rust, not Java."
+  },
+  {
+   "persona": "java-backend-student",
+   "org": "Global Alliance for Genomics and Health",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "A backend sidecar service project exists, but in Python or Go, with no Java idea this year."
+  },
+  {
+   "persona": "java-backend-student",
+   "org": "Jitsi",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Two medium projects on Java and Kotlin backend components, tracing and Jibri, though most ideas are JavaScript."
+  },
+  {
+   "persona": "java-backend-student",
+   "org": "OWASP Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Lots of backend work, but in Python, Django and Node, with no Java idea."
+  },
+  {
+   "persona": "js-web-new",
+   "org": "52°North Spatial Information Research GmbH",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are Python, QGIS and OGC API backend work with no plain JavaScript front end for a newcomer."
+  },
+  {
+   "persona": "js-web-new",
+   "org": "OWASP Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "BLT and Cornucopia have some vanilla JS and HTML site work, but the projects are large security tools that are hard for a 10 hour newcomer."
+  },
+  {
+   "persona": "julia-sci",
+   "org": "LLVM Compiler Infrastructure",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "The LLVM libc math routine ideas touch numerical maths, but the work is C++ compiler infrastructure with no Julia."
+  },
+  {
+   "persona": "kotlin-new",
+   "org": "MetaBrainz Foundation Inc",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "ListenBrainz has Kotlin Android app ideas that match the interest and skill, but both are rated hard and long for a new contributor with 10 hours a week."
+  },
+  {
+   "persona": "kotlin-new",
+   "org": "Oppia Foundation",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "The Oppia Android app is Kotlin with an easier medium idea, but most ideas are web and onboarding needs two merged PRs and a Bazel build."
+  },
+  {
+   "persona": "kotlin-new",
+   "org": "Wikimedia Foundation",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "The Commons Android app has two medium Kotlin ideas, but they are a small part of a mostly PHP and JavaScript org."
+  },
+  {
+   "persona": "llm-agents",
+   "org": "C2SI",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Several Python ideas use LangChain, LangGraph agents and MCP, such as B0Bot and PII Safe, but they focus on security guardrails within a broad mixed portfolio."
+  },
+  {
+   "persona": "llm-agents",
+   "org": "OWASP Foundation",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Several Python ideas use LLMs and agents, such as the FinBot agentic CTF, an MCP server and OpenCRE LLM filtering, though all sit inside security work."
+  },
+  {
+   "persona": "music-audio",
+   "org": "Blender Foundation",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Creative media app in C++ and Python, but its GSoC work is 3D graphics, not audio."
+  },
+  {
+   "persona": "music-audio",
+   "org": "INCF",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Neuroscience data tools with no music or audio work."
+  },
+  {
+   "persona": "music-audio",
+   "org": "Synfig",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "A C++ and Python media app, but it does animation, not audio."
+  },
+  {
+   "persona": "music-notation-qt-new",
+   "org": "BRL-CAD",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "CAD projects, some with Qt GUIs, but nothing about music, so it matches Qt only."
+  },
+  {
+   "persona": "music-notation-qt-new",
+   "org": "Blender Foundation",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "3D and video editor work in C and C++ without Qt or music notation; the sound work is video editing audio."
+  },
+  {
+   "persona": "music-notation-qt-new",
+   "org": "Haiku",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Operating system and driver work in C++ with no music app or Qt idea."
+  },
+  {
+   "persona": "music-notation-qt-new",
+   "org": "HumanAI",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 projects are machine learning for art, history and social science, with no music or Qt work."
+  },
+  {
+   "persona": "music-notation-qt-new",
+   "org": "INCF",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Two INCF projects involve music, but they are a music education app in Ionic and a gesture to sound tool, not score editing in Qt, and both are advanced."
+  },
+  {
+   "persona": "music-notation-qt-new",
+   "org": "Synfig",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "2D animation software in C++ and gtkmm, with no music notation idea."
+  },
+  {
+   "persona": "node-backend",
+   "org": "Apache Software Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "A few ideas such as the APISIX dashboard and Airavata tools use TypeScript, but most work is Java."
+  },
+  {
+   "persona": "php-cms-new",
+   "org": "52°North Spatial Information Research GmbH",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its ideas are Python QGIS and OGC geodata work with no PHP or content management."
+  },
+  {
+   "persona": "php-cms-new",
+   "org": "OSGeo (Open Source Geospatial Foundation)",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "A few member projects use PHP or act as a CMS, but PHP is a small side part of a geospatial umbrella."
+  },
+  {
+   "persona": "php-cms-new",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Has general web and JavaScript work but no sign of PHP or content management."
+  },
+  {
+   "persona": "php-cms-new",
+   "org": "OpenStreetMap",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Web and JavaScript editing tools overlap a little, but the work is map data, not PHP sites."
+  },
+  {
+   "persona": "py-astro-new",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "The listing shows web, robotics and open hardware work with nothing on astronomy or space, so only Python is shared."
+  },
+  {
+   "persona": "py-astro-new",
+   "org": "Stichting SU2",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Physics simulation in Python and C++ is adjacent, but fluid dynamics is not astronomy and the solver is a stretch for a first year newcomer."
+  },
+  {
+   "persona": "py-edu-games",
+   "org": "Open Robotics",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "ROS and Gazebo robotics infrastructure in C++ and Python, with no learning games or education work for kids."
+  },
+  {
+   "persona": "py-edu-games",
+   "org": "Wikimedia Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "One Python idea gamifies Wikidata fixes, but it is not a learning game for kids and the rest is web and Android work."
+  },
+  {
+   "persona": "r-dashboards-new",
+   "org": "Data for the Common Good",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its data viewers and heatmap tool are JavaScript and Python, with no R or Shiny work."
+  },
+  {
+   "persona": "r-dashboards-new",
+   "org": "Gambit: The package for computation in game theory",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Game theory software in Python and C++ with no R or dashboard work."
+  },
+  {
+   "persona": "r-dashboards-new",
+   "org": "NumFOCUS",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Stan has R package projects such as bayesplot plotting, but none of them is a web dashboard."
+  },
+  {
+   "persona": "r-dashboards-new",
+   "org": "Open Genome Informatics",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "One genomics pipeline project uses R, while its dashboard projects are React and Python."
+  },
+  {
+   "persona": "r-dashboards-new",
+   "org": "OpenMS Inc",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Mass spectrometry work in C++ and Python with no R or Shiny dashboard idea."
+  },
+  {
+   "persona": "r-stats",
+   "org": "Data for the Common Good",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "One D3 data visualization idea fits the interest, but nothing uses R or statistics."
+  },
+  {
+   "persona": "r-stats",
+   "org": "OpenMS Inc",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "One Python visualization idea, but the core is C++ mass spectrometry with no R."
+  },
+  {
+   "persona": "ruby-rails",
+   "org": "Dart",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Dart and Flutter work with no Ruby or Rails."
+  },
+  {
+   "persona": "ruby-rails",
+   "org": "MetaCall",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Polyglot embedding core in C and C++; Ruby is only one of many supported languages and there is no web app work."
+  },
+  {
+   "persona": "ruby-rails",
+   "org": "Open Transit Software Foundation",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its ideas use Go, Swift and SvelteKit with no Ruby or Rails."
+  },
+  {
+   "persona": "ruby-rails",
+   "org": "PEcAn Project",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Ecosystem modeling in R with no Ruby or web app work."
+  },
+  {
+   "persona": "ruby-rails",
+   "org": "Qubes OS",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "A security operating system in C and Python with no Ruby or web work."
+  },
+  {
+   "persona": "rust-devtools-cloud",
+   "org": "Apache Software Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Only a few scattered Rust ideas such as Dubbo Rust and Mahout, in a mostly Java umbrella."
+  },
+  {
+   "persona": "rust-systems",
+   "org": "GNU Compiler Collection (GCC)",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "The Rust front end ideas touch the Rust toolchain, but the code is C and C++ and GCC rates the work as hard."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "Accord Project",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are legal contract tooling in TypeScript with no accessibility work."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "Data for the Common Good",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Health data platform projects, with only a passing mention of an accessible JavaScript frontend and no screen reader work."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "FLARE",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Malware analysis tooling in Python with nothing on assistive technology."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "LibreOffice",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Its 2026 ideas are C++ work on the interface, filters and tests, with no accessibility idea this year."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "MDAnalysis",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Molecular simulation analysis in Python, which shares only the language."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "MetaCall",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Language interoperability work in C, Rust and TypeScript with no screen reader or assistive technology idea."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "The listing covers web, robotics, open hardware and AI with nothing about screen readers or assistive technology, and the ideas page would not load."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "OpenStreetMap",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Map, routing and editor projects with no accessibility or screen reader idea this year."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "The OpenROAD Initiative",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Chip design tooling has nothing to do with assistive technology, and only Python is shared."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "omegaUp",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Coding education platform work on queries and frontend migrations, with no assistive technology idea."
+  },
+  {
+   "persona": "speech-audio-ml",
+   "org": "Accord Project",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Legal contract and language model tooling in TypeScript with no speech or audio work."
+  },
+  {
+   "persona": "speech-audio-ml",
+   "org": "FOSSology",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "License scanning, where the only machine learning classifies code comments, not audio."
+  },
+  {
+   "persona": "speech-audio-ml",
+   "org": "JdeRobot",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Robotics education projects whose PyTorch work is vision, not speech or audio."
+  },
+  {
+   "persona": "speech-audio-ml",
+   "org": "MetaBrainz Foundation Inc",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Music data and recommendation machine learning in Python, but not speech recognition or audio signal models."
+  },
+  {
+   "persona": "speech-audio-ml",
+   "org": "UC OSPO",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Many PyTorch research projects, but none on speech or audio in 2026."
+  },
+  {
+   "persona": "supply-chain-go",
+   "org": "C2SI",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Security themed apps in Python, Node and Rust, with no supply chain, SBOM or Go idea."
+  },
+  {
+   "persona": "supply-chain-go",
+   "org": "FLARE",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "A small Go project recovers data from Go binaries for malware analysis, which is security but not supply chain."
+  },
+  {
+   "persona": "supply-chain-go",
+   "org": "NixOS Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "NixOS has SBOM accuracy and vendored dependency ideas, but the work is in the Nix language rather than Go."
+  },
+  {
+   "persona": "supply-chain-go",
+   "org": "Open Transit Software Foundation",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Transit API servers in Go with no security or supply chain angle."
+  },
+  {
+   "persona": "supply-chain-go",
+   "org": "Rizin",
+   "grade": 0,
+   "ideas_page": true,
+   "why": "Reverse engineering work in C and C++ Qt with no supply chain or Go idea."
+  },
+  {
+   "persona": "supply-chain-go",
+   "org": "Unikraft",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Several Go projects on the KraftKit build tool, including remote builds, but none on signing or SBOMs."
+  },
+  {
+   "persona": "ts-a11y-edu",
+   "org": "JdeRobot",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Robotics education exercises are mostly Python and ROS, with only one TypeScript idea and nothing on accessibility."
+  },
+  {
+   "persona": "ts-a11y-edu",
+   "org": "OWASP Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Shares the TypeScript and React stack and has one small accessibility revamp, but the work is security tooling rather than learning tools."
+  },
+  {
+   "persona": "ts-a11y-edu",
+   "org": "Open Genome Informatics",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Two ideas use React and TypeScript, but they are genomics and clinical trial tools with no education or accessibility focus."
+  },
+  {
+   "persona": "ts-a11y-edu",
+   "org": "UC OSPO",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "A few course tools such as a quiz composer and LMS toolkit exist, but stacks are mostly Python and no project targets accessibility."
+  },
+  {
+   "persona": "ts-react-ai-tools",
+   "org": "AOSSIE",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Several local AI apps such as Smart Notes and PictoPy use web and React stacks, but the projects are large for 8 hours a week."
+  },
+  {
+   "persona": "ts-react-ai-tools",
+   "org": "C2SI",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Several projects use React and TypeScript and a few involve AI, but the AI work is mostly Python and the projects are 350 hours, too big for 8 hours a week."
+  },
+  {
+   "persona": "ts-react-ai-tools",
+   "org": "Meshery",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "It has one AI and MCP adapter project, but the work is in Go with React only as a bonus."
+  },
+  {
+   "persona": "ts-react-ai-tools",
+   "org": "MetaBrainz Foundation Inc",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Music data with recommendation machine learning, mostly in Python, and it is not an AI tools project."
+  },
+  {
+   "persona": "ts-react-ai-tools",
+   "org": "Open HealthCare Network",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "Its medical records frontend is React and TypeScript with some AI features such as a copilot, but it is health software rather than an AI tool."
+  },
+  {
+   "persona": "ts-react-ai-tools",
+   "org": "Oppia Foundation",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "TypeScript work, but in Angular, with only one AI translation suggestion project."
+  },
+  {
+   "persona": "ts-react-ai-tools",
+   "org": "cBioPortal for Cancer Genomics",
+   "grade": 1,
+   "ideas_page": true,
+   "why": "Its frontend is React and TypeScript, but the only AI client project is hard and large for 8 hours a week."
+  }
+ ]
+}

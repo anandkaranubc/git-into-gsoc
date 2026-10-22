@@ -101,3 +101,27 @@ def test_the_sealed_set_stays_out_of_all_and_shows_totals_only(
     assert bench.main(["--split", "holdout4", "--json"]) == 0
     shown = json.loads(capsys.readouterr().out)
     assert shown and all(not r["personas"]["rows"] for r in shown)
+
+
+def test_completed_grades_only_fill_gaps_and_hold_no_personal_details(bench: ModuleType) -> None:
+    rows = json.loads((ROOT / "evals" / "completed_grades.json").read_text())["grades"]
+    personas = {p["id"]: p for p in bench.load_personas()}
+    names = {org.name for org in bench.catalog().orgs}
+    seen = set()
+    for row in rows:
+        assert set(row) == {"persona", "org", "grade", "ideas_page", "why"}
+        persona = personas[row["persona"]]
+        assert persona["split"] in {"dev", "dev2", "test"}  # never a held-out set
+        assert row["org"] in names and row["grade"] in {0, 1, 2, 3}
+        # A reviewer's grade or wrong pick is never second-guessed.
+        assert row["org"] not in persona["grades"] and row["org"] not in persona["wrong_top5"]
+        assert (row["persona"], row["org"]) not in seen
+        seen.add((row["persona"], row["org"]))
+
+
+def test_completed_grades_cover_more_of_each_top_ten(bench: ModuleType) -> None:
+    for split in ("dev", "dev2"):
+        original = bench.evaluate("current", split)["personas"]
+        completed = bench.evaluate("current", split, "completed")["personas"]
+        assert completed["judged10"] >= original["judged10"]
+        assert completed["wrong5"] == original["wrong5"]  # wrong picks are the reviewers' own
