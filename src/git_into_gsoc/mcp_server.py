@@ -1,4 +1,5 @@
-"""The MCP server: each tool is a thin wrapper over one GSoCToolkit method.
+"""The MCP server: each tool is a thin wrapper over one GSoCToolkit method or
+guidance function.
 
 The tool docstrings are the descriptions every assistant reads before it decides
 what to call, so they are written for models. Change them only with

@@ -90,8 +90,9 @@ class PastProject(BaseModel):
 
 
 class OrgSummary(BaseModel):
-    """One mentoring organization. The fields from `match_score` down are filled in
-    by `rank_organizations`; the rest come from the official list or the archive."""
+    """One mentoring organization. The fields from `match_score` to `ideas_unread`
+    are filled in by `rank_organizations` and `recent_projects` by
+    `get_organization`; the rest come from the official list or the archive."""
 
     name: str
     slug: str | None = None
