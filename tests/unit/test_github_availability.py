@@ -756,3 +756,78 @@ def test_many_old_requests_say_how_many_people_asked() -> None:
         "3 people asked to work on this, the latest 100d ago, and none opened a PR; post a "
         "concrete plan instead of another request, or pick another issue"
     ]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # Missed in the first three samples of real comments (2026-10-22).
+        "yes i am working on it",
+        "Happy to help with this one!",
+        "Interested in helping here.",
+        "Okay, I'll take.",
+        "I would love to on this, so may i?",
+        "I will update you on my progress shortly.",
+        "If it is open I will love to fix it",
+        "I am porting the script to PowerShell.",
+        "I'll working on the parser part",
+        "Also taking the Javadoc checks.",
+        "please assigned it to me",
+        "Would it be okay if I handle the second half?",
+        "I'm willing to contribute to this.",
+        "I would be happy to explore the implementation.",
+        "/attempt",
+    ],
+)
+def test_more_ways_of_taking_an_issue_count(text: str) -> None:
+    assert is_claim(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "I'll take a look at the logs tomorrow.",
+        "I am on Windows 11 with Python 3.12.",
+        "Taking the example above, the output is wrong.",
+        "I've made the changes you asked for in the PR.",
+        "Please review it before I proceed with the remaining parts.",
+    ],
+)
+def test_near_misses_are_not_claims(text: str) -> None:
+    assert not is_claim(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        # From a fourth sample of real comments in 17 new organizations (2026-10-22).
+        "Picking this up",
+        "Happy to pick this up",
+        "Can I pick this issue up?",
+        "i am starting on it",
+        "assign this task to me",
+        "Interested, Please assign",
+        "i would like work on this issue.",
+        "im interested to work in this issue",
+        "I'm thinking of giving this a shot.",
+        "I will raise the PR",
+        "still on this one",
+        "In Progress",
+        "PR soon.",
+    ],
+)
+def test_forms_from_new_organizations_count(text: str) -> None:
+    assert is_claim(text)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Could you update the issue so that someone else can pick it up?",
+        "Thanks for picking this up. I'll step back to avoid duplicating your work.",
+        "@someone are you still working on it?",
+        "Is anyone still on this?",
+    ],
+)
+def test_talking_about_someone_else_is_not_a_claim(text: str) -> None:
+    assert not is_claim(text)

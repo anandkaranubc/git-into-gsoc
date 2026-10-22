@@ -145,7 +145,8 @@ _CLAIM_PATTERNS = [
     r"\b(?:formally |officially )?take (?:this|the) issue\b",
     # Forms still missed in both samples, kept general (third sample measures them).
     r"(?:^|[.!?,]\s*|\bhi,?\s+)am (?:actively |currently |still )?working on\b",
-    r"(?<!anyone )(?<!someone )(?<!is )(?<!are )(?<!you )(?<!if )\bworking on (?:it|a fix)\b",
+    r"(?<!anyone )(?<!someone )(?<!is )(?<!are )(?<!you )(?<!if )(?<!you still )"
+    r"\bworking on (?:it|a fix)\b",
     r"\b(?:should|shall|can|could|may) i (?:directly |go ahead and )?(?:submit|open|raise|make|create|send)"
     r" (?:a |the |my )?(?:pr|pull request)\b",
     r"\bwould you (?:mind|prefer|like) (?:if|that|it if) i\b",
@@ -165,8 +166,40 @@ _CLAIM_PATTERNS = [
     r"\bi (?:really )?want to (?:work on|fix|take|tackle|solve|resolve|contribute to)\b",
     r"\b(?:i'?d be|i(?:'m| am)?) glad to (?:help with|help on|work|take|fix|submit a fix|contribute)\b",
     r"\bi was (?:just )?working on (?:this|it)\b",
+    # Still missed in the first three samples (2026-10-22); a fourth sample from 17 new
+    # organizations, labelled before these were written, measured them.
+    r"\byes,? i(?:'m| am) working\b|\bi work on (?:this|it)\b",
+    r"\b(?:happy|glad) to help (?:with |on )?(?:this|it)\b",
+    r"(?:^|[.!?]\s*|\bhi,?\s+)(?:very |really |also )?interested in "
+    r"(?:working on|taking|fixing|solving|contributing to|helping)\b",
+    r"\bi(?:'ll| will) take\s*(?:[.!,]|$)",  # "I'll take." but not "I'll take a look"
+    r"\b(?:like|love) (?:to )?on (?:this|it)\b",  # "would love to on this", a word dropped
+    r"\b(?:update you|keep you posted|report back) on my progress\b|\bupdate on my progress\b",
+    r"\bi(?:'ll| will) (?:really )?(?:love|like) to (?:work|fix|take|contribute|help|try)\b",
+    r"\bi(?:'m| am) (?:currently |now )?(?:porting|implementing|migrating|refactoring)\b",
+    r"\bi(?:'ll| will) working on\b|\bi(?:'m| am) workin'? on\b",  # common slips
+    r"\b(?:also|i(?:'m| am)) taking (?:the|these|those|over|care of)\b",  # not "Taking the example"
+    r"\bplease assigned? (?:it |this |the issue )?to me\b",
+    r"\bi(?:'ll| will) proceed with\b|\bi tried to work on (?:this|it)\b",
+    r"\bi(?:'m| am) willing to (?:contribute|work|help|take|fix)\b",
+    r"\bwould it be (?:ok|okay|fine|alright) if i\b",
+    r"\b(?:would|i'd)\s+(?:like|love|be (?:happy|glad))\s+to\s+(?:raise|explore)\b",
+    # Forms seen in a fourth sample (17 new organizations), added after it measured the
+    # rules above at 82% recall: so its figures after this change are not held out.
+    # Only with the writer as the subject: not "so someone else can pick it up".
+    r"(?:^|[.!?]\s*|\bi(?:'m| am|'ll| will)?\s+|\b(?:happy|glad|like|love) to\s+)"
+    r"pick(?:ing|ed)? (?:this|it|this issue|the issue) up\b",
+    r"\bi(?:'m| am) starting (?:on|with) (?:this|it)\b|(?:^|[.!?]\s*)will start working\b",
+    r"\bassign (?:this|the) task to me\b|\binterested[,.!]?\s+(?:please )?assign\b",
+    r"\b(?:would|i'd) (?:like|love) work on\b|\binterested (?:to|on) work (?:on|in)\b",
+    r"\bgiving (?:this|it) a (?:go|try|shot)\b|\btry my hand\b",
+    r"\bi(?:'ll| will) (?:raise|open|submit|create|send) (?:a|the|my) (?:pr|pull request)\b",
+    r"\bi(?:'ll| will) (?:really )?(?:love|like) to submit\b",
+    r"(?<!anyone )(?<!you )\bstill on (?:this|it)\b",
+    r"^\s*(?:in progress|pr soon)\b",
+    r"\bdo you want me to (?:work on|take|fix)\b",
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
-    r"^\s*/(?:assign(?:-me)?|take|claim)\s*$",
+    r"^\s*/(?:assign(?:-me)?|take|claim|attempt)\s*$",
     r"^\s*\.take(?:-issue)?\s*$",
     r"^\s*@\w+bot\s+claim\b",
 ]
