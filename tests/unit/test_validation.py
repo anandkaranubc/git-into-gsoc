@@ -1,3 +1,6 @@
+"""Input validation: repository names, issue references, logins, search terms, years, and
+skill words."""
+
 from __future__ import annotations
 
 import pytest

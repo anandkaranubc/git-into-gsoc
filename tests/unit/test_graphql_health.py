@@ -1,3 +1,6 @@
+"""The GraphQL path of repository health: insiders, first human replies, project bots, and the REST
+fallback."""
+
 from __future__ import annotations
 
 import json

@@ -1,3 +1,5 @@
+"""The feedback links: what they prefill, and that nothing is sent."""
+
 from __future__ import annotations
 
 import re

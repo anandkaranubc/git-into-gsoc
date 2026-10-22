@@ -1,16 +1,14 @@
 # 2. Install the tool
 
-You will install one command, `git-into-gsoc`, and connect it to any AI assistant you use. A **terminal** is the application where you type the commands below. Copy the commands without adding a `$` prompt.
+You will install one command, `git-into-gsoc`. A **terminal** is the application where you type the commands below: Terminal on macOS, your distribution's terminal on Linux, PowerShell on Windows. Copy each command without a leading `$`.
 
-## The quick way: one command
+## One command
 
-You need an internet connection. Open Terminal on macOS, a terminal on Linux, or your WSL Linux terminal on Windows, and run:
+You need an internet connection and nothing else. On macOS, Linux, or Windows with WSL:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
 ```
-
-No `curl`? `wget -qO- https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash` does the same.
 
 On Windows PowerShell:
 
@@ -18,7 +16,18 @@ On Windows PowerShell:
 irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
 ```
 
-The script downloads the newest release from [PyPI](https://pypi.org/project/git-into-gsoc/), the Python Package Index, or from GitHub if PyPI does not have it yet. It installs the `git-into-gsoc` command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with [Python 3.11 or newer](https://www.python.org/downloads/) into a private folder under your home directory. If you have none of the three, it asks whether to install uv, a free tool that installs Python programs together with the Python they need, all inside your home folder. Answer yes. To skip the question, pass the option through the pipe like this:
+The installer downloads the newest release from [PyPI](https://pypi.org/project/git-into-gsoc/), the Python Package Index. It installs the command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with Python 3.11 or newer into a private folder in your home directory. If you have none of these, it offers to install uv, a free tool that brings its own Python. Answer yes. It then connects every AI assistant it finds ([chapter 3](03-connect-your-ai-assistant.md) explains what that means), prints what it created or changed, and tells you your next steps. It is safe to run again.
+
+Open a new terminal and check:
+
+```bash
+git-into-gsoc --version
+git-into-gsoc start
+```
+
+`start` shows where the program is right now, asks four quick questions, and suggests organizations that fit you. Press Enter to skip any question. If the terminal says `command not found`, the installer printed the line to add to your PATH, the list of folders your terminal searches for commands; [troubleshooting](../troubleshooting.md#git-into-gsoc-command-not-found) has it too.
+
+To skip the question about uv, pass `--install-uv` through the pipe:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash -s -- --install-uv
@@ -28,38 +37,33 @@ curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/in
 & ([scriptblock]::Create((irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1))) -InstallUv
 ```
 
-On Ubuntu, Debian, and WSL, Python often comes without its `venv` part. The installer notices and offers uv instead, or you can run `sudo apt install python3-venv` first. Then it runs `git-into-gsoc setup`. Setup copies the **Agent Skill**, a folder of instructions for AI assistants, into the folders your assistants read. It also registers the tool's **MCP server**, a small program your assistant starts so it can run these same commands, with each assistant it finds: Claude Code, Codex, Cursor, VS Code and Copilot CLI, Gemini CLI, Antigravity, and Windsurf. It prints a table of exactly what it created or left unchanged, keeps a `.bak` copy of any file it edited, and can be re-run safely. If you have no assistant, that is fine; the command-line tool works on its own.
-
-At the end, the installer prints your next steps. If the folder with the new command is not on your **PATH** (the list of folders your terminal searches for commands), it prints the exact line to add, and the full path you can use right away. Then open a new terminal and check:
-
-```bash
-git-into-gsoc --version
-git-into-gsoc start
-```
-
-`start` shows where the program is right now, asks four quick questions, and suggests organizations that fit you. Press Enter to skip any question. It needs network access the first time to fetch official dates and falls back to an embedded snapshot when offline. Run `git-into-gsoc` with no command any time to see your progress and what to do next.
-
-## The short way, if you already use uv or pipx
-
-If you would rather see each step, or you already have uv or pipx, this is what the script does:
+## Already use uv or pipx?
 
 ```bash
 uv tool install git-into-gsoc    # or: pipx install git-into-gsoc
-git-into-gsoc setup              # add --dry-run to preview
+git-into-gsoc setup              # connect your AI assistants; add --dry-run to preview
 ```
 
-To install one particular release, add its version, for example `uv tool install git-into-gsoc==0.14.1`. Every version is listed on the [PyPI page](https://pypi.org/project/git-into-gsoc/#history) and the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases). Each release also carries a **wheel**, Python's ready-to-install package file, so `uv tool install` or `pipx install` with the wheel's address works without PyPI. To try the newest code that is not released yet, install from GitHub instead, which needs Git: `uv tool install git+https://github.com/anandkaranubc/git-into-gsoc`.
+pipx installs with the Python it runs on, which must be 3.11 or newer. Ubuntu 22.04's packaged pipx runs on Python 3.10, and `pip3 install pipx` on a Mac can use 3.9; there `pipx install git-into-gsoc` fails with "No matching distribution found" or "requires a different Python". Use uv instead, or the one-line installer, which skips such a pipx and offers to install uv.
 
-## From a clone (contributors, or no uv/pipx)
+To install one particular release, add its version, for example `uv tool install git-into-gsoc==0.14.1`. Every release is on the [PyPI page](https://pypi.org/project/git-into-gsoc/#history) and the [releases page](https://github.com/anandkaranubc/git-into-gsoc/releases), each with a **wheel**, Python's ready-to-install package file, which `uv tool install` or `pipx install` accepts by address when PyPI is slow to update. For the newest code that is not released yet, run `uv tool install git+https://github.com/anandkaranubc/git-into-gsoc`, which needs Git.
 
-You need [Git](https://git-scm.com/downloads) and [Python 3.11 or newer](https://www.python.org/downloads/). Check both tools:
+## Let GitHub know who you are (recommended)
+
+Checking issues and repositories uses GitHub's API, which allows 60 requests an hour without signing in and 5,000 with. Install [GitHub's `gh` tool](https://cli.github.com/) and sign in once:
 
 ```bash
-git --version
-python3 --version
+gh auth login
+git-into-gsoc doctor
 ```
 
-On Windows, check Python with `py -3 --version` instead. There, `python3` can open the Microsoft Store rather than run Python. If either tool is missing or Python is older than 3.11, install it first, reopen the terminal, and check again. Then run these once in the folder where you keep projects:
+git-into-gsoc picks up the login by itself. `doctor` should report the token as found via `gh auth token`, along with your version, your data folders, and the requests you have left. Other ways to supply a token are in [configuration](../configuration.md). Nothing else needs an account.
+
+## Install from a copy of the code
+
+You only need this if you have no uv or pipx and the one-line installer did not work for you. If you want to change the tool, follow [CONTRIBUTING.md](../../CONTRIBUTING.md) instead. You need [Git](https://git-scm.com/downloads) and [Python 3.11 or newer](https://www.python.org/downloads/). Check both with `git --version` and `python3 --version` (`py -3 --version` on Windows, where `python3` can open the Microsoft Store instead).
+
+macOS, Linux, or WSL:
 
 ```bash
 git clone https://github.com/anandkaranubc/git-into-gsoc.git
@@ -67,86 +71,41 @@ cd git-into-gsoc
 ./install.sh
 source .venv/bin/activate
 git-into-gsoc --version
-git-into-gsoc program
 ```
 
-`git clone` downloads a copy. `cd` moves into it. From a clone, the installer creates a **virtual environment**, a folder called `.venv` that keeps this tool's Python dependencies separate from other projects, installs the package there, and runs `git-into-gsoc setup --scope project`, which puts the skill and MCP registration inside the repository folder only. Run `./install.sh --user-skills` instead to set up your home folder, so every project can use it.
-
-The activation step is important: an installer cannot activate the environment in your current terminal. Each time you open a new terminal, return to the downloaded folder and run:
-
-```bash
-source .venv/bin/activate
-```
-
-You can leave the environment with `deactivate`, or run `.venv/bin/git-into-gsoc` directly without activating it.
-
-## Windows PowerShell from a clone
-
-Windows blocks downloaded scripts by default ("running scripts is disabled on this system"), so start the installer through PowerShell with a one-time exception:
+Windows PowerShell:
 
 ```powershell
 git clone https://github.com/anandkaranubc/git-into-gsoc.git
 cd git-into-gsoc
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 .\.venv\Scripts\git-into-gsoc.exe --version
-.\.venv\Scripts\git-into-gsoc.exe program
 ```
 
-`install.ps1` accepts `-NoUserSkills`, `-UserSkills`, `-Assistant name`, `-SkillOnly`, `-McpOnly`, `-DryRun`, and `-InstallUv`, matching the Bash options below. Use the full `.exe` path in place of `git-into-gsoc`, or turn on the environment with `.\.venv\Scripts\Activate.ps1`. The same script policy blocks that file too. Run `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once to allow scripts you created or downloaded on purpose. The installer is checked on Windows in CI; report problems with your Python and Windows versions.
+`git clone` downloads a copy and `cd` moves into it. The installer creates a **virtual environment**, a folder named `.venv` that keeps this tool's Python packages apart from everything else, installs the package there, and sets up your AI assistants inside this folder only (`./install.sh --user-skills` sets them up for your whole home folder instead). An installer cannot turn the environment on in your terminal, so run `source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate.ps1`) in every new terminal, or call `.venv/bin/git-into-gsoc` directly. Windows blocks downloaded scripts by default, which is why the PowerShell line starts with `-ExecutionPolicy Bypass`; running `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once allows them for good.
 
-Some organizations build software that only runs on Linux, such as GNOME, KDE, and the Linux kernel. git-into-gsoc itself works on Windows, but to build and test those projects you will need Linux. [WSL](https://learn.microsoft.com/windows/wsl/install) (Windows Subsystem for Linux) gives you one inside Windows: run `wsl --install` in PowerShell, restart, and use the one-line Linux installer in the Ubuntu terminal it adds. The organization's contributor guide says which systems it supports.
+`./install.sh --help` lists the options: `--user-skills`, `--no-user-skills`, `--assistant NAME`, `--skill-only`, `--mcp-only`, `--dry-run`, and `--install-uv`. `install.ps1` takes the same options in PowerShell form, such as `-UserSkills` and `-DryRun`. Use `PYTHON=python3.12 ./install.sh` to pick a particular Python. Everything after the package install is `git-into-gsoc setup`, which you can run again on its own at any time.
 
-## Manual install on macOS or Linux
+## Windows and Linux-only projects
 
-If you want only the Python package, run this from the downloaded repository:
+Some organizations build software that only runs on Linux, such as GNOME, KDE, and the Linux kernel. git-into-gsoc itself works on Windows, but to build and test those projects you need Linux. [WSL](https://learn.microsoft.com/windows/wsl/install) (Windows Subsystem for Linux) gives you one inside Windows: run `wsl --install` in PowerShell, restart, and use the one-line Linux installer in the Ubuntu terminal it adds. The organization's contributor guide says which systems it supports.
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e .
-```
+## Update or remove
 
-The `-e` option keeps the installation connected to this folder, so keep the folder in place. Contributors can install development tools with `python -m pip install -e ".[dev]"`.
+To update, run the same one-line installer again. It installs the newest release over the old one and refreshes your assistant setup. With uv or pipx, run `uv tool upgrade git-into-gsoc` or `pipx upgrade git-into-gsoc`, then `git-into-gsoc setup`. From a copy of the code, run `git pull` and then `./install.sh` again.
 
-## Check GitHub access
+To remove everything:
 
 ```bash
-git-into-gsoc doctor
-```
-
-Expect a version, cache and data locations, token status, and your GitHub request allowance. Without a token GitHub allows 60 requests per hour, which is enough to try the tool but runs out quickly when checking issues. The easiest fix is the [GitHub CLI](https://cli.github.com/): after `gh auth login`, git-into-gsoc uses that login automatically and the doctor reports the token as found via `gh auth token`. Other ways to supply a token are in [configuration](../configuration.md). The doctor can print a connection failure and still exit successfully, so read its output.
-
-## Installer options
-
-| `install.sh` option | Effect |
-|---|---|
-| no option | From a clone: project scope (skill and MCP inside the repository). Via curl: user scope |
-| `--user-skills` | User scope: set up your home folder so every project can use the skill and server |
-| `--no-user-skills` | Project scope explicitly |
-| `--assistant NAME` | Configure only this assistant (repeatable); default is every assistant detected |
-| `--skill-only` | Copy the skill only; skip the package install and MCP registration |
-| `--mcp-only` | Install the package and register MCP; skip the skill copy |
-| `--dry-run` | Show what setup would change without writing |
-| `--install-uv` | If there is no uv, pipx, or Python 3.11 or newer, install uv without asking first |
-
-Everything after the package install is `git-into-gsoc setup`, so you can re-run that command alone at any time; see the [command reference](../cli.md#setup-and-maintenance). Use `PYTHON=python3.12 ./install.sh` to choose another installed Python before creating `.venv`. For an existing environment with the wrong version, follow [troubleshooting](../troubleshooting.md).
-
-Optional: `git-into-gsoc --install-completion` adds tab completion for your shell.
-
-## Update or remove the tool
-
-To update, run the same one-line install command again. It installs the newest release over the old one and refreshes the skill and MCP registration, and `git-into-gsoc --version` shows the new number. If you installed with uv or pipx yourself, run `uv tool upgrade git-into-gsoc` or `pipx upgrade git-into-gsoc`, then `git-into-gsoc setup` to refresh the skill. From a clone, run `git pull` and then `./install.sh` again.
-
-To remove everything, first undo the assistant setup, then remove the package with the tool that installed it:
-
-```bash
-git-into-gsoc setup --remove          # deletes the skill copies and MCP entries that setup made
+git-into-gsoc setup --remove          # undo the assistant setup
 uv tool uninstall git-into-gsoc       # or: pipx uninstall git-into-gsoc
 ```
 
-If the installer used its private folder instead of uv or pipx, delete the `venv` folder inside `~/.local/share/git-into-gsoc` and the `~/.local/bin/git-into-gsoc` link (on Windows, the `venv` folder inside `%LOCALAPPDATA%\git-into-gsoc`). Delete only `venv`: on Linux and Windows your saved progress lives next to it. Run `git-into-gsoc doctor` before removing anything to see the data folder; keep it and a later install picks up where you left off, or delete it too for a clean start.
+If the installer used its private folder instead of uv or pipx, delete the `venv` folder inside `~/.local/share/git-into-gsoc` and the `~/.local/bin/git-into-gsoc` link (on Windows, the `venv` folder inside `%LOCALAPPDATA%\git-into-gsoc`). Run `git-into-gsoc doctor` first to see where your progress file lives. Keep it, and a later install picks up where you left off.
 
-Now that the tool works, mark the first step of the journey done:
+Optional: `git-into-gsoc --install-completion` adds tab completion for your shell.
+
+You understood the program in chapter 1 and the tool works, so mark the first phase done:
 
 ```bash
 git-into-gsoc progress complete_phase --phase learn

@@ -545,6 +545,8 @@ def _project_rules(kind: str, ctx: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def render_draft(kind: str, *, context: dict[str, Any]) -> dict[str, Any]:
+    """The template, the fields that must be filled, and the sourced rules for one
+    kind of draft. Raises ValueError for a kind that is not in DRAFT_KINDS."""
     if kind not in _RENDERERS:
         raise ValueError(f"Unknown draft kind: {kind}. Choose one of {', '.join(DRAFT_KINDS)}.")
     general = [{**rule, "scope": "general"} for rule in _RULES[kind]]

@@ -1,3 +1,6 @@
+"""The pure orientation functions: code map, paths, entry points, CI commands and environment,
+conventions, policy quotes, gates, and workflow ranking."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

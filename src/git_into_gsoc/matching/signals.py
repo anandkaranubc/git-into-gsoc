@@ -9,10 +9,11 @@ sources say what it actually works on:
   their languages and topics.
 
 Reading 183 ideas pages and as many repository lists takes minutes, so
-`python -m git_into_gsoc.matching.signals` does it once (weekly, with the
-organization snapshot) and writes ``data/org_signals.json``. Ranking reads
-that file offline and says how old it is. Nothing here is a prediction: every
-number is a count of something a person can open and check.
+`python -m git_into_gsoc.matching.signals` does it once and writes
+``data/org_signals.json``. The snapshot-refresh workflow runs it on the first
+Monday of each month (the organization snapshot itself is refreshed weekly).
+Ranking reads that file offline and says how old it is. Nothing here is a
+prediction: every number is a count of something a person can open and check.
 """
 
 from __future__ import annotations

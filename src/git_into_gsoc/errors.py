@@ -37,6 +37,8 @@ class AmbiguousNameError(InputError):
 
 
 class HttpError(GigError):
+    """A request that failed; `status_code` and `url` say where."""
+
     def __init__(
         self,
         message: str,
@@ -51,10 +53,13 @@ class HttpError(GigError):
 
 
 class NotFoundError(HttpError):
-    pass
+    """A 404, or something this tool cannot read, such as a mirror's issues."""
 
 
 class RateLimitError(HttpError):
+    """GitHub's request limit was hit. The hint depends on the resource (core or
+    search) and on whether a token was used."""
+
     def __init__(
         self,
         message: str,
