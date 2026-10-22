@@ -37,9 +37,9 @@ _DIFFICULTY_FOR = {
 
 @dataclass
 class IdeaFit:
-    """How one idea fits a person: a score from 0 to 1, the skills they have and would
-    learn, the interests it matches, the facts the page states, and whether it is too
-    big for their hours."""
+    """How one idea fits a person: a score up to 1 (below 0 when the idea is too big
+    for their hours), the skills they have and would learn, the interests it matches,
+    and the facts the page states."""
 
     score: float
     have: list[str] = field(default_factory=list)
@@ -221,7 +221,7 @@ def fit_idea(
 ) -> IdeaFit:
     """Score an idea for the person from what it names and what the page states.
 
-    Half the score is the share of the idea's skills the person has. A wanted
+    Up to half the score: the share of the idea's skills the person has. A wanted
     subject adds 0.3. A stated difficulty adds up to 0.15, most for the level it
     suits. A size that fits the person's hours in the longest coding period adds
     0.05; one that does not costs 0.3 and marks the idea too big.
