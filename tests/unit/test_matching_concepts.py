@@ -50,8 +50,9 @@ def test_a_compound_skill_names_both_parts() -> None:
 def test_misspellings_are_read_and_reported() -> None:
     known = resolve("pyhton")
     assert known.concepts == ("python",) and known.corrected_from == "python"
-    close = resolve("data viz")
+    close = resolve("data vizualisation")
     assert close.concepts == ("data visualization",) and close.corrected_from
+    assert resolve("data viz").concepts == ("data visualization",)
     assert resolve("python").corrected_from is None
     assert resolve("zzqx").concepts == ()
 

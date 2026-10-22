@@ -35,7 +35,7 @@ def test_ideas_summary_counts_what_the_page_states() -> None:
         {"title": "Untitled", "description": ""},
     ]
     summary = summarize_ideas(ideas, layout="headings", url="https://example.org/ideas")
-    assert summary["count"] == 3
+    assert summary["count"] == 2  # "Untitled" is a fragment, not an idea
     assert summary["difficulty"] == {"easy": 1, "hard": 1}
     assert summary["size"] == {"small": 1}
     assert summary["skills"]["css"] == 1 and summary["skills"]["rust"] == 1
@@ -170,13 +170,17 @@ def test_issues_are_ordered_by_what_the_person_brings_but_free_ones_stay_first()
 
 def test_learning_path_changes_with_experience_and_hours() -> None:
     orgs = [{"name": 'Star "Lab"', "skills_to_learn": ["C++ (3 of 9 ideas)"]}]
+    fitting = [{"org": 'Star "Lab"', "ideas": [{"you_would_learn": ["C++", "CMake"]}]}]
     new = learning_path(
-        build_profile(technologies=["python"], experience="new", hours_per_week=5), orgs
+        build_profile(technologies=["python"], experience="new", hours_per_week=5), orgs, fitting
     )
     steps = [s["step"] for s in new]
     assert steps[0].startswith("Practise the pull request routine")
     assert any("documentation, test, or small bug" in s for s in steps)
-    assert any(s.startswith("Learn C++ from the code") for s in steps)
+    assert any(s.startswith("Learn C++ by reading the code") for s in steps)
+    # No learning step without ideas that fit: a page's whole skill list is not a plan.
+    plain = learning_path(build_profile(technologies=["python"]), orgs)
+    assert not any(s["step"].startswith("Learn") for s in plain)
     assert steps[-1].startswith("At 5 hours a week")
     assert [s["n"] for s in new] == list(range(1, len(new) + 1))
     assert all(
@@ -306,3 +310,35 @@ def test_event_repositories_are_not_projects() -> None:
         assert is_event_repo(name), name
     for name in ("zulip/zulip-terminal", "sympy/sympy", "org/eventlet", "org/py2026parser"):
         assert not is_event_repo(name), name
+
+
+def test_headings_and_fragments_are_not_ideas() -> None:
+    from git_into_gsoc.matching.ideas import is_real_idea
+
+    for title in (
+        "Description",
+        "Benefit to Fedora",
+        "Project 2",
+        "Brief Explanation[επεξεργασία | επεξεργασία κώδικα]",
+        "Why did we replace p4c-behavioral with bmv2?",
+        "Integrated Faust Language Server [Taken in 2025]",
+        "Flutter",
+    ):
+        assert not is_real_idea(title), title
+    assert is_real_idea("Implement an accessible, multi-select dropdown component")
+    assert is_real_idea("GDB", labelled=True)  # a short title with a stated size is kept
+
+
+def test_starter_issues_that_are_not_first_tasks_are_screened_out() -> None:
+    from git_into_gsoc.matching.issues import starter_problem
+
+    c_dev = build_profile(technologies=["c", "assembly"])
+    assert starter_problem({"title": "No GSoC on Wagtail core in 2027"}, c_dev)
+    assert starter_problem({"title": "Spark Operator Roadmap 2024"}, c_dev)
+    assert starter_problem({"title": "What can I work on ?"}, c_dev)
+    assert starter_problem({"title": "Progress", "labels": ["epic"]}, c_dev)
+    assert starter_problem({"title": "add CI for Mac", "created_at": "2016-03-01"}, c_dev)
+    flake8 = {"title": "Fix currently ignored Flake8 warnings", "created_at": "2025-01-01"}
+    assert "which you did not list" in str(starter_problem(flake8, c_dev))
+    fine = {"title": "Fix a null pointer in the C parser", "created_at": "2025-06-01"}
+    assert starter_problem(fine, c_dev) is None

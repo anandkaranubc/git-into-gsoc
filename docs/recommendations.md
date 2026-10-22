@@ -43,10 +43,11 @@ A tag the organization chose counts most. A word in its description, ideas page,
 
 Relevance decides the order:
 
-1. **Interests.** How well the organization's work covers each thing you care about. A match through a neighbouring subject (physics for astronomy) counts for less, and the evidence says "through Physics".
-2. **Skills.** Skills are alternatives: someone who knows Python and R can work where either is used, so the best match counts most and covering more of them adds a little. A skill few organizations use (Julia, Kotlin) says more than one most use (Python), so rare skills weigh more, like inverse document frequency in search engines.
+1. **Interests.** How well the organization's work covers each thing you care about. A match through a neighbouring subject (physics for astronomy) counts for less, and the evidence says so plainly: "Topic Astronomy and space: not named; the nearest is Physics". An umbrella subject such as "science" or "web" never stands in for a specific interest.
+2. **Skills.** A skill matches only itself or what it is part of: React counts where JavaScript is used, but Phoenix never counts because an organization does backend work, and C is not assembly. Skills are alternatives: someone who knows Python and R can work where either is used, so the best match counts most and covering more of them adds a little. A skill few organizations use (Julia, Kotlin) says more than one most use (Python), so rare skills weigh more, like inverse document frequency in search engines.
 3. Interests and skills count about equally, with a small bonus when both match.
-4. An organization that lists many skills or subjects (a runtime for nine languages, an umbrella for dozens of projects) says less about each one than a focused organization does, so its matches count a little less, the way search engines discount very long documents.
+4. An organization named after something you asked for (The Rust Foundation, LLVM, Open Robotics) is that thing's home and gets a small lift when its other evidence agrees, except for people new to open source, for whom fit matters more than a flagship.
+5. An organization that lists many skills or subjects (a runtime for nine languages, an umbrella for dozens of projects) says less about each one than a focused organization does, so its matches count a little less, the way search engines discount very long documents.
 
 Three things only break ties. Together they can move an organization by a fifth of its score, never past a clearly better match:
 
@@ -55,6 +56,8 @@ Three things only break ties. Together they can move an organization by a fifth 
 - **Beginner readiness**: a contributor guide, a readable ideas page, and how many ideas are easy or medium and small or medium. This weighs more when you say you are new to open source.
 
 With several interests, the list is reordered a little so each interest appears near the top (maximal marginal relevance, Carbonell and Goldstein, 1998).
+
+A fit is called strong only when nothing decides against it: not when most of an organization's ideas need a language you did not list (it says "Most of its ideas need Fortran, which you did not list"), when its stated idea sizes cannot fit your hours, when most of its ideas are hard and you are new, or when your interest is so broad that it matches dozens of organizations.
 
 The numeric `match_score` in JSON output only orders results. Please never present it, or the fit level, as a probability of anything.
 
@@ -73,12 +76,18 @@ Set them once with `profile --experience new|some|experienced --hours 10`, or pa
 
 Google announces each year's organizations around February. Until then, `orgs` and `recommend` use the latest official list and say plainly that none of these organizations is confirmed for the coming year ([official API](https://summerofcode.withgoogle.com/api/program/), checked 2026-10-21: the 2027 program does not exist yet).
 
-`recommend` also reads what its top five organizations (three without a GitHub token) posted about the coming year, in their issue trackers and wiki home pages. One whose maintainers say it will not take part moves to the end with the post as its first caveat, and its issues are left out of the starter list. A maintainer post about the coming year becomes a readiness line. A name you search that took part in earlier years but is not on the current list gets an explanation instead of an empty table.
+`recommend` (and `orgs`, for its top three) also reads what its top five organizations (three without a GitHub token) posted about the coming year, in their issue trackers and wiki home pages. One whose maintainers say it will not take part moves to the end with the post as its first caveat, and its issues are left out of the starter list. A maintainer post about the coming year becomes a readiness line. A name you search that took part in earlier years but is not on the current list gets an explanation instead of an empty table.
+
+## Who can apply
+
+`recommend` ends with the facts that decide whether and where you can apply, quoted from the [GSoC FAQ](https://developers.google.com/open-source/gsoc/faq): you must be 18 or older when you register, and a student or a beginner to open source ("GSoC is not for experienced open source developers"; it says this to anyone who calls themselves experienced). For someone who lists only writing tools, it notes that GSoC projects are coding projects. When no 2026 organization uses one of your skills (Elixir, for example), it says so, because the results then rest on your other skills.
 
 ## Repositories, issues, and ideas
 
 - **`repos ORG`** ranks an organization's repositories by whether its ideas page names them, open beginner issues, recent activity, and now also whether their language, topics, and description match your skills and interests. Very large repositories (over about 1 GB) say so, because cloning and building take longer.
+- **Starter issues in `recommend`** must be first tasks: announcements, roadmaps, trackers, epics, "what can I work on?" lists, issues open three years or more, issues in repositories marked deprecated or legacy, and issues that need only skills you did not list are skipped (the table says how many). Issues from the wider language search must come from organizations near the top of your ranking. When nothing is left, it says what to do instead.
 - **`issues`** keeps its order (availability, the beginner score, and an organization's own repositories before the ones its ideas page links to) and says what in each issue fits you. **`recommend`** goes further with its starter issues: an issue that names a skill you have or a subject you care about moves up, and people new to open source get a small lift for documentation and test issues. Personalised first-issue research found that newcomers' first issues share their task type, language, and domain ([Xiao et al., ASE 2023](https://arxiv.org/abs/2308.09038)).
+- **Ideas that fit you** leave out page headings and fragments ("Description", "Project 2", "Benefit to ...") and ideas marked as taken.
 - **`ideas ORG`** matches ideas by concept, so `reactjs` matches React and `c` no longer matches every idea that contains the letter c, and lists the skills each idea would teach.
 
 ## How well it works
@@ -92,12 +101,12 @@ Each has a dev half, used while tuning, and a test half, checked only after tuni
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
-| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.810** |
-| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.637** |
-| Personas: strong fits found in the top 10 | 0.763 | **0.885** |
-| Personas: picks in the top 5 that judges called wrong | 14 | **3** |
-| Accepted projects: accepting organization in the top 5 | 52.1% | **68.9%** |
-| Accepted projects: accepting organization in the top 10 | 62.2% | **76.5%** |
+| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.790** |
+| Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.625** |
+| Personas: strong fits found in the top 10 | 0.763 | **0.857** |
+| Personas: picks in the top 5 that judges called wrong | 14 | **5** |
+| Accepted projects: accepting organization in the top 5 | 52.1% | **64.7%** |
+| Accepted projects: accepting organization in the top 10 | 62.2% | **75.6%** |
 
 A third set of 12 personas from a second blind reviewer, in ecosystems the first set does not cover (Swift, Elixir, Scala, Lua, C#, embedded Rust, documentation only), confirmed the gain on first sight: nDCG@10 0.451 for the keyword ranker against 0.566 now, and judged-wrong picks in the top five down from 21 to 11.
 

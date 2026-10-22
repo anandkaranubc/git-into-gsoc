@@ -54,6 +54,7 @@ class OrgProfile:
     tags: tuple[str, ...] = ()
     ideas: dict[str, Any] = field(default_factory=dict)
     github: dict[str, Any] = field(default_factory=dict)
+    participation: dict[str, Any] = field(default_factory=dict)
 
     def add(self, concept: str, strength: float, source: str, detail: str) -> None:
         if strength <= 0:
@@ -115,6 +116,7 @@ def build_org_profile(
         tags=tuple(t.lower() for t in tags),
         ideas=ideas,
         github=github,
+        participation=dict(signals.get("participation") or {}),
     )
     for kind, values in (("tech", org.technologies), ("topic", org.topics)):
         for tag in values:

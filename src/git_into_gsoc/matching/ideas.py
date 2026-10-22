@@ -92,6 +92,70 @@ _SHORT_SKILLS = {"C": "c", "R": "r", "Go": "go", "D": "d"}
 _SHORT_RE = re.compile(r"(?<![\w+#])(C|R|Go|D)(?![\w+#])")
 
 
+# Section headings and page furniture that idea parsers sometimes pick up as ideas.
+_HEADING_WORDS = frozenset(
+    {
+        "description",
+        "scope",
+        "goal",
+        "goals",
+        "tests",
+        "test",
+        "testing",
+        "skills",
+        "mentors",
+        "mentor",
+        "background",
+        "material",
+        "materials",
+        "learning material",
+        "overview",
+        "introduction",
+        "requirements",
+        "prerequisites",
+        "timeline",
+        "team",
+        "faq",
+        "contact",
+        "contacting us",
+        "starter kit",
+        "expected impact",
+        "expected results",
+        "expected outcome",
+        "expected outcomes",
+        "deliverables",
+        "brief explanation",
+        "knowledge prerequisites",
+        "contribution guidelines",
+        "application process",
+        "project application process",
+        "mentorship and guidance",
+        "general evaluation criteria",
+        "domain-specific",
+        "difficulty",
+        "size",
+    }
+)
+_HEADING_RE = re.compile(
+    r"^(?:project\s*\d+|idea\s*\d+|benefit to .+|why .+\?|what is .+\?|"
+    r"projects under other organizations|see the official timeline.*|.*\[taken.*\].*)$",
+    re.I,
+)
+_EDIT_LINK_RE = re.compile(r"\[[^\]]*\]")
+
+
+def is_real_idea(title: str, *, labelled: bool = False) -> bool:
+    """False for a heading, a page fragment, or an idea marked as taken."""
+    cleaned = _EDIT_LINK_RE.sub("", title).strip(" :-|.\u2014").lower()
+    if not cleaned or cleaned in _HEADING_WORDS or _HEADING_RE.match(cleaned):
+        return False
+    if re.search(r"\btaken\b", title, re.I):
+        return False
+    # One or two words with no stated difficulty or size is usually a product name or
+    # a heading ("Flutter", "Kotlin Help", "Apache Dubbo"), not an idea.
+    return labelled or len(cleaned.split()) >= 3
+
+
 def required_skills(text: str) -> list[str]:
     """Skill concepts named in sentences that say something is required."""
     found: dict[str, None] = {}
@@ -159,6 +223,10 @@ def ideas_for(
     """The ideas from a signals summary that fit best, with what each asks and teaches."""
     scored = []
     for idea in ideas:
+        if not is_real_idea(
+            str(idea.get("t") or ""), labelled=bool(idea.get("d") or idea.get("s"))
+        ):
+            continue
         keys = list(idea.get("k") or [])
         skill_keys, domain_keys = idea_concepts(known=keys)
         fit = fit_idea(

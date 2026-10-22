@@ -28,6 +28,13 @@ def api() -> Any:
         router.get(f"{ARCHIVE}/organizations.json").mock(
             return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
         )
+        # `orgs` checks its top three organizations' posts about the coming year.
+        router.get("https://api.github.com/search/issues").mock(
+            return_value=httpx.Response(200, json={"items": []})
+        )
+        router.get(url__regex=r"https://api\.github\.com/(orgs|users)/[^/]+/repos").mock(
+            return_value=httpx.Response(200, json=[])
+        )
         yield router
 
 

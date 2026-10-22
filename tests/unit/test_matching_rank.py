@@ -160,13 +160,13 @@ def test_tie_breakers_never_overturn_a_clearly_better_match() -> None:
 
 
 def test_several_interests_each_show_up_near_the_top() -> None:
-    edu = [_org(f"School {i}", tech=["python"], topics=["education"]) for i in range(5)]
-    games = _org("Game Shop", tech=["python"], topics=["games"], num_projects_latest=1)
+    edu = [_org(f"Org {i}", tech=["python"], topics=["education"]) for i in range(5)]
+    games = _org("Fun Shop", tech=["python"], topics=["games"], num_projects_latest=1)
     names = [
         m.org.name
         for m in _rank([*edu, games], technologies=["python"], interests=["education", "games"])
     ]
-    assert "Game Shop" in names[:3]
+    assert "Fun Shop" in names[:3]
 
 
 def test_query_matches_names_and_words_and_category_filters() -> None:
@@ -231,3 +231,80 @@ def test_vague_words_get_narrower_suggestions_with_counts() -> None:
     assert skill_tips[0]["kind"] == "skill"
     assert ("Machine learning and AI", 9) in skill_tips[0]["suggest"]
     assert index.sharpen(build_profile(interests=["computer vision"]), broad=5) == []
+
+
+def test_a_skill_never_matches_through_a_subject_or_a_neighbouring_skill() -> None:
+    # Live review: "Skill Phoenix (through Backend and APIs): Django" and "Skill Assembly
+    # (through C)" claimed matches that were not there.
+    django = _org("Py Web", tech=["django"], topics=["web"])
+    c_only = _org("C House", tech=["c"], topics=["operating systems"])
+    assert _rank([django], technologies=["phoenix"]) == []
+    assert _rank([c_only], technologies=["assembly"]) == []
+
+
+def test_a_near_topic_match_says_it_is_not_the_topic() -> None:
+    ranked = _rank([PHYSICS], technologies=["python"], interests=["astronomy"])
+    line = next(e for e in ranked[0].evidence() if e.startswith("Topic Astronomy"))
+    assert "not named; the nearest is Physics" in line
+
+
+def test_an_org_named_after_the_skill_is_its_home_but_not_for_newcomers() -> None:
+    home = _org("The Rust Foundation", tech=["rust"], topics=["compilers"])
+    other = _org("Ferrous Tools", tech=["rust"], topics=["compilers"], num_projects_latest=20)
+    ranked = _rank([other, home], technologies=["rust"], experience="some")
+    assert ranked[0].org.name == "The Rust Foundation"
+    assert "Named after Rust" in ranked[0].reasons()
+    new = _rank([other, home], technologies=["rust"], experience="new")
+    assert "Named after Rust" not in new[0].reasons() + new[1].reasons()
+    # "game theory" in a name is mathematics, not games.
+    gambit = _org("Gambit: computation in game theory", tech=["c++"], topics=["games"])
+    assert not any(
+        r.startswith("Named after") for r in _rank([gambit], interests=["games"])[0].reasons()
+    )
+
+
+def test_a_blocking_caveat_keeps_a_fit_from_being_strong() -> None:
+    org = _org("Fortran Hub", tech=["python", "fortran"], topics=["scientific computing"])
+    signals = {
+        "year": 2026,
+        "organizations": {"fortran-hub": {"ideas": {"count": 4, "skills": {"fortran": 4}}}},
+    }
+    ranked = _rank(
+        [org], signals=signals, technologies=["python"], interests=["scientific computing"]
+    )
+    assert ranked[0].fit == "good"
+    assert any(c.startswith("Most of its ideas need Fortran") for c in ranked[0].caveats)
+
+
+def test_a_skill_no_organization_uses_is_said_plainly() -> None:
+    index = OrgIndex.build(ORGS, reference_year=2026)
+    notes = index.coverage(build_profile(technologies=["elixir", "python"]))
+    assert len(notes) == 1 and notes[0].startswith("No 2026 GSoC organization uses Elixir")
+
+
+def test_an_org_the_monthly_check_saw_sitting_out_moves_down_wherever_it_ranks() -> None:
+    # A live run listed Learning Unlimited sixth with no warning: only the top three
+    # were checked at query time. The monthly evidence now carries the statement.
+    out = _org("Sits Out", tech=["html", "css"], topics=["education"], slug="sits-out")
+    stays = _org("Stays", tech=["html"], topics=["education"], slug="stays")
+    said = {
+        "status": "not_taking_part",
+        "url": "https://x/wiki",
+        "year": 2027,
+        "checked": "2026-10-21",
+    }
+    signals = {"year": 2026, "organizations": {"sits-out": {"participation": said}}}
+    ranked = _rank(
+        [out, stays], signals=signals, technologies=["html", "css"], interests=["education"]
+    )
+    assert [m.org.name for m in ranked] == ["Stays", "Sits Out"]
+    assert (
+        ranked[1]
+        .caveats[0]
+        .startswith("Said it will not take part in GSoC 2027 (checked 2026-10-21)")
+    )
+    assert ranked[1].participation == {
+        "status": "not_taking_part",
+        "url": "https://x/wiki",
+        "checked": "2026-10-21",
+    }

@@ -11,9 +11,10 @@ documentation and test issues, the usual first step.
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
 from typing import Any
 
-from git_into_gsoc.matching.concepts import find_concepts, find_tag_concepts, label
+from git_into_gsoc.matching.concepts import SKILL, find_concepts, find_tag_concepts, kind_of, label
 from git_into_gsoc.matching.ideas import known_skills, wanted_domains
 from git_into_gsoc.matching.profile import ContributorProfile
 
@@ -41,6 +42,41 @@ _EVENT_REPO = re.compile(
 def is_event_repo(full_name: str) -> bool:
     """True for a repository named after an event or a year, rather than a project."""
     return bool(_EVENT_REPO.search(str(full_name).split("/")[-1]))
+
+
+# Titles and labels of things that are not a first task: announcements, roadmaps,
+# trackers, epics, "what can I work on?" lists, governance and release chores.
+_NOT_A_TASK_RE = re.compile(
+    r"\b(?:gsoc|google summer of code|roadmap|tracker|tracking issue|epic|umbrella issue|"
+    r"meta issue|what can i work on|announcement|no gsoc|working group|release [0-9.]+|"
+    r"publish .* to (?:maven|pypi|npm)|request for comments|rfc)\b",
+    re.I,
+)
+_NOT_A_TASK_LABELS = frozenset(
+    {"epic", "tracking", "meta", "roadmap", "announcement", "discussion", "question", "rfc"}
+)
+OLD_ISSUE_YEARS = 3
+
+
+def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | None:
+    """Why an issue is not a good first task for this person, or None when it may be."""
+    title = str(issue.get("title") or "")
+    labels = {str(lab).lower() for lab in issue.get("labels") or []}
+    if _NOT_A_TASK_RE.search(title) or labels & _NOT_A_TASK_LABELS:
+        return "an announcement, roadmap, or tracker rather than a task"
+    created = str(issue.get("created_at") or "")[:4]
+    if created.isdigit() and int(created) <= datetime.now(UTC).year - OLD_ISSUE_YEARS:
+        return f"open since {created}"
+    named = set(find_concepts(" ".join([title, str(issue.get("body_excerpt") or "")])))
+    for lab in issue.get("labels") or []:
+        named.update(find_tag_concepts(str(lab)))
+    skills = {c for c in named if kind_of(c) == SKILL and c not in {"git", "github actions"}}
+    known = known_skills(person)
+    if skills and known and not skills & known:
+        return (
+            "needs " + ", ".join(sorted(label(c) for c in skills)[:2]) + ", which you did not list"
+        )
+    return None
 
 
 def issue_fit(issue: dict[str, Any], person: ContributorProfile) -> tuple[float, list[str]]:

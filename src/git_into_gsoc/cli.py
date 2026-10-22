@@ -572,6 +572,7 @@ def orgs_cmd(
         category=category,
         year=year,
         limit=limit,
+        check_posts=True,
     )
     if output == Output.json:
         _emit(data, output)
@@ -599,9 +600,10 @@ def orgs_cmd(
     table.add_column("Projects", no_wrap=True)
     for org in data["organizations"]:
         why = [r for r in org.get("match_reasons") or [] if r.startswith(_FIT_PREFIXES)]
+        status = (org.get("participation") or {}).get("status")
         table.add_row(
             _fit_cell(org.get("fit")),
-            org["name"],
+            org["name"] + (" [red](sitting out)[/red]" if status == "not_taking_part" else ""),
             "; ".join(why) or "(no specific match)",
             str(len(org.get("years_active") or [])),
             _trend(org.get("projects_by_year") or {}),
@@ -613,6 +615,8 @@ def orgs_cmd(
         return
     _print_org_evidence(data["organizations"][:3])
     _print_sharpen(data.get("sharpen") or [])
+    for note in data.get("notes") or []:
+        console.print(f"[yellow]![/yellow] {note}")
     if data.get("how_ranked"):
         console.print(f"[dim]{data['how_ranked']}[/dim]")
     console.print(
@@ -1563,6 +1567,8 @@ def recommend_cmd(
     console.print(table)
     _print_org_evidence(data["recommended_orgs"][:3])
     _print_sharpen(data.get("sharpen") or [])
+    for note in data.get("notes") or []:
+        console.print(f"[yellow]![/yellow] {note}")
     if data.get("ideas_that_fit"):
         console.print("\n[bold]Ideas that fit you[/bold]")
         for group in data["ideas_that_fit"]:
@@ -1584,6 +1590,11 @@ def recommend_cmd(
                 f" Left out {data['starter_issues_hidden']} that someone already claimed or "
                 "is working on."
             )
+        if data.get("starter_issues_skipped"):
+            caption += (
+                f" Skipped {data['starter_issues_skipped']} that are announcements, trackers, "
+                "years old, in retired repositories, or need skills you did not list."
+            )
         issues = Table(title="Starter issues still open to newcomers", caption=caption.strip())
         issues.add_column("Status")
         issues.add_column("Issue", overflow="fold")
@@ -1602,11 +1613,8 @@ def recommend_cmd(
         console.print(
             f"[yellow]Starter issues unavailable:[/yellow] {data['starter_issue_error']['error']}"
         )
-    elif data.get("starter_issue_scope"):
-        console.print(
-            "[dim]No free starter issue found right now in "
-            f"{data['starter_issue_scope']}. Try `git-into-gsoc repos ORG` for one of them.[/dim]"
-        )
+    elif data.get("starter_issue_note"):
+        console.print(f"[dim]{data['starter_issue_note']}[/dim]")
     if data.get("learning_path"):
         console.print("\n[bold]Your path from here[/bold]")
         for step in data["learning_path"]:

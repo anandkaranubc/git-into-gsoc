@@ -70,6 +70,30 @@ def test_ideas_pages_get_no_github_token_and_listings_do(monkeypatch: pytest.Mon
         )
     )
     respx.get("https://api.github.com/orgs/broken/repos").mock(return_value=httpx.Response(500))
+    # Posts about the coming GSoC: Example says it sits out; the search for Broken fails.
+    sitting_out = {
+        "items": [
+            {
+                "number": 7,
+                "title": "No GSoC 2027 for Example",
+                "body": "We will not take part in GSoC 2027.",
+                "html_url": "https://github.com/example/site/issues/7",
+                "repository_url": "https://api.github.com/repos/example/site",
+                "state": "open",
+                "created_at": "2026-10-01T00:00:00Z",
+                "user": {"login": "maintainer"},
+                "author_association": "MEMBER",
+            }
+        ]
+    }
+
+    def posts(request: httpx.Request) -> httpx.Response:
+        query = request.url.params["q"]
+        if "org:broken" in query:
+            return httpx.Response(500)
+        return httpx.Response(200, json=sitting_out if "org:example" in query else {"items": []})
+
+    respx.get("https://api.github.com/search/issues").mock(side_effect=posts)
     official: list[dict[str, Any]] = [
         {
             "slug": "example",
@@ -79,7 +103,12 @@ def test_ideas_pages_get_no_github_token_and_listings_do(monkeypatch: pytest.Mon
         },
         {"slug": "broken", "name": "Broken", "source_code": "https://github.com/broken"},
     ]
-    previous = {"broken": {"github": {"active_repos": 7, "languages": {"C": 7}}}}
+    previous = {
+        "broken": {
+            "github": {"active_repos": 7, "languages": {"C": 7}},
+            "participation": {"status": "undecided", "url": "https://x/1", "year": 2027},
+        }
+    }
     signals = build_signals(official, GSoCToolkit(), previous=previous)
 
     assert page.called and listing.called
@@ -89,3 +118,9 @@ def test_ideas_pages_get_no_github_token_and_listings_do(monkeypatch: pytest.Mon
     assert ideas["count"] == 2 and ideas["difficulty"] == {"easy": 1, "hard": 1}
     assert signals["example"]["github"]["languages"] == {"JavaScript": 1}
     assert signals["broken"]["github"] == previous["broken"]["github"]  # kept, not wiped
+    said = signals["example"]["participation"]
+    assert said["status"] == "not_taking_part" and said["year"] == 2027
+    assert said["url"] == "https://github.com/example/site/issues/7"
+    # The search for Broken failed, so last month's answer stands.
+    assert signals["broken"]["participation"] == previous["broken"]["participation"]
+    assert "_participation_failed" not in signals["broken"]

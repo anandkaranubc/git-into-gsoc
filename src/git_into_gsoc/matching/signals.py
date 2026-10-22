@@ -18,6 +18,7 @@ number is a count of something a person can open and check.
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 from collections import Counter
@@ -35,6 +36,7 @@ from git_into_gsoc.matching.concepts import (
     kind_of,
     resolve,
 )
+from git_into_gsoc.matching.ideas import is_real_idea
 
 SIGNALS_FILE = "org_signals.json"
 # MediaWiki section headings end in an "[edit]" link.
@@ -72,7 +74,19 @@ def _top(counter: Counter[str], n: int) -> dict[str, int]:
 
 
 def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> dict[str, Any]:
-    """Counts and a short list from parsed ideas (dicts shaped like ProjectIdea)."""
+    """Counts and a short list from parsed ideas (dicts shaped like ProjectIdea).
+
+    A parser sometimes splits one idea into blocks with titles such as
+    "Description" or "Skills". Their text still counts as evidence, but they are
+    left out of the idea count and the list of ideas shown to people.
+    """
+    real = [
+        i
+        for i in ideas
+        if is_real_idea(
+            str(i.get("title") or ""), labelled=bool(i.get("difficulty") or i.get("size"))
+        )
+    ]
     difficulty: Counter[str] = Counter()
     size: Counter[str] = Counter()
     skills: Counter[str] = Counter()
@@ -92,7 +106,7 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
         skills.update(labelled)
         mentions.update(named)
         mentors.update(str(m).lower() for m in idea.get("mentors") or [])
-        if len(kept) < MAX_IDEAS_KEPT:
+        if len(kept) < MAX_IDEAS_KEPT and any(idea is r for r in real):
             title = _EDIT_LINK.sub("", str(idea.get("title") or "")).strip()
             entry: dict[str, Any] = {"t": title[:MAX_TITLE]}
             if idea.get("difficulty"):
@@ -106,7 +120,7 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
     return {
         "url": url,
         "layout": layout,
-        "count": len(ideas),
+        "count": len(real),
         "difficulty": dict(difficulty),
         "size": dict(size),
         "skills": _top(skills, 20),
@@ -242,8 +256,37 @@ def keep_previous(
             kept["ideas"] = before
         if "github" not in entry and old.get("github"):
             kept["github"] = old["github"]
+        if kept.pop("_participation_failed", False) and old.get("participation"):
+            kept["participation"] = old["participation"]
         merged[slug] = kept
     return merged
+
+
+_SAID = {"not_taking_part", "undecided", "posted"}
+
+
+def _participation_for(toolkit: Any, owners: list[str], now: datetime) -> dict[str, Any]:
+    """What an organization posted about the coming GSoC, for the evidence file.
+
+    Only a statement is kept (sitting out, undecided, or a post about the year), so
+    the file stays small and stable; a failed check is marked so the last one stays.
+    """
+    from git_into_gsoc.service import participation_from
+
+    year = toolkit.settings.target_year
+    found = participation_from(toolkit.gsoc_posts_for(owners[:3], year=year))
+    if found["status"] == "unknown":
+        return {"_participation_failed": True}
+    if found["status"] not in _SAID:
+        return {}
+    return {
+        "participation": {
+            "status": found["status"],
+            "url": found.get("url"),
+            "year": year,
+            "checked": now.date().isoformat(),
+        }
+    }
 
 
 def build_signals(
@@ -277,6 +320,8 @@ def build_signals(
         github = _github_for(toolkit, owners, now)
         if github:
             entry["github"] = github
+        if owners:
+            entry.update(_participation_for(toolkit, owners, now))
         return str(raw.get("slug") or raw.get("name")), entry
 
     with ThreadPoolExecutor(max_workers=8) as pool:
@@ -294,11 +339,15 @@ def write_signals(payload: dict[str, Any], out: Path) -> Path:
 
 def main(argv: list[str] | None = None) -> int:
     """Refresh ``data/org_signals.json`` from live sources (maintainers only)."""
-    from git_into_gsoc.config import LATEST_ARCHIVED_YEAR
+    from git_into_gsoc.config import LATEST_ARCHIVED_YEAR, get_settings
     from git_into_gsoc.service import GSoCToolkit
 
     args = list(sys.argv[1:] if argv is None else argv)
     year = int(args[0]) if args else LATEST_ARCHIVED_YEAR
+    # One search per organization for its posts about the coming year: stay a little
+    # under GitHub's 30 searches a minute, so the whole list gets checked.
+    os.environ.setdefault("GIG_SEARCH_MIN_INTERVAL_SECONDS", "2.5")
+    get_settings.cache_clear()
     toolkit = GSoCToolkit()
     official = toolkit.official.organizations(year)
     if not official:

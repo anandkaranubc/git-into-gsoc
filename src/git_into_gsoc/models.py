@@ -117,6 +117,8 @@ class OrgSummary(BaseModel):
     caveats: list[str] = Field(default_factory=list)
     # Skills its ideas often ask for that the person did not list.
     skills_to_learn: list[str] = Field(default_factory=list)
+    # What it posted about the coming GSoC, from the monthly check or a live one.
+    participation: dict[str, Any] | None = None
     recent_projects: list[PastProject] = Field(default_factory=list)
 
 

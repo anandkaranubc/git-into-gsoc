@@ -25,6 +25,7 @@ from git_into_gsoc.matching.concepts import (
     CONCEPTS,
     SKILL,
     broader_of,
+    find_concepts,
     kind_of,
     label,
     narrower_index,
@@ -38,6 +39,12 @@ VIA_BROADER_SKILL = 0.3  # wants React, the org uses JavaScript
 VIA_BROADER_DOMAIN = 0.35  # wants computer vision, the org does machine learning
 VIA_RELATED = 0.35  # wants astronomy, the org does physics
 WORD_IN_TAG, WORD_IN_TEXT = 1.0, 0.6
+# An organization named after something the person asked for (The Rust Foundation,
+# LLVM, Open Robotics) is that thing's home; it gets this much extra relevance when
+# its other evidence agrees.
+NAME_BOOST = 0.1
+# Umbrella subjects too broad to stand in for a specific interest.
+GENERIC_PARENTS = frozenset({"science", "web"})
 # Interests and skills weigh the same (tuned on the dev half of evals/; see evals/README.md).
 INTEREST_WEIGHT = 0.5
 SYNERGY = 0.1
@@ -58,6 +65,8 @@ BREADTH_THRESHOLD = 0.5
 # How far the tie-breakers can move a score: from x0.8 to x1.0.
 PRIOR_FLOOR = 0.8
 HARD_FOR_NEW = 0.85
+# An organization that said it will not take part in the coming year goes far down.
+SITTING_OUT = 0.3
 TIME_MISFIT = 0.85
 FIT_STRONG, FIT_GOOD, FIT_MIN = 0.7, 0.45, 0.12
 DIVERSITY = 0.08
@@ -99,6 +108,18 @@ class OrgMatch:
     skills_to_learn: list[str] = field(default_factory=list)
     extra_reasons: list[str] = field(default_factory=list)
 
+    @property
+    def participation(self) -> dict[str, Any] | None:
+        """The evidence file's statement about the coming year, when there is one."""
+        said = self.profile.participation
+        if said.get("status") and int(said.get("year") or 0) > 0:
+            return {
+                "status": said["status"],
+                "url": said.get("url"),
+                "checked": said.get("checked"),
+            }
+        return None
+
     def reasons(self) -> list[str]:
         """Short reasons: direct matches first, then matches through a neighbour."""
         terms = [("topic", t) for t in self.interests] + [("skill", t) for t in self.skills]
@@ -109,14 +130,26 @@ class OrgMatch:
         return [*self.extra_reasons, *direct, *nearby, *self.readiness[:3]]
 
     def evidence(self) -> list[str]:
-        lines = []
+        """Direct evidence first; a near match says plainly that it is not the thing."""
+        direct: list[str] = []
+        near: list[str] = []
         for kind, terms in (("Topic", self.interests), ("Skill", self.skills)):
             for term in terms:
                 if term.strength <= 0 or not term.evidence:
                     continue
-                via = f" (through {term.via})" if term.via else ""
-                lines.append(f"{kind} {term.want.shown}{via}: " + "; ".join(term.evidence))
-        return lines
+                detail = "; ".join(term.evidence)
+                if term.how == "broader":
+                    near.append(
+                        f"{kind} {term.want.shown}: not named; it works on {term.via} "
+                        f"more broadly ({detail})"
+                    )
+                elif term.how == "related":
+                    near.append(
+                        f"{kind} {term.want.shown}: not named; the nearest is {term.via} ({detail})"
+                    )
+                else:
+                    direct.append(f"{kind} {term.want.shown}: {detail}")
+        return [*direct, *near]
 
 
 # ------------------------------------------------------------------ matching
@@ -151,14 +184,22 @@ def match_term(profile: OrgProfile, want: Want) -> TermMatch:
         own = central(concept)
         if own > best.strength:
             best = TermMatch(want, own, "direct", None, profile.best_evidence(concept))
-        factor = VIA_BROADER_SKILL if kind_of(concept) == SKILL else VIA_BROADER_DOMAIN
+        is_skill = kind_of(concept) == SKILL
+        factor = VIA_BROADER_SKILL if is_skill else VIA_BROADER_DOMAIN
         for parent in broader_of(concept):
+            # React counts through JavaScript, but Phoenix never through "backend";
+            # and "science" or "web" is too broad to stand for any one interest.
+            if (kind_of(parent) == SKILL) != is_skill or parent in GENERIC_PARENTS:
+                continue
             value = factor * profile.strength.get(parent, 0.0)
             if value > best.strength:
                 best = TermMatch(
                     want, value, "broader", label(parent), profile.best_evidence(parent)
                 )
-        for other in _related_index().get(concept, ()):
+        # A neighbouring skill is not the skill (C is not assembly, Java is not Scala).
+        for other in () if is_skill else _related_index().get(concept, ()):
+            if kind_of(other) == SKILL:
+                continue
             value = VIA_RELATED * profile.strength.get(other, 0.0)
             if value > best.strength:
                 best = TermMatch(want, value, "related", label(other), profile.best_evidence(other))
@@ -224,7 +265,7 @@ def _ideas_facts(profile: OrgProfile, year: int | None) -> tuple[float, list[str
     when = f"{year} " if year else ""
     if count:
         parts.append(1.0)
-        line = f"{count} ideas on its {when}ideas page"
+        line = f"{count} idea{'s' if count != 1 else ''} on its {when}ideas page"
         stated = sum(difficulty.values())
         if stated:
             spread = ", ".join(
@@ -264,6 +305,28 @@ def _time_fit(hours: int | None, sizes: dict[str, int]) -> tuple[bool | None, st
     )
 
 
+def _mostly_needs(profile: OrgProfile, person: ContributorProfile) -> list[str]:
+    """Languages and frameworks at least half of its ideas list that the person lacks."""
+    ideas = profile.ideas
+    total = int(ideas.get("count") or 0)
+    if total < 3:
+        return []
+    have: set[str] = set()
+    for want in person.skills:
+        for concept in want.concepts:
+            have.add(concept)
+            have.update(broader_of(concept))
+            have.update(narrower_index().get(concept, ()))
+    return [
+        label(concept)
+        for concept, count in sorted((ideas.get("skills") or {}).items(), key=lambda kv: -kv[1])
+        if kind_of(concept) == SKILL
+        and concept not in have
+        and concept != "git"
+        and count / total >= 0.5
+    ][:2]
+
+
 def _skills_to_learn(profile: OrgProfile, person: ContributorProfile) -> list[str]:
     """Skills its ideas often ask for that the person did not list."""
     ideas = profile.ideas
@@ -299,6 +362,7 @@ class OrgIndex:
     signals_year: int | None = None
     signals_date: str | None = None
     breadth: dict[str, tuple[float, float]] = field(default_factory=dict)
+    _broad_cache: dict[tuple[str, ...], bool] = field(default_factory=dict, repr=False)
 
     @classmethod
     def build(
@@ -332,6 +396,37 @@ class OrgIndex:
             signals_date=(signals or {}).get("generated"),
             breadth=_breadth_factors(profiles),
         )
+
+    def _broad(self, person: ContributorProfile) -> bool:
+        """True when an interest matches so many organizations that fit says little."""
+        key = tuple(w.raw for w in person.interests)
+        if key not in self._broad_cache:
+            self._broad_cache[key] = any(
+                sum(1 for p in self.profiles if match_term(p, w).strength >= 0.5) >= SHARPEN_AT
+                for w in person.interests
+            )
+        return self._broad_cache[key]
+
+    def coverage(self, person: ContributorProfile) -> list[str]:
+        """Skills that few or no organizations use, said plainly."""
+        notes = []
+        for want in person.skills:
+            if not want.concepts:
+                continue
+            users = sum(
+                1
+                for p in self.profiles
+                if any(p.strength.get(c, 0.0) >= 0.5 for c in want.concepts)
+            )
+            if users <= 2:
+                plural = "organization uses" if users == 1 else "organizations use"
+                notes.append(
+                    f"{'No' if users == 0 else users} {self.reference_year} GSoC "
+                    f"{plural if users else 'organization uses'} {want.shown}, so these results "
+                    "rest on your other skills and interests. Most would need you to learn "
+                    "another language."
+                )
+        return notes
 
     def sharpen(
         self, person: ContributorProfile, *, broad: int = SHARPEN_AT
@@ -472,6 +567,12 @@ class OrgIndex:
         else:
             relevance = 1.0 if (category or not query) else 0.0
 
+        # A newcomer is better served by fit than by a project's flagship organization.
+        home = _named_after(org.name, [*interests, *skills]) if person.experience != "new" else None
+        if home is not None:
+            relevance = min(1.0, relevance + NAME_BOOST)
+            extra.append(f"Named after {home}")
+
         if query:
             name_hit = _word_pattern(query.lower()).search(org.name.lower())
             q = max((match_term(profile, w).strength for w in query_wants), default=0.0)
@@ -519,8 +620,30 @@ class OrgIndex:
         trend = _trend(org.projects_by_year)
         if trend:
             caveats.append(trend)
+        said = profile.participation
+        said_year = int(said.get("year") or 0)
+        if said.get("status") == "not_taking_part" and said_year > self.reference_year:
+            caveats.insert(
+                0,
+                f"Said it will not take part in GSoC {said_year} (checked "
+                f"{said.get('checked')}): {said.get('url')}",
+            )
+            score *= SITTING_OUT
+        elif said.get("status") == "undecided" and said_year > self.reference_year:
+            caveats.append(
+                f"Had not decided about GSoC {said_year} (checked {said.get('checked')}): "
+                f"{said.get('url')}"
+            )
         if profile.ideas.get("url") and not profile.ideas.get("count"):
             caveats.append(_unread_ideas(str(profile.ideas.get("layout") or "")))
+        needs = _mostly_needs(profile, person) if not person.empty else []
+        if needs:
+            caveats.append(f"Most of its ideas need {', '.join(needs)}, which you did not list")
+        blocking = (
+            bool(needs)
+            or fits is False
+            or (level == "new" and stated >= 4 and difficulty.get("hard", 0) / stated >= 0.7)
+        )
 
         readiness_lines = [*idea_facts]
         if years_text:
@@ -533,6 +656,10 @@ class OrgIndex:
 
         # A fit needs something to fit: a category or a bare listing has none.
         fit = _fit_level(relevance, interests, skills) if (query or not person.empty) else None
+        # A caveat that decides whether someone can start here, or a broad word that
+        # matches dozens of organizations, keeps the fit from being called strong.
+        if fit == "strong" and (blocking or self._broad(person)):
+            fit = "good"
         return OrgMatch(
             org=org,
             profile=profile,
@@ -548,6 +675,19 @@ class OrgIndex:
             skills_to_learn=_skills_to_learn(profile, person) if not person.empty else [],
             extra_reasons=extra,
         )
+
+
+def _named_after(name: str, terms: list[TermMatch]) -> str | None:
+    """The asked-for thing an organization is named after, when its evidence agrees.
+
+    The name is read like any other text, so "game theory" in Gambit's name is
+    mathematics, not games.
+    """
+    named = set(find_concepts(name))
+    for term in terms:
+        if term.how == "direct" and term.strength >= 0.5 and named & set(term.want.concepts):
+            return term.want.shown
+    return None
 
 
 def _breadth_factors(profiles: list[OrgProfile]) -> dict[str, tuple[float, float]]:

@@ -203,6 +203,8 @@ def gsoc_search_orgs(
     and `skills_to_learn`, plus ideas_url, guide_url, github_orgs, channels, and slot
     history. `match_score` only orders results: never present it as a chance of acceptance.
     When nothing matches, `hint` says why (for example, the org took part in earlier years).
+    The top three are checked for posts about the coming year: one whose maintainers say it
+    will not take part has `participation.status` "not_taking_part", a caveat, and moves last.
     """
     return _dump(
         toolkit().match_orgs(
@@ -212,6 +214,7 @@ def gsoc_search_orgs(
             category=category or None,
             year=year or None,
             limit=limit,
+            check_posts=True,
         )
     )
 

@@ -379,6 +379,7 @@ class GSoCClient:
                     "readiness": m.readiness,
                     "caveats": m.caveats,
                     "skills_to_learn": m.skills_to_learn,
+                    "participation": m.participation,
                 }
             )
             for m in matches

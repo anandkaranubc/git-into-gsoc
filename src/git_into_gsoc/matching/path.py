@@ -20,12 +20,24 @@ def _quote(name: str) -> str:
     return '"' + name.replace('"', "") + '"'
 
 
-def learning_path(person: ContributorProfile, orgs: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Steps for this person, built around their best-fitting organization."""
+def learning_path(
+    person: ContributorProfile,
+    orgs: list[dict[str, Any]],
+    ideas_that_fit: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    """Steps for this person, built around their best-fitting organization.
+
+    The skill to learn comes from the top organization's ideas that fit the
+    person, not from everything its page lists.
+    """
     top = orgs[0] if orgs else None
     name = _quote(top["name"]) if top else '"ORG"'
     level = person.experience or "some"
-    learn = list((top or {}).get("skills_to_learn") or [])
+    learn: list[str] = []
+    for group in ideas_that_fit or []:
+        if top and group.get("org") == top.get("name"):
+            for idea in group.get("ideas") or []:
+                learn.extend(s for s in idea.get("you_would_learn") or [] if s not in learn)
     steps: list[dict[str, Any]] = []
 
     def add(step: str, why: str, command: str | None = None) -> None:
@@ -69,9 +81,9 @@ def learning_path(person: ContributorProfile, orgs: list[dict[str, Any]]) -> lis
         )
     if learn:
         add(
-            f"Learn {learn[0].split(' (')[0]} from the code that uses it in this project.",
-            f"Its ideas often ask for it: {', '.join(learn)}.",
-            "git-into-gsoc pointers OWNER/REPO#ISSUE",
+            f"Learn {learn[0]} by reading the code that uses it in this project.",
+            f"The ideas there that fit you also ask for: {', '.join(learn[:3])}.",
+            f"git-into-gsoc ideas {name}",
         )
     add(
         "Before proposals open, talk with a mentor about one idea in your own words.",

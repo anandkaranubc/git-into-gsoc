@@ -62,6 +62,9 @@ def api(monkeypatch: pytest.MonkeyPatch) -> respx.MockRouter:
         router.get(url__regex=r"https://api\.github\.com/(orgs|users)/[^/]+/repos").mock(
             return_value=httpx.Response(200, json=[])
         )
+        router.get(url__regex=r"https://api\.github\.com/repos/[^/]+/[^/]+$").mock(
+            return_value=httpx.Response(200, json={"description": "", "archived": False})
+        )
         yield router
 
 
@@ -195,3 +198,31 @@ def test_cli_profile_takes_an_experience_level(api: respx.MockRouter) -> None:
     assert "Open source experience: new" in result.output
     bad = CliRunner().invoke(app, ["profile", "--experience", "guru"])
     assert bad.exit_code != 0 and "Unknown experience level" in bad.output
+
+
+def test_recommend_states_eligibility_from_the_faq(api: respx.MockRouter) -> None:
+    data = GSoCToolkit().recommend_path(technologies=["python"], experience="experienced")
+    notes = " ".join(data["notes"])
+    assert "18 or older" in notes and "GSoC is not for experienced open source developers" in notes
+    docs = GSoCToolkit().recommend_path(
+        technologies=["markdown", "git"], interests=["documentation"]
+    )
+    assert any("GSoC projects are coding projects" in n for n in docs["notes"])
+
+
+def test_orgs_checks_its_top_organizations_posts(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    toolkit = GSoCToolkit()
+    seen: list[list[str]] = []
+
+    def posts(owners: list[str], year: int) -> list[dict[str, Any]]:
+        seen.append(owners)
+        return []
+
+    monkeypatch.setattr(toolkit.github, "gsoc_year_posts", posts)
+    plain = toolkit.match_orgs(technologies=["python"])
+    assert not seen and all(o.get("participation") is None for o in plain["organizations"])
+    checked = toolkit.match_orgs(technologies=["python"], check_posts=True)
+    assert 1 <= len(seen) <= 3
+    assert any(o.get("participation") for o in checked["organizations"])

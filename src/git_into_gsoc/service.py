@@ -84,9 +84,10 @@ from git_into_gsoc.gsoc.project_ideas import (
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
+from git_into_gsoc.matching.concepts import SKILL, kind_of
 from git_into_gsoc.matching.concepts import resolve as resolve_concept
 from git_into_gsoc.matching.ideas import ideas_for
-from git_into_gsoc.matching.issues import is_event_repo, personalize
+from git_into_gsoc.matching.issues import is_event_repo, personalize, starter_problem
 from git_into_gsoc.matching.path import learning_path
 from git_into_gsoc.matching.profile import (
     EXPERIENCE_HELP,
@@ -156,6 +157,33 @@ HOW_RANKED = (
     "ideas page, and its GitHub repositories; every reason names its source. It says how well "
     "the work matches you, not your chance of being accepted. See docs/recommendations.md."
 )
+
+
+# Repository descriptions that say no new work is wanted there.
+_RETIRED_RE = re.compile(
+    r"\b(?:deprecated|legacy|no longer (?:maintained|developed|accepting)|unmaintained|"
+    r"read-only mirror|mirror of|archived)\b",
+    re.I,
+)
+# Skills that are not programming, for the "GSoC is a coding program" note.
+_NOT_CODING = frozenset({"latex", "git", "html", "css"})
+
+
+def participation_from(found: dict[str, Any]) -> dict[str, Any]:
+    """What an organization's own posts say about a GSoC year (from gsoc_posts_for)."""
+    if found.get("error"):
+        return {"status": "unknown"}
+    posts = found.get("posts") or []
+    trusted = [p for p in posts if p.get("by_maintainer") or p.get("source") == "wiki"]
+    for status in ("not_taking_part", "undecided", "mentions"):
+        post = next((p for p in trusted if p.get("status") == status), None)
+        if post:
+            return {
+                "status": "posted" if status == "mentions" else status,
+                "url": post.get("url"),
+                "title": post.get("title"),
+            }
+    return {"status": "no_post"}
 
 
 def _int_or_none(value: Any) -> int | None:
@@ -293,7 +321,11 @@ class GSoCToolkit:
         category: str | None = None,
         year: int | None = None,
         limit: int = 10,
+        check_posts: bool = False,
     ) -> dict[str, Any]:
+        """Organizations ranked for the person. With `check_posts`, the top three are
+        checked for posts about the coming year, and one that says it sits out moves last
+        (one search each)."""
         from_profile = False
         saved = self.progress.profile()
         if not (query or technologies or topics or category):
@@ -322,8 +354,13 @@ class GSoCToolkit:
             },
             "read_as": person.notes,
             "sharpen": self._sharpen(person, year),
+            "notes": self._coverage(person, year),
             "count": len(results),
-            "organizations": [r.model_dump(exclude={"recent_projects"}) for r in results],
+            "organizations": self.check_participation(
+                [r.model_dump(exclude={"recent_projects"}) for r in results], check=3
+            )
+            if check_posts
+            else [r.model_dump(exclude={"recent_projects"}) for r in results],
             "how_ranked": HOW_RANKED,
             "hint": self._empty_search_hint(query, catalog.year) if not results else None,
         }
@@ -407,26 +444,15 @@ class GSoCToolkit:
         targets = [org for org in out[: max(0, check)] if org.get("github_orgs")]
 
         def one(org: dict[str, Any]) -> dict[str, Any]:
-            found = self.gsoc_posts_for(list(org["github_orgs"])[:3], year=year)
-            if found.get("error"):
-                return {"status": "unknown"}
-            posts = found.get("posts") or []
-            trusted = [p for p in posts if p.get("by_maintainer") or p.get("source") == "wiki"]
-            for status in ("not_taking_part", "undecided", "mentions"):
-                post = next((p for p in trusted if p.get("status") == status), None)
-                if post:
-                    return {
-                        "status": "posted" if status == "mentions" else status,
-                        "url": post.get("url"),
-                        "title": post.get("title"),
-                    }
-            return {"status": "no_post"}
+            return participation_from(self.gsoc_posts_for(list(org["github_orgs"])[:3], year=year))
 
         if targets:
             workers = min(len(targets), max(1, self.settings.max_concurrency))
             with ThreadPoolExecutor(max_workers=workers) as pool:
                 results = list(pool.map(one, targets))
             for org, participation in zip(targets, results, strict=True):
+                if participation["status"] == "unknown" and org.get("participation"):
+                    continue  # the monthly check's answer stands
                 org["participation"] = participation
                 status = participation["status"]
                 if status == "not_taking_part":
@@ -1115,9 +1141,12 @@ class GSoCToolkit:
             topics=wants or None,
             experience=level,
             hours_per_week=hours,
-            limit=8,
+            limit=20,
         )
-        orgs = [o.model_dump(exclude={"recent_projects"}) for o in ranked]
+        # Eight to show; the first twenty also decide which wider issues are close enough.
+        nearby_names = {o.name for o in ranked}
+        nearby_owners = {gh.lower() for o in ranked for gh in o.github_orgs}
+        orgs = [o.model_dump(exclude={"recent_projects"}) for o in ranked[:8]]
         if check_posts and orgs:
             # One search each; without a token GitHub allows ten a minute, shared with
             # the issue search below.
@@ -1133,6 +1162,7 @@ class GSoCToolkit:
         issue_error: dict[str, str] | None = None
         issue_scope = None
         hidden = 0
+        skipped = 0
         owners = {o["github_orgs"][0]: o["name"] for o in taking_part if o.get("github_orgs")}
         if issue_language or owners:
             try:
@@ -1164,16 +1194,27 @@ class GSoCToolkit:
                     if (o.get("participation") or {}).get("status") == "not_taking_part"
                     for owner in o.get("github_orgs") or []
                 }
-                # Nor from a repository for an event rather than code.
+                # Nor from a repository for an event rather than code, nor from an
+                # organization far down this person's ranking.
                 candidates = [
                     i
                     for i in candidates
                     if str(i["repo"]).split("/")[0].lower() not in sitting_out
                     and not is_event_repo(str(i["repo"]))
+                    and (
+                        str(i["repo"]).split("/")[0].lower() in nearby_owners
+                        or i.get("gsoc_org") in nearby_names
+                    )
                 ]
                 unique = list({(i["repo"], i["number"]): i for i in candidates}.values())
-                issues = personalize([i for i in unique if _open(i)], person)[:5]
                 hidden = sum(1 for i in unique if not _open(i))
+                free = [i for i in unique if _open(i)]
+                # A first task, not an announcement, a tracker, a years-old request, or
+                # work in a language the person does not know.
+                screened = [i for i in free if starter_problem(i, person) is None]
+                screened = self._without_retired_repos(screened)
+                skipped = len(free) - len(screened)
+                issues = personalize(screened, person)[:5]
             except GigError as exc:
                 issue_error = exc.to_dict()
 
@@ -1214,7 +1255,16 @@ class GSoCToolkit:
             "starter_issue_scope": issue_scope,
             "starter_issues_hidden": hidden,
             "starter_issue_error": issue_error,
-            "learning_path": learning_path(person, taking_part),
+            "starter_issues_skipped": skipped,
+            "starter_issue_note": None
+            if issues or issue_error
+            else (
+                "No open first task turned up in these organizations right now. Run "
+                "`git-into-gsoc repos ORG` for one of them and look through its issues, or "
+                "ask in its chat which task would suit a newcomer."
+            ),
+            "notes": self._recommend_notes(person, level),
+            "learning_path": learning_path(person, taking_part, ideas),
             "next_steps": [
                 "Shortlist three organizations and join their community channels",
                 "Check one or two of their main repositories for health and a contributing guide",
@@ -1223,6 +1273,58 @@ class GSoCToolkit:
             ],
             "evidence_note": note,
         }
+
+    def _without_retired_repos(self, issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        """Leave out issues in repositories marked deprecated, legacy, or a mirror."""
+        keep = []
+        verdicts: dict[str, bool] = {}
+        for issue in issues:
+            repo = str(issue.get("repo") or "")
+            if repo not in verdicts:
+                try:
+                    raw = self.github.get_repo(*repo.split("/", 1))
+                except (GigError, ValueError):
+                    verdicts[repo] = True
+                else:
+                    text = str(raw.get("description") or "")
+                    verdicts[repo] = not (raw.get("archived") or _RETIRED_RE.search(text))
+            if verdicts[repo]:
+                keep.append(issue)
+        return keep
+
+    def _coverage(self, person: ContributorProfile, year: int | None = None) -> list[str]:
+        try:
+            _, index = self.gsoc.org_index(year)
+        except GigError:
+            return []
+        return index.coverage(person)
+
+    def _recommend_notes(self, person: ContributorProfile, level: str | None) -> list[str]:
+        """Facts that decide whether and where someone can apply, with their source."""
+        notes = self._coverage(person)
+        if level == "experienced":
+            notes.append(
+                'GSoC is for students and beginners to open source. The FAQ says: "GSoC is '
+                'not for experienced open source developers" and "Regular contributors to an '
+                f'open source project are not beginners." Source: {GSOC_FAQ_URL}'
+            )
+        coding = [
+            c
+            for w in person.skills
+            for c in w.concepts
+            if kind_of(c) == SKILL and c not in _NOT_CODING
+        ]
+        if person.skills and not coding:
+            notes.append(
+                'GSoC projects are coding projects ("Participants write code for an open '
+                'source organization", from the FAQ). Documentation and design work is a good '
+                f"way to start in a community, but a proposal needs code. Source: {GSOC_FAQ_URL}"
+            )
+        notes.append(
+            "To take part you must be 18 or older when you register, and a student or a "
+            f"beginner to open source. Source: {GSOC_FAQ_URL}"
+        )
+        return notes
 
     def _ideas_that_fit(
         self, orgs: list[dict[str, Any]], person: ContributorProfile

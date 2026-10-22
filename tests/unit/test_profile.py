@@ -46,6 +46,10 @@ def api() -> respx.MockRouter:
         router.get(url__regex=r"https://api\.github\.com/(orgs|users)/[^/]+/repos").mock(
             return_value=httpx.Response(200, json=[])
         )
+        # ...and that a starter issue's repository is not retired.
+        router.get(url__regex=r"https://api\.github\.com/repos/[^/]+/[^/]+$").mock(
+            return_value=httpx.Response(200, json={"description": "", "archived": False})
+        )
         yield router
 
 
@@ -143,11 +147,12 @@ def test_recommend_starter_issues_come_from_the_recommended_orgs(
 
     def fake_search(**kwargs: Any) -> list[IssueCandidate]:
         calls.append(kwargs)
+        owner = (kwargs.get("orgs") or ["sympy"])[0]  # issues from the organizations searched
         return [
-            issue("astropy/astropy", 1, Availability.AVAILABLE),
-            issue("astropy/astropy", 2, Availability.CLAIMED),
-            issue("sunpy/sunpy", 3, Availability.LIKELY_TAKEN),
-            issue("sunpy/sunpy", 4, Availability.UNKNOWN),
+            issue(f"{owner}/one", 1, Availability.AVAILABLE),
+            issue(f"{owner}/one", 2, Availability.CLAIMED),
+            issue(f"{owner}/two", 3, Availability.LIKELY_TAKEN),
+            issue(f"{owner}/two", 4, Availability.UNKNOWN),
         ]
 
     toolkit = GSoCToolkit()
