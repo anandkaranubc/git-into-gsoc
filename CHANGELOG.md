@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.19.0...v0.19.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **diagnose:** a name missing from an installed module is not a missing module ([#267](https://github.com/anandkaranubc/git-into-gsoc/issues/267)) ([84bac22](https://github.com/anandkaranubc/git-into-gsoc/commit/84bac2268d8387c72171987507d0ebd7abb014e3))
+* **diagnose:** name failed style checks and quote the line that failed ([#262](https://github.com/anandkaranubc/git-into-gsoc/issues/262)) ([3d050b1](https://github.com/anandkaranubc/git-into-gsoc/commit/3d050b12b65d6dd058b2d1f27acd52f6eb42bae7))
+* **drafts:** a padded request to be assigned is still a bare claim ([#265](https://github.com/anandkaranubc/git-into-gsoc/issues/265)) ([48402ff](https://github.com/anandkaranubc/git-into-gsoc/commit/48402ff1f337a5f211541f0db7880a067d7dec04))
+* **issues:** fit the table in an 80-column terminal again ([#270](https://github.com/anandkaranubc/git-into-gsoc/issues/270)) ([e3f18be](https://github.com/anandkaranubc/git-into-gsoc/commit/e3f18beed2fa6dbba5ca328d6235cca8a52597d7))
+* **labels:** one beginner-label rule, checked on a census of real labels ([#263](https://github.com/anandkaranubc/git-into-gsoc/issues/263)) ([83f4f61](https://github.com/anandkaranubc/git-into-gsoc/commit/83f4f61965895eb5f1fa66a1c13ffbb7d92738f2))
+* **orient:** never suggest sudo pip, and read CI commands whole ([#264](https://github.com/anandkaranubc/git-into-gsoc/issues/264)) ([999ca4c](https://github.com/anandkaranubc/git-into-gsoc/commit/999ca4c6d95faaa622acf3fc0ab5cbd3b42a8948))
+
 ## [0.19.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.18.2...v0.19.0) (2026-10-22)
 
 
