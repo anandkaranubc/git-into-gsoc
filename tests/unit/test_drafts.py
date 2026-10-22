@@ -1,3 +1,6 @@
+"""Message drafts and the message checker: templates, each project's claim convention, the setup
+commands a PR draft lists, and the rule behind every finding."""
+
 from __future__ import annotations
 
 from typer.testing import CliRunner

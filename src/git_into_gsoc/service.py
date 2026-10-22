@@ -1,4 +1,4 @@
-"""High-level facade used by CLI and MCP tools."""
+"""The service layer: every CLI command and MCP tool calls a method of GSoCToolkit."""
 
 from __future__ import annotations
 
@@ -406,6 +406,15 @@ def _when_no_issues(
 
 
 class GSoCToolkit:
+    """What the CLI and the MCP server share: one client for each source, and the
+    saved progress.
+
+    Each public method gathers what a command needs from GitHub, the GSoC site, and
+    the progress file, and returns a plain dict ready for JSON or for rendering.
+    Expected failures (bad input, a limit, an unreachable source) raise GigError with
+    a hint that says what to try; the CLI and the server turn that into a message.
+    """
+
     def __init__(self) -> None:
         self.settings = get_settings()
         self.http = CachedHttpClient(self.settings)
@@ -416,6 +425,8 @@ class GSoCToolkit:
         self.progress = ProgressStore()
 
     def program_info(self, year: int | None = None, project_size: str = "medium") -> dict[str, Any]:
+        """The timeline and phase of `year` (the target year by default), with the
+        official sources and rules. Dates Google has not published are estimates."""
         year = validate_year(year, latest=latest_program_year(self.settings))
         year = year or self.settings.target_year
         offline = False
@@ -535,6 +546,9 @@ class GSoCToolkit:
         )
 
     def org_details(self, name: str, year: int | None = None) -> dict[str, Any]:
+        """One organization's record, its posts about the coming GSoC, and the
+        statement the monthly check has on file. `found` is False, with suggestions,
+        when the name matches nothing."""
         org = self.gsoc.get_organization(name, year=year)
         if not org:
             return self._org_not_found(name, year=year)
@@ -666,6 +680,9 @@ class GSoCToolkit:
         }
 
     def evaluate_repo(self, full_name: str) -> dict[str, Any]:
+        """A repository's health score and contribution guide, with advice read from
+        the grade. A read-only mirror is not graded: its GitHub history says nothing
+        about the project."""
         owner, name = parse_repo(full_name)
         source = mirror_source(self.github.get_repo(owner, name))
         if source:
@@ -1076,6 +1093,15 @@ class GSoCToolkit:
         max_results: int = 10,
         year: int | None = None,
     ) -> dict[str, Any]:
+        """Free beginner issues, each checked for claims and linked pull requests.
+
+        With no language, organization, or repository, the saved profile's first
+        language is used. `scope` "gsoc" searches the GitHub owners of GSoC
+        organizations that use the language (and match the saved interests, when
+        enough do); "all" searches every repository. `org` may be a GSoC
+        organization's name or a GitHub login. The note says what was searched and
+        what was left out.
+        """
         from_profile = False
         asked_org = org  # cleared below when it names a GSoC organization
         self.github.rate_limited = None
@@ -1239,6 +1265,13 @@ class GSoCToolkit:
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
+        """Whether one issue is free to pick up, with the reasons and caveats.
+
+        `ref` is owner/repo#N, an issue URL, or a GitLab issue link. On top of the
+        timeline assessment it checks the repository (archived, retired, or quiet
+        for a year), look-alike pull requests that never linked the issue, a label
+        that asks for no AI help, and the same caution `issues` shows in its list.
+        """
         if number is None and parse_gitlab_issue(ref):
             # GNOME, KDE, and others keep issues on GitLab; its public API has the basics.
             found = gitlab_issue_status(
@@ -1353,6 +1386,8 @@ class GSoCToolkit:
         }
 
     def profile_from_github(self, username: str) -> dict[str, Any]:
+        """Read a GitHub user's languages and merged pull requests in other people's
+        repositories, and save them to the profile."""
         profile = self.github.infer_profile_languages(username)
         merged = self.github.merged_pull_requests_elsewhere(username)
         if merged is not None:
@@ -1447,8 +1482,8 @@ class GSoCToolkit:
         """Organizations, ideas, starter issues, and a learning path for one person.
 
         Every organization comes with its fit, the evidence for it, and caveats.
-        With `check_posts`, the top five are checked for posts saying they will not
-        take part in the coming year (one search each).
+        With `check_posts`, the top five (three without a token) are checked for
+        posts saying they will not take part in the coming year (one search each).
         """
         if experience is not None and experience.strip().lower() not in EXPERIENCE_LEVELS:
             raise InputError(

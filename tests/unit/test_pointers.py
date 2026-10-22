@@ -1,3 +1,6 @@
+"""The pure pointer functions: mentions, path resolution, closing pull requests, fix norms, and
+title words."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

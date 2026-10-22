@@ -1,3 +1,5 @@
+"""Committer statistics from ecosyste.ms: newcomers and the bus factor."""
+
 from __future__ import annotations
 
 import httpx

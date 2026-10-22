@@ -1,3 +1,6 @@
+"""The `next` command: tracked issues, deadlines, pull requests, merges, and the actions it
+suggests."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
