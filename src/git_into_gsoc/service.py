@@ -2119,7 +2119,8 @@ class GSoCToolkit:
         if "pull_request" in issue:
             raise InputError(
                 f"{full}#{num} is a pull request, not an issue",
-                hint="Pass the issue number the PR addresses.",
+                hint="Pass the issue number the PR addresses. To check a pull request, run "
+                f"`git-into-gsoc pr-check {full}#{num}`.",
             )
         raw = self.github.get_repo(owner, repo)
         branch = str(raw.get("default_branch") or "HEAD")

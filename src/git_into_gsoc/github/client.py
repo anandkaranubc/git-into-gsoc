@@ -779,7 +779,8 @@ class GitHubClient:
         if "pull_request" in issue:
             raise InputError(
                 f"{owner}/{repo}#{number} is a pull request, not an issue",
-                hint="Pass the issue number the PR addresses.",
+                hint="Pass the issue number the PR addresses. To check a pull request, run "
+                f"`git-into-gsoc pr-check {owner}/{repo}#{number}`.",
             )
         timeline = self._timeline_with_imports(owner, repo, number, issue)
         if timeline is None:

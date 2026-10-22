@@ -27,19 +27,27 @@ def validate_login(value: str, *, kind: str = "GitHub user/org") -> str:
     return login
 
 
+_HOST_RE = re.compile(r"^(?:[a-z0-9-]+\.)+[a-z]{2,}$", re.IGNORECASE)
+
+
 def _split_github_path(value: str) -> list[str]:
     raw = value.strip()
     # SSH remote as printed by `git remote -v`: git@github.com:owner/repo.git
     ssh = re.match(r"^(?:ssh://)?git@github\.com[:/](.+)$", raw, re.IGNORECASE)
     if ssh:
         return [p for p in ssh.group(1).split("/") if p]
-    if raw.startswith(("http://", "https://")) or raw.startswith(tuple(_GITHUB_HOSTS)):
+    # "gitlab.com/inkscape/inkscape" copied without its scheme: a GitHub owner never has
+    # a dot in its name, so a first part that looks like a host name is another site.
+    first = raw.split("/", 1)[0]
+    elsewhere = "://" not in raw and bool(_HOST_RE.match(first))
+    if raw.startswith(("http://", "https://")) or raw.startswith(tuple(_GITHUB_HOSTS)) or elsewhere:
         parsed = urlparse(raw if "://" in raw else f"https://{raw}")
         if parsed.netloc.lower() not in _GITHUB_HOSTS:
             raise InputError(
                 f"Not a github.com URL: {value!r}",
                 hint="This command reads GitHub only. For a project on GitLab or its own "
-                "server, read its contributing guide there.",
+                "server, read its contributing guide there. `git-into-gsoc issue` does read "
+                "an issue link from any GitLab server.",
             )
         return [p for p in parsed.path.split("/") if p]
     return [p for p in raw.split("/") if p]
