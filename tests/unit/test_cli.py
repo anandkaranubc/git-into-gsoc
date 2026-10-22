@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import httpx
 import respx
 from typer.testing import CliRunner
@@ -351,6 +353,16 @@ def test_a_long_issue_reference_stays_on_one_line(monkeypatch) -> None:  # type:
             return {"issues": [row], "note": "Searching", "next_steps": []}
 
     monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
-    result = runner.invoke(app, ["issues", "--org", "Learning Unlimited"], env={"COLUMNS": "110"})
-    assert result.exit_code == 0, result.output
-    assert "learning-unlimited/ESP-Website#2455" in result.output
+    # 0.19.0 kept the reference whole but cropped the table at 80 columns, the default
+    # macOS Terminal width: no right border, titles cut mid-word.
+    for width in (60, 80, 100, 110):
+        result = runner.invoke(
+            app, ["issues", "--org", "Learning Unlimited"], env={"COLUMNS": str(width)}
+        )
+        assert result.exit_code == 0, result.output
+        table = [line for line in result.output.splitlines() if line[:1] in "┏┃┡│└"]
+        assert table and all(line.rstrip().endswith(tuple("┓┃┩│┘")) for line in table), width
+        if width >= 80:
+            assert "learning-unlimited/ESP-Website#2455" in result.output, width
+            words = set(re.findall(r"[\w']+", result.output))
+            assert set(row["title"].split()) <= words, width  # no word cut off

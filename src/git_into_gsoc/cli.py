@@ -1256,13 +1256,23 @@ def issues_cmd(
     table.add_column("Score", justify="right")
     table.add_column("Status")
     # People copy "owner/repo#N" into `issue`: keep it on one line where it fits. At 110
-    # columns "learning-unlimited/ESP-Website#2455" broke before "2455".
+    # columns "learning-unlimited/ESP-Website#2455" broke before "2455". Below 100
+    # columns the title goes under the reference instead of beside it: four columns
+    # cannot keep a 35-character reference whole at 80, and a minimum width that does
+    # not fit makes rich crop the table at the right edge.
+    narrow = console.width < 100
+    others = 5 + 12 + (10 if narrow else 13 + 20)  # Score, Status, borders, a Title
     longest = max(len(f"{i['repo']}#{i['number']}") for i in data["issues"])
-    table.add_column("Issue", overflow="fold", min_width=min(longest, 40))
-    table.add_column("Title", overflow="fold")
+    table.add_column(
+        "Issue", overflow="fold", min_width=max(10, min(longest, 40, console.width - others))
+    )
+    if not narrow:
+        table.add_column("Title", overflow="fold")
     for issue in data["issues"]:
         status = issue["availability"]
         ref = f"{issue['repo']}#{issue['number']}"
+        if narrow:
+            ref += f"\n{issue['title']}"
         if issue.get("gsoc_org"):
             ref += f"\n[dim]{issue['gsoc_org']}[/dim]"
         if issue.get("filed_by_maintainer"):
@@ -1276,7 +1286,8 @@ def issues_cmd(
         if status == "available" and ((issue.get("assessment") or {}).get("claims")):
             # Free by the rules, but someone asked months ago: a beginner should know.
             shown += "\n[dim]asked before[/dim]"
-        table.add_row(f"{issue['beginner_score']:.0f}", shown, ref, issue["title"])
+        cells = [f"{issue['beginner_score']:.0f}", shown, ref]
+        table.add_row(*cells, *([] if narrow else [issue["title"]]))
     console.print(table)
     console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
 
