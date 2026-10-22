@@ -6,7 +6,7 @@ A few notes help you remember what you learned and choose a next step. Start whe
 git-into-gsoc progress summary
 ```
 
-The summary is printed as JSON (structured text that scripts and assistants read easily). It lists completed phases, saved organizations, repositories, and issues: `completion` shows `0/10` on a fresh installation, and `next_phase` names the first phase you have not marked done. It is a personal checklist, not an application status or a measure of readiness.
+The summary is a short checklist: the ten phases, with a check mark on the ones you finished and `(next)` on the first one you have not, then your shortlist, the repositories and issues you track, and how recent your weekly notes are. A fresh installation starts at `0/10 phases done`. It is a personal checklist, not an application status or a measure of readiness. Add `--output json` to get the same information as structured text for a script or an assistant.
 
 ## Save something you want to revisit
 
@@ -22,7 +22,7 @@ git-into-gsoc progress complete_phase --phase track
 
 The tool saves the text you provide; it does not assign the issue to you. Re-run `git-into-gsoc issue <link>` before you start work on a tracked issue, because availability changes daily during GSoC season.
 
-Valid phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`; the [journey map](../journey.md) shows which commands and guide page belong to each. Each guide chapter ends with the command for its own phase; mark `track` once keeping a weekly note is a habit. Mark a phase complete only when its goal is useful and satisfied for you. You can revisit any phase.
+The ten phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, and `track`. The [journey map](../journey.md) shows which commands and guide page belong to each, and the guide chapters say when to mark a phase done; mark `track` once keeping a weekly note is a habit. Mark a phase complete only when its goal is useful and satisfied for you. You can revisit any phase.
 
 ## Keep a weekly note
 
