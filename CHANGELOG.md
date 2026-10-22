@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.18.0...v0.18.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **repo:** make health points add up to 100 so no weakness is free ([#235](https://github.com/anandkaranubc/git-into-gsoc/issues/235)) ([1279713](https://github.com/anandkaranubc/git-into-gsoc/commit/1279713aff1c607319bdaebabafa804882643057))
+* **repos:** main code first, and repositories around a project after it ([#236](https://github.com/anandkaranubc/git-into-gsoc/issues/236)) ([fa46516](https://github.com/anandkaranubc/git-into-gsoc/commit/fa465162f6e05170b0cc5c762e0921e04f30f2db))
+
+
+### Documentation
+
+* a 30-minute guide to watching someone new try the tool ([#237](https://github.com/anandkaranubc/git-into-gsoc/issues/237)) ([9bd6ea5](https://github.com/anandkaranubc/git-into-gsoc/commit/9bd6ea5b87ff0f20548dea9398d2129b2f60a127))
+
 ## [0.18.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.17.0...v0.18.0) (2026-10-22)
 
 
