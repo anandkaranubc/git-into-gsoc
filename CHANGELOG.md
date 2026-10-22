@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.19.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.18.2...v0.19.0) (2026-10-22)
+
+
+### Features
+
+* **distribution:** a Copilot manifest for awesome-copilot, and glama.json for the owner's claim ([#258](https://github.com/anandkaranubc/git-into-gsoc/issues/258)) ([71098ad](https://github.com/anandkaranubc/git-into-gsoc/commit/71098ad80af2fc248ece77631a7f2ec6cb5665df))
+* **distribution:** icons and a site in the registry entry, two more install buttons, and directory checks ([#249](https://github.com/anandkaranubc/git-into-gsoc/issues/249)) ([7698148](https://github.com/anandkaranubc/git-into-gsoc/commit/7698148ddd3cd1c31ed8ae8ca24b4c5739995a0b))
+* **issues:** say why an issue may not suit a first contribution ([#254](https://github.com/anandkaranubc/git-into-gsoc/issues/254)) ([62c3ab8](https://github.com/anandkaranubc/git-into-gsoc/commit/62c3ab8eb131ddefc57ab612af333bf546c24985))
+* **matching:** how many beginner-labelled issues each organization opened this past year ([#255](https://github.com/anandkaranubc/git-into-gsoc/issues/255)) ([5cb5fe9](https://github.com/anandkaranubc/git-into-gsoc/commit/5cb5fe99366eda45a3babe0c3ed0de9c90bbf714))
+
+
+### Bug Fixes
+
+* **ideas:** read nested ideas pages instead of the program's own pages ([#251](https://github.com/anandkaranubc/git-into-gsoc/issues/251)) ([02bfc73](https://github.com/anandkaranubc/git-into-gsoc/commit/02bfc7305ca41d55d876ec5b376375d2a6be7f7f))
+* **issues:** keep each issue reference on one line in the table ([#259](https://github.com/anandkaranubc/git-into-gsoc/issues/259)) ([4e533b6](https://github.com/anandkaranubc/git-into-gsoc/commit/4e533b64358fe096abb84d572b94394cdb08053b))
+* **projects:** find a word in its singular and plural forms ([#260](https://github.com/anandkaranubc/git-into-gsoc/issues/260)) ([b907e27](https://github.com/anandkaranubc/git-into-gsoc/commit/b907e27de2524d04088bcc4506c8fdcc79237d23))
+* **recommend:** no path step that sends you to an empty issue search ([#244](https://github.com/anandkaranubc/git-into-gsoc/issues/244)) ([b806a14](https://github.com/anandkaranubc/git-into-gsoc/commit/b806a147ada389ea790d01b92244ae6055359dac))
+* **repos:** say whether outsiders get work merged, and where to start when nobody does ([#242](https://github.com/anandkaranubc/git-into-gsoc/issues/242)) ([e1335d0](https://github.com/anandkaranubc/git-into-gsoc/commit/e1335d004453c3a7f046f7783783b77c85531692))
+
 ## [0.18.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.18.1...v0.18.2) (2026-10-22)
 
 
