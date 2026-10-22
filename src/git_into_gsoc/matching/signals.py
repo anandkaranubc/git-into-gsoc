@@ -30,6 +30,7 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 
+from git_into_gsoc.coach import PROJECT_HOURS
 from git_into_gsoc.matching.concepts import (
     SKILL,
     find_concepts,
@@ -113,6 +114,10 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
                 entry["d"] = idea["difficulty"]
             if idea.get("size"):
                 entry["s"] = idea["size"]
+                # Hours the page states that are not the size's own (MetaBrainz's 300):
+                # the time fit then uses them.
+                if idea.get("hours") and idea["hours"] != PROJECT_HOURS.get(idea["size"]):
+                    entry["h"] = idea["hours"]
             concepts = sorted(labelled) + sorted(named - labelled)
             if concepts:
                 entry["k"] = concepts[:8]
