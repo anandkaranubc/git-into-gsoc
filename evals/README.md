@@ -30,7 +30,7 @@ This is a fair but strict test: other organizations may suit the same profile ju
 
 ## Dev and test halves
 
-Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py` were tuned only on the dev half; the test half was looked at only after each round of tuning (three times so far). To keep it honest, tune on `--split dev` and look at `--split test` only to confirm. `holdout2.json` is a newer set of personas from a second blind reviewer, never used for tuning but no longer blind. `holdout3.json` is a third set, sealed for the next round (see below).
+Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py` were tuned only on the dev half; the test half was looked at only after each round of tuning (three times so far). To keep it honest, tune on `--split dev` and look at `--split test` only to confirm. `holdout2.json` is a newer set of personas from a second blind reviewer, never used for tuning but no longer blind. `holdout3.json` is a third set, sealed until one reading of it decided a change, so it is no longer blind either. `holdout4.json` is a fourth set, sealed for the next round (see below).
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
@@ -48,7 +48,7 @@ Each dataset has a `split`. Weights in `matching/rank.py` and `matching/orgs.py`
 
 15 personas from a fourth reviewer who, like the others, saw only the official 2026 list and the organizations' own pages. They are the kinds of people `holdout3` showed the ranker handles worst, but different ones: bioinformatics pipelines, game scripting, screen readers, digital humanities, climate models in Fortran, database internals, real-time operating systems, R dashboards, computer vision in C++, speech models, hospital software in Java, music notation, software supply chain security, a React developer who typed "open source AI tools", and a Java student who typed only "backend". Three have no strong fit among the 2026 organizations.
 
-It is for tuning, so its per-persona rows can be read. Like `holdout3` it is left out of `all`. Its first look, and the changes it led to:
+It is for tuning, so its per-persona rows can be read. Like `holdout3` and `holdout4` it is left out of `all`. Its first look, and the changes it led to:
 
 | `dev2` | Keyword ranker | First look | After round 5 |
 |---|---|---|---|
@@ -65,15 +65,15 @@ Round 5 made general fixes it pointed to:
 - **A small penalty when most of an organization's active code is in a language the person did not list.** It was already a caveat; now it is a small score penalty too.
 - **New spellings:** "camera pipelines" and "archiving".
 
-## `holdout3.json` (sealed)
+## `holdout3.json` (no longer blind)
 
 15 personas written and graded by a third reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover kinds of people the other sets miss: quantum computing, browser engines, networking, cheminformatics, brain imaging, FPGA and open hardware, video codecs, Qt desktop apps, Vue or Angular with six hours a week, React Native, symbolic math, privacy and cryptography, translation and localization, someone who types almost nothing, and a career changer who knows SQL and Excel. Two have a typo on purpose, and two have no strong fit among the 2026 organizations.
 
-It is **sealed** so that a later round of changes still has a blind test:
+It was **sealed** so that a later round of changes still had a blind test:
 
-- Only its totals are ever shown. `--detail` and `--json` leave out its per-persona rows, and `all` leaves it out, so the numbers above keep their meaning.
-- Never tune on it, and never read the ranker's output for its personas. Judge a change on `dev` first, then look at these totals once.
-- When it has been used to choose between changes, say so here and write a new sealed set.
+- Only its totals were shown. `--detail` and `--json` leave out its per-persona rows, and `all` leaves it out, so the numbers above keep their meaning.
+- It was never tuned on, and the ranker's output for its personas was never read. Changes were judged on `dev` first, then these totals were read once.
+- Once it had been used to choose between changes, a new sealed set replaced it: `holdout4.json`, below.
 
 At its first look, before any change was made for it:
 
@@ -87,6 +87,27 @@ At its first look, before any change was made for it:
 The current ranker finds more of the right organizations, but it puts one more wrong one in a top five than the keyword ranker. That is a real weakness on unseen kinds of people, and the test keeps it visible instead of hiding it.
 
 Second look, once, after round 5 was tuned on `dev` and `dev2` and before anything else changed: nDCG@10 0.493 (from 0.488), P@5 0.320 (unchanged), strong@10 0.700 (from 0.667), wrong@5 6 (unchanged). The round carried over only a little to these people, and the wrong-pick gap remains. It was not used to choose between changes, so it stays sealed for one more round. Third and last look, after the x0.95 cost above: nDCG@10 0.484, strong@10 0.667, wrong@5 6. That reading was used to take the cost out, so `holdout3` is no longer blind; a new sealed set replaces it for later rounds.
+
+## `holdout4.json` (sealed)
+
+15 personas written and graded by a fifth reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover GPU programming in CUDA, R packages for genomics, open hardware and circuit board tools, map routing in C++, Rust command line tools at six hours a week, package managers in Go, documentation sites, browser extensions, block coding for children, server-side Swift, LaTeX tooling, web accessibility testing, board game AI, data journalism at eight hours a week, and a newcomer who typed only "python, ml" and "anything". Two have a typo on purpose. Seven have no strong fit among the 2026 organizations, and the notes say why; for example, no 2026 ideas list has server-side Swift work.
+
+It is **sealed**, the way `holdout3` was:
+
+- Only its totals are ever shown. `--detail` and `--json` leave out its per-persona rows, and `all` leaves it out.
+- Never tune on it, and never read the ranker's output for its personas. Judge a change on `dev` and `dev2` first, then look at these totals once.
+- When it has been used to choose between changes, say so here and write a new sealed set.
+
+At its first look, on the ranker and data in the package after `holdout3`'s last reading, before any change was made for it:
+
+| `holdout4` | Keyword ranker | Current |
+|---|---|---|
+| nDCG@10 | 0.298 | **0.469** |
+| P@5 | 0.120 | **0.200** |
+| strong@10 | 0.656 | **0.778** |
+| wrong@5 | 14 | **12** |
+
+It is the hardest set so far: few organizations fit these people well, so P@5 is low for both rankers, and the current ranker still puts 12 organizations the reviewer called wrong into a top five.
 
 Measured on 2026-10-21 with the data shipped then, after the fifth round of changes. Round 5 added one wrong pick on the test half (5 to 6) and improved every other number there. A later change, after a blind beginner test, cost an organization a little (x0.95) when most of its ideas need a skill the person did not list. It helped the sets it was tuned on (`dev` nDCG@10 0.804 to 0.815, `dev2` 0.623 to 0.635) and accepted-project MRR (0.510 to 0.518), but made both held-out sets worse (`holdout2`: one more wrong pick, P@5 0.500 to 0.483; `holdout3`: nDCG@10 0.493 to 0.484, strong@10 0.700 to 0.667). It did not generalize, so it was taken out; the caveat that names the missing skill stays. Before that, the third round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
 

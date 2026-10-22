@@ -1,0 +1,537 @@
+{
+  "about": "A fourth set of contributor personas, written and graded by a reviewer who never saw the ranking code, the tool's output, or the earlier sets. Sealed: never used for tuning. See evals/README.md.",
+  "org_list": "official GSoC 2026 accepted organizations",
+  "personas": [
+    {
+      "id": "gpu-cuda-cpp-experienced",
+      "split": "holdout4",
+      "about": "An experienced GPU programmer who writes C++ and CUDA and wants GPU-heavy work.",
+      "profile": {
+        "technologies": [
+          "c++",
+          "cuda"
+        ],
+        "interests": [
+          "gpu programming",
+          "high performance computing"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "CERN-HSF": 3,
+        "INCF": 3,
+        "Stichting SU2": 3,
+        "VideoLAN": 2,
+        "OpenVINO Toolkit": 2,
+        "LLVM Compiler Infrastructure": 2,
+        "gprMax": 2,
+        "Kornia": 1,
+        "Ste||ar group": 1,
+        "Open Robotics": 1
+      },
+      "wrong_top5": [
+        "Blender Foundation",
+        "BRL-CAD",
+        "Machine Learning for Science (ML4SCI)",
+        "CGAL Project",
+        "KDE Community",
+        "GNU Octave",
+        "Haiku",
+        "Tiled"
+      ],
+      "judge_notes": "CERN-HSF is graded by its Clad GPU and SOFIE GPU inference projects, and INCF by its Brian2CUDA project. Both ask for C++ and CUDA, and Stichting SU2 has one clear CUDA project for its solver. VideoLAN, OpenVINO, LLVM and gprMax have some GPU work, but through shaders, Intel GPUs, compilers or Python. Blender and BRL-CAD carry graphics tags, but their 2026 ideas have no GPU work."
+    },
+    {
+      "id": "r-genomics-packages",
+      "split": "holdout4",
+      "about": "Someone who writes R and wants to work on genomics or bioinformatics packages.",
+      "profile": {
+        "technologies": [
+          "r"
+        ],
+        "interests": [
+          "genomics",
+          "bioinformatics packages"
+        ],
+        "experience": "some",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "R project for statistical computing": 2,
+        "Open Genome Informatics": 2,
+        "PEcAn Project": 1,
+        "GeomScale": 1,
+        "IOOS": 1
+      },
+      "wrong_top5": [
+        "cBioPortal for Cancer Genomics",
+        "Global Alliance for Genomics and Health",
+        "Genome Assembly and Annotation",
+        "MalariaGEN",
+        "St. Jude Children's Research Hospital",
+        "National Resource for Network Biology (NRNB)",
+        "UC OSPO",
+        "DeepChem"
+      ],
+      "judge_notes": "No organization is a strong fit, so there is no grade 3. The R project umbrella is mostly R packages, but its one Bioconductor project is mainly Python wrappers. Open Genome Informatics has one pathway project that lists R next to Python and Julia. The genomics organizations on the wrong list work in Python, Java, JavaScript or Rust, not R."
+    },
+    {
+      "id": "open-hardware-board-design",
+      "split": "holdout4",
+      "about": "A newcomer who knows some C++ and Python and is drawn to open hardware and circuit board design tools.",
+      "profile": {
+        "technologies": [
+          "c++",
+          "python"
+        ],
+        "interests": [
+          "open hardware",
+          "circuit board design tools"
+        ],
+        "experience": "new",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "FOSSASIA": 2,
+        "The OpenROAD Initiative": 2,
+        "Free and Open Source Silicon Foundation": 2,
+        "CircuitVerse.org": 1,
+        "Open Technologies Alliance - GFOSS": 1
+      },
+      "wrong_top5": [
+        "FreeCAD",
+        "BRL-CAD",
+        "ArduPilot",
+        "GNU Radio",
+        "KDE Community",
+        "CGAL Project",
+        "Open Robotics"
+      ],
+      "judge_notes": "No organization works on circuit board design tools in 2026, so there is no grade 3. FOSSASIA has open hardware firmware and app work in C/C++ and Python. OpenROAD has an eSim project that touches schematic and board tools, but its ideas are hard, and FOSSi is open hardware at the chip level, mostly in Verilog. CAD, drone and radio projects share C++ and Python but are not electronics design."
+    },
+    {
+      "id": "map-routing-cpp",
+      "split": "holdout4",
+      "about": "A C++ developer with some experience who wants to work on map routing or navigation engines.",
+      "profile": {
+        "technologies": [
+          "c++"
+        ],
+        "interests": [
+          "map routing",
+          "navigaton engines"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "OpenStreetMap": 3,
+        "OSGeo (Open Source Geospatial Foundation)": 2,
+        "Open Transit Software Foundation": 1
+      },
+      "wrong_top5": [
+        "ArduPilot",
+        "Open Robotics",
+        "The ns-3 Network Simulator Project",
+        "KDE Community",
+        "CGAL Project",
+        "Liquid Galaxy project",
+        "52°North Spatial Information Research GmbH",
+        "The P4 Language Consortium"
+      ],
+      "judge_notes": "OpenStreetMap is graded by its Valhalla routing projects, which are C++ and rated medium or challenging. OSGeo is graded by pgRouting, whose 2026 ideas add C++ graph algorithms rather than routing features. Open Transit works on transit apps, but in Go and Swift. Drone, robotics and network orgs share words like navigation or routing but do not build map routing."
+    },
+    {
+      "id": "rust-cli-new-low-hours",
+      "split": "holdout4",
+      "about": "A Rust newcomer with only six hours a week who wants to build command line tools.",
+      "profile": {
+        "technologies": [
+          "rust"
+        ],
+        "interests": [
+          "command line tools"
+        ],
+        "experience": "new",
+        "hours_per_week": 6
+      },
+      "grades": {
+        "Debian": 2,
+        "The Rust Foundation": 2,
+        "CCExtractor Development": 2,
+        "dora-rs": 1,
+        "MoFA Org": 1,
+        "St. Jude Children's Research Hospital": 1
+      },
+      "wrong_top5": [
+        "Kornia",
+        "Boa",
+        "Graphite",
+        "AnkiDroid",
+        "Git",
+        "Gemini CLI",
+        "QEMU",
+        "GNOME Foundation"
+      ],
+      "judge_notes": "No grade 3, because six hours a week is very little for a GSoC project and most Rust ideas are medium or hard. Debian has lintian-brush and packaging command line tools in Rust, and the Rust Foundation has rustup and Cargo tool work. CCExtractor is a command line tool whose core is moving to Rust. Rust orgs like Kornia, Boa and Graphite build libraries, engines or apps, and Git and Gemini CLI are command line tools in other languages."
+    },
+    {
+      "id": "go-package-managers",
+      "split": "holdout4",
+      "about": "A Go developer with some experience who wants to work on package managers or dependency tooling.",
+      "profile": {
+        "technologies": [
+          "go",
+          "golang"
+        ],
+        "interests": [
+          "package managers",
+          "dependency tooling"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "Konflux": 2,
+        "NixOS Foundation": 2,
+        "Debian": 1,
+        "Fortran-lang": 1,
+        "Ruby": 1,
+        "AboutCode": 1,
+        "CNCF": 1,
+        "openSUSE Project": 1,
+        "CERN-HSF": 1
+      },
+      "wrong_top5": [
+        "Meshery",
+        "KubeVirt",
+        "Jenkins",
+        "Open Transit Software Foundation",
+        "C2SI",
+        "FOSSology",
+        "SW360",
+        "Kubeflow"
+      ],
+      "judge_notes": "No organization has package manager work in Go in 2026, so there is no grade 3. Konflux has dependency prefetching for package managers, but in Python, and NixOS works on package management in the Nix language. Fortran-lang, Ruby, Debian and Spack under CERN-HSF have package or dependency tooling in other languages. Go-heavy orgs like Meshery, KubeVirt and Kubeflow do cloud work, not package tooling."
+    },
+    {
+      "id": "docs-sites-new",
+      "split": "holdout4",
+      "about": "A newcomer who knows a little Go or JavaScript and likes documentation sites and static site generators.",
+      "profile": {
+        "technologies": [
+          "go",
+          "javascript"
+        ],
+        "interests": [
+          "documentation sites",
+          "static site generators"
+        ],
+        "experience": "new",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "Jenkins": 3,
+        "webpack": 3,
+        "Processing Foundation": 2,
+        "UC OSPO": 2,
+        "Open Science Labs": 2,
+        "stdlib": 1,
+        "OWASP Foundation": 1,
+        "AOSSIE": 1,
+        "dora-rs": 1
+      },
+      "wrong_top5": [
+        "Joomla!",
+        "Wagtail",
+        "Wikimedia Foundation",
+        "Neutralinojs",
+        "Meshery",
+        "Kubeflow",
+        "JSON Schema",
+        "Gemini CLI"
+      ],
+      "judge_notes": "Jenkins has several docs site and website retooling projects, and webpack has a new documentation website project, both in JavaScript. Processing has a translation tracker for its Astro reference site. UC OSPO is graded by its Network Simulation Bridge website project, and Open Science Labs by the Data Umbrella static site pipeline. CMS and wiki platforms like Joomla, Wagtail and MediaWiki are not static docs sites."
+    },
+    {
+      "id": "browser-extensions-js",
+      "split": "holdout4",
+      "about": "A JavaScript newcomer who wants to build browser extensions.",
+      "profile": {
+        "technologies": [
+          "javascript"
+        ],
+        "interests": [
+          "browser extensions"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "FOSSASIA": 3,
+        "Internet Archive": 2,
+        "UC OSPO": 2,
+        "stdlib": 1
+      },
+      "wrong_top5": [
+        "Wikimedia Foundation",
+        "Joomla!",
+        "Joplin",
+        "Neutralinojs",
+        "Jitsi",
+        "webpack",
+        "rocket.chat",
+        "Open Technologies Alliance - GFOSS"
+      ],
+      "judge_notes": "FOSSASIA's Scrum Helper is a browser extension in JavaScript, with a medium 175 hour project. Internet Archive has a Wayback Machine extension project, but it is marked hard. UC OSPO is graded by its PeerSky project on installing extensions in a browser, and stdlib only has spreadsheet add-ons. Joomla and Wikimedia use the word extension for server plugins, which is a keyword trap."
+    },
+    {
+      "id": "kids-block-coding-js",
+      "split": "holdout4",
+      "about": "A JavaScript newcomer who wants to help children learn to code with visual blocks.",
+      "profile": {
+        "technologies": [
+          "javascript",
+          "html"
+        ],
+        "interests": [
+          "teaching kids to code",
+          "visual block programming"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "Sugar Labs": 3,
+        "MIT App Inventor": 2,
+        "International Catrobat Association": 1,
+        "Processing Foundation": 1,
+        "omegaUp": 1
+      },
+      "wrong_top5": [
+        "Oppia Foundation",
+        "Learning Equality",
+        "Learning Unlimited",
+        "CircuitVerse.org",
+        "Submitty",
+        "JdeRobot",
+        "Accord Project",
+        "AOSSIE"
+      ],
+      "judge_notes": "Sugar Labs has several medium Music Blocks projects in JavaScript, built for children. MIT App Inventor is block based, but most of its 2026 work is Java and GWT. Catrobat teaches coding with bricks, but the work is in Kotlin. The other education orgs teach other subjects, and Accord Project uses blocks for contract models, not for kids."
+    },
+    {
+      "id": "server-side-swift",
+      "split": "holdout4",
+      "about": "A Swift developer with some experience who wants to write server-side code.",
+      "profile": {
+        "technologies": [
+          "swift"
+        ],
+        "interests": [
+          "server side apps",
+          "web backends"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "Swift": 2,
+        "Open Transit Software Foundation": 1,
+        "OpenStreetMap": 1,
+        "VideoLAN": 1,
+        "MIT App Inventor": 1
+      },
+      "wrong_top5": [
+        "Ruby",
+        "Django Software Foundation",
+        "JBoss Community",
+        "Typelevel",
+        "Dart",
+        "Kotlin Foundation",
+        "Apache Software Foundation",
+        "rocket.chat"
+      ],
+      "judge_notes": "No 2026 idea is about server-side Swift, so there is no grade 3. The Swift project still fits the language, with package manager, testing and concurrency work. The other graded orgs only have iOS app work in Swift. Ruby, Django, JBoss and Typelevel do server work, but in other languages."
+    },
+    {
+      "id": "latex-typesetting-python",
+      "split": "holdout4",
+      "about": "A Python developer with some experience who wants to work on typesetting or LaTeX tools.",
+      "profile": {
+        "technologies": [
+          "pyhton"
+        ],
+        "interests": [
+          "typesetting",
+          "latex tools"
+        ],
+        "experience": "some",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "SymPy": 3,
+        "FOSSASIA": 1,
+        "MoganLab": 1,
+        "JabRef e.V.": 1
+      },
+      "wrong_top5": [
+        "SageMath",
+        "Python Software Foundation",
+        "Django Software Foundation",
+        "Wagtail",
+        "GNU Mailman",
+        "Accord Project",
+        "Zulip"
+      ],
+      "judge_notes": "SymPy has a project to improve its LaTeX parser in Python at an intermediate level. MoganLab is a typesetting editor, but its ideas use C++ and Julia, and JabRef handles BibTeX in Java. FOSSASIA's Visdom project includes LaTeX-ready figure export as one part. Python orgs like SageMath, Django and Wagtail have no typesetting work in 2026."
+    },
+    {
+      "id": "web-accessibility-testing-ts",
+      "split": "holdout4",
+      "about": "A TypeScript developer with some experience who wants to build web accessibility testing tools.",
+      "profile": {
+        "technologies": [
+          "typescript",
+          "javascript"
+        ],
+        "interests": [
+          "web accessibility",
+          "accessibility testing tools"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "Uramaki LAB": 3,
+        "Open Transit Software Foundation": 2,
+        "Processing Foundation": 1,
+        "Oppia Foundation": 1,
+        "Joplin": 1
+      },
+      "wrong_top5": [
+        "Wagtail",
+        "JSON Schema",
+        "Gemini CLI",
+        "webpack",
+        "rocket.chat",
+        "API Dash",
+        "Open HealthCare Network",
+        "Joomla!"
+      ],
+      "judge_notes": "Uramaki LAB has a set of WCAG accessibility audit tools in JavaScript or Python, with easy and medium projects. Open Transit has an accessibility audit and testing project for its trip planner, marked advanced. Wagtail lists accessibility as a topic but has no accessibility idea in 2026. TypeScript orgs like JSON Schema and webpack test other things."
+    },
+    {
+      "id": "board-game-ai-python",
+      "split": "holdout4",
+      "about": "A Python newcomer who likes chess and board game engines and game AI.",
+      "profile": {
+        "technologies": [
+          "python"
+        ],
+        "interests": [
+          "chess engines",
+          "board games",
+          "game ai"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "Gambit: The package for computation in game theory": 2,
+        "KDE Community": 1,
+        "Sugar Labs": 1
+      },
+      "wrong_top5": [
+        "ScummVM",
+        "Tiled",
+        "Blender Foundation",
+        "International Catrobat Association",
+        "Wikimedia Foundation",
+        "Machine Learning for Science (ML4SCI)",
+        "HumanAI",
+        "JdeRobot"
+      ],
+      "judge_notes": "No organization builds chess or board game engines in Python in 2026, so there is no grade 3. Gambit does game theory in Python, such as finding Nash equilibria and exporting games to OpenSpiel. KDE has a Mancala engine, but in C++, and Sugar Labs has a dots game with an AI opponent in JavaScript. Game engine, level editor and general AI orgs are about other kinds of work."
+    },
+    {
+      "id": "data-journalism-scraping-charts",
+      "split": "holdout4",
+      "about": "A newcomer who knows Python and JavaScript and wants to scrape data and make charts for news stories, with eight hours a week.",
+      "profile": {
+        "technologies": [
+          "python",
+          "javascript"
+        ],
+        "interests": [
+          "data journalism",
+          "web scraping",
+          "charts"
+        ],
+        "experience": "new",
+        "hours_per_week": 8
+      },
+      "grades": {
+        "Open Technologies Alliance - GFOSS": 2,
+        "Data for the Common Good": 2,
+        "Internet Archive": 1,
+        "Kiwix": 1,
+        "stdlib": 1,
+        "AOSSIE": 1,
+        "IOOS": 1
+      },
+      "wrong_top5": [
+        "Liquid Galaxy project",
+        "R project for statistical computing",
+        "Django Software Foundation",
+        "Learning Unlimited",
+        "Wagtail",
+        "Neuroinformatics Unit",
+        "cBioPortal for Cancer Genomics",
+        "Joomla!"
+      ],
+      "judge_notes": "No organization does data journalism directly, so there is no grade 3, and eight hours a week is low. GFOSS has a civic budget project that pulls data out of PDFs and charts it, but it needs Greek. Data for the Common Good has a D3 heatmap app and a data viewer in Python and JavaScript. Kiwix and Internet Archive offer scraping and archiving work, and stdlib has a plotting API."
+    },
+    {
+      "id": "python-ml-anything",
+      "split": "holdout4",
+      "about": "A newcomer who only says Python and machine learning and is open to any topic.",
+      "profile": {
+        "technologies": [
+          "python",
+          "ml"
+        ],
+        "interests": [
+          "anything"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "German Center for Open Source AI": 3,
+        "Machine Learning for Science (ML4SCI)": 3,
+        "HumanAI": 3,
+        "DeepChem": 2,
+        "OpenVINO Toolkit": 2,
+        "MLLAM": 2,
+        "Neuroinformatics Unit": 2,
+        "JdeRobot": 2,
+        "DBpedia": 2,
+        "Kubeflow": 1,
+        "Metaflow": 1
+      },
+      "wrong_top5": [
+        "Django Software Foundation",
+        "GNU Mailman",
+        "Wagtail",
+        "SymPy",
+        "SageMath",
+        "Kornia",
+        "Gemini CLI",
+        "API Dash"
+      ],
+      "judge_notes": "The interest is open, so grades follow the Python and machine learning stack and how realistic the work is for a beginner. German Center for Open Source AI has easy short options in sktime, and ML4SCI and HumanAI are built around Python ML projects with entry tests. DeepChem and MLLAM fit the stack but expect PyTorch and science background. Python orgs without ML, like Django and Wagtail, and ML orgs whose 2026 work is in Rust or TypeScript, like Kornia and Gemini CLI, should not lead."
+    }
+  ]
+}

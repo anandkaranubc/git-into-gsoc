@@ -14,13 +14,14 @@ Everything runs offline against the embedded snapshot, so results are
 repeatable. Each set has a dev half (used while tuning) and a test half (only
 checked at the end).
 
-``holdout2.json`` and ``holdout3.json`` are later persona sets from other blind
-reviewers. ``holdout3`` is sealed: it is left out of ``all``, its per-persona
-rows are never printed, and it must never be used for tuning. ``dev2.json`` is a
-second development set for tuning, also left out of ``all`` so the numbers
+``holdout2.json``, ``holdout3.json`` and ``holdout4.json`` are later persona sets
+from other blind reviewers. ``holdout4`` is sealed: its per-persona rows are never
+printed, and it must never be used for tuning. ``holdout3`` was sealed until a
+reading of it decided a change, so it is no longer blind. ``dev2.json`` is a second
+development set for tuning. All three are left out of ``all`` so the numbers
 documented for the first 46 personas keep their meaning.
 
-Usage: python scripts/eval_matching.py [--split dev|dev2|test|holdout2|holdout3|all] [--ranker both|current|baseline] [--json]
+Usage: python scripts/eval_matching.py [--split dev|dev2|test|holdout2|holdout3|holdout4|all] [--ranker both|current|baseline] [--json]
 """
 
 from __future__ import annotations
@@ -108,15 +109,15 @@ def _dcg(gains: list[int]) -> float:
 
 
 # Splits kept blind for later rounds: only their totals are ever shown.
-SEALED = frozenset({"holdout3"})
+SEALED = frozenset({"holdout4"})
 # Splits shown on their own and left out of `all`.
-OUTSIDE_ALL = SEALED | {"dev2"}
+OUTSIDE_ALL = SEALED | {"dev2", "holdout3"}
 
 
 def load_personas() -> list[dict[str, Any]]:
     """Personas from personas.json (dev and test) and the later blind sets."""
     out: list[dict[str, Any]] = []
-    for name in ("personas.json", "dev2.json", "holdout2.json", "holdout3.json"):
+    for name in ("personas.json", "dev2.json", "holdout2.json", "holdout3.json", "holdout4.json"):
         path = EVALS / name
         if path.is_file():
             out.extend(json.loads(path.read_text(encoding="utf-8"))["personas"])
@@ -220,9 +221,9 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n", 1)[0])
     parser.add_argument(
         "--split",
-        choices=("dev", "dev2", "test", "holdout2", "holdout3", "all"),
+        choices=("dev", "dev2", "test", "holdout2", "holdout3", "holdout4", "all"),
         default="all",
-        help="Which personas and cases to score; holdout3 is sealed and left out of all",
+        help="Which personas and cases to score; holdout4 is sealed, and only its totals are shown",
     )
     parser.add_argument("--ranker", choices=("both", "current", "baseline"), default="both")
     parser.add_argument("--detail", action="store_true", help="Show every persona")
@@ -230,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     names = ["baseline", "current"] if args.ranker == "both" else [args.ranker]
     present = {p["split"] for p in load_personas()}
-    order = [x for x in ("dev", "dev2", "test", "holdout2", "holdout3") if x in present]
+    order = [x for x in ("dev", "dev2", "test", "holdout2", "holdout3", "holdout4") if x in present]
     splits = [*order, "all"] if args.split == "all" else [args.split]
     results = [evaluate(name, split) for split in splits for name in names]
     for result in results:
