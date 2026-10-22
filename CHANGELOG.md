@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.15.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.14.1...v0.15.0) (2026-10-22)
+
+
+### Features
+
+* **issue:** read claims in GitLab comments when a GitLab token is set ([#199](https://github.com/anandkaranubc/git-into-gsoc/issues/199)) ([a036e8e](https://github.com/anandkaranubc/git-into-gsoc/commit/a036e8e0557aab3ee87f4f4fb3261d107999e3a7))
+
+
+### Bug Fixes
+
+* **packaging:** show the images and working links on the PyPI page ([#200](https://github.com/anandkaranubc/git-into-gsoc/issues/200)) ([651d7c4](https://github.com/anandkaranubc/git-into-gsoc/commit/651d7c4dd20c4aff244e2d3f63094e2c68463c99))
+* **pointers:** use the issue title as a file name when nothing else resolves ([#195](https://github.com/anandkaranubc/git-into-gsoc/issues/195)) ([2993cf8](https://github.com/anandkaranubc/git-into-gsoc/commit/2993cf8582da6066658a0dff1c5f318b6f5fb0c7))
+
+
+### Documentation
+
+* install from PyPI with uv or pipx, and link the PyPI page ([#201](https://github.com/anandkaranubc/git-into-gsoc/issues/201)) ([82f00ea](https://github.com/anandkaranubc/git-into-gsoc/commit/82f00eaad9cf27af1d3b637fa5ac225448767ed4))
+* **skill:** check an organization's own statements before suggesting it ([#196](https://github.com/anandkaranubc/git-into-gsoc/issues/196)) ([ee339d3](https://github.com/anandkaranubc/git-into-gsoc/commit/ee339d3b1e152fb4f7dac1d3513e180ca3f88f8d))
+
 ## [0.14.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.14.0...v0.14.1) (2026-10-22)
 
 
