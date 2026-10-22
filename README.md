@@ -57,7 +57,7 @@ git-into-gsoc start
 You get the organizations that fit you, a shortlist, and your next steps with the exact commands. Press Enter to skip any question.
 
 <p align="center">
-  <img src="brand/readme/demo-start.svg" alt="A terminal running git-into-gsoc start. It shows that GSoC 2027 is not announced yet, asks four questions (username skipped, Python, science and data, 8 hours a week), lists three organizations that fit, each with its reasons and what its ideas page offers, shortlists the first one, and prints three next steps with the exact commands." width="760">
+  <img src="brand/readme/demo-start.svg" alt="A terminal running git-into-gsoc start. It shows that GSoC 2027 is not announced yet, asks four questions (username skipped, Python, science and data, 8 hours a week), lists three organizations that fit, each with its reasons and what its ideas page offers, warns which project sizes fit 8 hours a week, shortlists the first one, and prints three next steps with the exact commands." width="760">
 </p>
 
 **3. Come back any time.** `git-into-gsoc` on its own shows your progress. `git-into-gsoc next` tells you what to do now: deadlines, changes on the issues you follow, and new beginner issues.
