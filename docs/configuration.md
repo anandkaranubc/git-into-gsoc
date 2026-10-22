@@ -4,23 +4,15 @@ You can use the tool without changing any settings. Run `git-into-gsoc doctor` t
 
 ## GitHub token
 
-GitHub allows 60 unauthenticated API requests per hour and 5,000 with a token. Repository and issue checks make several requests each, so you will hit the limit quickly without one. The tool looks for a token in this order, and `doctor` says whether it came from the environment or the GitHub CLI:
+GitHub allows 60 API requests an hour without signing in and 5,000 with a token. Repository and issue checks make several requests each, so the limit runs out quickly without one. A token is optional, and the tool reads public data only, so it needs no scopes.
 
-1. `GIG_GITHUB_TOKEN`, `GITHUB_TOKEN`, or `GH_TOKEN` in the process environment (checked in that order when more than one is set)
-2. The same three names in a `.env` file in the current folder
-3. The [GitHub CLI](https://cli.github.com/): if `gh` is installed and you have run `gh auth login`, the tool runs `gh auth token` for you
+There are three ways to supply one, listed in the order the tool checks them. `doctor` says which one it found, and never prints the token.
 
-The GitHub CLI route is the easiest and works for the MCP server too, because it does not depend on which terminal exported a variable. Set `GIG_USE_GH_CLI=false` to disable it. Besides the higher limit, a token lets `repo` use one GraphQL query, which reads each pull request's own timeline for the first human reply instead of estimating it from recent comments, and uses fewer requests.
+1. **A variable in your environment:** `GIG_GITHUB_TOKEN`, `GITHUB_TOKEN`, or `GH_TOKEN`, checked in that order. This works anywhere, with or without a copy of the code. For the current terminal, run `export GITHUB_TOKEN=YOUR_TOKEN` (PowerShell: `$env:GITHUB_TOKEN = "YOUR_TOKEN"`). To keep it, add that line to your shell's startup file (`~/.zshrc` on macOS, `~/.bashrc` on Linux), or on Windows run `setx GITHUB_TOKEN "YOUR_TOKEN"` once; then open a new terminal. Create the token with [GitHub's instructions](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens), choosing no scopes (or `public_repo` on classic tokens) and an expiry date.
+2. **The same three names in a `.env` file** in the folder you run the tool from. This is only useful with a copy of the code: run `cp .env.example .env` there and put the token after `GITHUB_TOKEN=`. Git ignores `.env`. `doctor` reports this way and the first one alike as found via the environment.
+3. **The [GitHub CLI](https://cli.github.com/):** install `gh` and run `gh auth login` once, and the tool runs `gh auth token` for you. This is the easiest route, and the best one for the MCP server, because it does not depend on which terminal exported a variable. `GIG_USE_GH_CLI=false` turns it off.
 
-To use a personal access token instead, create one using [GitHub's instructions](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens). The tool reads public data only, so choose no scopes (or `public_repo` on classic tokens) and an expiration date. One way to supply it is a local `.env` file. From the repository folder:
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` in a text editor, enter your token after `GITHUB_TOKEN=`, and save it. `.env` is ignored by Git in this repository. The file is read from the **current working directory**, so it is not found automatically if you run the tool elsewhere. Do not paste tokens into issues, screenshots, or assistant chats.
-
-After changing configuration, run a new command or restart the assistant's MCP connection; settings are cached inside a running process.
+With a token, `repo` also reads each pull request's own timeline for the first human reply in one GraphQL query, instead of estimating it from recent comments. Never paste a token into an issue, a screenshot, or an assistant chat. After changing any setting, run a new command or restart the assistant's MCP connection; settings are cached inside a running process.
 
 ## Settings reference
 
