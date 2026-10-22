@@ -43,7 +43,7 @@ Every tool returns JSON as text. A parameter shown with a default is optional. R
 | `gsoc_diagnose` | `text`, `repo=""` | Likely causes of failed setup or test output, each quoting the matched line with steps to try; with `repo`, the runtime versions, services, install and test commands its CI uses |
 | `gsoc_pr_check` | `ref` | Pass, warn and fail findings for one pull request against the repository's own rules, with the evidence for each, a verdict, and the branch-rule gates still ahead |
 | `gsoc_check_message` | `kind`, `text` | Pass, warn and fail findings for a message the contributor wrote, against the rules for its kind, each with its source |
-| `gsoc_draft` | `kind`, `org=""`, `repo=""`, `issue=""` | A message skeleton (intro, question, claim, pr, review-reply, status, final) with evidence fields and sourced rules, filled with real context when given |
+| `gsoc_draft` | `kind`, `org=""`, `repo=""`, `issue=""` | A message skeleton (intro, question, claim, pr, review-reply, status, final) with evidence fields and sourced rules, filled with real context when given. A claim names anyone who asked about the issue before (`context.issue.earlier_claims`) and asks them first |
 | `gsoc_log` | `goal=""`, `done=""`, `links=""`, `learned=""`, `stuck=""`, `next_step=""`, `limit=5` | Saves a weekly note, or lists recent notes when every field is empty; writes the local progress file |
 
 How the parameters work:

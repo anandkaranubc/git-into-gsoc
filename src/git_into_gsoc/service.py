@@ -2353,6 +2353,15 @@ class GSoCToolkit:
                 context["issue"]["title"] = clean_untrusted(status.get("title"), limit=200)
                 context["issue"]["availability"] = status.get("availability")
                 context["issue"]["reason"] = status.get("reason")
+                # Free by the rules, but someone asked over a month ago and opened nothing:
+                # the claim should ask them first (`issue` already said so; `draft` did not).
+                earlier = [
+                    {"login": clean_untrusted(c.get("login"), limit=40), "days_ago": c["days_ago"]}
+                    for c in (status.get("assessment") or {}).get("claims") or []
+                    if not c.get("granted") and c.get("login") and c.get("days_ago") is not None
+                ]
+                if earlier and status.get("availability") == "available":
+                    context["issue"]["earlier_claims"] = earlier[:3]
             except GigError as exc:
                 context["issue"]["note"] = str(exc)
         if repo:
@@ -2440,6 +2449,13 @@ class GSoCToolkit:
                     f"Issue availability is {issue_info['availability']}; check the thread "
                     "before claiming."
                 )
+        earlier = context.get("issue", {}).get("earlier_claims") or []
+        if kind == "claim" and earlier:
+            warnings.append(
+                f"@{earlier[0]['login']} asked to work on this {earlier[0]['days_ago']} days ago "
+                "and no pull request followed. Ask them in the thread first, and pick another "
+                "issue if they are still on it."
+            )
         for url in context.get("closed_channels") or []:
             warnings.append(
                 f"The organization lists {url}, but GitHub Discussions are turned off there. "

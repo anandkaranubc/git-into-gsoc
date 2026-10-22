@@ -272,10 +272,18 @@ def _claim(ctx: dict[str, Any]) -> str:
     ref = f"{issue.get('repo')}#{issue.get('number')}" if issue.get("number") else "<owner/repo#N>"
     files = ", ".join(ctx.get("files") or []) or "<file or function>"
     convention = ctx.get("claim_convention") or {}
+    earlier = issue.get("earlier_claims") or []
+    opening = "I'd like to work on this."
+    if earlier:
+        who = earlier[0]
+        opening = (
+            f"@{who['login']}, you asked to work on this {who['days_ago']} days ago. "
+            "Are you still on it? If not, I'd like to take it."
+        )
     lines = [
         f"On {ref}, one comment:",
         "",
-        "I'd like to work on this. I reproduced it on <commit> with <steps>.",
+        f"{opening} I reproduced it on <commit> with <steps>.",
         f"The cause looks to be in {files}: <one sentence hypothesis>.",
         "Plan: <one or two lines>. I expect to open a PR by <date>.",
         "If someone is already on it, tell me and I'll pick another issue.",
