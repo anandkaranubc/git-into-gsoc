@@ -319,6 +319,12 @@ class GitHubClient:
             posts += reported_statements(self.search_issues(query, per_page=50), year=year)
         return self._wiki_posts(logins[:2], year) + posts
 
+    def wiki_year_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
+        """Only the wiki statements of `gsoc_year_posts`. They take no search, so they
+        can still be read when GitHub's search limit stops the rest."""
+        logins = [validate_login(o, kind="organization") for o in dict.fromkeys(owners)]
+        return self._wiki_posts(logins[:2], year)
+
     def _wiki_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
         """Statements about `year` on the wiki home pages of each owner's two biggest repos."""
         found: list[dict[str, Any]] = []
