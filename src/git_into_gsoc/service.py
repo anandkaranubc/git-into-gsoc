@@ -818,7 +818,15 @@ class GSoCToolkit:
                 )
                 if part
             ),
-            "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
+            "next_step": (
+                "Run `git-into-gsoc repo owner/name` on your top pick, then "
+                "`git-into-gsoc issues --repo owner/name`."
+            ),
+            # Points add up the reasons listed; they only order this list.
+            "score_meaning": (
+                "Score: points from the reasons listed, to order this list. Not a grade or "
+                "a chance of acceptance."
+            ),
         }
 
     def _weigh_outside_merges(self, leads: list[RepoLead]) -> list[int]:

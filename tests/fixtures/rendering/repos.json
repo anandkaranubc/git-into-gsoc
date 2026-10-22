@@ -54,5 +54,5 @@
       ]
     }
   ],
-  "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`."
+  "next_step": "Run `git-into-gsoc repo owner/name` on your top pick, then `git-into-gsoc issues --repo owner/name`."
 }

@@ -943,9 +943,13 @@ def repos_cmd(
         return
     data = _markup_safe(data)
     caption = (
-        "Ideas page read: repos it names are boosted."
-        if data["ideas_page_read"]
-        else "Ideas page not readable; ranking uses activity and beginner issues."
+        (
+            "Ideas page read: repos it names are boosted."
+            if data["ideas_page_read"]
+            else "Ideas page not readable; ranking uses activity and beginner issues."
+        )
+        + " "
+        + str(data.get("score_meaning") or "")
     )
     if data.get("note"):
         console.print(f"[yellow]{data['note']}[/yellow]")
