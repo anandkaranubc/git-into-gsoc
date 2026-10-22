@@ -60,6 +60,11 @@ def test_hours_note_says_which_project_sizes_fit() -> None:
     # medium one (about 175 hours) fits in 12 weeks.
     assert "Choose a small or medium idea" in (hours_note(15) or "")
     assert "Choose a small idea" in (hours_note(5) or "")
+    # A blind beginner run at 8 hours read the note as a warning; it now leads with what fits.
+    assert (hours_note(8) or "").startswith(
+        "At 8 hours a week, a small project (about 90 hours) fits in about 12 weeks, "
+        "and a medium one (about 175 hours) in about 22."
+    )
     assert hours_note(16) is None  # 350 hours in 22 weeks
     assert hours_note(None) is None and hours_note("lots") is None
 

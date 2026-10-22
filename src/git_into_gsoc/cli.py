@@ -2273,7 +2273,11 @@ def doctor_cmd() -> None:
                     "(run `git-into-gsoc setup` to point it at this installation)"
                 )
     elif not plugins:
-        console.print("MCP registered in: [yellow]nowhere yet[/yellow] (run `git-into-gsoc setup`)")
+        # A blind beginner run read "nowhere yet" in yellow as something broken.
+        console.print(
+            "AI assistants connected: none yet. That is fine in a terminal; if you use "
+            "one, run `git-into-gsoc setup`."
+        )
 
 
 def _command_problem(entry: dict[str, object]) -> str | None:

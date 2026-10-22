@@ -67,6 +67,25 @@ def test_doctor_reports_an_unwritable_folder_instead_of_crashing(locked: Path) -
     assert "Traceback" not in result.output
 
 
+def test_doctor_without_an_assistant_does_not_look_broken(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A blind beginner run read "MCP registered in: nowhere yet" as an error.
+    monkeypatch.setenv("GIG_HOME", str(tmp_path / "home"))
+    monkeypatch.setenv("GIG_CACHE_DIR", str(tmp_path / "cache"))
+    monkeypatch.setenv("GIG_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.chdir(tmp_path)
+    with respx.mock:
+        respx.route().mock(
+            return_value=httpx.Response(200, json={"resources": {"core": {"limit": 60}}})
+        )
+        result = runner.invoke(app, ["doctor"])
+    assert result.exit_code == 0, result.output
+    words = " ".join(result.stdout.split())
+    assert "AI assistants connected: none yet. That is fine in a terminal" in words
+    assert "nowhere" not in words
+
+
 def test_setup_without_any_assistant_does_not_say_restart(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

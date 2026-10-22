@@ -67,7 +67,7 @@ You get the organizations that fit you, a shortlist, and your next steps with th
 
 ## Use it in your AI assistant
 
-The installer already connects the assistants it finds. To add git-into-gsoc as a plugin that updates with your assistant instead, run one line. You need [uv](https://docs.astral.sh/uv/), a free tool that starts the server.
+The installer already connects the assistants it finds. To add git-into-gsoc as a plugin that updates with your assistant instead, run one line. You need [uv](https://docs.astral.sh/uv/), a free tool that starts the git-into-gsoc server your assistant talks to.
 
 | Assistant | Command |
 |---|---|
