@@ -41,8 +41,8 @@ FLOORS = {
     "holdout3": (0.45, 0.28, 8, None),
     "holdout4": (0.43, 0.16, 14, None),
     # Common kinds of beginners: dev3 for tuning, holdout5 sealed (same reviewer and batch).
-    "dev3": (0.42, 0.38, 12, None),
-    "holdout5": (0.51, 0.44, 7, None),
+    "dev3": (0.44, 0.40, 11, None),
+    "holdout5": (0.54, 0.46, 6, None),
     # A second development set from a fourth blind reviewer, used for tuning. Its wrong@5
     # floor and test's P@5 floor were reset around the ideas refresh that the rule in
     # evals/README.md ("Deciding the 2026-10-22 ideas refresh") passed.

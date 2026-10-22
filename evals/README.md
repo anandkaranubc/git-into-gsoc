@@ -194,6 +194,8 @@ First look, on `main` after the 0.22.0 release, before any change was made for t
 
 On common beginners the current ranker finds more of the right organizations than the keyword ranker, but on `dev3` it puts two more wrong ones in a top five. That is the weakness these sets were added to work on.
 
+Their floors follow the convention of the other sets: the first look less 0.01 nDCG@10 and 0.02 P@5, and one more wrong pick (`dev3` 0.44, 0.40, 11; `holdout5` 0.54, 0.46, 6).
+
 ## Tried and not kept
 
 Each was tuned on `dev` and `dev2` only and rejected there. `test` and `holdout4` were not read for any of them.
