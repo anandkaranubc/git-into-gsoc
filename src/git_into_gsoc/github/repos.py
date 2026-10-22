@@ -522,13 +522,72 @@ def detect_toolchain(
 
 def contributing_path(profile: dict[str, Any]) -> str | None:
     """Repo-relative path of CONTRIBUTING from a community-profile payload."""
-    html_url = ((profile.get("files") or {}).get("contributing") or {}).get("html_url")
+    return _profile_file_path(profile, "contributing")
+
+
+def readme_path(profile: dict[str, Any]) -> str | None:
+    """Repo-relative path of the README from a community-profile payload."""
+    return _profile_file_path(profile, "readme")
+
+
+def _profile_file_path(profile: dict[str, Any], key: str) -> str | None:
+    html_url = ((profile.get("files") or {}).get(key) or {}).get("html_url")
     if not html_url:
         return None
     parts = urlparse(str(html_url)).path.split("/")
     if "blob" in parts:
         index = parts.index("blob")
         return unquote("/".join(parts[index + 2 :])) or None
+    return None
+
+
+# "Contributing", "How To Contribute", "Contribution guidelines". Not "Contributors",
+# which heads a list of names (p5.js-website has both).
+_CONTRIBUTING_HEADING_RE = re.compile(r"\bcontribut(?:e|ing|ions?)\b", re.I)
+_ATX_HEADING_RE = re.compile(r"^(#{1,6})\s+\S")
+_HTML_HEADING_RE = re.compile(r"^\s*<h([1-6])\b", re.I)
+_UNDERLINE_RE = re.compile(r"^\s*([=\-~^*])\1{2,}\s*$")
+# A section this short ("Contributions welcome!") gives a newcomer nothing to follow.
+MIN_README_SECTION_CHARS = 200
+
+
+def _heading_level(lines: list[str], index: int) -> int:
+    """The heading level of lines[index] (Markdown, setext or reST, HTML), or 0."""
+    line = lines[index]
+    if m := _ATX_HEADING_RE.match(line):
+        return len(m.group(1))
+    if m := _HTML_HEADING_RE.match(line):
+        return int(m.group(1))
+    below = lines[index + 1] if index + 1 < len(lines) else ""
+    if line.strip() and not _UNDERLINE_RE.match(line) and (m := _UNDERLINE_RE.match(below)):
+        return 1 if m.group(1) == "=" else 2
+    return 0
+
+
+def readme_contributing_section(text: str) -> str | None:
+    """The body of a README's section on contributing, when it says enough to follow.
+
+    Some projects keep their rules there instead of in a CONTRIBUTING file:
+    p5.js-website's "How To Contribute" says which issues can be requested and to wait
+    to be assigned.
+    """
+    lines = text.splitlines()
+    for index, line in enumerate(lines):
+        level = _heading_level(lines, index)
+        if not level or not _CONTRIBUTING_HEADING_RE.search(line):
+            continue
+        start = index + (
+            2 if _UNDERLINE_RE.match(lines[index + 1] if index + 1 < len(lines) else "") else 1
+        )
+        body: list[str] = []
+        for later in range(start, len(lines)):
+            found = _heading_level(lines, later)
+            if found and found <= level:
+                break
+            body.append(lines[later])
+        section = "\n".join(body).strip()
+        if len(re.sub(r"\s+", " ", section)) >= MIN_README_SECTION_CHARS:
+            return section
     return None
 
 

@@ -38,6 +38,8 @@ from git_into_gsoc.github.repos import (
     mirror_source,
     pick_beginner_label,
     pull_stats,
+    readme_contributing_section,
+    readme_path,
 )
 from git_into_gsoc.github.search import build_issue_query, language_group
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
@@ -415,6 +417,19 @@ class GitHubClient:
         except HttpError:
             return None
 
+    def readme_contributing_path(
+        self, owner: str, repo: str, profile: dict[str, Any]
+    ) -> str | None:
+        """The README's path when it has a section on contributing worth following.
+
+        One cached request, made only for a repository with no CONTRIBUTING file.
+        """
+        if (profile.get("files") or {}).get("contributing"):
+            return None
+        path = readme_path(profile)
+        text = self.get_raw_file(owner, repo, path) if path else None
+        return path if text and readme_contributing_section(text) else None
+
     def community_profile(self, owner: str, repo: str) -> dict[str, Any]:
         try:
             data = self._api(f"repos/{owner}/{repo}/community/profile")
@@ -571,6 +586,13 @@ class GitHubClient:
             if landed:
                 stats = pull_stats(source_pulls, insiders=source_insiders, landed=frozenset(landed))
         files = profile.get("files") or {}
+        contributing_source = (
+            "file"
+            if files.get("contributing")
+            else "readme"
+            if self.readme_contributing_path(owner, repo, profile)
+            else None
+        )
         label = pick_beginner_label(labels)
         open_beginner, assigned_beginner = (
             self.count_open_issues_with_label(owner, repo, label) if label else (None, None)
@@ -588,7 +610,8 @@ class GitHubClient:
             pushed_at=_parse_dt(raw.get("pushed_at")),
             license=_license_name(raw.get("license")),
             topics=list(raw.get("topics") or []),
-            has_contributing=bool(files.get("contributing")),
+            has_contributing=contributing_source is not None,
+            contributing_source=contributing_source,
             has_code_of_conduct=bool(
                 files.get("code_of_conduct") or files.get("code_of_conduct_file")
             ),
@@ -857,6 +880,7 @@ class GitHubClient:
         except HttpError:
             language = None
         toolchain, devcontainer = detect_toolchain(root, language=language)
+        readme = None if path else self.readme_contributing_path(owner, repo, profile)
         hints = list(toolchain)
         if devcontainer:
             hints.insert(0, "Dev container available: open in Codespaces/VS Code for a ready env")
@@ -866,12 +890,16 @@ class GitHubClient:
             hints.append(
                 "Read README.md and CONTRIBUTING.md before coding"
                 if path
+                else f"Read the contributing section of {readme} before coding"
+                if readme
                 else "Read README.md before coding"
             )
         beginner = [str(lab.get("name")) for lab in labels if pick_beginner_label([lab])]
+        # "Read first" points at the README when its section is the contributing guide.
+        guide_file = files.get("contributing") or (files.get("readme") if readme else None) or {}
         return ContributionGuide(
             repo=full_name,
-            contributing_url=(files.get("contributing") or {}).get("html_url"),
+            contributing_url=guide_file.get("html_url"),
             contributing_excerpt=_excerpt(text, 1500),
             contributing_text=text,
             code_of_conduct_url=coc.get("html_url"),

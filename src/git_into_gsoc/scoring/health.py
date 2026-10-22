@@ -110,7 +110,11 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         return f"Before it went quiet: {text[0].lower()}{text[1:]}" if dormant else text
 
     if health.has_contributing:
-        signals.append("Has a CONTRIBUTING guide")
+        signals.append(
+            "Has contributing rules in its README (no separate CONTRIBUTING file)"
+            if health.contributing_source == "readme"
+            else "Has a CONTRIBUTING guide"
+        )
     else:
         warnings.append("No CONTRIBUTING guide detected; ask maintainers how to start")
     award("CONTRIBUTING guide", 12 if health.has_contributing else 0, 12)
@@ -155,10 +159,11 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
     if health.merge_rate is not None and health.prs_sampled >= 5:
         if health.merge_rate >= 0.5:
             merged = 8
-            signals.append(past(f"Healthy merge rate ({health.merge_rate:.0%} of human PRs)"))
+            # A plain figure: "Healthy" over a 52% rate read as praise it had not earned.
+            signals.append(past(f"{health.merge_rate:.0%} of human PRs merged"))
         elif health.merge_rate >= 0.25:
             merged = 4
-            signals.append(past(f"Moderate merge rate ({health.merge_rate:.0%})"))
+            signals.append(past(f"{health.merge_rate:.0%} of human PRs merged"))
         else:
             warnings.append(f"Low merge rate ({health.merge_rate:.0%})")
         award("Merge rate of all human PRs", merged, 8)
@@ -251,8 +256,13 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
                 f"Pull requests from outsiders wait ~{first / 24:.0f}d for a first human reply (median)"
             )
         if health.median_pr_hours is not None:
+            # The team's own pull requests are in this figure too, so it can sit beside a
+            # long wait for an outsider's first reply.
             notes.append(
-                past(f"Merged PRs land in ~{_days_or_hours(health.median_pr_hours)} (median)")
+                past(
+                    f"Merged PRs, the team's included, land in "
+                    f"~{_days_or_hours(health.median_pr_hours)} (median)"
+                )
             )
     elif health.median_pr_hours is not None:
         if health.median_pr_hours <= 72:

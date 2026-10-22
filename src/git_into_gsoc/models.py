@@ -152,6 +152,8 @@ class RepoHealth(BaseModel):
     license: str | None = None
     topics: list[str] = Field(default_factory=list)
     has_contributing: bool = False
+    # "file" for a CONTRIBUTING file, "readme" for a README section on contributing.
+    contributing_source: str | None = None
     has_code_of_conduct: bool = False
     has_issue_template: bool = False
     has_pr_template: bool = False

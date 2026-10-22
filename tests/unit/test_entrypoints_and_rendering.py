@@ -160,6 +160,8 @@ def test_repo_panel_renders_signals_and_setup_hints() -> None:
     assert "Left out: people who landed a single commit last year" in words
     assert "✓ No commit history" not in words
     assert "Saved to your progress. `next` will list new beginner issues opened here." in words
+    # Like the other commands, `repo` ends with what to run next.
+    assert "Next: git-into-gsoc " in words
 
 
 @respx.mock

@@ -1018,6 +1018,8 @@ def repo_cmd(
         console.print(f"  • Channels mentioned: {', '.join(guide['communication_channels'])}")
     if data.get("tracked"):
         console.print("\nSaved to your progress. `next` will list new beginner issues opened here.")
+    if data.get("next_step"):
+        console.print(f"\nNext: {data['next_step']}", soft_wrap=True)
 
 
 def _lost_points_lines(health: dict[str, Any]) -> list[str]:

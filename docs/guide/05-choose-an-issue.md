@@ -38,7 +38,7 @@ Each signal adds points, and the points add up to exactly 100. A repository with
 | Signal | Most points | How the points are earned |
 |---|---|---|
 | Recent push | 16 | 16 within two weeks, 12 within 45 days, 6 within 120 days |
-| CONTRIBUTING guide | 12 | Found in the repository |
+| CONTRIBUTING guide | 12 | A CONTRIBUTING file, or a README section on contributing with real rules in it |
 | Outside merge rate | 12 | 12 at 40% or more, 6 at 20% or more, once ten outside PRs are sampled |
 | Open beginner issues | 10 | 10 when one is free, 4 when the label has no open issues, 2 when every one is assigned |
 | Time to a first human reply | 10 | 10 within a day, 6 within three days. With too few replies measured, time to merge: 10 within three days, 5 within ten |
@@ -56,7 +56,7 @@ A figure that rests on too few PRs is shown but scores nothing, since a handful 
 
 The advice under the grade follows the grade: "Strong candidate" for an A, "Promising, with caveats" for a B, "Risky" for a C or a D, and "Poor fit" for an F.
 
-Under the checks, "Where it lost points" lists each signal that earned less than its most, using the names in the table above, with the reason when the lines above do not give it. It also says when a signal was left out for lack of data, and which rule held the grade down, if one did. A line marked with a dot (·) instead of a check mark is a fact that earns nothing either way, such as a figure based on too few PRs.
+Under the checks, "Where it lost points" lists each signal that earned less than its most, using the names in the table above, with the reason when the lines above do not give it. It also says when a signal was left out for lack of data, and which rule held the grade down, if one did. A line marked with a dot (·) instead of a check mark is a fact that earns nothing either way, such as a figure based on too few PRs. The last line names the command to run next: `orient` and `issues --repo` for an A or a B, and `repos` to compare other repositories for anything lower.
 
 "Getting set up" lists the toolchain files found in the repository root, whether a dev container exists (one click in Codespaces or VS Code gets you a working environment), the CONTRIBUTING link, and the chat channels it mentions. Read the README and CONTRIBUTING on GitHub before writing code. A high grade does not guarantee mentoring, and a missing file can mean the guide lives elsewhere. If the repository is archived, look for the project's current repository before continuing.
 

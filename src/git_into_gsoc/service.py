@@ -667,6 +667,7 @@ class GSoCToolkit:
             "health": health.model_dump(mode="json"),
             "contribution_guide": guide.model_dump(),
             "recommendation": _repo_recommendation(health.grade, health.warnings),
+            "next_step": _repo_next_step(health.full_name, health.grade),
         }
 
     def gsoc_github_orgs(
@@ -3099,6 +3100,20 @@ def _issue_dict(issue: Any) -> dict[str, Any]:
         return issue
     data: dict[str, Any] = issue.model_dump(mode="json", exclude={"signals"})
     return data | {"signals": issue.signals}
+
+
+def _repo_next_step(full_name: str, grade: str) -> str:
+    """What to run after `repo`, following the grade's advice."""
+    if grade in {"A", "B"}:
+        return (
+            f"git-into-gsoc orient {full_name} to see how the code is laid out, then "
+            f"git-into-gsoc issues --repo {full_name} for a free beginner issue."
+        )
+    owner = full_name.split("/", 1)[0]
+    return (
+        f"git-into-gsoc repos {owner} to compare its other repositories, or "
+        f"git-into-gsoc orient {full_name} if you have a reason to stay."
+    )
 
 
 def _repo_recommendation(grade: str, warnings: list[str]) -> str:
