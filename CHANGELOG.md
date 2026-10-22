@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.18.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.17.0...v0.18.0) (2026-10-22)
+
+
+### Features
+
+* **next:** after a first merged pull request, point to feedback and a friend ([#233](https://github.com/anandkaranubc/git-into-gsoc/issues/233)) ([dfe60a9](https://github.com/anandkaranubc/git-into-gsoc/commit/dfe60a9f594039b87a779657e4431ce6ba2ff1bd))
+
+
+### Bug Fixes
+
+* **issue:** say when the search limit skipped the look-alike check ([#231](https://github.com/anandkaranubc/git-into-gsoc/issues/231)) ([61948e4](https://github.com/anandkaranubc/git-into-gsoc/commit/61948e497015802ce487e9c0c29ad7e90511f264))
+
+
+### Documentation
+
+* send free Google accounts to Antigravity, not Gemini CLI ([#232](https://github.com/anandkaranubc/git-into-gsoc/issues/232)) ([0482980](https://github.com/anandkaranubc/git-into-gsoc/commit/04829809d63bd826858269c3015c1fdfe1201780))
+
 ## [0.17.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.3...v0.17.0) (2026-10-22)
 
 
