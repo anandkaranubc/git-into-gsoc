@@ -7,8 +7,9 @@ has the full walkthrough, Windows steps, and troubleshooting.
 ## Quick install
 
 The one-line installer needs only an internet connection: no Git, and no Python
-unless the person already has it. Before showing a command that pipes a script
-into a shell, say what it does. People can read the script at the same URL first.
+unless the person already has it. Give the person the command to run in their own
+terminal; do not run it for them. Say what it does first, because it pipes a
+script into a shell, and mention that they can read the script at the same URL.
 
 On macOS, Linux, or WSL:
 

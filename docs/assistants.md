@@ -136,10 +136,10 @@ Most assistants read skills from `~/.agents/skills` and accept MCP servers in a 
 
 ```bash
 npx skills add anandkaranubc/git-into-gsoc -g
-npx add-mcp "uvx git-into-gsoc@latest mcp" --name git-into-gsoc
+npx add-mcp "uvx git-into-gsoc@latest mcp" --name git-into-gsoc -g
 ```
 
-The first copies the skill; the second asks which assistants to add the server to. Both need [Node.js](https://nodejs.org/). Kiro also has a button below.
+The first copies the skill; the second asks which assistants to add the server to. `-g` makes both work in every folder; without it they set up only the folder you run them in. Both need [Node.js](https://nodejs.org/). Kiro and Visual Studio also have buttons below.
 
 ## One-click buttons
 
