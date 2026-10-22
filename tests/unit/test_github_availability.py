@@ -536,3 +536,42 @@ NOT_CLAIMS = [
 def test_real_claim_phrasings_count_and_others_do_not() -> None:
     assert [text for text in REAL_CLAIMS if not is_claim(text)] == []
     assert [text for text in NOT_CLAIMS if is_claim(text)] == []
+
+
+# A second sample: 333 comments from 20 other GSoC organizations (2026-10-21).
+MORE_CLAIMS = [
+    "Would love an assignment",
+    "kindly delegate it to me",
+    "I am still actively working on extending this",
+    "I am planning to benchmark the two tools first",
+    "Will get started right away.",
+    "i wanna take it over",
+    "I have the change ready",
+    "I'd be interested in contributing to #2605.",
+    "take",
+    "Taking this one.",
+    "I want to fix this issue",
+]
+MORE_NOT_CLAIMS = [
+    "Thanks! Unfortunately I am not able to set up the environment, so could you please "
+    "un-assign me so someone else can take it?",
+    "How can I fix this in the code? I tried the template override.",
+    "We'd like to add your quickstart to the docs website too.",
+    "Should I add this to the main docs repo or keep it in the quickstart repo?",
+]
+
+
+def test_more_real_phrasings() -> None:
+    assert [text for text in MORE_CLAIMS if not is_claim(text)] == []
+    assert [text for text in MORE_NOT_CLAIMS if is_claim(text)] == []
+
+
+def test_a_report_about_someone_else_does_not_cancel_a_claim() -> None:
+    # "Since the current assignee is no longer working on this, I'm interested in
+    # taking it up. Could you assign it to me?" was dropped as a release.
+    text = (
+        "Since the current assignee is no longer working on this, I'm interested in taking it"
+        " up. Could you assign it to me?"
+    )
+    found = assess_issue(_issue(), [_comment("newcomer", text, 3)], now=NOW)
+    assert found.availability == Availability.CLAIMED

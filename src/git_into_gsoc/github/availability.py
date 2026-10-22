@@ -63,8 +63,9 @@ STALE_DAYS = 365
 _CLAIM_PATTERNS = [
     r"\bi(?:'m| am) (?:currently |now )?working on (?:this|it|the issue)\b",
     r"\bi(?:'ll| will) (?:take|work on|pick up|handle|fix) (?:this|it)\b",
-    r"\b(?:can|could|may) i (?:please )?(?:work on|take|pick up|tackle|fix|be assigned|get assigned)\b",
-    r"\b(?:please |kindly )?assign (?:this |it )?(?:issue )?(?:to )?me\b",
+    r"(?<!how )\b(?:can|could|may) i (?:please )?(?:work on|take|pick up|tackle|fix|be assigned|"
+    r"get assigned)\b",
+    r"\b(?:please |kindly )?(?<!un-)(?<!un)assign (?:this |it )?(?:issue )?(?:to )?me\b",
     r"\bi(?:'d| would) (?:really )?(?:like|love) to (?:work on|take|tackle|pick up|fix|contribute to) (?:this|it)\b",
     r"\b(?:i want|wanting) to work on (?:this|it)\b",
     r"\b(?:happy|glad) to (?:work on|take on|pick up|take|fix) (?:this|it)\b",
@@ -74,27 +75,42 @@ _CLAIM_PATTERNS = [
     r"\bis (?:this|it) (?:still )?(?:available|open) (?:to|for) (?:work|take)\b",
     # Phrasings measured on 280 real comments in GSoC organizations' beginner issues
     # (2026-10-21): the patterns above caught 62% of the claims in them.
-    r"\b(?:would|'d|i|id)\s+(?:really\s+|also\s+)?(?:like|love|be (?:happy|glad))\s+to\s+"
+    r"(?:(?<!we )(?<!you )(?<!they )\bwould|\bi'd|\bid|\bi)\s+(?:really\s+|also\s+)?"
+    r"(?:like|love|be (?:happy|glad))\s+to\s+"
     r"(?:work|claim|take|tackle|pick|fix|resolve|solve|contribute|help|try|give it|open a pr|"
     r"implement|add|start)\b",
     r"\bi(?:'d| would) (?:like|love) to be assigned\b",
     r"(?:^|[.!?,]\s*)working on (?:this|it|a fix|the fix)\b",  # "Working on this." at a start
-    r"\b(?:i(?:'m| am)|i(?:'ve| have) (?:already )?been) (?:actively |currently |already |now )?"
+    r"\b(?:i(?:'m| am)|i(?:'ve| have) (?:already )?been) "
+    r"(?:actively |currently |already |now |still |still actively )?"
     r"working on\b",
     r"\bassign (?:this|it|the issue|this issue|#\d+|[\w -]{1,40}? issue) to me\b",
-    r"\b(?:can|could|may|should) i (?:please |also )?(?:try|attempt|give it|work|handle|resolve|"
-    r"take|add|start)\b",
+    r"(?<!how )(?<!where )\b(?:can|could|may) i (?:please |also )?(?:try|attempt|give it|work|"
+    r"handle|resolve|take|add|start)\b",
+    r"(?<!how )\bshould i (?:try|attempt|give it a|take|work on|start)\b",
     r"\bi can (?:also )?(?:work on|take|fix|handle|resolve) (?:this|it)\b",
     r"\bi(?:'ll| will) (?:start working|work on|try to (?:resolve|fix|solve)|implement|"
     r"submit a pr|open a pr|raise a pr|create a pr|take (?:this|it|up))\b",
     r"\b(?:i(?:'m| am) )?(?:planning|going) to (?:work on|fix|tackle|implement|take)\b",
-    r"\bi(?:'m| am)?\s+(?:very |really |also )?interested in "
-    r"(?:working on|taking|fixing|solving|contributing to) (?:this|it)\b",
+    r"\bi(?:'m| am|'d be| would be)?\s+(?:very |really |also |quite |still )?interested in "
+    r"(?:working on|taking|fixing|solving|contributing to|helping)\b",
     r"\b(?:is|if) (?:this|it|the issue|this issue) (?:is )?(?:still )?(?:open|available) "
     r"(?:for|to)\b",
     r"\bavailable for me to (?:take|work on)\b",
     r"\b(?:take a stab at|give it a (?:go|try|shot))\b",
     r"\bstarting (?:the )?work\b|\bwill (?:be )?creat(?:e|ing) (?:a )?pr\b",
+    # A second sample of 333 comments from 20 other organizations (2026-10-21).
+    r"\b(?:would|i'd) (?:love|like) (?:an |the )?assignment\b",
+    r"\b(?:assign|delegate|give) (?:this|it|the issue|this issue) to (?:me|us)\b",
+    r"\bi(?:'m| am) planning to\b|\bi plan to\b",
+    r"\b(?:i(?:'ll| will)|will) get started\b",
+    r"\bi wanna (?:take|work|fix|try|do)\b",
+    r"\bi have (?:the |a )?(?:change|changes|fix|patch|pr) ready\b",
+    r"\bi(?:'m| am) (?:nearly|almost) (?:done|finished)\b",
+    r"^\s*take\s*$|^\s*taking (?:this|it)\b",  # pandas-style "take" comment, or "Taking this one."
+    r"\bi want to (?:work on|fix|take|tackle|solve|resolve) (?:this|it)\b",
+    r"\bi(?:'ll| will) be (?:taking|working on|picking up)\b",
+    r"\b(?:formally |officially )?take (?:this|the) issue\b",
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
     r"^\s*/(?:assign(?:-me)?|take|claim)\s*$",
     r"^\s*\.take(?:-issue)?\s*$",
@@ -105,10 +121,19 @@ _RELEASE_PATTERNS = [
     r"^\s*\.(?:release|unassign)\s*$",
     r"^\s*@\w+bot\s+(?:abandon|unclaim|release)\b",
     r"\b(?:i(?:'m| am) )?no longer (?:working on|able to work on|interested in) (?:this|it)\b",
-    r"\b(?:please )?unassign me\b",
+    r"\b(?:please )?un-?assign me\b",
     r"\bfeel free to (?:take|pick) (?:this|it) (?:over|up)\b",
     r"\bhas been (?:automatically )?unassigned\b",
     r"\bunassigned (?:due to|because of|for) inactivity\b",
+]
+# Giving back one's own claim. A report about someone else ("the assignee is no
+# longer working on this, so can I take it?") must not cancel the writer's claim.
+_OWN_RELEASE_PATTERNS = [
+    r"^\s*/(?:unassign(?:-me)?|release|unclaim)\s*$",
+    r"^\s*\.(?:release|unassign)\s*$",
+    r"\bi(?:'m| am| can)? no longer (?:working on|able to|interested in)\b",
+    r"\b(?:please )?un-?assign me\b",
+    r"\bi(?:'m| am) (?:not |un)able to (?:continue|work on|finish|complete|set up)\b",
 ]
 _GRANT_PATTERNS = [
     r"\bassigned\b",
@@ -133,6 +158,7 @@ PullLookup = Callable[[int], dict[str, Any] | None]
 _CLAIM_RE = re.compile("|".join(_CLAIM_PATTERNS), re.IGNORECASE | re.MULTILINE)
 _GRANT_RE = re.compile("|".join(_GRANT_PATTERNS), re.IGNORECASE)
 _RELEASE_RE = re.compile("|".join(_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
+_OWN_RELEASE_RE = re.compile("|".join(_OWN_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
 
 
 def _dt(value: str | None) -> datetime | None:
@@ -169,6 +195,11 @@ def is_claim(text: str) -> bool:
 
 def is_grant(text: str) -> bool:
     return bool(_GRANT_RE.search(straight_quotes(text)))
+
+
+def is_own_release(text: str) -> bool:
+    """The writer gives back their own claim (not a report about someone else's)."""
+    return bool(_OWN_RELEASE_RE.search(_own_words(text)))
 
 
 def is_release(text: str) -> bool:
@@ -244,7 +275,7 @@ def assess_issue(
                 if at is not None:
                     for name in set(re.findall(r"@([A-Za-z0-9-]+)", body)) & set(claims):
                         _touch(claims[name], at, now)
-            elif is_claim(body) and not is_release(body) and at is not None and login:
+            elif is_claim(body) and not is_own_release(body) and at is not None and login:
                 if login in claims:
                     _touch(claims[login], at, now)
                 else:
