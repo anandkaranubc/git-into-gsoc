@@ -54,5 +54,6 @@
       ]
     }
   ],
-  "next_step": "Run `git-into-gsoc repo owner/name` on your top pick, then `git-into-gsoc issues --repo owner/name`."
+  "next_step": "Run `git-into-gsoc repo owner/name` on your top pick, then `git-into-gsoc issues --repo owner/name`.",
+  "score_meaning": "Score: points from its stars and recent activity plus the reasons listed, to order this list. Not a grade or a chance of acceptance."
 }

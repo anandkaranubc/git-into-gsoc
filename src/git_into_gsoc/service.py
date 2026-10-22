@@ -61,9 +61,10 @@ from git_into_gsoc.github.pointers import (
 from git_into_gsoc.github.prcheck import check_pull_request
 from git_into_gsoc.github.pulls import pull_request_status
 from git_into_gsoc.github.repos import (
+    OUTSIDE_BUDGET,
     OUTSIDE_CHECKED,
-    OUTSIDE_WINDOW_DAYS,
     OUTSIDER_ROLES,
+    OutsideMerges,
     beginner_labels,
     channels_in,
     is_bot,
@@ -71,7 +72,7 @@ from git_into_gsoc.github.repos import (
     is_main_repo,
     mentioned_repos,
     mirror_source,
-    outside_authors_merged,
+    outside_merges,
     outside_merges_points,
     pick_beginner_label,
     repo_kind,
@@ -336,7 +337,14 @@ def _has_starter(orgs: list[dict[str, Any]], issues: list[dict[str, Any]]) -> bo
     )
 
 
-def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) -> list[str]:
+def _unread(status: dict[str, str], lead: Any) -> int:
+    """0 for a repository whose pull requests were read, 1 failed, 2 never tried."""
+    return {"checked": 0, "failed": 1}.get(status.get(lead.full_name, ""), 2)
+
+
+def _when_no_issues(
+    language: str | None, *, org: str | None, repo: str | None, gsoc_org: bool = False
+) -> list[str]:
     """What to try when a search finds no free beginner issues."""
     if repo:
         return [
@@ -358,7 +366,7 @@ def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) 
         f"List its repositories: git-into-gsoc repos {where}, then "
         "git-into-gsoc issues --repo owner/name (it uses that repository's own beginner label)."
     )
-    if org:
+    if org and gsoc_org:
         steps.append(
             f"Or start from its ideas: git-into-gsoc ideas {where}. At some organizations GSoC "
             "work begins with an idea and its mentors, not with labelled issues; ask the "
@@ -775,26 +783,49 @@ class GSoCToolkit:
         searched = [*owners, *(o for o, _ in linked_owners)]
         leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
-        # Twice: a quiet repository that drops lets one below it rise into the top,
-        # and that one is checked too.
-        checked: set[str] = set()
-        outside: list[int] = []
-        for _ in range(2):
-            fresh = [lead for lead in leads[:OUTSIDE_CHECKED] if lead.full_name not in checked]
+        # Until the shown top is all checked (a quiet repository that drops lets another
+        # rise), within a request budget. Checked ones stay above unchecked ones, so an
+        # unread or failed repository never outranks one that was read.
+        status: dict[str, str] = {}
+        found: list[OutsideMerges] = []
+        budget = OUTSIDE_BUDGET
+        while budget > 0:
+            # Which to read next goes by score alone, so one that would rise is read.
+            by_score = sorted(leads, key=lambda lead: (-lead.score, -lead.stars))
+            fresh = [lead for lead in by_score[:OUTSIDE_CHECKED] if lead.full_name not in status]
             if not fresh:
                 break
-            outside += self._weigh_outside_merges(fresh)
-            checked.update(lead.full_name for lead in fresh)
-            leads.sort(key=lambda lead: (-lead.score, -lead.stars))
+            fresh = fresh[:budget]
+            budget -= len(fresh)
+            for lead, result in zip(fresh, self._weigh_outside_merges(fresh), strict=True):
+                status[lead.full_name] = "failed" if result is None else "checked"
+                if result is not None:
+                    found.append(result)
+        leads.sort(key=lambda lead: (_unread(status, lead), -lead.score, -lead.stars))
         name = gsoc_org.name if gsoc_org else owners[0]
-        quiet_note = (
-            f"None of the {len(outside)} repositories checked had a pull request from outside "
-            f"the team merged in the last {OUTSIDE_WINDOW_DAYS} days. At {name}, GSoC work may "
-            "start from its ideas page and the mentors named there rather than from GitHub "
-            f'issues: run `git-into-gsoc ideas "{name}"`, pick the idea that fits you, and '
-            "ask its mentors in the organization's chat how to start."
-            if len(outside) >= 3 and not any(outside)
-            else ""
+        judged = [f for f in found if f.humans]
+        failed = sum(1 for v in status.values() if v == "failed")
+        ideas_step = (
+            f'run `git-into-gsoc ideas "{name}"`, pick the idea that fits you, and ask its '
+            "mentors in the organization's chat how to start."
+            if gsoc_org
+            else "ask in the project's chat which first task would help."
+        )
+        quiet_note = " ".join(
+            part
+            for part in (
+                f"None of the {len(judged)} repositories checked had a pull request from "
+                "outside the team merged among their recent closed pull requests. At "
+                f"{name}, GSoC work may start from its ideas and mentors rather than from "
+                f"GitHub issues: {ideas_step}"
+                if len(judged) >= 3 and not any(f.authors for f in judged)
+                else "",
+                f"{failed} repositories could not be checked (GitHub's request limit), so "
+                "they are listed after the checked ones."
+                if failed
+                else "",
+            )
+            if part
         )
         return {
             "org": gsoc_org.name if gsoc_org else owners[0],
@@ -824,18 +855,17 @@ class GSoCToolkit:
             ),
             # Points add up the reasons listed; they only order this list.
             "score_meaning": (
-                "Score: points from the reasons listed, to order this list. Not a grade or "
-                "a chance of acceptance."
+                "Score: points from its stars and recent activity plus the reasons listed, to "
+                "order this list. Not a grade or a chance of acceptance."
             ),
         }
 
-    def _weigh_outside_merges(self, leads: list[RepoLead]) -> list[int]:
-        """Adjust the top candidates by whether outsiders got pull requests merged lately.
+    def _weigh_outside_merges(self, leads: list[RepoLead]) -> list[OutsideMerges | None]:
+        """Adjust candidates by whether outsiders got pull requests merged lately.
 
-        One request per repository; a failed one changes nothing. Returns how many outside
-        authors each checked repository had merged.
+        One request per repository. A failed one (None) keeps its score and says it was
+        not checked.
         """
-        since = datetime.now(UTC) - timedelta(days=OUTSIDE_WINDOW_DAYS)
 
         def pulls(lead: RepoLead) -> list[dict[str, Any]] | None:
             try:
@@ -844,18 +874,22 @@ class GSoCToolkit:
                 return None
 
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
-            found = list(pool.map(pulls, leads))
-        counts: list[int] = []
-        for lead, closed in zip(leads, found, strict=True):
+            closed_lists = list(pool.map(pulls, leads))
+        results: list[OutsideMerges | None] = []
+        for lead, closed in zip(leads, closed_lists, strict=True):
             if closed is None:
+                lead.reasons.append(
+                    "Its recent pull requests could not be read, so whether it takes outside "
+                    "work is unchecked"
+                )
+                results.append(None)
                 continue
-            count = outside_authors_merged(closed, since=since)
-            counts.append(count)
-            points, reason = outside_merges_points(count, len(closed))
+            found = outside_merges(closed)
+            points, reason = outside_merges_points(found)
             lead.score = round(lead.score + points, 1)
-            if reason:
-                lead.reasons.append(reason)
-        return counts
+            lead.reasons.append(reason)
+            results.append(found)
+        return results
 
     def _gsoc_owners(self, name: str, *, language: str | None) -> tuple[list[str], list[str], str]:
         """A GSoC organization's own GitHub owners, the ones its ideas page links to, and a note.
@@ -1121,7 +1155,9 @@ class GSoCToolkit:
             "count": len(issues),
             "issues": listed,
             "before_you_comment": BEFORE_YOU_COMMENT,
-            "next_steps": [] if issues else _when_no_issues(language, org=asked_org, repo=repo),
+            "next_steps": []
+            if issues
+            else _when_no_issues(language, org=asked_org, repo=repo, gsoc_org=bool(gsoc_owners)),
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:

@@ -196,3 +196,12 @@ def test_progress_reads_as_a_checklist_and_json_is_unchanged(wide_console: None)
     assert not shown.output.lstrip().startswith("{"), "rich output is still raw JSON"
     as_json = json.loads(runner.invoke(cli.app, ["progress", "--output", "json"]).output)
     assert as_json["completion"] == "1/10" and as_json["shortlisted_orgs"] == ["Org [/] Lab"]
+
+
+def test_the_repos_table_says_what_its_score_means(
+    monkeypatch: pytest.MonkeyPatch, wide_console: None
+) -> None:
+    monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit("discover_repos", load("repos")))
+    result = CliRunner().invoke(cli.app, ["repos", "SymPy"])
+    assert result.exit_code == 0, result.output[-800:]
+    assert "Not a grade or a chance of acceptance" in result.output

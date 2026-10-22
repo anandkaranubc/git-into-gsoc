@@ -216,19 +216,61 @@ def outside_authors_merged(pulls: list[dict[str, Any]], *, since: datetime) -> i
     return len(authors)
 
 
-def outside_merges_points(count: int, sampled: int) -> tuple[float, str | None]:
+@dataclass
+class OutsideMerges:
+    """What a sample of recently closed pull requests says about outside contributions."""
+
+    authors: int  # distinct people without write access merged in the window covered
+    humans: int  # pull requests in the sample not opened by a bot
+    sampled: int
+    days: int  # how far back the window reaches: OUTSIDE_WINDOW_DAYS, or less
+
+
+def outside_merges(
+    pulls: list[dict[str, Any]], *, now: datetime | None = None, page: int = 30
+) -> OutsideMerges:
+    """Outside merges in the period the sample really covers.
+
+    The sample is the most recently updated closed pull requests. A full page of them
+    may reach back only weeks, so the window is cut to the oldest one; a shorter page
+    is the repository's whole history, so the full window holds.
+    """
+    now = now or datetime.now(UTC)
+    window = now - timedelta(days=OUTSIDE_WINDOW_DAYS)
+    stamps = [d for d in (_dt(p.get("updated_at") or p.get("closed_at")) for p in pulls) if d]
+    start = window
+    if len(pulls) >= page and stamps and min(stamps) > window:
+        start = min(stamps)
+    return OutsideMerges(
+        authors=outside_authors_merged(pulls, since=start),
+        humans=sum(1 for p in pulls if not is_bot(p.get("user"))),
+        sampled=len(pulls),
+        days=max(1, (now - start).days),
+    )
+
+
+def outside_merges_points(found: OutsideMerges) -> tuple[float, str]:
     """Points and a reason from how many outside contributors got work merged lately."""
-    if count == 0:
-        if not sampled:
-            return -QUIET_POINTS, "No closed pull requests yet, so no sign it takes outside work"
+    period = (
+        f"in the last {found.days} days"
+        if found.days < OUTSIDE_WINDOW_DAYS
+        else f"in the last {OUTSIDE_WINDOW_DAYS} days"
+    )
+    if not found.sampled:
+        return -QUIET_POINTS, "No closed pull requests yet, so no sign it takes outside work"
+    if not found.humans:
+        return 0.0, (
+            "Its recent closed pull requests are all from bots, so outside work could not be judged"
+        )
+    if found.authors == 0:
         return (
             -QUIET_POINTS,
-            f"No pull request from outside the team merged in the last {OUTSIDE_WINDOW_DAYS} "
-            f"days (of its last {sampled} closed)",
+            f"No pull request from outside the team merged {period} (its last "
+            f"{found.sampled} closed)",
         )
-    if count >= 3:
-        return 6.0, f"{count} people outside the team got a pull request merged recently"
-    return 2.0, f"{count} outside contributor(s) got a pull request merged recently"
+    if found.authors >= 3:
+        return 6.0, f"{found.authors} people outside the team got a pull request merged {period}"
+    return 2.0, f"{found.authors} outside contributor(s) got a pull request merged {period}"
 
 
 def pull_stats(
@@ -541,6 +583,7 @@ MAIN_REPO_POINTS = 12.0
 QUIET_POINTS = 20.0
 OUTSIDE_WINDOW_DAYS = 180
 OUTSIDE_CHECKED = 5
+OUTSIDE_BUDGET = 15  # requests per `repos` call, so a run without a token stays light
 _KIND_PENALTY = {"not code": 45.0, "plumbing": 30.0, "website": 25.0}
 _KIND_REASON = {
     "not code": "A GSoC, event, or governance repository, not the project's code",
