@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
 from git_into_gsoc.text import clean_untrusted, straight_quotes
 
 DRAFT_KINDS = ("intro", "question", "claim", "pr", "review-reply", "status", "final")
@@ -274,10 +275,13 @@ def _claim(ctx: dict[str, Any]) -> str:
     convention = ctx.get("claim_convention") or {}
     earlier = issue.get("earlier_claims") or []
     opening = "I'd like to work on this."
-    if earlier:
+    if earlier and (issue.get("earlier_claim_count") or len(earlier)) < CONTESTED_MIN_CLAIMANTS:
+        # One or two people asked and nothing followed: ask the newest first. With more,
+        # the plan below has to carry the comment (see the warning).
         who = earlier[0]
+        said = "were told yes" if who.get("granted") else "asked to work on this"
         opening = (
-            f"@{who['login']}, you asked to work on this {who['days_ago']} days ago. "
+            f"@{who['login']}, you {said} {who['days_ago']} days ago. "
             "Are you still on it? If not, I'd like to take it."
         )
     lines = [
