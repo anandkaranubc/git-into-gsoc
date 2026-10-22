@@ -575,3 +575,30 @@ def test_a_report_about_someone_else_does_not_cancel_a_claim() -> None:
     )
     found = assess_issue(_issue(), [_comment("newcomer", text, 3)], now=NOW)
     assert found.availability == Availability.CLAIMED
+
+
+# A third sample: 387 comments from 20 more GSoC organizations (2026-10-21). Checkstyle
+# contributors split large issues with "I am on it" and "I'll cover <part>".
+THIRD_SAMPLE_CLAIMS = [
+    "I am on it",
+    "I m on it",
+    "I'll cover the remaining checks in this module",
+    "I will take the last one",
+    "I'm taking over this one",
+    "Can this issue be assigned to me please?",
+    "could I claim this one?",
+    "I really want to work on this issue",
+    "I'd be glad to submit a fix",
+    "I was just working on this issue",
+    "Would you mind if I tried working on this?",
+    "should I submit a PR related to this?",
+]
+THIRD_SAMPLE_NOT_CLAIMS = [
+    "I have raised a PR for this issue. If you have suggestions, I'd be glad to make changes.",
+    "Is anyone working on it?",
+]
+
+
+def test_third_sample_phrasings() -> None:
+    assert [text for text in THIRD_SAMPLE_CLAIMS if not is_claim(text)] == []
+    assert [text for text in THIRD_SAMPLE_NOT_CLAIMS if is_claim(text)] == []
