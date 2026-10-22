@@ -399,7 +399,7 @@ def _issue_repo(issue: dict[str, Any]) -> str:
 _FIX_VERB = r"\b(?:fix(?:e[sd])?|close[sd]?|resolve[sd]?)\b"
 
 
-def says_it_fixes(text: str, repo: str, number: object) -> bool:
+def says_it_fixes(text: str, repo: str, number: object, *, pr_repo: str = "") -> bool:
     """True when a pull request's text says it fixes this issue.
 
     GitHub closes an issue only for "Fixes #671" merged into the default branch. mofa's
@@ -409,7 +409,16 @@ def says_it_fixes(text: str, repo: str, number: object) -> bool:
     """
     if not number or not text:
         return False
-    ref = rf"(?:{re.escape(repo)})?#{number}(?!\d)|{re.escape(repo)}/issues/{number}(?!\d)"
+    # A bare "#671" means the pull request's own repository's issue: it counts only for
+    # a pull request in the issue's repository. One from a sibling repository must name
+    # "owner/repo#671" or link the issue.
+    own = not pr_repo or pr_repo.lower() == repo.lower()
+    forms = [rf"(?<![\w/.-])#{number}(?!\d)"] if own else []
+    if repo:
+        forms += [rf"{re.escape(repo)}#{number}(?!\d)", rf"{re.escape(repo)}/issues/{number}(?!\d)"]
+    if not forms:
+        return False
+    ref = "|".join(forms)
     # Up to 80 characters of the same sentence: a full stop ends it, a dot in a link
     # ("github.com/...") does not.
     return bool(re.search(rf"{_FIX_VERB}(?:[^.\n]|\.(?=\S)){{0,80}}?(?:{ref})", text, re.I))
@@ -507,7 +516,10 @@ def assess_issue(
                     author=_login(source.get("user")),
                     draft=bool(source.get("draft")),
                     idle_days=(now - touched).days if touched else None,
-                    fixes=merged and says_it_fixes(text, repo, issue.get("number")),
+                    # Merged after the issue opened, like the decision below requires.
+                    fixes=merged
+                    and not (merged_at and opened and merged_at < opened)
+                    and says_it_fixes(text, repo, issue.get("number"), pr_repo=where),
                 )
         elif kind == "connected":
             caveats.append(
@@ -538,7 +550,9 @@ def assess_issue(
             draft=bool(pull.get("draft")),
             idle_days=(now - touched).days if touched else None,
             via_comment=True,
-            fixes=state == "merged" and says_it_fixes(text, repo, issue.get("number")),
+            fixes=state == "merged"
+            and not (merged_at and opened and merged_at < opened)
+            and says_it_fixes(text, repo, issue.get("number"), pr_repo=where),
         )
 
     assignees = [a for a in (_login(x) for x in issue.get("assignees") or []) if a]

@@ -942,7 +942,7 @@ def _merged_pr(number: int, body: str, *, merged_days_ago: int = 1) -> dict[str,
 def test_a_merged_pr_that_says_it_fixes_the_issue_makes_it_likely_taken() -> None:
     # mofa's issue 671 stayed open for seven months after "- Fixes issue #671" was
     # merged: GitHub closes issues only for "Fixes #671". `recommend` showed it as free.
-    issue = _issue(number=671)
+    issue = _issue(number=671, html_url="https://github.com/acme/lib/issues/671")
     found = assess_issue(issue, [_merged_pr(672, "Summary\n- Fixes issue #671\n")], now=NOW)
     assert found.availability == Availability.LIKELY_TAKEN
     assert found.reason.startswith("Merged PR #672 says it fixes this, though the issue is still")
@@ -989,3 +989,28 @@ def test_a_real_issue_fixed_by_an_unlinked_merge_is_likely_taken() -> None:
     found = assess_issue(data["issue"], data["timeline"], now=NOW)
     assert found.availability == Availability.LIKELY_TAKEN
     assert "Merged PR #672 says it fixes this" in found.reason
+
+
+def test_a_sibling_repos_bare_issue_number_is_its_own_issue() -> None:
+    # A frontend pull request saying "Fixes #671" fixes the frontend's issue 671; it
+    # must name "acme/lib#671" or link the issue to count for acme/lib.
+    from git_into_gsoc.github.availability import says_it_fixes
+
+    assert not says_it_fixes("Fixes #671", "acme/lib", 671, pr_repo="acme/frontend")
+    assert says_it_fixes("Fixes acme/lib#671", "acme/lib", 671, pr_repo="acme/frontend")
+    assert not says_it_fixes("Fixes other/lib#671", "acme/lib", 671, pr_repo="acme/lib")
+    issue = _issue(number=671, html_url="https://github.com/acme/lib/issues/671")
+    sibling = _merged_pr(90, "Fixes #671")
+    sibling["source"]["issue"]["html_url"] = "https://github.com/acme/frontend/pull/90"
+    sibling["source"]["issue"]["repository"] = {"full_name": "acme/frontend"}
+    assert assess_issue(issue, [sibling], now=NOW).availability == Availability.AVAILABLE
+
+
+def test_a_fix_merged_before_the_issue_was_opened_does_not_count() -> None:
+    issue = _issue(
+        number=671, created_at=_iso(10), html_url="https://github.com/acme/lib/issues/671"
+    )
+    old = _merged_pr(500, "Fixes #671", merged_days_ago=40)
+    found = assess_issue(issue, [old], now=NOW)
+    assert found.availability == Availability.AVAILABLE
+    assert not any(p.fixes for p in found.linked_prs)
