@@ -40,6 +40,9 @@ FLOORS = {
     "holdout2": (0.53, 0.42, 14, None),
     "holdout3": (0.45, 0.28, 8, None),
     "holdout4": (0.43, 0.16, 14, None),
+    # Common kinds of beginners: dev3 for tuning, holdout5 sealed (same reviewer and batch).
+    "dev3": (0.42, 0.38, 12, None),
+    "holdout5": (0.51, 0.44, 7, None),
     # A second development set from a fourth blind reviewer, used for tuning. Its wrong@5
     # floor and test's P@5 floor were reset around the ideas refresh that the rule in
     # evals/README.md ("Deciding the 2026-10-22 ideas refresh") passed.
@@ -47,7 +50,10 @@ FLOORS = {
 }
 
 
-@pytest.mark.parametrize("split", ["dev", "dev2", "test", "holdout2", "holdout3", "holdout4"])
+SPLITS = ["dev", "dev2", "dev3", "test", "holdout2", "holdout3", "holdout4", "holdout5"]
+
+
+@pytest.mark.parametrize("split", SPLITS)
 def test_ranking_keeps_its_quality(bench: ModuleType, split: str) -> None:
     result = bench.evaluate("current", split)
     personas, accepted = result["personas"], result["accepted"]
@@ -60,12 +66,14 @@ def test_ranking_keeps_its_quality(bench: ModuleType, split: str) -> None:
         assert accepted["hit10"] >= hit10, accepted["hit10"]
 
 
-@pytest.mark.parametrize("split", ["dev", "dev2", "test", "holdout2", "holdout3", "holdout4"])
+@pytest.mark.parametrize("split", SPLITS)
 def test_ranking_beats_the_keyword_baseline(bench: ModuleType, split: str) -> None:
     current = bench.evaluate("current", split)
     baseline = bench.evaluate("baseline", split)
     assert current["personas"]["ndcg10"] > baseline["personas"]["ndcg10"]
-    if split != "holdout3":  # at its first look, 6 wrong picks against the baseline's 5
+    # At their first looks: holdout3 had 6 wrong picks against the baseline's 5, and dev3
+    # (common beginners) 10 against 8. Both are known weaknesses, kept visible here.
+    if split not in {"holdout3", "dev3"}:
         assert current["personas"]["wrong5"] < baseline["personas"]["wrong5"]
     if current["accepted"]["cases"]:
         assert current["accepted"]["mrr"] > baseline["accepted"]["mrr"]
@@ -93,14 +101,15 @@ def test_benchmark_data_holds_no_personal_details(bench: ModuleType) -> None:
 def test_the_sealed_set_stays_out_of_all_and_shows_totals_only(
     bench: ModuleType, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    sealed = [p for p in bench.load_personas() if p["split"] == "holdout4"]
-    assert len(sealed) == 15 and set(bench.SEALED) == {"holdout4"}
-    apart = [p for p in bench.load_personas() if p["split"] in {"dev2", "holdout3"}]
+    sealed = [p for p in bench.load_personas() if p["split"] in {"holdout4", "holdout5"}]
+    assert len(sealed) == 25 and set(bench.SEALED) == {"holdout4", "holdout5"}
+    apart = [p for p in bench.load_personas() if p["split"] in {"dev2", "dev3", "holdout3"}]
     everyone = bench.evaluate("current", "all")["personas"]["personas"]
     assert everyone == len(bench.load_personas()) - len(sealed) - len(apart) == 46
-    assert bench.main(["--split", "holdout4", "--json"]) == 0
-    shown = json.loads(capsys.readouterr().out)
-    assert shown and all(not r["personas"]["rows"] for r in shown)
+    for split in ("holdout4", "holdout5"):
+        assert bench.main(["--split", split, "--json"]) == 0
+        shown = json.loads(capsys.readouterr().out)
+        assert shown and all(not r["personas"]["rows"] for r in shown)
 
 
 def test_completed_grades_only_fill_gaps_and_hold_no_personal_details(bench: ModuleType) -> None:

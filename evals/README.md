@@ -166,6 +166,34 @@ It is the hardest set so far: few organizations fit these people well, so P@5 is
 
 Measured on 2026-10-21 with the data shipped then, after the fifth round of changes. Round 5 added one wrong pick on the test half (5 to 6) and improved every other number there. A later change, after a blind beginner test, cost an organization a little (x0.95) when most of its ideas need a skill the person did not list. It helped the sets it was tuned on (`dev` nDCG@10 0.804 to 0.815, `dev2` 0.623 to 0.635) and accepted-project MRR (0.510 to 0.518), but made both held-out sets worse (`holdout2`: one more wrong pick, P@5 0.500 to 0.483; `holdout3`: nDCG@10 0.493 to 0.484, strong@10 0.700 to 0.667). It did not generalize, so it was taken out; the caveat that names the missing skill stays. Before that, the third round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
 
+## `dev3.json` and `holdout5.json` (common beginners)
+
+The earlier sets lean toward specialists. These 30 personas are the most common kinds of people who try GSoC:
+- 7 Python and machine learning
+- 5 JavaScript or TypeScript web
+- 4 data science
+- 3 Java
+- 3 C or C++
+- 2 Go or cloud
+- 2 who know only HTML and CSS
+- 2 who typed only a language and "open source"
+- a Flutter developer and a Python web backend developer
+
+Three have a typo and three have 5 hours a week or fewer. Most are `new` or `some`. A sixth reviewer wrote and graded them, seeing only the official 2026 list and the organizations' own pages, never the code, the other sets, or the tool's output. Common profiles fit many organizations, so each persona has 7 to 34 graded ones, and nDCG@10 is lower than on the specialist sets for the same quality of ranking.
+
+Before anyone read them, a fixed seed split them: `random.Random(20261022)` shuffled the sorted ids, the first 20 became `dev3`, and the last 10 became `holdout5`.
+- `dev3` is for tuning, so its rows can be read. It is left out of `all`.
+- `holdout5` is sealed, the way `holdout4` is: only its totals are shown, nobody tunes on it, and it is read only under a rule written before the reading. Its file's sha256 at sealing was `a589aa41bd66543443fb95ead780a3fbc321b5a4d54b1779e8019a1edc836415`.
+
+First look, on `main` after the 0.22.0 release, before any change was made for them:
+
+| | Keyword ranker | Current |
+|---|---|---|
+| `dev3` nDCG@10, P@5, strong@10, wrong@5 | 0.353, 0.340, 0.347, **8** | **0.459, 0.420, 0.550**, 10 |
+| `holdout5` nDCG@10, P@5, strong@10, wrong@5 | 0.476, 0.440, 0.467, 10 | **0.554, 0.480, 0.550, 5** |
+
+On common beginners the current ranker finds more of the right organizations than the keyword ranker, but on `dev3` it puts two more wrong ones in a top five. That is the weakness these sets were added to work on.
+
 ## Tried and not kept
 
 Each was tuned on `dev` and `dev2` only and rejected there. `test` and `holdout4` were not read for any of them.

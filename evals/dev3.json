@@ -1,0 +1,994 @@
+{
+  "about": "A third development set: common kinds of beginners, written and graded by a reviewer who never saw the ranking code, the tool's output, or the other sets. Used for tuning. See evals/README.md.",
+  "org_list": "official GSoC 2026 accepted organizations",
+  "personas": [
+    {
+      "id": "node-backend-student",
+      "split": "dev3",
+      "about": "A student who has written REST APIs with Node and Express and wants backend work.",
+      "profile": {
+        "technologies": [
+          "javascript",
+          "node.js",
+          "express",
+          "mongodb"
+        ],
+        "interests": [
+          "backend",
+          "apis",
+          "databases"
+        ],
+        "experience": "some",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "Accord Project": 3,
+        "rocket.chat": 3,
+        "API Dash": 2,
+        "C2SI": 2,
+        "Eclipse Foundation": 2,
+        "Kiwix": 2,
+        "MetaBrainz Foundation Inc": 2,
+        "AOSSIE": 1,
+        "Cuneiform Digital Library Initiative (CDLI)": 1,
+        "Data for the Common Good": 1,
+        "Gemini CLI": 1,
+        "Internet Archive": 1,
+        "JSON Schema": 1,
+        "Jitsi": 1,
+        "MetaCall": 1,
+        "Neutralinojs": 1,
+        "OWASP Foundation": 1,
+        "Open Science Labs": 1,
+        "stdlib": 1,
+        "webpack": 1
+      },
+      "wrong_top5": [
+        "Boa",
+        "Liquid Galaxy project",
+        "Open Technologies Alliance - GFOSS",
+        "Typelevel",
+        "GRAME",
+        "Processing Foundation",
+        "Joomla!",
+        "Meshery"
+      ],
+      "judge_notes": "Pure Node backend ideas are rarer than frontend ones. rocket.chat runs on Node, TypeScript and MongoDB, which matches this stack almost exactly, and Accord has a Node agreement protocol and MCP server hardening idea at 90 or 175 hours. Kiwix (a Node scraper and its tests), API Dash (an API library pipeline), the BookBrainz server at MetaBrainz, the Web of Things server at Eclipse, and C2SI's website API work are clear but partial fits. Orgs tagged Node or JavaScript whose 2026 work is Flutter, Python, Scala, Rust, audio DSP, creative coding or PHP are listed as wrong for the top five."
+    },
+    {
+      "id": "vague-ai-newcomer",
+      "split": "dev3",
+      "about": "A first year student who is excited about AI but has only written small Python scripts so far.",
+      "profile": {
+        "technologies": [
+          "python"
+        ],
+        "interests": [
+          "ai"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "German Center for Open Source AI": 3,
+        "Jenkins": 3,
+        "HumanAI": 2,
+        "OpenVINO Toolkit": 2,
+        "Sugar Labs": 2,
+        "Uramaki LAB": 2,
+        "AOSSIE": 1,
+        "C2SI": 1,
+        "DBpedia": 1,
+        "Genome Assembly and Annotation": 1,
+        "MLLAM": 1,
+        "Machine Learning for Science (ML4SCI)": 1,
+        "Open Genome Informatics": 1,
+        "Project Mesa": 1,
+        "The Honeynet Project": 1,
+        "United Nations Office of Information Communication Technology": 1
+      },
+      "wrong_top5": [
+        "Kornia",
+        "MoFA Org",
+        "Gemini CLI",
+        "Kubeflow",
+        "DeepChem",
+        "checkstyle",
+        "Accord Project",
+        "API Dash"
+      ],
+      "judge_notes": "With only basic Python and a broad wish to do AI, the best picks have AI ideas labeled beginner or easy at 90 or 175 hours: the Jenkins chatbot ideas (beginner to intermediate, Python) and the short sktime projects at the German open source AI center with a curated first issue list. OpenVINO, Uramaki, Sugar Labs and HumanAI have AI work in Python but expect more experience or have few small ideas. Research heavy or advanced orgs get a 1. Orgs with AI tags whose 2026 work is Rust, TypeScript, Kubernetes, Java or deep chemistry are listed as wrong for the top five."
+    },
+    {
+      "id": "spring-backend-engineer",
+      "split": "dev3",
+      "about": "An experienced backend developer who works with Spring Boot every day and can give a lot of time to a large backend project.",
+      "profile": {
+        "technologies": [
+          "java",
+          "spring boot",
+          "mysql",
+          "rest apis",
+          "docker"
+        ],
+        "interests": [
+          "backend",
+          "microservices",
+          "databases"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 30
+      },
+      "grades": {
+        "Apache Software Foundation": 3,
+        "JBoss Community": 3,
+        "OpenELIS Global": 3,
+        "OpenMRS": 3,
+        "SW360": 3,
+        "The Mifos Initiative": 3,
+        "openSUSE Project": 2,
+        "Data for the Common Good": 1,
+        "Eclipse Foundation": 1,
+        "JabRef e.V.": 1,
+        "Jenkins": 1,
+        "Jitsi": 1,
+        "MetaBrainz Foundation Inc": 1,
+        "cBioPortal for Cancer Genomics": 1
+      },
+      "wrong_top5": [
+        "checkstyle",
+        "The JPF team",
+        "MariaDB",
+        "PostgreSQL",
+        "52°North Spatial Information Research GmbH",
+        "Ruby",
+        "C2SI"
+      ],
+      "judge_notes": "With strong Spring Boot skills and 30 hours a week, large Java backend projects are realistic. SW360 (splitting components into a separate Spring service, removing Thrift), OpenELIS (Spring REST, a FHIR facade), Mifos (Fineract and the payment hub), OpenMRS (horizontal scaling, archiving, audit log) and the Apache Fineract and Dubbo ideas are all Spring or microservice work. JBoss Debezium connectors fit the databases interest. openSUSE has Java backend work on Uyuni. checkstyle and JPF are Java but static analysis and verification, MariaDB and PostgreSQL are database engine internals in C and C++, and 52 North, Ruby and C2SI have Java tags with no Java backend work in 2026."
+    },
+    {
+      "id": "go-kubernetes-student",
+      "split": "dev3",
+      "about": "A student who has written small Go services and deployed them on Kubernetes.",
+      "profile": {
+        "technologies": [
+          "go",
+          "kubernetes",
+          "docker"
+        ],
+        "interests": [
+          "cloud native",
+          "distributed systems",
+          "infrastructure"
+        ],
+        "experience": "some",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "CNCF": 3,
+        "Konflux": 3,
+        "KubeVirt": 3,
+        "Meshery": 3,
+        "Apache Software Foundation": 2,
+        "CRIU": 2,
+        "Kubeflow": 2,
+        "Open Transit Software Foundation": 2,
+        "Unikraft": 2,
+        "C2SI": 1,
+        "Ceph": 1,
+        "FOSSology": 1,
+        "Global Alliance for Genomics and Health": 1,
+        "JBoss Community": 1,
+        "Metaflow": 1,
+        "UC OSPO": 1,
+        "openSUSE Project": 1
+      },
+      "wrong_top5": [
+        "Internet Archive",
+        "The Honeynet Project",
+        "Data for the Common Good",
+        "Rizin",
+        "PostgreSQL",
+        "NixOS Foundation",
+        "FLARE"
+      ],
+      "judge_notes": "CNCF (Go operators and tools such as Jaeger, OpenKruise and PipeCD), Meshery (Go and Kubernetes at 175 hours), KubeVirt (Go and Kubernetes API work, after three small PRs) and Konflux (Go, Tekton and container builds) are on target. Kubeflow is Kubernetes but mostly Python and hard, CRIU has two Go Kubernetes checkpointing ideas among C kernel work, Open Transit has a Go REST server, Unikraft has Go tooling, and Apache has Dubbo Go and Seata Go. Internet Archive, Honeynet, Data for the Common Good, Rizin and PostgreSQL carry Go or Kubernetes tags with no such work in 2026, NixOS is the Nix language, and FLARE's Go idea is malware reverse engineering."
+    },
+    {
+      "id": "java-tools-beginner",
+      "split": "dev3",
+      "about": "A second year computer science student who learned Java in class, likes writing tests, and is curious about the tools developers use every day.",
+      "profile": {
+        "technologies": [
+          "java",
+          "junit",
+          "gradle"
+        ],
+        "interests": [
+          "developer tools",
+          "code quality",
+          "testing"
+        ],
+        "experience": "new",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "Eclipse Foundation": 3,
+        "checkstyle": 3,
+        "JabRef e.V.": 2,
+        "Jenkins": 2,
+        "OpenELIS Global": 2,
+        "Processing Foundation": 2,
+        "The JPF team": 2,
+        "Apache Software Foundation": 1,
+        "JBoss Community": 1,
+        "Kotlin Foundation": 1,
+        "MIT App Inventor": 1,
+        "SW360": 1,
+        "openSUSE Project": 1
+      },
+      "wrong_top5": [
+        "52°North Spatial Information Research GmbH",
+        "C2SI",
+        "Debian",
+        "LibreOffice",
+        "Ruby",
+        "Git",
+        "Gemini CLI"
+      ],
+      "judge_notes": "checkstyle is a Java code quality tool with ideas that ask for basic to advanced Java, and Eclipse has a JUnit 5 test suite idea for refactorings plus an easy 90 hour handbook idea, so both fit a new Java student who likes testing. JPF is a Java verification tool but has a steep learning curve, Jenkins plugins are Java but its 2026 list leans to chatbots and websites, OpenELIS has a Java integration test coverage idea but only at 350 hours, and Processing has a Java test project. Several orgs carry a Java tag but have no Java work in 2026 (52 North, C2SI, Debian, LibreOffice, Ruby), and Git and Gemini CLI are developer tools in C and TypeScript."
+    },
+    {
+      "id": "python-only-student",
+      "split": "dev3",
+      "about": "A student who wrote only Python and the words open source in their profile, with no other detail.",
+      "profile": {
+        "technologies": [
+          "python"
+        ],
+        "interests": [
+          "open source"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "Learning Unlimited": 3,
+        "Python Software Foundation": 3,
+        "Debian": 2,
+        "GNU Mailman": 2,
+        "German Center for Open Source AI": 2,
+        "IOOS": 2,
+        "MDAnalysis": 2,
+        "Neuroinformatics Unit": 2,
+        "OpenWISP": 2,
+        "The Honeynet Project": 2,
+        "Zulip": 2,
+        "52°North Spatial Information Research GmbH": 1,
+        "Django Software Foundation": 1,
+        "Jenkins": 1,
+        "Kiwix": 1,
+        "Learning Equality": 1,
+        "MetaBrainz Foundation Inc": 1,
+        "Metaflow": 1,
+        "Open Science Initiative for Perfusion Imaging": 1,
+        "Open Science Labs": 1,
+        "Oppia Foundation": 1,
+        "Project Mesa": 1,
+        "Qubes OS": 1,
+        "Sugar Labs": 1,
+        "SymPy": 1,
+        "TARDIS RT Collaboration": 1,
+        "United Nations Office of Information Communication Technology": 1,
+        "Wagtail": 1,
+        "Wikimedia Foundation": 1
+      },
+      "wrong_top5": [
+        "CERN-HSF",
+        "Machine Learning for Science (ML4SCI)",
+        "DeepChem",
+        "SageMath",
+        "QC-Devs",
+        "Blender Foundation",
+        "GNU Radio",
+        "FreeCAD"
+      ],
+      "judge_notes": "With no interests given, the best picks are welcoming Python orgs with easy, smaller projects. The Python Software Foundation umbrella has beginner ideas (documentation, website, small localization tasks) and Learning Unlimited has an easy 175 hour test writing project with listed starter issues. The 2s are Python orgs with clear onboarding but a domain, a minimum of 175 hours, or a merged PR requirement. Orgs tagged Python whose 2026 work needs physics, chemistry, pure math or deep learning (CERN, ML4SCI, DeepChem, SageMath, QC Devs), or whose core is C or C++ (Blender, GNU Radio, FreeCAD), should not be in this top five."
+    },
+    {
+      "id": "ml-engineer-four-hours",
+      "split": "dev3",
+      "about": "A working machine learning engineer who wants to give back to open source but only has about four hours a week.",
+      "profile": {
+        "technologies": [
+          "python",
+          "pytorch",
+          "scikit learn",
+          "docker"
+        ],
+        "interests": [
+          "machine learning",
+          "model deployment",
+          "mlops"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 4
+      },
+      "grades": {
+        "German Center for Open Source AI": 3,
+        "CNCF": 2,
+        "Metaflow": 2,
+        "OpenVINO Toolkit": 2,
+        "Sugar Labs": 2,
+        "HumanAI": 1,
+        "MalariaGEN": 1,
+        "Uramaki LAB": 1
+      },
+      "wrong_top5": [
+        "Kubeflow",
+        "Machine Learning for Science (ML4SCI)",
+        "DeepChem",
+        "MLLAM",
+        "Kornia",
+        "MoFA Org",
+        "Open Food Facts"
+      ],
+      "judge_notes": "Four hours a week is about 88 hours even on the longest timeline, so only 90 hour projects are realistic. The German open source AI center offers easy 90 hour sktime projects in exactly this stack. OpenVINO has one 90 hour model serving idea, CNCF has a 90 hour guide project for an ML model packaging tool, and Sugar Labs has a 90 hour text to speech deployment idea. Metaflow is the closest MLOps match but its smallest ideas are 175 hours. Kubeflow fits the interests on paper but its ideas are mostly 350 hour hard Kubernetes work, and ML4SCI, MLLAM and DeepChem are long research projects."
+    },
+    {
+      "id": "c-systems-student",
+      "split": "dev3",
+      "about": "A student who enjoyed an operating systems course and has written small C programs on Linux.",
+      "profile": {
+        "technologies": [
+          "c",
+          "linux",
+          "make",
+          "valgrind"
+        ],
+        "interests": [
+          "operating systems",
+          "systems programming",
+          "kernel"
+        ],
+        "experience": "some",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "RTEMS Project": 3,
+        "The FreeBSD Project": 3,
+        "The Linux Foundation": 3,
+        "Unikraft": 3,
+        "CRIU": 2,
+        "EROFS filesystem": 2,
+        "Git": 2,
+        "Haiku": 2,
+        "LabLua": 2,
+        "OpenAFS": 2,
+        "QEMU": 2,
+        "The NetBSD Foundation": 2,
+        "CCExtractor Development": 1,
+        "Debian": 1,
+        "FFmpeg": 1,
+        "Free and Open Source Silicon Foundation": 1,
+        "GNOME Foundation": 1,
+        "KolibriOS Project Team": 1,
+        "PostgreSQL": 1,
+        "Qubes OS": 1,
+        "The Libreswan Project": 1,
+        "VideoLAN": 1,
+        "libssh": 1
+      },
+      "wrong_top5": [
+        "GNU Compiler Collection (GCC)",
+        "LLVM Compiler Infrastructure",
+        "Neovim",
+        "GNU Image Manipulation Program",
+        "Metasploit",
+        "Blender Foundation",
+        "MetaCall",
+        "D Language Foundation"
+      ],
+      "judge_notes": "Kernel and OS work in C with a realistic entry point gets a 3: the Linux Foundation device tree bindings idea has a step by step small patch guide, FreeBSD says userland is easier and has junior jobs, Unikraft rates most ideas 3 of 5, and RTEMS has small POSIX and test tasks. NetBSD, QEMU, CRIU and EROFS are on target but mostly intermediate or advanced and 350 hours, Git is C systems work outside the kernel, Haiku is C++, and OpenAFS and LabLua each have one or two kernel or filesystem ideas. Compilers (GCC, LLVM, D), a text editor (Neovim), image and 3D apps (GIMP, Blender), Ruby security tooling (Metasploit) and a polyglot runtime (MetaCall) share the C tag but not the OS interest."
+    },
+    {
+      "id": "cpp-graphics-hobbyist",
+      "split": "dev3",
+      "about": "A hobbyist who has written small games and renderers in C++ with OpenGL for several years.",
+      "profile": {
+        "technologies": [
+          "c++",
+          "opengl",
+          "cmake"
+        ],
+        "interests": [
+          "computer graphics",
+          "game development",
+          "rendering"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "BRL-CAD": 3,
+        "Blender Foundation": 3,
+        "ScummVM": 3,
+        "Tiled": 3,
+        "CGAL Project": 2,
+        "KDE Community": 2,
+        "Synfig": 2,
+        "VideoLAN": 2,
+        "D Language Foundation": 1,
+        "FreeCAD": 1,
+        "GNOME Foundation": 1,
+        "GNU Image Manipulation Program": 1,
+        "GNU Project": 1,
+        "Haiku": 1,
+        "LabLua": 1,
+        "Mixxx": 1,
+        "Open Robotics": 1,
+        "Processing Foundation": 1
+      },
+      "wrong_top5": [
+        "Graphite",
+        "Gambit: The package for computation in game theory",
+        "Ste||ar group",
+        "LLVM Compiler Infrastructure",
+        "GNU Compiler Collection (GCC)",
+        "The ns-3 Network Simulator Project",
+        "Stichting SU2"
+      ],
+      "judge_notes": "An experienced C++ graphics hobbyist fits Blender (C and C++ 3D tools, with 90 to 175 hour options), ScummVM (game engines, including an OpenGL 3D engine idea), the BRL CAD umbrella (it includes the Appleseed physically based renderer) and Tiled (a game level editor with a new hardware renderer idea). CGAL has a viewer shader idea but is mostly geometry math, KDE has a board game idea, VideoLAN has Vulkan and OpenGL rendering work in C, and Synfig is 2D animation. Graphite matches on graphics but is Rust only, Gambit says game but means game theory, and Ste||ar, LLVM, GCC, the network simulator and SU2 are C++ in HPC, compilers, networking and fluid dynamics."
+    },
+    {
+      "id": "python-nlp-beginner",
+      "split": "dev3",
+      "about": "A beginner who has done a couple of online courses on text processing and wants a project with language models or text data.",
+      "profile": {
+        "technologies": [
+          "python",
+          "nltk",
+          "transformers"
+        ],
+        "interests": [
+          "natural language processing",
+          "text classification",
+          "large language models"
+        ],
+        "experience": "new",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "DBpedia": 3,
+        "HumanAI": 3,
+        "AboutCode": 2,
+        "Jenkins": 2,
+        "Open Genome Informatics": 2,
+        "United Nations Office of Information Communication Technology": 2,
+        "AOSSIE": 1,
+        "FOSSology": 1,
+        "Genome Assembly and Annotation": 1,
+        "Global Alliance for Genomics and Health": 1,
+        "IOOS": 1,
+        "Internet Archive": 1,
+        "MalariaGEN": 1,
+        "NumFOCUS": 1,
+        "Open Technologies Alliance - GFOSS": 1,
+        "The Honeynet Project": 1,
+        "Uramaki LAB": 1,
+        "openSUSE Project": 1
+      },
+      "wrong_top5": [
+        "Accord Project",
+        "Gemini CLI",
+        "rocket.chat",
+        "Joplin",
+        "MoFA Org",
+        "Drupal Association",
+        "Cuneiform Digital Library Initiative (CDLI)",
+        "API Dash"
+      ],
+      "judge_notes": "DBpedia has several NLP and language model ideas in Python with warm up tasks and a 175 hour option, and HumanAI has 175 hour text projects such as crisis detection and OCR of old texts, though it expects some prior machine learning. AboutCode, the UN office, Jenkins and Open Genome Informatics each have one or two Python text or chatbot ideas but wrap them in security, licensing, health or biology work. Orgs whose only language model work is in TypeScript, PHP, Rust or Flutter (Accord, Gemini CLI, rocket.chat, Joplin, Drupal, API Dash, MoFA) are kept out of the top five, and CDLI has a linguistics tag but its 2026 ideas are PHP and mobile work."
+    },
+    {
+      "id": "typo-cpp-competitive",
+      "split": "dev3",
+      "about": "A student who practices competitive programming in C++ and typed their profile with some spelling mistakes.",
+      "profile": {
+        "technologies": [
+          "c++",
+          "pyhton",
+          "stl"
+        ],
+        "interests": [
+          "algoritms",
+          "data structers",
+          "competitive programing"
+        ],
+        "experience": "some",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "OSGeo (Open Source Geospatial Foundation)": 3,
+        "CGAL Project": 2,
+        "Gambit: The package for computation in game theory": 2,
+        "Ste||ar group": 2,
+        "omegaUp": 2,
+        "GeomScale": 1,
+        "LLVM Compiler Infrastructure": 1,
+        "MariaDB": 1,
+        "Pharo Consortium": 1,
+        "QC-Devs": 1,
+        "SageMath": 1
+      },
+      "wrong_top5": [
+        "D Language Foundation",
+        "KDE Community",
+        "CERN-HSF",
+        "The ns-3 Network Simulator Project",
+        "GNU Compiler Collection (GCC)",
+        "Tiled",
+        "GNU Octave"
+      ],
+      "judge_notes": "Read the typos as algorithms, data structures and competitive programming, with C++ and some Python. The pgRouting idea under OSGeo is exactly this: implement Boost graph algorithms in C++, with C++ exercises as the application task. CGAL (geometry algorithms), Ste||ar (parallel algorithms in modern C++) and Gambit (equilibrium algorithms) fit the interest but need math or HPC depth, and omegaUp is a competitive programming platform but written in PHP and TypeScript. D Language and KDE carry algorithms or data structures tags, and CERN carries an algorithmics tag, but their 2026 ideas are compiler, app or physics work."
+    },
+    {
+      "id": "llm-agents-builder",
+      "split": "dev3",
+      "about": "A student who has built chatbot and document search demos on top of hosted language models and now wants to build AI agents and tools.",
+      "profile": {
+        "technologies": [
+          "python",
+          "langchain",
+          "fastapi"
+        ],
+        "interests": [
+          "large language models",
+          "ai agents",
+          "retrieval augmented generation"
+        ],
+        "experience": "some",
+        "hours_per_week": 18
+      },
+      "grades": {
+        "C2SI": 3,
+        "DBpedia": 3,
+        "Genome Assembly and Annotation": 3,
+        "Global Alliance for Genomics and Health": 3,
+        "Open Genome Informatics": 3,
+        "Cuneiform Digital Library Initiative (CDLI)": 2,
+        "Internet Archive": 2,
+        "Jenkins": 2,
+        "Kubeflow": 2,
+        "MalariaGEN": 2,
+        "OpenVINO Toolkit": 2,
+        "Project Mesa": 2,
+        "The Honeynet Project": 2,
+        "United Nations Office of Information Communication Technology": 2,
+        "openSUSE Project": 2,
+        "AOSSIE": 1,
+        "API Dash": 1,
+        "Accord Project": 1,
+        "Data for the Common Good": 1,
+        "FLARE": 1,
+        "FOSSology": 1,
+        "IOOS": 1,
+        "Machine Learning for Science (ML4SCI)": 1,
+        "Metaflow": 1,
+        "OWASP Foundation": 1,
+        "PEcAn Project": 1,
+        "Uramaki LAB": 1,
+        "cBioPortal for Cancer Genomics": 1
+      },
+      "wrong_top5": [
+        "MoFA Org",
+        "Gemini CLI",
+        "Joplin",
+        "rocket.chat",
+        "Drupal Association",
+        "Meshery",
+        "Neovim",
+        "checkstyle"
+      ],
+      "judge_notes": "Many 2026 orgs added agent, RAG and MCP ideas, so this profile has a long list. The 3s have Python agent or RAG work at 175 hours with medium difficulty: the EMBL EBI genome group (MCP services said to need little biology), GA4GH (workflow agents and a RAG compliance assistant), Open Genome Informatics (Reactome RAG chat and MCP server), DBpedia (agentic question answering) and C2SI (agent security SDK and privacy guard). The 2s have one such idea inside another domain. MoFA is an agent framework but requires strong Rust, Gemini CLI, Joplin and rocket.chat are TypeScript, Drupal is PHP and Meshery is Go, so none belong in the top five."
+    },
+    {
+      "id": "typo-web-beginner",
+      "split": "dev3",
+      "about": "A beginner who finished an online web development course and typed their profile with a few spelling mistakes.",
+      "profile": {
+        "technologies": [
+          "javscript",
+          "recat",
+          "html",
+          "css"
+        ],
+        "interests": [
+          "web devlopment",
+          "frontend"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "Jenkins": 3,
+        "MetaBrainz Foundation Inc": 3,
+        "Processing Foundation": 3,
+        "Accord Project": 2,
+        "OWASP Foundation": 2,
+        "OpenMRS": 2,
+        "Sugar Labs": 2,
+        "Wikimedia Foundation": 2,
+        "rocket.chat": 2,
+        "CircuitVerse.org": 1,
+        "JSON Schema": 1,
+        "Jitsi": 1,
+        "Kiwix": 1,
+        "Learning Equality": 1,
+        "Learning Unlimited": 1,
+        "Open Food Facts": 1,
+        "Open Science Labs": 1,
+        "OpenStreetMap": 1,
+        "Oppia Foundation": 1,
+        "Submitty": 1,
+        "Uramaki LAB": 1,
+        "Zulip": 1,
+        "cBioPortal for Cancer Genomics": 1,
+        "webpack": 1
+      },
+      "wrong_top5": [
+        "Boa",
+        "stdlib",
+        "Neutralinojs",
+        "Gemini CLI",
+        "Joomla!",
+        "Drupal Association",
+        "GRAME",
+        "Meshery"
+      ],
+      "judge_notes": "Read the typos as JavaScript, React and web development. For a beginner with 10 hours, the best picks are friendly frontend ideas at 90 or 175 hours: Processing (very beginner and arts friendly, JavaScript), MetaBrainz (a 90 hour easy React onboarding idea), and Jenkins (website rework ideas labeled beginner, in React). The 2s are React work at medium level or with a short list. Vue, Angular or Svelte orgs and ones that ask for many merged PRs first get a 1. Joomla and Drupal carry web and HTML tags but their ideas are hard PHP work, and Boa, stdlib, Neutralinojs, Gemini CLI and GRAME are not frontend work."
+    },
+    {
+      "id": "html-css-newcomer",
+      "split": "dev3",
+      "about": "A newcomer who has built a few static web pages and knows only HTML, CSS and a little JavaScript.",
+      "profile": {
+        "technologies": [
+          "html",
+          "css",
+          "javascript"
+        ],
+        "interests": [
+          "web design",
+          "websites"
+        ],
+        "experience": "new",
+        "hours_per_week": 8
+      },
+      "grades": {
+        "Jenkins": 3,
+        "preCICE": 3,
+        "OWASP Foundation": 2,
+        "Processing Foundation": 2,
+        "Sugar Labs": 2,
+        "Uramaki LAB": 2,
+        "CircuitVerse.org": 1,
+        "Eclipse Foundation": 1,
+        "Kiwix": 1,
+        "Learning Equality": 1,
+        "Learning Unlimited": 1,
+        "MetaBrainz Foundation Inc": 1,
+        "Open Science Labs": 1,
+        "Wagtail": 1,
+        "Wikimedia Foundation": 1,
+        "Zulip": 1,
+        "webpack": 1
+      },
+      "wrong_top5": [
+        "Drupal Association",
+        "Joomla!",
+        "National Resource for Network Biology (NRNB)",
+        "United Nations Office of Information Communication Technology",
+        "Boa",
+        "stdlib",
+        "Neutralinojs"
+      ],
+      "judge_notes": "With only HTML, CSS and a little JavaScript at 8 hours a week, the best fits are website projects at 175 hours or less. preCICE has a website modernization project (static site, CSS, JavaScript, labeled easy to intermediate, already granted), and Jenkins has website rework ideas labeled beginner. Processing is very beginner friendly, OWASP has a site redesign, Uramaki has easy 90 hour ideas, and Sugar Labs has a plain JavaScript activity for children. Wagtail's demo site redesign is HTML and CSS but 350 hours inside Django. Drupal and Joomla have HTML tags but hard PHP ideas, NRNB and the UN office carry CSS tags but need JavaScript graph work or strong Python, and Boa, stdlib and Neutralinojs are not web design."
+    },
+    {
+      "id": "typo-ml-beginner",
+      "split": "dev3",
+      "about": "A beginner who knows basic Python and has followed a few classic machine learning tutorials. They typed their profile in a hurry.",
+      "profile": {
+        "technologies": [
+          "pyhton",
+          "scikit lern",
+          "pandas"
+        ],
+        "interests": [
+          "machine lerning",
+          "data sceince"
+        ],
+        "experience": "new",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "German Center for Open Source AI": 3,
+        "IOOS": 2,
+        "Metaflow": 2,
+        "HumanAI": 1,
+        "MDAnalysis": 1,
+        "MalariaGEN": 1,
+        "Neuroinformatics Unit": 1,
+        "NumFOCUS": 1,
+        "OpenVINO Toolkit": 1,
+        "Project Mesa": 1,
+        "Python Software Foundation": 1,
+        "TARDIS RT Collaboration": 1,
+        "UC OSPO": 1,
+        "United Nations Office of Information Communication Technology": 1,
+        "Uramaki LAB": 1
+      },
+      "wrong_top5": [
+        "Machine Learning for Science (ML4SCI)",
+        "DeepChem",
+        "Kornia",
+        "Open Food Facts",
+        "Kubeflow",
+        "The Julia Language",
+        "MLLAM"
+      ],
+      "judge_notes": "Read the typos as Python, scikit learn, machine learning and data science. The German open source AI center is the clear match: scikit learn style libraries, easy short projects and a curated first issue list. Metaflow is a data science framework with two easy 175 hour Python ideas, and IOOS has novice Python data projects but no machine learning. Deep learning research orgs like ML4SCI, MLLAM and DeepChem rank high on keywords but are advanced and domain heavy for a beginner. Open Food Facts lists machine learning but its 2026 list is a SvelteKit frontend, and Julia is a different language."
+    },
+    {
+      "id": "pandas-data-beginner",
+      "split": "dev3",
+      "about": "A beginner who explores datasets in notebooks with pandas and makes simple charts.",
+      "profile": {
+        "technologies": [
+          "python",
+          "pandas",
+          "seaborn",
+          "jupyter"
+        ],
+        "interests": [
+          "data analysis",
+          "data visualization"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "IOOS": 3,
+        "Neuroinformatics Unit": 3,
+        "MDAnalysis": 2,
+        "NumFOCUS": 2,
+        "TARDIS RT Collaboration": 2,
+        "52°North Spatial Information Research GmbH": 1,
+        "German Center for Open Source AI": 1,
+        "MalariaGEN": 1,
+        "Open Science Initiative for Perfusion Imaging": 1,
+        "OpenAstronomy": 1,
+        "Project Mesa": 1,
+        "Python Software Foundation": 1,
+        "UC OSPO": 1,
+        "United Nations Office of Information Communication Technology": 1,
+        "gprMax": 1
+      },
+      "wrong_top5": [
+        "R project for statistical computing",
+        "PEcAn Project",
+        "The Julia Language",
+        "Liquid Galaxy project",
+        "QC-Devs",
+        "Machine Learning for Science (ML4SCI)",
+        "CERN-HSF",
+        "Open Food Facts"
+      ],
+      "judge_notes": "IOOS has novice level 90 hour Python data projects on ocean data, and the Neuroinformatics Unit has a 90 hour plotting refactor in a pandas and xarray stack with a welcoming tone toward first time contributors. NumFOCUS has a medium charting library idea, MDAnalysis has easy 90 hour dashboard projects but expects molecular simulation interest, and TARDIS has plotting and gallery work but only at 350 hours. R based data science orgs, Julia, the Flutter data visualizations at Liquid Galaxy, and physics or chemistry research orgs share data tags but are poor first picks for a pandas beginner."
+    },
+    {
+      "id": "flutter-mobile-student",
+      "split": "dev3",
+      "about": "A student who builds cross platform mobile apps with Flutter and wants to work on a real app.",
+      "profile": {
+        "technologies": [
+          "flutter",
+          "firebase",
+          "android"
+        ],
+        "interests": [
+          "mobile apps",
+          "cross platform",
+          "user interfaces"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "AOSSIE": 3,
+        "API Dash": 3,
+        "CCExtractor Development": 3,
+        "FOSSASIA": 3,
+        "Liquid Galaxy project": 3,
+        "CircuitVerse.org": 2,
+        "International Catrobat Association": 2,
+        "LibreHealth": 2,
+        "Zulip": 2,
+        "AnkiDroid": 1,
+        "Cuneiform Digital Library Initiative (CDLI)": 1,
+        "Dart": 1,
+        "MetaBrainz Foundation Inc": 1,
+        "Oppia Foundation": 1,
+        "The Mifos Initiative": 1,
+        "Wikimedia Foundation": 1,
+        "rocket.chat": 1
+      },
+      "wrong_top5": [
+        "Open Food Facts",
+        "Neutralinojs",
+        "Swift",
+        "Kotlin Foundation",
+        "MIT App Inventor",
+        "Uramaki LAB",
+        "EROFS filesystem"
+      ],
+      "judge_notes": "Flutter is the main stack at API Dash (with easy 90 hour ideas), CCExtractor (alarm clock and task apps at 175 hours), Liquid Galaxy (many tablet apps, some 90 or 175 hours and easy), FOSSASIA (badge and science lab apps) and AOSSIE (audio rooms and expense apps). Zulip's mobile app is Flutter but it wants merged PRs first, Catrobat's paint app is Flutter but advanced, and LibreHealth and CircuitVerse each have one Flutter idea. Native Kotlin or React Native mobile orgs get a 1. Open Food Facts carries a Flutter tag but its 2026 list is a SvelteKit site, Uramaki matches only on Firebase, and Neutralinojs, Swift and the Kotlin Foundation match on cross platform or multiplatform words, not app work."
+    },
+    {
+      "id": "scientific-python-student",
+      "split": "dev3",
+      "about": "A physics student who uses NumPy, SciPy and notebooks for lab data and wants to work on scientific software.",
+      "profile": {
+        "technologies": [
+          "python",
+          "numpy",
+          "scipy",
+          "jupyter"
+        ],
+        "interests": [
+          "scientific computing",
+          "data analysis",
+          "physics"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "MDAnalysis": 3,
+        "NumFOCUS": 3,
+        "QC-Devs": 3,
+        "SymPy": 3,
+        "CERN-HSF": 2,
+        "IOOS": 2,
+        "Machine Learning for Science (ML4SCI)": 2,
+        "Neuroinformatics Unit": 2,
+        "OpenAstronomy": 2,
+        "Python Software Foundation": 2,
+        "TARDIS RT Collaboration": 2,
+        "gprMax": 2,
+        "DeepChem": 1,
+        "Fortran-lang": 1,
+        "GNU Octave": 1,
+        "GeomScale": 1,
+        "MLLAM": 1,
+        "Open Science Initiative for Perfusion Imaging": 1,
+        "Project Mesa": 1,
+        "SageMath": 1,
+        "United Nations Office of Information Communication Technology": 1,
+        "preCICE": 1
+      },
+      "wrong_top5": [
+        "The Julia Language",
+        "Ste||ar group",
+        "Stichting SU2",
+        "stdlib",
+        "R project for statistical computing",
+        "BRL-CAD",
+        "The ns-3 Network Simulator Project"
+      ],
+      "judge_notes": "A physics student with NumPy and SciPy fits SymPy (physics and mechanics ideas, from beginner to advanced, at 90 to 350 hours), the QC Devs group (numerical methods for quantum chemistry with 90 and 175 hour ideas), MDAnalysis (molecular simulation, where physics backgrounds do well) and NumFOCUS (QuTiP quantum tools, pvlib, gammapy). Astronomy, electromagnetics and particle physics orgs are a good interest match but are mostly 350 hours, need C++, Cython or Fortran, or need machine learning. Julia, Ste||ar, SU2 and the network simulator are scientific computing in Julia or C++, and stdlib is JavaScript."
+    },
+    {
+      "id": "dashboards-sql-analyst",
+      "split": "dev3",
+      "about": "A student who builds dashboards on top of SQL databases and wants to work on data tools.",
+      "profile": {
+        "technologies": [
+          "python",
+          "sql",
+          "plotly",
+          "streamlit"
+        ],
+        "interests": [
+          "data visualization",
+          "dashboards",
+          "data analysis"
+        ],
+        "experience": "some",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "IOOS": 3,
+        "MDAnalysis": 3,
+        "Jenkins": 2,
+        "Neuroinformatics Unit": 2,
+        "NumFOCUS": 2,
+        "TARDIS RT Collaboration": 2,
+        "United Nations Office of Information Communication Technology": 2,
+        "gprMax": 2,
+        "52°North Spatial Information Research GmbH": 1,
+        "CNCF": 1,
+        "Data for the Common Good": 1,
+        "Global Alliance for Genomics and Health": 1,
+        "Metaflow": 1,
+        "Open Genome Informatics": 1,
+        "Open Science Labs": 1,
+        "OpenMS Inc": 1,
+        "OpenStreetMap": 1,
+        "OpenVINO Toolkit": 1,
+        "Project Mesa": 1,
+        "Python Software Foundation": 1,
+        "R project for statistical computing": 1
+      },
+      "wrong_top5": [
+        "PostgreSQL",
+        "MariaDB",
+        "Ceph",
+        "Liquid Galaxy project",
+        "Meshery",
+        "stdlib",
+        "PEcAn Project"
+      ],
+      "judge_notes": "MDAnalysis has Python dashboard ideas for simulation monitoring (one is 90 hours and easy), and IOOS has Panel and Dash dashboards for ocean data at 175 hours. TARDIS has a Panel widget and plotting gallery, gprMax has an analytics dashboard, the UN office has a Streamlit or Dash interface for economic models, Jenkins has a dashboard site in JavaScript, NumFOCUS includes the HoloViz dashboard tools, and the Neuroinformatics Unit has a 90 hour plotting idea. PostgreSQL and MariaDB match on SQL but their ideas are database engine internals, the Ceph dashboard is Angular, and Liquid Galaxy visualizations are Flutter."
+    },
+    {
+      "id": "python-computer-vision",
+      "split": "dev3",
+      "about": "A student who has built small image classification and object detection projects and wants to keep working with images and video.",
+      "profile": {
+        "technologies": [
+          "python",
+          "opencv",
+          "pytorch"
+        ],
+        "interests": [
+          "computer vision",
+          "image processing",
+          "object detection"
+        ],
+        "experience": "some",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "HumanAI": 3,
+        "JdeRobot": 3,
+        "Machine Learning for Science (ML4SCI)": 3,
+        "NumFOCUS": 2,
+        "OpenVINO Toolkit": 2,
+        "UC OSPO": 2,
+        "Uramaki LAB": 2,
+        "Alaska": 1,
+        "C2SI": 1,
+        "International Catrobat Association": 1,
+        "Invesalius": 1,
+        "LibreHealth": 1,
+        "Neuroinformatics Unit": 1,
+        "Open Science Initiative for Perfusion Imaging": 1,
+        "Open Science Labs": 1,
+        "Python Software Foundation": 1
+      },
+      "wrong_top5": [
+        "Kornia",
+        "Graphite",
+        "GNU Image Manipulation Program",
+        "KDE Community",
+        "Blender Foundation",
+        "FFmpeg",
+        "VideoLAN",
+        "OpenAstronomy"
+      ],
+      "judge_notes": "HumanAI (hidden images in paintings, 3D scans, OCR), ML4SCI (lensing images, CT segmentation) and JdeRobot (perception metrics and a deep learning inspection exercise) give Python and PyTorch vision work at a fitting size. OpenVINO has camera and detection ideas but centers on inference, Uramaki has eye tracking, UC OSPO has medical imaging, and NumFOCUS has an airborne object detection idea under one sub project. Kornia is the classic trap: computer vision tags, but every 2026 idea needs strong Rust and often real hardware. Graphite is Rust, and GIMP, KDE, Blender, FFmpeg and VideoLAN are C or C++ image and video apps rather than vision models."
+    }
+  ]
+}

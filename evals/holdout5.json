@@ -1,0 +1,532 @@
+{
+  "about": "Common kinds of beginners, from the same reviewer and batch as dev3, split off by a fixed seed (20261022) before anyone read them. Sealed: never used for tuning. See evals/README.md.",
+  "org_list": "official GSoC 2026 accepted organizations",
+  "personas": [
+    {
+      "id": "android-app-developer",
+      "split": "holdout5",
+      "about": "A student who has published a couple of small Android apps and wants to work on a real mobile app.",
+      "profile": {
+        "technologies": [
+          "kotlin",
+          "java",
+          "android",
+          "jetpack compose"
+        ],
+        "interests": [
+          "mobile apps",
+          "android",
+          "user interfaces"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "AnkiDroid": 3,
+        "Oppia Foundation": 3,
+        "The Mifos Initiative": 3,
+        "International Catrobat Association": 2,
+        "Kiwix": 2,
+        "MetaBrainz Foundation Inc": 2,
+        "OpenStreetMap": 2,
+        "Wikimedia Foundation": 2,
+        "CCExtractor Development": 1,
+        "Dart": 1,
+        "FOSSASIA": 1,
+        "Liquid Galaxy project": 1,
+        "MIT App Inventor": 1,
+        "Open Transit Software Foundation": 1
+      },
+      "wrong_top5": [
+        "Open Food Facts",
+        "52°North Spatial Information Research GmbH",
+        "EROFS filesystem",
+        "The JPF team",
+        "Kotlin Foundation",
+        "LibreHealth"
+      ],
+      "judge_notes": "AnkiDroid (Kotlin UI work at 175 hours, known for helping first time Android contributors), Mifos (Kotlin Multiplatform mobile apps) and Oppia (a moderate to easy 175 hour Android lesson idea) are the strongest. The Wikimedia Commons app has a Jetpack Compose idea but only at 350 hours, ListenBrainz Android ideas are hard, Kiwix Android testing is 350 hours, Catrobat is advanced with a hard entry task, and the OpenStreetMap Android editor idea needs a powerful phone. Flutter based mobile orgs get a 1. Open Food Facts, 52 North, EROFS, JPF and LibreHealth carry Android tags but have no native Android work in 2026, and the Kotlin Foundation is compiler work."
+    },
+    {
+      "id": "r-statistics-five-hours",
+      "split": "holdout5",
+      "about": "A statistics student who uses R and ggplot2 for coursework and can give about five hours a week.",
+      "profile": {
+        "technologies": [
+          "r",
+          "ggplot2",
+          "rmarkdown"
+        ],
+        "interests": [
+          "statistics",
+          "data visualization",
+          "data science"
+        ],
+        "experience": "some",
+        "hours_per_week": 5
+      },
+      "grades": {
+        "GeomScale": 2,
+        "R project for statistical computing": 2,
+        "German Center for Open Source AI": 1,
+        "IOOS": 1,
+        "NumFOCUS": 1,
+        "Open Genome Informatics": 1,
+        "PEcAn Project": 1
+      },
+      "wrong_top5": [
+        "GNU Octave",
+        "The Julia Language",
+        "stdlib",
+        "Machine Learning for Science (ML4SCI)",
+        "QC-Devs",
+        "CERN-HSF",
+        "TARDIS RT Collaboration"
+      ],
+      "judge_notes": "Five hours a week means about 110 hours at most, so only 90 hour projects really fit. The R project matches the stack and interests perfectly, including an animated ggplot idea, but its projects are 175 or 350 hours. GeomScale has two small 90 hour ideas and R interfaces, though the research ones need geometry math. PEcAn is R package work in ecology at 175 hours or more, Stan under NumFOCUS has R ideas at 350 hours, and IOOS and Open Genome Informatics each have one R or Rcpp idea. Octave has statistics models but in the Octave language at 350 hours hard, and Julia, stdlib and physics orgs share statistics or data tags only."
+    },
+    {
+      "id": "react-frontend-student",
+      "split": "holdout5",
+      "about": "A student who builds personal sites and small apps in React and wants to work on the user interface of a real product.",
+      "profile": {
+        "technologies": [
+          "javascript",
+          "typescript",
+          "react",
+          "css"
+        ],
+        "interests": [
+          "frontend",
+          "user interfaces",
+          "web apps"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "Accord Project": 3,
+        "MetaBrainz Foundation Inc": 3,
+        "OpenMRS": 3,
+        "Processing Foundation": 3,
+        "cBioPortal for Cancer Genomics": 3,
+        "rocket.chat": 3,
+        "Eclipse Foundation": 2,
+        "JSON Schema": 2,
+        "Jenkins": 2,
+        "Jitsi": 2,
+        "OWASP Foundation": 2,
+        "Open Food Facts": 2,
+        "Open Genome Informatics": 2,
+        "OpenELIS Global": 2,
+        "OpenStreetMap": 2,
+        "Sugar Labs": 2,
+        "The Mifos Initiative": 2,
+        "Wikimedia Foundation": 2,
+        "Zulip": 2,
+        "AOSSIE": 1,
+        "API Dash": 1,
+        "CNCF": 1,
+        "CircuitVerse.org": 1,
+        "Data for the Common Good": 1,
+        "Internet Archive": 1,
+        "Joplin": 1,
+        "Learning Equality": 1,
+        "National Resource for Network Biology (NRNB)": 1,
+        "Open Robotics": 1,
+        "Open Transit Software Foundation": 1,
+        "Oppia Foundation": 1,
+        "Submitty": 1,
+        "Uramaki LAB": 1,
+        "webpack": 1
+      },
+      "wrong_top5": [
+        "Boa",
+        "stdlib",
+        "Gemini CLI",
+        "Meshery",
+        "Neutralinojs",
+        "Joomla!",
+        "Drupal Association",
+        "GRAME"
+      ],
+      "judge_notes": "React and TypeScript frontend work is common in 2026. The 3s have medium React ideas at 175 hours: the OpenMRS O3 frontend, rocket.chat, cBioPortal study view, Accord's editors and playground, the p5.js web editor at Processing, and the ListenBrainz frontend at MetaBrainz. The 2s are React work with a gap such as 350 hours only, strict rules, a Java heavy backend or a nearby framework like Svelte. Vue and Angular orgs get a 1. Boa is a JavaScript engine in Rust, stdlib is a numeric library, Gemini CLI is a terminal tool, Neutralinojs is mostly C++, GRAME is audio DSP, and Joomla and Drupal are PHP, so they should not be in the top five."
+    },
+    {
+      "id": "fullstack-typescript-developer",
+      "split": "holdout5",
+      "about": "A developer with a couple of years of full stack work who wants a large, demanding project.",
+      "profile": {
+        "technologies": [
+          "typescript",
+          "react",
+          "node.js",
+          "next.js",
+          "sql"
+        ],
+        "interests": [
+          "full stack",
+          "web apps",
+          "developer tools"
+        ],
+        "experience": "experienced",
+        "hours_per_week": 25
+      },
+      "grades": {
+        "Accord Project": 3,
+        "Eclipse Foundation": 3,
+        "JSON Schema": 3,
+        "Joplin": 3,
+        "MetaBrainz Foundation Inc": 3,
+        "rocket.chat": 3,
+        "FOSSology": 2,
+        "Gemini CLI": 2,
+        "Jitsi": 2,
+        "Kiwix": 2,
+        "OWASP Foundation": 2,
+        "Open Food Facts": 2,
+        "Open Genome Informatics": 2,
+        "Open Transit Software Foundation": 2,
+        "OpenELIS Global": 2,
+        "OpenMRS": 2,
+        "Processing Foundation": 2,
+        "The Mifos Initiative": 2,
+        "Wikimedia Foundation": 2,
+        "Zulip": 2,
+        "cBioPortal for Cancer Genomics": 2,
+        "webpack": 2,
+        "AOSSIE": 1,
+        "API Dash": 1,
+        "CNCF": 1,
+        "CircuitVerse.org": 1,
+        "Data for the Common Good": 1,
+        "Internet Archive": 1,
+        "Learning Equality": 1,
+        "MetaCall": 1,
+        "Neutralinojs": 1,
+        "Open Robotics": 1,
+        "Oppia Foundation": 1,
+        "Sugar Labs": 1
+      },
+      "wrong_top5": [
+        "Boa",
+        "stdlib",
+        "GRAME",
+        "Typelevel",
+        "Meshery",
+        "Joomla!",
+        "Drupal Association",
+        "Liquid Galaxy project"
+      ],
+      "judge_notes": "An experienced developer with 25 hours can take 350 hour hard ideas, so difficulty is not a blocker here. The 3s are TypeScript first codebases with large ideas: rocket.chat, Joplin (TypeScript everywhere, hard sync and AI ideas), Accord, Eclipse Theia (an IDE framework, which also fits the developer tools interest), the JSON Schema language service, and BookBrainz at MetaBrainz (Node, React and SQL). The 2s are TypeScript or React work paired with a Java or Python backend, a Svelte frontend, or a narrower tool. The wrong list is orgs that share a JavaScript or TypeScript tag but whose 2026 work is a Rust engine, numeric code, audio DSP, Scala, Go or PHP."
+    },
+    {
+      "id": "angular-typescript-student",
+      "split": "holdout5",
+      "about": "A student who used Angular and TypeScript during an internship and wants to keep doing frontend work in that stack.",
+      "profile": {
+        "technologies": [
+          "typescript",
+          "angular",
+          "rxjs",
+          "html",
+          "css"
+        ],
+        "interests": [
+          "frontend",
+          "single page apps",
+          "testing"
+        ],
+        "experience": "some",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "Oppia Foundation": 3,
+        "The Mifos Initiative": 3,
+        "Ceph": 2,
+        "Eclipse Foundation": 2,
+        "OWASP Foundation": 2,
+        "Processing Foundation": 2,
+        "Submitty": 2,
+        "rocket.chat": 2,
+        "Accord Project": 1,
+        "C2SI": 1,
+        "INCF": 1,
+        "JSON Schema": 1,
+        "Jitsi": 1,
+        "Joplin": 1,
+        "Kubeflow": 1,
+        "Learning Equality": 1,
+        "Open Food Facts": 1,
+        "Open Genome Informatics": 1,
+        "OpenMRS": 1,
+        "Uramaki LAB": 1,
+        "Zulip": 1
+      },
+      "wrong_top5": [
+        "Gemini CLI",
+        "Boa",
+        "stdlib",
+        "webpack",
+        "Neutralinojs",
+        "GRAME",
+        "Joomla!"
+      ],
+      "judge_notes": "Oppia (Angular and TypeScript, with an easy 175 hour acceptance test project) and Mifos (an Angular web app end to end testing idea) match both the stack and the testing interest. The Ceph dashboard is Angular with Jest and Cypress and labeled easy, but it is 350 hours, which is too long at 12 hours a week. OWASP has an Angular upgrade, and rocket.chat, Processing, Submitty and Eclipse offer TypeScript frontend or test work in other frameworks. Orgs tagged TypeScript whose 2026 work is a terminal agent, a Rust engine, a numeric library, bundler internals, C++ desktop code or audio DSP are wrong for this top five."
+    },
+    {
+      "id": "devops-beginner",
+      "split": "holdout5",
+      "about": "A beginner who has set up Docker containers and GitHub Actions pipelines for class projects and wants DevOps work.",
+      "profile": {
+        "technologies": [
+          "docker",
+          "github actions",
+          "bash",
+          "linux"
+        ],
+        "interests": [
+          "devops",
+          "ci cd",
+          "automation"
+        ],
+        "experience": "new",
+        "hours_per_week": 12
+      },
+      "grades": {
+        "preCICE": 3,
+        "C2SI": 2,
+        "CNCF": 2,
+        "Debian": 2,
+        "Jenkins": 2,
+        "Konflux": 2,
+        "Metaflow": 2,
+        "Wikimedia Foundation": 2,
+        "gprMax": 2,
+        "openSUSE Project": 2,
+        "CERN-HSF": 1,
+        "FOSSology": 1,
+        "KubeVirt": 1,
+        "Kubeflow": 1,
+        "Learning Unlimited": 1,
+        "NixOS Foundation": 1,
+        "NumFOCUS": 1,
+        "Open Robotics": 1,
+        "Python Software Foundation": 1,
+        "Ste||ar group": 1,
+        "Sugar Labs": 1,
+        "The Honeynet Project": 1,
+        "The Mifos Initiative": 1,
+        "Unikraft": 1
+      },
+      "wrong_top5": [
+        "Meshery",
+        "Data for the Common Good",
+        "OWASP Foundation",
+        "CRIU",
+        "EROFS filesystem",
+        "Git",
+        "The Linux Foundation"
+      ],
+      "judge_notes": "preCICE has a 175 hour system tests project in Docker and GitHub Actions with a concrete starter task, which suits a new DevOps learner. gprMax has a GitHub Actions CI project but at 350 hours, Metaflow has an easy CI testing idea that needs Python, Debian has Salsa CI work, Konflux is CI and container builds, Wikimedia has a Docker and Actions test project, CNCF has a 90 hour starter friendly package example, C2SI has an easy Terraform deployment idea, and openSUSE has build status work. Jenkins is a CI tool but its 2026 list is mostly chatbots and websites. Meshery, OWASP and Data for the Common Good carry DevOps or Terraform tags without matching 2026 work, and CRIU, EROFS, Git and the Linux Foundation match on Linux or containers but are kernel or C work."
+    },
+    {
+      "id": "html-css-five-hours",
+      "split": "holdout5",
+      "about": "A design minded beginner who knows HTML and CSS, has just started JavaScript, and can give about five hours a week.",
+      "profile": {
+        "technologies": [
+          "html",
+          "css",
+          "javascript"
+        ],
+        "interests": [
+          "ui design",
+          "accessibility"
+        ],
+        "experience": "new",
+        "hours_per_week": 5
+      },
+      "grades": {
+        "Uramaki LAB": 3,
+        "Jenkins": 2,
+        "Learning Equality": 2,
+        "MetaBrainz Foundation Inc": 2,
+        "Wikimedia Foundation": 2,
+        "preCICE": 2,
+        "Eclipse Foundation": 1,
+        "JSON Schema": 1,
+        "Kiwix": 1,
+        "OWASP Foundation": 1,
+        "Open Transit Software Foundation": 1,
+        "Processing Foundation": 1
+      },
+      "wrong_top5": [
+        "Wagtail",
+        "Zulip",
+        "Drupal Association",
+        "Joomla!",
+        "National Resource for Network Biology (NRNB)",
+        "United Nations Office of Information Communication Technology",
+        "Learning Unlimited"
+      ],
+      "judge_notes": "Five hours a week rules out anything above 90 hours. Uramaki fits best: its 2026 list centers on accessibility evaluation and usability testing and includes several easy 90 hour ideas. Wikimedia has a 90 hour interface redesign in React, MetaBrainz has a 90 hour easy onboarding idea, and Jenkins and preCICE have good website projects but at 175 hours. Learning Equality has strong accessibility ideas in Vue at 175 hours. Wagtail and Zulip carry accessibility, CSS or visual design tags, but their ideas are 175 to 350 hours with Python backends, and Drupal, Joomla, NRNB, the UN office and Learning Unlimited share HTML or CSS tags without a short, easy project."
+    },
+    {
+      "id": "python-deep-learning-student",
+      "split": "holdout5",
+      "about": "A university student who has trained a few image and text models in PyTorch for coursework and wants to do real deep learning work.",
+      "profile": {
+        "technologies": [
+          "python",
+          "pytorch",
+          "numpy"
+        ],
+        "interests": [
+          "deep learning",
+          "neural networks",
+          "model training"
+        ],
+        "experience": "some",
+        "hours_per_week": 15
+      },
+      "grades": {
+        "German Center for Open Source AI": 3,
+        "HumanAI": 3,
+        "Machine Learning for Science (ML4SCI)": 3,
+        "NumFOCUS": 3,
+        "CERN-HSF": 2,
+        "DeepChem": 2,
+        "MLLAM": 2,
+        "OpenVINO Toolkit": 2,
+        "UC OSPO": 2,
+        "Alaska": 1,
+        "FOSSASIA": 1,
+        "Genome Assembly and Annotation": 1,
+        "INCF": 1,
+        "JdeRobot": 1,
+        "Kubeflow": 1,
+        "LibreHealth": 1,
+        "Open Science Labs": 1,
+        "Open Technologies Alliance - GFOSS": 1,
+        "OpenMS Inc": 1,
+        "Ste||ar group": 1,
+        "Uramaki LAB": 1
+      },
+      "wrong_top5": [
+        "Kornia",
+        "MoFA Org",
+        "Gemini CLI",
+        "API Dash",
+        "Mixxx",
+        "checkstyle",
+        "Joplin",
+        "Neuroinformatics Unit"
+      ],
+      "judge_notes": "Top grades go to orgs whose 2026 ideas are mostly PyTorch model training with 175 hour options: ML4SCI and HumanAI (evaluation tests, research style), the time series libraries of the German open source AI center, and NumFOCUS through its PyTorch training toolbox and simulation based inference ideas. MLLAM, DeepChem, the CERN umbrella and UC OSPO are real deep learning work but need weather, chemistry, physics or medical background. OpenVINO is about inference and deployment more than training. Kornia looks like a perfect tag match but its 2026 work is Rust only, MoFA is Rust agents, Mixxx is a C++ DJ app, and the Neuroinformatics Unit lists PyTorch but its 2026 ideas are data tools with no model training."
+    },
+    {
+      "id": "java-only-student",
+      "split": "holdout5",
+      "about": "A student who wrote only Java and the words open source in their profile, with no other detail.",
+      "profile": {
+        "technologies": [
+          "java"
+        ],
+        "interests": [
+          "open source"
+        ],
+        "experience": "new",
+        "hours_per_week": 10
+      },
+      "grades": {
+        "JabRef e.V.": 3,
+        "OpenMRS": 3,
+        "SW360": 3,
+        "Eclipse Foundation": 2,
+        "Jenkins": 2,
+        "MIT App Inventor": 2,
+        "Processing Foundation": 2,
+        "The Mifos Initiative": 2,
+        "checkstyle": 2,
+        "AnkiDroid": 1,
+        "Apache Software Foundation": 1,
+        "International Catrobat Association": 1,
+        "JBoss Community": 1,
+        "OpenELIS Global": 1,
+        "The JPF team": 1,
+        "cBioPortal for Cancer Genomics": 1,
+        "openSUSE Project": 1
+      },
+      "wrong_top5": [
+        "Kotlin Foundation",
+        "52°North Spatial Information Research GmbH",
+        "C2SI",
+        "Debian",
+        "LibreOffice",
+        "Ruby",
+        "Alaska"
+      ],
+      "judge_notes": "With only Java and no other detail, the best picks are Java first orgs with newcomer support and small ideas. JabRef is almost all Java with several 90 hour ideas and free to take issue lists, OpenMRS has a newcomer guide and Java only backend projects of small and medium size, and SW360 marks two small ideas as preferred for students. checkstyle is Java but mostly 350 hours, Mifos and Eclipse mix Java with other stacks, and MIT App Inventor and Processing have Java ideas of medium size. The Kotlin Foundation is compiler work, and 52 North, C2SI, Debian, LibreOffice, Ruby and Alaska list Java tags without Java work for a beginner in 2026."
+    },
+    {
+      "id": "python-web-backend",
+      "split": "holdout5",
+      "about": "A student who builds web backends in Python with Flask and FastAPI and wants backend work on a real product.",
+      "profile": {
+        "technologies": [
+          "python",
+          "flask",
+          "fastapi",
+          "sql",
+          "rest apis"
+        ],
+        "interests": [
+          "backend",
+          "web apps",
+          "apis"
+        ],
+        "experience": "some",
+        "hours_per_week": 20
+      },
+      "grades": {
+        "GNU Mailman": 3,
+        "MetaBrainz Foundation Inc": 3,
+        "OWASP Foundation": 3,
+        "OpenWISP": 3,
+        "The Honeynet Project": 3,
+        "Zulip": 3,
+        "AboutCode": 2,
+        "Debian": 2,
+        "Django Software Foundation": 2,
+        "FOSSASIA": 2,
+        "Global Alliance for Genomics and Health": 2,
+        "Internet Archive": 2,
+        "Learning Unlimited": 2,
+        "Metaflow": 2,
+        "OpenStreetMap": 2,
+        "Oppia Foundation": 2,
+        "Wagtail": 2,
+        "Wikimedia Foundation": 2,
+        "Accord Project": 1,
+        "Data for the Common Good": 1,
+        "Genome Assembly and Annotation": 1,
+        "Kiwix": 1,
+        "Learning Equality": 1,
+        "Open Genome Informatics": 1,
+        "Open Science Labs": 1,
+        "United Nations Office of Information Communication Technology": 1
+      },
+      "wrong_top5": [
+        "PostgreSQL",
+        "MariaDB",
+        "The ns-3 Network Simulator Project",
+        "Joomla!",
+        "Drupal Association",
+        "JSON Schema",
+        "API Dash"
+      ],
+      "judge_notes": "Python web backend work is plentiful. The 3s have REST or web backend ideas in Python at medium level: OpenWISP (Django REST and Celery), Zulip (Django and SQL backend, API docs, performance), Mailman (Django web apps over a REST core), MetaBrainz (ListenBrainz on Flask and SQL), Honeynet (Django REST for threat data), and OWASP (Django and Flask sub projects). The Django and Wagtail ideas are mostly 350 hours and hard, and the other 2s have backend work inside a domain such as packaging, education, security data or geocoding. PostgreSQL and MariaDB match on SQL but mean engine internals, the network simulator has a Django tag but is written in C++, Joomla and Drupal are PHP, and JSON Schema and API Dash match on API words but are TypeScript and Flutter."
+    }
+  ]
+}
