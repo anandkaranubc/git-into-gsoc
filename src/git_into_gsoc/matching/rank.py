@@ -541,7 +541,8 @@ class OrgIndex:
         `query` is free text to match as well; `category` must match the listing's
         category. With a query, a category, or a non-empty profile, organizations
         whose relevance is under FIT_MIN are left out; with none, every organization
-        is listed, ordered by its tie-breakers.
+        is listed, ordered by its track record (years in a row, project slots, and
+        ideas readiness), then by its tie-breakers.
         """
         query = query.strip()
         category = category.strip().lower()
