@@ -1,3 +1,6 @@
+"""The `orient` command end to end, through the service and the CLI; the pure functions are in
+test_orientation.py."""
+
 from __future__ import annotations
 
 import json

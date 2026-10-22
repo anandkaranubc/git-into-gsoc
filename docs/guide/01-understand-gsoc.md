@@ -34,7 +34,7 @@ git-into-gsoc start
 
 If you share your GitHub username, it reads your public repositories to suggest your main languages. Offline, it saves the username and reads the languages next time. To set or change single answers later, use `git-into-gsoc profile`, for example `git-into-gsoc profile --hours 10 --tz Asia/Kolkata`. The profile lives only on your computer.
 
-You can start by reading documentation or reproducing a bug. You do not need to be an expert in the whole codebase. The time you can spend preparing may differ from the time a GSoC project requires; discuss the project schedule before applying.
+The time you can spend preparing may differ from the time a GSoC project requires; discuss the schedule with mentors before applying.
 
 ## Where you are in the year
 
@@ -52,7 +52,9 @@ Starting before the program is announced gives you time to learn a project and g
 
 Before using AI for a contribution or proposal, read [Google's AI guidance](https://developers.google.com/open-source/gsoc/resources/ai_guidance) and the organization's own policy. Ask if the policy is unclear. You are responsible for understanding and checking anything you submit. Some organizations allow no AI tools at all, even for writing a proposal, and the [GSoC FAQ](https://developers.google.com/open-source/gsoc/faq) warns that using AI to write your proposal could mean automatic rejection. Write your proposal in your own words.
 
-When you are unsure what to do at any point, run `git-into-gsoc next`. It combines the program phase, your profile, and your saved progress into the next few actions, each with the command to run.
+## Whenever you are unsure
+
+Run `git-into-gsoc next`. It combines the program phase, your profile, and your saved progress into the next few actions, each with the command to run. It works at every step of this guide.
 
 **Ready to move on:** you can describe GSoC, know where to check the rules, and have written down your interests.
 

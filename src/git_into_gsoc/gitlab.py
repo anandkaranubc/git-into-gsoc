@@ -31,7 +31,10 @@ _ISSUE_URL = re.compile(
 
 def parse_gitlab_issue(url: str) -> tuple[str, str, int] | None:
     """(host, project path, issue number) for a GitLab issue link, else None."""
-    match = _ISSUE_URL.match((url or "").strip())
+    raw = (url or "").strip()
+    if "://" not in raw and "/-/" in raw:
+        raw = "https://" + raw  # copied from the address bar without "https://"
+    match = _ISSUE_URL.match(raw)
     if not match or match.group(1).lower().removeprefix("www.") == "github.com":
         return None
     return match.group(1), match.group(2), int(match.group(3))

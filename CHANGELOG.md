@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.22.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.21.0...v0.22.0) (2026-10-22)
+
+
+### Features
+
+* **matching:** words that narrow an interest count, so "music notation" is not any music org ([#291](https://github.com/anandkaranubc/git-into-gsoc/issues/291)) ([2efe712](https://github.com/anandkaranubc/git-into-gsoc/commit/2efe7120244081d4357dd3345613c86c1fc8bfe4))
+* **site:** one-click links for Goose and Raycast, generated with the other buttons ([#293](https://github.com/anandkaranubc/git-into-gsoc/issues/293)) ([d594702](https://github.com/anandkaranubc/git-into-gsoc/commit/d5947024991c90b6618f5958f62ce7fba76d3bfc))
+
+
+### Bug Fixes
+
+* **ideas:** read ideas at two heading levels, and quote an AI rule that discourages ([#292](https://github.com/anandkaranubc/git-into-gsoc/issues/292)) ([623c2bc](https://github.com/anandkaranubc/git-into-gsoc/commit/623c2bce77cb8076650052d6eed6ae92b0308a5c))
+* **org:** a search limit no longer hides a wiki's 'will not take part', and org says the check failed ([#294](https://github.com/anandkaranubc/git-into-gsoc/issues/294)) ([49181d6](https://github.com/anandkaranubc/git-into-gsoc/commit/49181d67298a5b0f0233ef20843ac3acb90312b8))
+* **repo:** leave out what GitHub did not answer instead of grading it as missing ([#308](https://github.com/anandkaranubc/git-into-gsoc/issues/308)) ([d69e11b](https://github.com/anandkaranubc/git-into-gsoc/commit/d69e11b8e5cb89a573b8deb53ad92bb41f6e92ad))
+
+
+### Documentation
+
+* **contributing:** one setup path, writing standards, and layout moved to architecture ([#296](https://github.com/anandkaranubc/git-into-gsoc/issues/296)) ([94347c5](https://github.com/anandkaranubc/git-into-gsoc/commit/94347c5009a2145928ad1ac044d737421c9f9aa9))
+* **evals:** correct the refresh examples; LibreOffice's count includes past projects ([#299](https://github.com/anandkaranubc/git-into-gsoc/issues/299)) ([0bf89b2](https://github.com/anandkaranubc/git-into-gsoc/commit/0bf89b2c6edf95a45f712ed832357502ca0bb025))
+* **guide:** an index that separates using the tool from building it, and a shorter install chapter ([#298](https://github.com/anandkaranubc/git-into-gsoc/issues/298)) ([b24f8ba](https://github.com/anandkaranubc/git-into-gsoc/commit/b24f8ba61459c652f8d80af8f87eeb0d5fcbdb19))
+* re-render the start demo on the refreshed organization snapshot ([#311](https://github.com/anandkaranubc/git-into-gsoc/issues/311)) ([afb9451](https://github.com/anandkaranubc/git-into-gsoc/commit/afb94510b62711fc86310fedc712e2dd0af7480b))
+* **reference:** one fact per line in the command reference, and an MCP page that points instead of repeating ([#301](https://github.com/anandkaranubc/git-into-gsoc/issues/301)) ([5f0efd2](https://github.com/anandkaranubc/git-into-gsoc/commit/5f0efd284b1425194acee631b99a581351290fcf))
+
 ## [0.21.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.20.0...v0.21.0) (2026-10-22)
 
 
