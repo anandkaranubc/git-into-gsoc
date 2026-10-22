@@ -107,6 +107,7 @@ from git_into_gsoc.models import (
     RepoLead,
 )
 from git_into_gsoc.progress.store import ProgressStore, other_host_link
+from git_into_gsoc.scoring.health import DORMANT_DAYS
 from git_into_gsoc.scoring.org_match import canonical
 from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import (
@@ -165,8 +166,6 @@ _RETIRED_RE = re.compile(
     r"read-only mirror|mirror of|archived)\b",
     re.I,
 )
-# A repository with nothing pushed for longer than this may never review a pull request.
-DORMANT_DAYS = 365
 
 
 def _retired_repo(raw: dict[str, Any]) -> str | None:

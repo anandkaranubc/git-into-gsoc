@@ -27,6 +27,7 @@ Expect a grade from A to F, the evidence behind it, and setup hints. The signals
 - **Typical outside PR size.** The median lines changed in merged outside PRs, so you know how big a first PR usually is there.
 - **Open beginner issues** under the repository's actual beginner label, which may be "good first issue", "beginner friendly", or something project-specific. The count is of issues nobody is assigned to yet; when every one is assigned, the tool says so.
 - **CONTRIBUTING guide, Code of Conduct, issue and PR templates, CI.**
+- **Recent pushes.** The pull request figures above come from the latest closed pull requests, however old they are. When nothing has been pushed for over a year, the tool says so first, marks each of those figures "Before it went quiet", and grades the repository D at best, because a new pull request there may get no reply.
 
 "Getting set up" lists the toolchain files found in the repository root, whether a dev container exists (one click in Codespaces or VS Code gets you a working environment), the CONTRIBUTING link, and the chat channels it mentions. Read the README and CONTRIBUTING on GitHub before writing code. A high grade does not guarantee mentoring, and a missing file can mean the guide lives elsewhere. If the repository is archived, look for the project's current repository before continuing.
 

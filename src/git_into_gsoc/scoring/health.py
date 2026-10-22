@@ -11,6 +11,11 @@ MIN_REPLY_SAMPLE = 5  # below this, the first-reply time is shown but not scored
 # A repository that turns down most outside pull requests cannot grade well, however
 # polished it looks: below 40% merged it tops out at B, below 20% at C.
 OUTSIDER_CAPS = ((0.2, 71.0), (0.4, 84.0))
+# A repository with nothing pushed for longer than this may never review a pull request.
+DORMANT_DAYS = 365
+# Its pull request figures come from before it went quiet, so they cannot lift it above
+# a D ("Risky") however good they look.
+DORMANT_CAP = 57.0
 
 
 def _days_or_hours(hours: float) -> str:
@@ -41,6 +46,7 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
     score = 0.0
     signals: list[str] = []
     warnings: list[str] = []
+    dormant = False
 
     if health.archived or health.disabled:
         health.health_score = 0.0
@@ -60,10 +66,22 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         elif days <= 120:
             score += 7
             signals.append(f"Somewhat active ({days}d since push)")
-        else:
+        elif days <= DORMANT_DAYS:
             warnings.append(f"Stale repository ({days}d since last push)")
+        else:
+            # The figures below come from the last closed pull requests, however old: a
+            # Processing library quiet for 851 days still read "reply within ~20h".
+            dormant = True
+            warnings.append(
+                f"Nothing has been pushed for {days} days, so the pull request figures here "
+                "are from before then and a new pull request may get no reply"
+            )
     else:
         warnings.append("Missing push timestamp")
+
+    def past(text: str) -> str:
+        """A pull request figure, marked as old when the repository has gone quiet."""
+        return f"Before it went quiet: {text[0].lower()}{text[1:]}" if dormant else text
 
     if health.has_contributing:
         score += 12
@@ -100,10 +118,10 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
     if health.merge_rate is not None and health.prs_sampled >= 5:
         if health.merge_rate >= 0.5:
             score += 12
-            signals.append(f"Healthy merge rate ({health.merge_rate:.0%} of human PRs)")
+            signals.append(past(f"Healthy merge rate ({health.merge_rate:.0%} of human PRs)"))
         elif health.merge_rate >= 0.25:
             score += 6
-            signals.append(f"Moderate merge rate ({health.merge_rate:.0%})")
+            signals.append(past(f"Moderate merge rate ({health.merge_rate:.0%})"))
         else:
             warnings.append(f"Low merge rate ({health.merge_rate:.0%})")
 
@@ -114,7 +132,7 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         unmerged = sampled - round(rate * sampled)
         if rate >= 0.4:
             score += 12
-            signals.append(f"Merges outside contributors' PRs ({rate:.0%} of {sampled})")
+            signals.append(past(f"Merges outside contributors' PRs ({rate:.0%} of {sampled})"))
         elif rate >= 0.2:
             score += 6
             warnings.append(
@@ -138,8 +156,9 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         )
     if health.outside_authors_merged:
         score += min(6.0, 2.0 * health.outside_authors_merged)
+        when = "" if dormant else " recently"
         signals.append(
-            f"{health.outside_authors_merged} different outside author(s) merged recently"
+            past(f"{health.outside_authors_merged} different outside author(s) merged{when}")
         )
 
     first = health.median_first_response_hours
@@ -155,26 +174,32 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
         if first <= 24:
             score += 10
             signals.append(
-                f"Pull requests from outsiders get a human reply within ~{first:.0f}h (median)"
+                past(
+                    f"Pull requests from outsiders get a human reply within ~{first:.0f}h (median)"
+                )
             )
         elif first <= 72:
             score += 6
             signals.append(
-                f"Pull requests from outsiders get a human reply in ~{first / 24:.0f}d (median)"
+                past(
+                    f"Pull requests from outsiders get a human reply in ~{first / 24:.0f}d (median)"
+                )
             )
         else:
             warnings.append(
                 f"Pull requests from outsiders wait ~{first / 24:.0f}d for a first human reply (median)"
             )
         if health.median_pr_hours is not None:
-            signals.append(f"Merged PRs land in ~{_days_or_hours(health.median_pr_hours)} (median)")
+            signals.append(
+                past(f"Merged PRs land in ~{_days_or_hours(health.median_pr_hours)} (median)")
+            )
     elif health.median_pr_hours is not None:
         if health.median_pr_hours <= 72:
             score += 10
-            signals.append(f"Merged PRs land fast (~{health.median_pr_hours:.0f}h median)")
+            signals.append(past(f"Merged PRs land fast (~{health.median_pr_hours:.0f}h median)"))
         elif health.median_pr_hours <= 240:
             score += 5
-            signals.append(f"Merged PRs take ~{health.median_pr_hours / 24:.0f}d (median)")
+            signals.append(past(f"Merged PRs take ~{health.median_pr_hours / 24:.0f}d (median)"))
         else:
             warnings.append(
                 f"Merged PRs take ~{health.median_pr_hours / 24:.0f}d (median); "
@@ -201,8 +226,10 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
 
     if health.median_outsider_pr_size is not None:
         signals.append(
-            f"Merged outside PRs change ~{health.median_outsider_pr_size} lines (median), "
-            "so focused changes are what land here"
+            past(
+                f"Merged outside PRs change ~{health.median_outsider_pr_size} lines (median), "
+                "so focused changes are what land here"
+            )
         )
 
     if health.license:
@@ -217,6 +244,8 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
     elif health.stars > 50000:
         warnings.append("Very popular repo: beginner issues go fast, expect competition")
 
+    if dormant:
+        cap = min(cap, DORMANT_CAP)
     health.health_score = round(min(score, cap, 100.0), 1)
     health.grade = _grade(health.health_score)
     health.signals = signals

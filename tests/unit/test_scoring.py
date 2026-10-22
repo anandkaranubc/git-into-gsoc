@@ -323,3 +323,22 @@ def test_an_epic_is_never_a_top_beginner_pick() -> None:
         epic.model_copy(update={"labels": ["good first issue"], "title": "[Tracking issue] Docs"})
     )
     assert by_title.beginner_score <= 35
+
+
+def test_a_repository_quiet_for_over_a_year_cannot_look_promising() -> None:
+    # A Processing library (2026-10-22): nothing pushed for 851 days, yet grade C,
+    # "Promising", with "a human reply within ~20h" from pull requests years old.
+    quiet = score_repo_health(_busy_repo(pushed_at=datetime.now(UTC) - timedelta(days=851)))
+    assert quiet.grade == "D"
+    assert quiet.health_score <= 57
+    assert quiet.warnings[0].startswith("Nothing has been pushed for 851 days")
+    figures = [s for s in quiet.signals if any(w in s for w in ("merge", "reply", "PRs"))]
+    assert len(figures) == 4
+    assert figures and all(s.startswith("Before it went quiet: ") for s in figures)
+    assert not any("recently" in s for s in quiet.signals)
+
+
+def test_a_repository_quiet_for_months_keeps_its_figures() -> None:
+    stale = score_repo_health(_busy_repo(pushed_at=datetime.now(UTC) - timedelta(days=200)))
+    assert "Stale repository (200d since last push)" in stale.warnings
+    assert not any(s.startswith("Before it went quiet") for s in stale.signals)
