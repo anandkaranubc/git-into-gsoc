@@ -165,6 +165,28 @@ _RETIRED_RE = re.compile(
     r"read-only mirror|mirror of|archived)\b",
     re.I,
 )
+# A repository with nothing pushed for longer than this may never review a pull request.
+DORMANT_DAYS = 365
+
+
+def _retired_repo(raw: dict[str, Any]) -> str | None:
+    """Why a repository should get no new work, or None."""
+    if raw.get("archived"):
+        return (
+            "The repository is archived, so it is read-only: nobody can comment or open "
+            "a pull request there"
+        )
+    found = _RETIRED_RE.search(str(raw.get("description") or ""))
+    return f"The repository's description says '{found.group(0)}'" if found else None
+
+
+def _dormant_days(raw: dict[str, Any]) -> int | None:
+    """Days since anything was pushed to the repository, when that is over DORMANT_DAYS."""
+    pushed = _parse_iso(raw.get("pushed_at"))
+    days = (datetime.now(UTC) - pushed).days if pushed else 0
+    return days if days > DORMANT_DAYS else None
+
+
 # Skills that are not programming, for the "GSoC is a coding program" note.
 _NOT_CODING = frozenset({"latex", "git", "html", "css"})
 
@@ -985,6 +1007,28 @@ class GSoCToolkit:
             return {**found, "before_you_comment": BEFORE_YOU_COMMENT}
         owner, repo, num = parse_issue_ref(ref, number)
         issue, assessment = self.github.assess(f"{owner}/{repo}", num)
+        # The issue alone cannot show that nobody will review the work: a real check
+        # (2026-10-22) called issues "available" in an archived repository and in one
+        # with nothing pushed for 16 months.
+        try:
+            raw_repo = self.github.get_repo(owner, repo)
+        except GigError:
+            raw_repo = {}
+        retired = _retired_repo(raw_repo)
+        if raw_repo.get("archived") and assessment.availability != Availability.CLOSED:
+            assessment.availability = Availability.NOT_OPEN
+            assessment.reason = f"{retired}; pick another issue"
+            # Nobody can post in its threads, so advice to ask there does not apply.
+            assessment.caveats = [c for c in assessment.caveats if "in the thread" not in c]
+        elif retired:
+            assessment.caveats.append(f"{retired}; ask the project whether it still takes work")
+        dormant = _dormant_days(raw_repo)
+        if dormant and not raw_repo.get("archived"):
+            assessment.caveats.append(
+                f"Nothing has been pushed to this repository for {dormant // 30} months, so a "
+                "pull request may wait a long time for review; ask the project whether it is "
+                "still maintained before you start"
+            )
         return {
             "repo": f"{owner}/{repo}",
             "number": num,
@@ -1297,7 +1341,7 @@ class GSoCToolkit:
         }
 
     def _without_retired_repos(self, issues: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """Leave out issues in repositories marked deprecated, legacy, or a mirror."""
+        """Leave out issues in repositories that are retired or have gone quiet for a year."""
         keep = []
         verdicts: dict[str, bool] = {}
         for issue in issues:
@@ -1308,8 +1352,7 @@ class GSoCToolkit:
                 except (GigError, ValueError):
                     verdicts[repo] = True
                 else:
-                    text = str(raw.get("description") or "")
-                    verdicts[repo] = not (raw.get("archived") or _RETIRED_RE.search(text))
+                    verdicts[repo] = not (_retired_repo(raw) or _dormant_days(raw))
             if verdicts[repo]:
                 keep.append(issue)
         return keep
