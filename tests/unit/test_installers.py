@@ -35,6 +35,7 @@ def _check(
     *,
     provenance: str | None,
     wheel: bool = True,
+    release: bool = True,
     env: dict[str, str] | None = None,
     every: bool = False,
 ) -> str:
@@ -55,7 +56,8 @@ def _check(
         functions.append(found.group(0))
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    (tmp_path / "release.json").write_text(RELEASE)
+    if release:
+        (tmp_path / "release.json").write_text(RELEASE)
     if provenance is not None:
         (tmp_path / "provenance.json").write_text(provenance)
     curl = bin_dir / "curl"
@@ -63,7 +65,7 @@ def _check(
         "#!/usr/bin/env bash\n"
         f'echo "$@" >> "{tmp_path}/calls"\n'
         'url="${@: -1}"\n'
-        f'case "$url" in *releases/latest) cat "{tmp_path}/release.json" ;;\n'
+        f'case "$url" in *releases/latest) cat "{tmp_path}/release.json" 2>/dev/null || exit 22 ;;\n'
         f'  *git_into_gsoc-1.2.3-py3-none-any.whl/provenance) cat "{tmp_path}/provenance.json" '
         "2>/dev/null || exit 22 ;;\n"
         f"  {WHEEL}) {'exit 0' if wheel else 'exit 22'} ;;\n"
@@ -115,8 +117,15 @@ def test_without_pypi_the_newest_release_wheel_is_used(tmp_path: Path) -> None:
 
 
 @posix_only
-def test_no_release_wheel_or_no_network_means_the_git_source(tmp_path: Path) -> None:
-    assert _check(tmp_path, provenance=None, wheel=False) == GIT
+def test_a_release_without_its_wheel_yet_means_the_source_at_its_tag(tmp_path: Path) -> None:
+    # A release appears a little before its wheel is attached. The newest commit could
+    # hold changes merged since, which would then run under the release's version number.
+    assert _check(tmp_path, provenance=None, wheel=False) == f"{GIT}@v1.2.3"
+
+
+@posix_only
+def test_no_network_means_the_newest_git_source(tmp_path: Path) -> None:
+    assert _check(tmp_path, provenance=None, wheel=False, release=False) == GIT
 
 
 @posix_only
@@ -124,8 +133,88 @@ def test_each_later_source_is_kept_as_a_fallback(tmp_path: Path) -> None:
     assert _check(tmp_path, provenance=_provenance(OURS), every=True).splitlines() == [
         "git-into-gsoc==1.2.3",
         WHEEL,
-        GIT,
+        f"{GIT}@v1.2.3",
     ]
+
+
+def test_the_powershell_installer_pins_the_source_to_the_release() -> None:
+    text = (ROOT / "install.ps1").read_text(encoding="utf-8")
+    assert '$gitSpec = "git+${RepoUrl}@v$version"' in text
+    assert "$specs += $gitSpec" in text
+
+
+# Loads the source-choosing functions from install.ps1 without running the installer, and
+# fakes the web: FAKE_RELEASE, FAKE_PYPI and FAKE_WHEEL say which lookups succeed.
+_PS_SPECS = r"""
+$ErrorActionPreference = "Stop"
+$OwnRepo = "anandkaranubc/git-into-gsoc"
+$RepoUrl = if ($env:GIG_REPO_URL) { $env:GIG_REPO_URL } else { "https://github.com/$OwnRepo" }
+function Log($msg) { Write-Host "LOG $msg" }
+$names = "Get-LatestReleaseVersion", "Get-VerifiedPyPISpec", "Get-ReleaseWheelSpec", "Get-InstallSpecs"
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($args[0], [ref]$null, [ref]$null)
+$found = $ast.FindAll({ param($n)
+  $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -in $names }, $true)
+foreach ($f in $found) { . ([scriptblock]::Create($f.Extent.Text)) }
+function git { }
+function Invoke-RestMethod($Uri, $TimeoutSec) {
+  if ($env:FAKE_RELEASE -and $Uri -like "*/releases/latest") { return @{ tag_name = "v1.2.3" } }
+  if ($env:FAKE_PYPI -and $Uri -like "*/provenance") {
+    return @{ attestation_bundles = @(@{ publisher = @{ kind = "GitHub"; repository = $OwnRepo } }) }
+  }
+  throw "404"
+}
+function Invoke-WebRequest($Uri, $Method, [switch]$UseBasicParsing, $TimeoutSec) {
+  if ($env:FAKE_WHEEL -and $Uri -like "*/releases/download/*") { return @{} }
+  throw "404"
+}
+foreach ($spec in @(Get-InstallSpecs)) { Write-Output "SPEC $spec" }
+"""
+
+
+def _ps_specs(tmp_path: Path, **fake: str) -> tuple[list[str], list[str]]:
+    """Run install.ps1's Get-InstallSpecs in PowerShell; return its sources and log lines."""
+    script = tmp_path / "specs.ps1"
+    script.write_text(_PS_SPECS, encoding="utf-8")
+    env = {k: v for k, v in os.environ.items() if not k.startswith(("GIG_", "FAKE_"))}
+    result = subprocess.run(
+        ["pwsh", "-NoProfile", "-NonInteractive", "-File", str(script), str(ROOT / "install.ps1")],
+        capture_output=True,
+        text=True,
+        env={**env, **fake},
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    lines = result.stdout.splitlines()
+    return (
+        [line[5:] for line in lines if line.startswith("SPEC ")],
+        [line[4:] for line in lines if line.startswith("LOG ")],
+    )
+
+
+needs_pwsh = pytest.mark.skipif(not shutil.which("pwsh"), reason="needs PowerShell 7 (pwsh)")
+
+
+@needs_pwsh
+def test_powershell_builds_the_source_at_the_tag_when_the_release_has_no_wheel_yet(
+    tmp_path: Path,
+) -> None:
+    specs, log = _ps_specs(tmp_path, FAKE_RELEASE="1")
+    assert specs == [f"{GIT}@v1.2.3"]
+    assert f"Using the source on GitHub ({GIT[4:]}, release v1.2.3)" in log
+    assert not any("Could not look up" in line for line in log)
+
+
+@needs_pwsh
+def test_powershell_keeps_the_same_order_of_sources_as_install_sh(tmp_path: Path) -> None:
+    specs, _ = _ps_specs(tmp_path, FAKE_RELEASE="1", FAKE_PYPI="1", FAKE_WHEEL="1")
+    assert specs == ["git-into-gsoc==1.2.3", WHEEL, f"{GIT}@v1.2.3"]
+
+
+@needs_pwsh
+def test_powershell_without_network_builds_the_newest_source(tmp_path: Path) -> None:
+    specs, log = _ps_specs(tmp_path)
+    assert specs == [GIT]
+    assert any("Could not look up the newest release" in line for line in log)
 
 
 def _install_first(tmp_path: Path, *, failing: str) -> subprocess.CompletedProcess[str]:

@@ -56,7 +56,8 @@ function Find-Python {
 #      serves the publisher it verified, which an upload from another repository cannot fake.
 #   2. The wheel attached to the newest GitHub release: a finished package, so neither
 #      Git nor a build step is needed.
-#   3. The source on GitHub (needs Git), when the release cannot be looked up.
+#   3. The source on GitHub (needs Git), at the newest release's tag. Only when the release
+#      cannot be looked up at all is it the newest commit instead.
 # An explicit GIG_REPO_URL means "install exactly this source", so 1 and 2 are skipped.
 function Get-LatestReleaseVersion {
   if ($env:GIG_REPO_URL) { return $null }
@@ -105,8 +106,13 @@ function Get-InstallSpecs {
   # CI passes a wheel it just built: cloning the repository through pipx takes minutes.
   if ($env:GIG_INSTALL_SPEC) { return @($env:GIG_INSTALL_SPEC) }
   $specs = @()
+  $gitSpec = "git+$RepoUrl"
+  $from = $RepoUrl
   $version = Get-LatestReleaseVersion
   if ($version) {
+    # The tag keeps the source the same code as the release, not changes merged since.
+    $gitSpec = "git+${RepoUrl}@v$version"
+    $from = "$RepoUrl, release v$version"
     $spec = Get-VerifiedPyPISpec $version
     if ($spec) {
       Log "Using $spec from PyPI (published by $OwnRepo)"
@@ -120,13 +126,13 @@ function Get-InstallSpecs {
   }
   $hasGit = [bool](Get-Command git -ErrorAction SilentlyContinue)
   if (-not $specs) {
-    if (-not $env:GIG_REPO_URL) { Log "Could not look up the newest release (no network, or GitHub is busy)" }
-    Log "Using the source on GitHub ($RepoUrl)"
+    if (-not $env:GIG_REPO_URL -and -not $version) { Log "Could not look up the newest release (no network, or GitHub is busy)" }
+    Log "Using the source on GitHub ($from)"
     if (-not $hasGit) {
       throw "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
     }
   }
-  if ($hasGit) { $specs += "git+$RepoUrl" }
+  if ($hasGit) { $specs += $gitSpec }
   return $specs
 }
 

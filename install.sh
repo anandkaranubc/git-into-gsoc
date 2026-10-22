@@ -139,10 +139,13 @@ install_checkout() {
 #      serves the publisher it verified, which an upload from another repository cannot fake.
 #   2. The wheel attached to the newest GitHub release: a finished package, so neither
 #      Git nor a build step is needed.
-#   3. The source on GitHub (needs Git), when the release cannot be looked up.
+#   3. The source on GitHub (needs Git), at the newest release's tag. Only when the release
+#      cannot be looked up at all is it the newest commit instead.
 # Each later source is also a fallback when installing an earlier one fails. Right after
 # a release, PyPI can serve its provenance before every PyPI server offers the files, so
-# for a few minutes the PyPI install can fail while the release wheel works.
+# for a few minutes the PyPI install can fail while the release wheel works. The release
+# also appears a little before its wheel is attached, and the tag keeps the source in
+# that gap the same code as the release, not changes merged since.
 # An explicit GIG_REPO_URL means "install exactly this source", so 1 and 2 are skipped.
 OWN_REPO="anandkaranubc/git-into-gsoc"
 GIT_SPEC="git+${REPO_URL}"
@@ -186,9 +189,11 @@ release_wheel_spec() {
 SPEC=""
 SPECS=()
 choose_spec() {
-  local version spec
+  local version spec git_spec="$GIT_SPEC" from="$REPO_URL"
   SPECS=()
   if version="$(latest_release_version)"; then
+    git_spec="${GIT_SPEC}@v${version}"
+    from="${REPO_URL}, release v${version}"
     if spec="$(verified_pypi_spec "$version")"; then
       log "Using ${spec} from PyPI (published by ${OWN_REPO})"
       SPECS+=("$spec")
@@ -199,12 +204,12 @@ choose_spec() {
     fi
   fi
   if [[ ${#SPECS[@]} -eq 0 ]]; then
-    [[ -n "${GIG_REPO_URL:-}" ]] || log "Could not look up the newest release (no network, or GitHub is busy)"
-    log "Using the source on GitHub (${REPO_URL})"
+    [[ -n "${GIG_REPO_URL:-}" || -n "${version:-}" ]] || log "Could not look up the newest release (no network, or GitHub is busy)"
+    log "Using the source on GitHub (${from})"
     command -v git >/dev/null 2>&1 || die "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
-    SPECS=("$GIT_SPEC")
+    SPECS=("$git_spec")
   elif command -v git >/dev/null 2>&1; then
-    SPECS+=("$GIT_SPEC")
+    SPECS+=("$git_spec")
   fi
   SPEC="${SPECS[0]}"
 }
