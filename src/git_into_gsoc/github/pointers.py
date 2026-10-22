@@ -117,6 +117,11 @@ def extract_mentions(
     return ranked[:limit]
 
 
+def _name_key(name: str) -> str:
+    """distance_transform, DistanceTransform, and distance-transform compare equal."""
+    return name.replace("_", "").replace("-", "").lower()
+
+
 def resolve_paths(
     mentions: list[dict[str, Any]], tree_paths: list[str], *, limit: int = 8
 ) -> list[dict[str, Any]]:
@@ -124,8 +129,11 @@ def resolve_paths(
     by_path: dict[str, dict[str, Any]] = {}
     lower_tree = [p for p in tree_paths if not p.startswith(_IGNORED_DIRS)]
     by_basename: dict[str, list[str]] = {}
+    by_stem: dict[str, list[str]] = {}
     for path in lower_tree:
-        by_basename.setdefault(path.rsplit("/", 1)[-1].lower(), []).append(path)
+        name = path.rsplit("/", 1)[-1]
+        by_basename.setdefault(name.lower(), []).append(path)
+        by_stem.setdefault(_name_key(name.split(".", 1)[0]), []).append(path)
 
     def record(path: str, mention: dict[str, Any], how: str, factor: float) -> None:
         entry = by_path.setdefault(
@@ -137,7 +145,14 @@ def resolve_paths(
         reason = f"{mention['kind'].replace('_', ' ')}: {mention['text']}"
         if reason not in entry["reasons"]:
             entry["reasons"].append(reason)
-        order = ["blob link", "stack trace", "exact path", "suffix match", "basename match"]
+        order = [
+            "blob link",
+            "stack trace",
+            "exact path",
+            "suffix match",
+            "basename match",
+            "file name match",
+        ]
         if order.index(how) < order.index(entry["confidence"]):
             entry["confidence"] = how
 
@@ -146,6 +161,13 @@ def resolve_paths(
         if mention["kind"] in {"identifier", "backtick"} and not _PATH_RE.fullmatch(
             mention["text"]
         ):
+            # kornia's "distance_transform bug" names kornia/contrib/distance_transform.py.
+            # Matching file names needs no code search, so it works without a token.
+            key = _name_key(mention["text"])
+            hits = by_stem.get(key, []) if len(key) >= 6 else []
+            if 0 < len(hits) <= 3:
+                for hit in hits:
+                    record(hit, mention, "file name match", 0.6)
             continue
         value = mention["text"].replace("\\", "/").lstrip("./")
         how = {"blob_url": "blob link", "stack_frame": "stack trace"}.get(

@@ -165,3 +165,21 @@ def test_rank_similar_prefers_shared_words_and_says_when_none_are_shared() -> No
     unrelated, shared = rank_similar("Translate to Farsi", items, limit=2)
     assert shared is False
     assert [i["number"] for i in unrelated] == [1, 2]  # newest first, as GitHub sent them
+
+
+def test_a_name_in_the_issue_matches_a_file_name_without_code_search() -> None:
+    # kornia/kornia#3279, "distance_transform bug", was fixed in
+    # kornia/contrib/distance_transform.py. Without a token there is no code search,
+    # so the name was dropped and the person got no pointer at all.
+    tree = [
+        "kornia/contrib/distance_transform.py",
+        "kornia/contrib/__init__.py",
+        "tests/contrib/test_distance_transform.py",
+        "docs/source/contrib.rst",
+    ]
+    mentions = extract_mentions("distance_transform bug\nThe output is wrong for 3D input.")
+    found = resolve_paths(mentions, tree)
+    assert [f["path"] for f in found][:1] == ["kornia/contrib/distance_transform.py"]
+    assert found[0]["confidence"] == "file name match"
+    # A short or common name does not match a pile of files.
+    assert resolve_paths(extract_mentions("`setup` fails"), ["a/setup.py", "b/setup.py"]) == []
