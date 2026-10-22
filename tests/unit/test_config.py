@@ -1,3 +1,6 @@
+"""Settings: where the GitHub token comes from, placeholders, and what a `.env` in the current
+folder may and may not set."""
+
 from __future__ import annotations
 
 from pathlib import Path

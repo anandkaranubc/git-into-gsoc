@@ -1,3 +1,6 @@
+"""Input validation: repository names, issue references, logins, search terms, years, and
+skill words."""
+
 from __future__ import annotations
 
 import pytest
@@ -146,3 +149,14 @@ def test_plain_skill_drops_level_words() -> None:
     assert plain_skill("Rust (learning)") == "Rust"
     assert plain_skill("machine learning") == "machine learning"
     assert plain_skill("advanced") == "advanced"
+
+
+def test_a_project_on_another_site_is_named_as_such_without_its_scheme() -> None:
+    # "gitlab.com/inkscape/inkscape" was "Repository must look like owner/repo", with
+    # GitHub examples; a GitHub owner never has a dot, so this is another site.
+    for raw in ("gitlab.com/inkscape/inkscape", "salsa.debian.org/a/b"):
+        with pytest.raises(InputError, match=r"Not a github\.com URL") as found:
+            parse_repo(raw)
+        assert "`git-into-gsoc issue` does read" in (found.value.hint or "")
+    assert parse_repo("github.com/sympy/sympy") == ("sympy", "sympy")
+    assert parse_repo("sympy/sympy.github.io") == ("sympy", "sympy.github.io")

@@ -1,4 +1,5 @@
-"""Evidence-backed educational guidance and anti-spam principles."""
+"""The official sources, the rules of conduct, and the phase-by-phase guidance that
+the CLI, the MCP server, and the skill share."""
 
 from __future__ import annotations
 

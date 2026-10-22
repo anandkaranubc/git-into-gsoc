@@ -1,3 +1,6 @@
+"""The progress store: phases, tracking, notes, the lock, atomic saves, and damaged or busy
+files."""
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -1,3 +1,6 @@
+"""Scores: repository health points and caps, issue scores, and the keyword organization
+matcher."""
+
 from __future__ import annotations
 
 import re
@@ -332,10 +335,10 @@ def test_every_lost_point_is_named() -> None:
         assert sum(lost.values()) == points, name
 
 
-def test_the_guide_lists_every_scored_signal_and_its_points() -> None:
-    # `repo` names signals by the guide's table, so the two must not drift apart.
-    guide = (ROOT / "docs" / "guide" / "05-choose-an-issue.md").read_text(encoding="utf-8")
-    section = guide.split("### How the grade is worked out", 1)[1].split("\n#", 1)[0]
+def test_the_docs_list_every_scored_signal_and_its_points() -> None:
+    # `repo` names signals by the table in docs/sources.md, so the two must not drift apart.
+    sources = (ROOT / "docs" / "sources.md").read_text(encoding="utf-8")
+    section = sources.split("### How the repository grade is worked out", 1)[1].split("\n#", 1)[0]
     table = {
         name: float(most) for name, most in re.findall(r"^\| ([^|]+?) \| (\d+) \|", section, re.M)
     }
