@@ -62,8 +62,11 @@ THEME = TerminalTheme(
 ANSWERS = ["", "python", "1, 4", "8", "1"]
 
 
-def run(argv: list[str], answers: list[str], env: dict[str, str]) -> str:
-    """Run a command in a pseudo-terminal, answering each `> ` prompt in turn."""
+def run(argv: list[str], answers: list[str], env: dict[str, str]) -> tuple[str, int, int]:
+    """Run a command in a pseudo-terminal, answering each `> ` prompt in turn.
+
+    Returns the output, the exit code, and how many answers were never asked for.
+    """
     pid, fd = pty.fork()
     if pid == 0:  # child
         os.execvpe(argv[0], argv, env)
@@ -83,8 +86,8 @@ def run(argv: list[str], answers: list[str], env: dict[str, str]) -> str:
         if output.rstrip(b" ").endswith(b">") and pending:
             time.sleep(0.2)
             os.write(fd, (pending.pop(0) + "\r").encode())
-    os.waitpid(pid, 0)
-    return output.decode("utf-8", errors="replace")
+    _, status = os.waitpid(pid, 0)
+    return output.decode("utf-8", errors="replace"), os.waitstatus_to_exitcode(status), len(pending)
 
 
 def tidy(raw: str) -> str:
@@ -113,7 +116,16 @@ def main() -> int:
         }
         for key in ("GITHUB_TOKEN", "GH_TOKEN", "GIG_GITHUB_TOKEN", "NO_COLOR"):
             env.pop(key, None)
-        raw = run([command, "start"], ANSWERS, env)
+        raw, code, unanswered = run([command, "start"], ANSWERS, env)
+    if code != 0 or unanswered:
+        # Never save a crash or a cut-short run as the README picture.
+        print(raw[-2000:], file=sys.stderr)
+        print(
+            f"start exited with code {code} and {unanswered} answer(s) unused, so nothing was"
+            " written. Fix the error above, then run this script again.",
+            file=sys.stderr,
+        )
+        return 1
     console = Console(
         record=True,
         width=WIDTH,
