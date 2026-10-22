@@ -248,10 +248,16 @@ def _no_issue_note(orgs: list[dict[str, Any]]) -> str:
 
 def participation_from(found: dict[str, Any]) -> dict[str, Any]:
     """What an organization's own posts say about a GSoC year (from gsoc_posts_for)."""
-    if found.get("error"):
-        return {"status": "unknown"}
     posts = found.get("posts") or []
     trusted = [p for p in posts if p.get("by_maintainer") or p.get("source") == "wiki"]
+    if found.get("error"):
+        # The search failed, so only what the wiki says can count; silence means nothing.
+        post = next(
+            (p for p in trusted if p.get("status") in ("not_taking_part", "undecided")), None
+        )
+        if not post:
+            return {"status": "unknown"}
+        trusted = [post]
     for status in ("not_taking_part", "undecided", "mentions"):
         post = next((p for p in trusted if p.get("status") == status), None)
         if post:
@@ -553,7 +559,13 @@ class GSoCToolkit:
                 else self.github.gsoc_year_posts(owners, year)
             )
         except GigError as exc:
-            return {"year": year, "posts": [], "error": exc.to_dict()}
+            # A search limit took Learning Unlimited's "will not take part in 2027" with
+            # it, though that statement is on its wiki, which takes no search to read.
+            try:
+                wiki = self.github.wiki_year_posts(owners, year)
+            except GigError:
+                wiki = []
+            return {"year": year, "posts": wiki[:6], "error": exc.to_dict()}
         return {"year": year, "posts": posts[:6]}
 
     def check_participation(

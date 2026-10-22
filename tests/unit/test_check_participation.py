@@ -64,6 +64,7 @@ def test_a_failed_check_is_unknown_and_never_raises(monkeypatch: Any) -> None:
         raise HttpError("GitHub search is rate limited")
 
     monkeypatch.setattr(toolkit.github, "gsoc_year_posts", down)
+    monkeypatch.setattr(toolkit.github, "wiki_year_posts", lambda owners, year: [])
     checked = toolkit.check_participation(ORGS[:2], year=2027, check=1)
     assert checked[0]["participation"] == {"status": "unknown"}
     assert "participation" not in checked[1]  # only the first `check` are looked at

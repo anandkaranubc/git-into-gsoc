@@ -758,9 +758,17 @@ _POST_STATUS = {
 
 def _print_gsoc_posts(found: dict[str, Any]) -> None:
     posts = found.get("posts") or []
-    if not posts:
+    error = found.get("error")
+    if not posts and not error:
         return
     console.print(f"\n[bold]Posts about GSoC {found.get('year')} in its repositories[/bold]")
+    if error:
+        # Saying nothing here would read as "it has posted nothing about the year".
+        console.print(
+            f"  [yellow]Could not search its issues for posts about GSoC {found.get('year')}: "
+            f"{escape(str(error.get('error') or 'GitHub search failed'))}[/yellow]"
+        )
+        console.print(f"  [dim]{escape(str(error.get('hint') or 'Run it again later.'))}[/dim]")
     for post in posts:
         status = _POST_STATUS.get(post["status"], "")
         if post.get("source") == "wiki":
