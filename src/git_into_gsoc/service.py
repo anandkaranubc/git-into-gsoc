@@ -772,13 +772,24 @@ class GSoCToolkit:
         # Twice: a quiet repository that drops lets one below it rise into the top,
         # and that one is checked too.
         checked: set[str] = set()
+        outside: list[int] = []
         for _ in range(2):
             fresh = [lead for lead in leads[:OUTSIDE_CHECKED] if lead.full_name not in checked]
             if not fresh:
                 break
-            self._weigh_outside_merges(fresh)
+            outside += self._weigh_outside_merges(fresh)
             checked.update(lead.full_name for lead in fresh)
             leads.sort(key=lambda lead: (-lead.score, -lead.stars))
+        name = gsoc_org.name if gsoc_org else owners[0]
+        quiet_note = (
+            f"None of the {len(outside)} repositories checked had a pull request from outside "
+            f"the team merged in the last {OUTSIDE_WINDOW_DAYS} days. At {name}, GSoC work may "
+            "start from its ideas page and the mentors named there rather than from GitHub "
+            f'issues: run `git-into-gsoc ideas "{name}"`, pick the idea that fits you, and '
+            "ask its mentors in the organization's chat how to start."
+            if len(outside) >= 3 and not any(outside)
+            else ""
+        )
         return {
             "org": gsoc_org.name if gsoc_org else owners[0],
             "github_owners": [*owners, *(o for o, _ in linked_owners)],
@@ -788,21 +799,27 @@ class GSoCToolkit:
             "count": min(limit, len(leads)),
             "repos": [lead.model_dump(mode="json") for lead in leads[:limit]],
             "main_code": main_code,
-            "note": (
-                f"{gsoc_org.name if gsoc_org else 'This organization'}'s own code is at "
-                f"{main_code}, outside GitHub, so this tool cannot rank it. The repositories "
-                "below are GitHub projects its ideas page links to; start with the main code "
-                "unless an idea names one of them."
-                if main_code
-                else ""
+            "note": " ".join(
+                part
+                for part in (
+                    f"{gsoc_org.name if gsoc_org else 'This organization'}'s own code is at "
+                    f"{main_code}, outside GitHub, so this tool cannot rank it. The repositories "
+                    "below are GitHub projects its ideas page links to; start with the main code "
+                    "unless an idea names one of them."
+                    if main_code
+                    else "",
+                    quiet_note,
+                )
+                if part
             ),
             "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
         }
 
-    def _weigh_outside_merges(self, leads: list[RepoLead]) -> None:
+    def _weigh_outside_merges(self, leads: list[RepoLead]) -> list[int]:
         """Adjust the top candidates by whether outsiders got pull requests merged lately.
 
-        One request per repository; a failed one changes nothing.
+        One request per repository; a failed one changes nothing. Returns how many outside
+        authors each checked repository had merged.
         """
         since = datetime.now(UTC) - timedelta(days=OUTSIDE_WINDOW_DAYS)
 
@@ -814,15 +831,17 @@ class GSoCToolkit:
 
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
             found = list(pool.map(pulls, leads))
+        counts: list[int] = []
         for lead, closed in zip(leads, found, strict=True):
             if closed is None:
                 continue
-            points, reason = outside_merges_points(
-                outside_authors_merged(closed, since=since), len(closed)
-            )
+            count = outside_authors_merged(closed, since=since)
+            counts.append(count)
+            points, reason = outside_merges_points(count, len(closed))
             lead.score = round(lead.score + points, 1)
             if reason:
                 lead.reasons.append(reason)
+        return counts
 
     def _gsoc_owners(self, name: str, *, language: str | None) -> tuple[list[str], list[str], str]:
         """A GSoC organization's own GitHub owners, the ones its ideas page links to, and a note.

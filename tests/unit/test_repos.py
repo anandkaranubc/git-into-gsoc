@@ -630,3 +630,38 @@ def test_a_repository_that_rises_into_the_checked_top_is_checked_too(
     found = toolkit.discover_repos("lab")
     assert seen == ["quiet", "busy"]
     assert found["repos"][0]["full_name"] == "lab/busy"
+
+
+def test_repos_says_where_to_start_when_no_repository_takes_outside_work(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: None)
+    listed = [
+        {
+            "full_name": f"lab/tool-{n}",
+            "html_url": f"https://github.com/lab/tool-{n}",
+            "stargazers_count": 10,
+            "pushed_at": _iso(1),
+            "fork": False,
+            "has_issues": True,
+        }
+        for n in range(4)
+    ]
+    by_team = {"user": {"login": "core"}, "author_association": "MEMBER", "merged_at": _iso(3)}
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, pages=1: listed)
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
+    monkeypatch.setattr(toolkit.github, "list_pulls", lambda owner, repo, **k: [by_team])
+    note = toolkit.discover_repos("lab")["note"]
+    assert "None of the 4 repositories checked" in note
+    assert "ideas" in note and "mentors" in note
+    # One repository that takes outside work is enough to say nothing.
+    welcome = {"user": {"login": "ana"}, "author_association": "NONE", "merged_at": _iso(3)}
+    monkeypatch.setattr(
+        toolkit.github,
+        "list_pulls",
+        lambda owner, repo, **k: [welcome] if repo == "tool-2" else [by_team],
+    )
+    assert toolkit.discover_repos("lab")["note"] == ""
