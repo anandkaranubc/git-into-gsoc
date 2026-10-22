@@ -61,6 +61,8 @@ from git_into_gsoc.github.pointers import (
 from git_into_gsoc.github.prcheck import check_pull_request
 from git_into_gsoc.github.pulls import pull_request_status
 from git_into_gsoc.github.repos import (
+    OUTSIDE_CHECKED,
+    OUTSIDE_WINDOW_DAYS,
     OUTSIDER_ROLES,
     beginner_labels,
     channels_in,
@@ -69,6 +71,8 @@ from git_into_gsoc.github.repos import (
     is_main_repo,
     mentioned_repos,
     mirror_source,
+    outside_authors_merged,
+    outside_merges_points,
     pick_beginner_label,
     repo_kind,
     repo_lead_score,
@@ -765,6 +769,8 @@ class GSoCToolkit:
         searched = [*owners, *(o for o, _ in linked_owners)]
         leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
+        self._weigh_outside_merges(leads[:OUTSIDE_CHECKED])
+        leads.sort(key=lambda lead: (-lead.score, -lead.stars))
         return {
             "org": gsoc_org.name if gsoc_org else owners[0],
             "github_owners": [*owners, *(o for o, _ in linked_owners)],
@@ -784,6 +790,31 @@ class GSoCToolkit:
             ),
             "next_step": "Run `repo owner/name` on your top pick, then `issues --repo owner/name`.",
         }
+
+    def _weigh_outside_merges(self, leads: list[RepoLead]) -> None:
+        """Adjust the top candidates by whether outsiders got pull requests merged lately.
+
+        One request per repository; a failed one changes nothing.
+        """
+        since = datetime.now(UTC) - timedelta(days=OUTSIDE_WINDOW_DAYS)
+
+        def pulls(lead: RepoLead) -> list[dict[str, Any]] | None:
+            try:
+                return self.github.list_pulls(*lead.full_name.split("/", 1), per_page=30)
+            except (GigError, ValueError):
+                return None
+
+        with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
+            found = list(pool.map(pulls, leads))
+        for lead, closed in zip(leads, found, strict=True):
+            if closed is None:
+                continue
+            points, reason = outside_merges_points(
+                outside_authors_merged(closed, since=since), len(closed)
+            )
+            lead.score = round(lead.score + points, 1)
+            if reason:
+                lead.reasons.append(reason)
 
     def _gsoc_owners(self, name: str, *, language: str | None) -> tuple[list[str], list[str], str]:
         """A GSoC organization's own GitHub owners, the ones its ideas page links to, and a note.

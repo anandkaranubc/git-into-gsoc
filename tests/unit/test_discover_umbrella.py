@@ -37,6 +37,10 @@ def _mock_sources(api: respx.MockRouter) -> None:
         return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
     )
     api.get(f"{ARCHIVE}/2026.json").mock(return_value=httpx.Response(200, json=_archive_year(2026)))
+    # `repos` reads recent pull requests of its top candidates; none here.
+    api.get(url__regex=r"https://api\.github\.com/repos/[\w.-]+/[\w.-]+/pulls.*").mock(
+        return_value=httpx.Response(200, json=[])
+    )
 
 
 def _repos(request: httpx.Request) -> httpx.Response:

@@ -204,6 +204,33 @@ def closed_outside_unmerged(
     return sorted(picked, key=lambda p: str(p.get("created_at") or ""), reverse=True)
 
 
+def outside_authors_merged(pulls: list[dict[str, Any]], *, since: datetime) -> int:
+    """Distinct people without write access whose pull request merged since `since`."""
+    authors = {
+        str((p.get("user") or {}).get("login"))
+        for p in pulls
+        if not is_bot(p.get("user"))
+        and p.get("author_association") in OUTSIDER_ROLES
+        and (_dt(p.get("merged_at")) or since) > since
+    }
+    return len(authors)
+
+
+def outside_merges_points(count: int, sampled: int) -> tuple[float, str | None]:
+    """Points and a reason from how many outside contributors got work merged lately."""
+    if count == 0:
+        if not sampled:
+            return -QUIET_POINTS, "No closed pull requests yet, so no sign it takes outside work"
+        return (
+            -QUIET_POINTS,
+            f"No pull request from outside the team merged in the last {OUTSIDE_WINDOW_DAYS} "
+            f"days (of its last {sampled} closed)",
+        )
+    if count >= 3:
+        return 6.0, f"{count} people outside the team got a pull request merged recently"
+    return 2.0, f"{count} outside contributor(s) got a pull request merged recently"
+
+
 def pull_stats(
     pulls: list[dict[str, Any]],
     *,
@@ -509,6 +536,11 @@ LARGE_REPO_KB = 1_000_000  # about 1 GB on GitHub's own count
 # Main repositories first; repositories around the project (an ideas page often links
 # its GSoC or governance repository) after them. Set from a blind review of 20 live runs.
 MAIN_REPO_POINTS = 12.0
+# A repository where nobody outside the team got work merged lately is a poor first
+# stop, whatever its other signals: the most common bad pick in a blind review.
+QUIET_POINTS = 20.0
+OUTSIDE_WINDOW_DAYS = 180
+OUTSIDE_CHECKED = 5
 _KIND_PENALTY = {"not code": 45.0, "plumbing": 30.0, "website": 25.0}
 _KIND_REASON = {
     "not code": "A GSoC, event, or governance repository, not the project's code",
