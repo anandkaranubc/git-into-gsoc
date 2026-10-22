@@ -226,3 +226,14 @@ def test_orgs_checks_its_top_organizations_posts(
     checked = toolkit.match_orgs(technologies=["python"], check_posts=True)
     assert 1 <= len(seen) <= 3
     assert any(o.get("participation") for o in checked["organizations"])
+
+
+def test_an_empty_starter_list_names_where_to_look(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: [])
+    data = toolkit.recommend_path(technologies=["python"], interests=["mathematics"])
+    assert data["starter_issues"] == []
+    top = data["recommended_orgs"][0]["name"]
+    assert f'git-into-gsoc issues --org "{top}"' in data["starter_issue_note"]

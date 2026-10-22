@@ -133,17 +133,24 @@ def build_org_profile(
         profile.add(concept, strength, "description", "its official GSoC description")
 
     year = f"{signals_year} " if signals_year else ""
-    total = int(ideas.get("count") or 0)
+    real = int(ideas.get("count") or 0)
+    blocks = int(ideas.get("blocks") or real)
+    # Counts are over the blocks the page was split into; call them ideas only when
+    # every block was an idea, so a fraction never reads "11 of 2".
+    unit = f"{year}ideas" if blocks == real else f"parts of its {year}ideas page"
     for concept, count in (ideas.get("skills") or {}).items():
         strength = IDEA_SKILL_MANY if count >= 2 else IDEA_SKILL_ONE
         profile.add(
-            concept, strength, "ideas", f"listed as a skill in {count} of {total} {year}ideas"
+            concept,
+            strength,
+            "ideas",
+            f"listed as a skill in {min(count, blocks)} of {blocks} {unit}",
         )
     for concept, count in (ideas.get("mentions") or {}).items():
         if concept in (ideas.get("skills") or {}):
             continue
         strength = IDEA_TEXT.get(count, IDEA_TEXT_MANY)
-        profile.add(concept, strength, "ideas", f"named in {count} of {total} {year}ideas")
+        profile.add(concept, strength, "ideas", f"named in {min(count, blocks)} of {blocks} {unit}")
 
     active = int(github.get("active_repos") or 0)
     if active:

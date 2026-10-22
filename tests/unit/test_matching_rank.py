@@ -55,7 +55,12 @@ def test_interest_decides_order_among_orgs_that_share_a_language() -> None:
 def test_domain_words_reach_tags_written_differently() -> None:
     ranked = _rank(interests=["healthcare"])
     assert ranked[0].org.name == "Clinic Tools"
-    assert ranked[0].fit == "strong"
+    # One tag is a good fit; a strong one needs a second kind of evidence to agree.
+    assert ranked[0].fit == "good"
+    index = OrgIndex.build(
+        [CLINIC], descriptions={"Clinic Tools": "Software for hospitals."}, reference_year=2026
+    )
+    assert index.rank(build_profile(interests=["healthcare"]))[0].fit == "strong"
     assert any("electronic medical records" in line for line in ranked[0].evidence())
 
 
@@ -308,3 +313,34 @@ def test_an_org_the_monthly_check_saw_sitting_out_moves_down_wherever_it_ranks()
         "url": "https://x/wiki",
         "checked": "2026-10-21",
     }
+
+
+def test_evidence_fractions_never_exceed_their_base_and_poor_splits_are_said() -> None:
+    # Live review: "named in 11 of 2 2026 ideas" when headings were dropped from the count.
+    org = _org("Split Page", tech=["python"], topics=["education"], slug="split-page")
+    signals = {
+        "year": 2026,
+        "organizations": {
+            "split-page": {
+                "ideas": {"url": "https://x", "count": 2, "blocks": 14, "mentions": {"git": 11}}
+            }
+        },
+    }
+    ranked = _rank([org], signals=signals, technologies=["git"], interests=["education"])
+    lines = " ".join(ranked[0].evidence())
+    assert "named in 11 of 14 parts of its 2026 ideas page" in lines
+    assert not any("idea on its" in r or "ideas on its" in r for r in ranked[0].readiness)
+    assert any("could not pick out ideas" in c for c in ranked[0].caveats)
+
+
+def test_an_unnamed_interest_is_at_most_a_partial_fit_and_main_language_is_named() -> None:
+    rusty = _org("Rusty Robots", tech=["rust", "python"], topics=["physics"], slug="rusty-robots")
+    signals = {
+        "year": 2026,
+        "organizations": {
+            "rusty-robots": {"github": {"active_repos": 10, "languages": {"Rust": 7, "Python": 3}}}
+        },
+    }
+    ranked = _rank([rusty], signals=signals, technologies=["python"], interests=["astronomy"])
+    assert ranked[0].fit == "partial"  # astronomy is only near (physics), never named
+    assert any(c.startswith("Its code is mostly Rust") for c in ranked[0].caveats)

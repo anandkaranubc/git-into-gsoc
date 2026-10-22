@@ -342,3 +342,38 @@ def test_starter_issues_that_are_not_first_tasks_are_screened_out() -> None:
     assert "which you did not list" in str(starter_problem(flake8, c_dev))
     fine = {"title": "Fix a null pointer in the C parser", "created_at": "2025-06-01"}
     assert starter_problem(fine, c_dev) is None
+
+
+def test_more_page_furniture_and_repeats_are_not_ideas() -> None:
+    from git_into_gsoc.matching.ideas import is_real_idea
+
+    for title in (
+        "Details of your coding project",
+        "📌 See the official timeline for more details.",
+        "✅ (DONE) Port the docs",
+        "How To Test",
+        "Folders and files",
+    ):
+        assert not is_real_idea(title), title
+    person = build_profile(technologies=["css"], interests=["accessibility"])
+    twice = [{"t": "Accessible dropdown component", "k": ["css", "accessibility"]}] * 2
+    assert len(ideas_for(twice, person, year=2026, source_url=None)) == 1
+
+
+def test_labels_that_say_not_ready_keep_an_issue_off_the_starter_list() -> None:
+    from git_into_gsoc.matching.issues import starter_problem
+
+    person = build_profile(technologies=["javascript"])
+    for labels in (["intermediate"], ["Can't reproduce"], ["needs triage"], ["duplicate"]):
+        issue = {"title": "Fix map drawing", "labels": labels, "created_at": "2025-05-01"}
+        assert starter_problem(issue, person), labels
+    fine = {"title": "Fix map drawing", "labels": ["good first issue"], "created_at": "2025-05-01"}
+    assert starter_problem(fine, person) is None
+
+
+def test_the_path_never_says_learn_the_organizations_own_product() -> None:
+    orgs = [{"name": "Blender Foundation"}]
+    fitting = [{"org": "Blender Foundation", "ideas": [{"you_would_learn": ["Blender", "Python"]}]}]
+    steps = [s["step"] for s in learning_path(build_profile(technologies=["c++"]), orgs, fitting)]
+    assert any(s.startswith("Learn Python") for s in steps)
+    assert not any(s.startswith("Learn Blender") for s in steps)

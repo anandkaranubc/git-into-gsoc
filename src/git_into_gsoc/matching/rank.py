@@ -32,6 +32,7 @@ from git_into_gsoc.matching.concepts import (
 )
 from git_into_gsoc.matching.orgs import OrgProfile, build_org_profile, idf_table
 from git_into_gsoc.matching.profile import ContributorProfile, Want, build_profile
+from git_into_gsoc.matching.signals import language_concepts
 from git_into_gsoc.models import OrgSummary
 
 # How much a match through a neighbouring concept counts.
@@ -258,6 +259,8 @@ def _ideas_facts(profile: OrgProfile, year: int | None) -> tuple[float, list[str
     """Beginner readiness from the ideas page, the facts behind it, and stated difficulty."""
     ideas = profile.ideas
     count = int(ideas.get("count") or 0)
+    if _poorly_split(ideas):
+        count = 0  # "1 idea" beside 18 accepted projects would mislead; say it was unclear
     difficulty = {k: int(v) for k, v in (ideas.get("difficulty") or {}).items()}
     sizes = {k: int(v) for k, v in (ideas.get("size") or {}).items()}
     parts: list[float] = [1.0 if profile.org.guide_url else 0.0]
@@ -308,7 +311,7 @@ def _time_fit(hours: int | None, sizes: dict[str, int]) -> tuple[bool | None, st
 def _mostly_needs(profile: OrgProfile, person: ContributorProfile) -> list[str]:
     """Languages and frameworks at least half of its ideas list that the person lacks."""
     ideas = profile.ideas
-    total = int(ideas.get("count") or 0)
+    total = int(ideas.get("blocks") or ideas.get("count") or 0)
     if total < 3:
         return []
     have: set[str] = set()
@@ -330,7 +333,7 @@ def _mostly_needs(profile: OrgProfile, person: ContributorProfile) -> list[str]:
 def _skills_to_learn(profile: OrgProfile, person: ContributorProfile) -> list[str]:
     """Skills its ideas often ask for that the person did not list."""
     ideas = profile.ideas
-    total = int(ideas.get("count") or 0)
+    total = int(ideas.get("blocks") or ideas.get("count") or 0)
     if not total:
         return []
     have: set[str] = set()
@@ -344,7 +347,7 @@ def _skills_to_learn(profile: OrgProfile, person: ContributorProfile) -> list[st
         if kind_of(concept) != SKILL or concept in have or concept in {"git"}:
             continue
         if count >= 2 or count / total >= 0.25:
-            out.append(f"{label(concept)} ({count} of {total} ideas)")
+            out.append(f"{label(concept)} ({min(count, total)} of {total} ideas)")
     return out[:4]
 
 
@@ -620,6 +623,9 @@ class OrgIndex:
         trend = _trend(org.projects_by_year)
         if trend:
             caveats.append(trend)
+        main = _main_language(profile, person)
+        if main:
+            caveats.append(main)
         said = profile.participation
         said_year = int(said.get("year") or 0)
         if said.get("status") == "not_taking_part" and said_year > self.reference_year:
@@ -634,7 +640,9 @@ class OrgIndex:
                 f"Had not decided about GSoC {said_year} (checked {said.get('checked')}): "
                 f"{said.get('url')}"
             )
-        if profile.ideas.get("url") and not profile.ideas.get("count"):
+        if profile.ideas.get("url") and (
+            not profile.ideas.get("count") or _poorly_split(profile.ideas)
+        ):
             caveats.append(_unread_ideas(str(profile.ideas.get("layout") or "")))
         needs = _mostly_needs(profile, person) if not person.empty else []
         if needs:
@@ -660,6 +668,15 @@ class OrgIndex:
         # matches dozens of organizations, keeps the fit from being called strong.
         if fit == "strong" and (blocking or self._broad(person)):
             fit = "good"
+        direct = [t for t in interests if t.how in {"direct", "word"} and t.strength > 0]
+        if (
+            fit == "strong"
+            and interests
+            and not any(profile.sources(c) >= 2 for t in direct for c in t.want.concepts)
+        ):
+            fit = "good"  # one tag alone is not enough to call it strong
+        if fit in {"strong", "good"} and interests and not direct:
+            fit = "partial"  # no interest is named, only near ones
         return OrgMatch(
             org=org,
             profile=profile,
@@ -722,6 +739,38 @@ def _breadth_factors(profiles: list[OrgProfile]) -> dict[str, tuple[float, float
         )
         for name, (s, d) in pairs.items()
     }
+
+
+def _main_language(profile: OrgProfile, person: ContributorProfile) -> str | None:
+    """'Its code is mostly Rust (...)' when that language is not one the person knows."""
+    github = profile.github
+    active = int(github.get("active_repos") or 0)
+    languages = github.get("languages") or {}
+    if active < 3 or not languages or person.empty or not person.skills:
+        return None
+    name, count = max(languages.items(), key=lambda kv: kv[1])
+    if count / active < 0.4:
+        return None
+    concepts = language_concepts({name: count})
+    known: set[str] = set()
+    for want in person.skills:
+        for concept in want.concepts:
+            known.add(concept)
+            known.update(broader_of(concept))
+            known.update(narrower_index().get(concept, ()))
+    if not concepts or set(concepts) & known:
+        return None
+    return (
+        f"Its code is mostly {name}: the main language of {count} of its {active} GitHub "
+        "repositories pushed in the last year"
+    )
+
+
+def _poorly_split(ideas: dict[str, Any]) -> bool:
+    """True when the page split into many blocks but few of them are ideas."""
+    real = int(ideas.get("count") or 0)
+    blocks = int(ideas.get("blocks") or real)
+    return real < 3 and blocks >= 6
 
 
 def _unread_ideas(layout: str) -> str:

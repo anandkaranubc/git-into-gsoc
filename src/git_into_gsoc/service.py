@@ -169,6 +169,20 @@ _RETIRED_RE = re.compile(
 _NOT_CODING = frozenset({"latex", "git", "html", "css"})
 
 
+def _no_issue_note(orgs: list[dict[str, Any]]) -> str:
+    """What to do when no first task is left, naming the best organization."""
+    if not orgs:
+        return "No open first task turned up right now. Ask in a community's chat which task suits a newcomer."
+    name = str(orgs[0]["name"]).replace('"', "")
+    return (
+        "No open first task passed the checks in these organizations right now (announcements, "
+        "trackers, claimed, old, or out-of-profile issues are left out). Look in "
+        f'{orgs[0]["name"]}\'s repositories with `git-into-gsoc repos "{name}"` and '
+        f'`git-into-gsoc issues --org "{name}"`, or ask in its chat which task would suit a '
+        "newcomer."
+    )
+
+
 def participation_from(found: dict[str, Any]) -> dict[str, Any]:
     """What an organization's own posts say about a GSoC year (from gsoc_posts_for)."""
     if found.get("error"):
@@ -1256,13 +1270,7 @@ class GSoCToolkit:
             "starter_issues_hidden": hidden,
             "starter_issue_error": issue_error,
             "starter_issues_skipped": skipped,
-            "starter_issue_note": None
-            if issues or issue_error
-            else (
-                "No open first task turned up in these organizations right now. Run "
-                "`git-into-gsoc repos ORG` for one of them and look through its issues, or "
-                "ask in its chat which task would suit a newcomer."
-            ),
+            "starter_issue_note": None if issues or issue_error else _no_issue_note(taking_part),
             "notes": self._recommend_notes(person, level),
             "learning_path": learning_path(person, taking_part, ideas),
             "next_steps": [

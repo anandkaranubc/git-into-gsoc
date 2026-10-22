@@ -155,7 +155,7 @@ _SKILLS = [
     _c("linux", SKILL, "gnu/linux|unix|posix|bsd", label="Linux/Unix", related="operating systems"),
     _c("ebpf", SKILL, "bpf|kvm|xen|qemu|hypervisor", label="Kernel and virtualization tools", broader="operating systems"),
     _c("micropython", SKILL, "circuitpython|arduino|esp32|raspberry pi|stm32|pixhawk|rtos|freertos|zephyr", label="Microcontrollers", broader="embedded"),
-    _c("latex", SKILL, "tex|bibtex|markdown|restructuredtext|sphinx|docusaurus|mkdocs", label="Docs tooling (LaTeX, Markdown, Sphinx)", broader="documentation", tag_only="tex|markdown"),
+    _c("latex", SKILL, "tex|markdown|restructuredtext|sphinx|docusaurus|mkdocs", label="Docs tooling (LaTeX, Markdown, Sphinx)", broader="documentation", tag_only="tex|markdown"),
     _c("blender", SKILL, "", label="Blender", broader="graphics"),
     _c("webrtc", SKILL, "", label="WebRTC", broader="communication", related="video"),
 ]

@@ -55,6 +55,14 @@ _NOT_A_TASK_RE = re.compile(
 _NOT_A_TASK_LABELS = frozenset(
     {"epic", "tracking", "meta", "roadmap", "announcement", "discussion", "question", "rfc"}
 )
+# Labels that say an issue is beyond a first task or not ready to be worked on.
+_NOT_READY_RE = re.compile(
+    r"\b(?:intermediate|advanced|hard|difficult|expert|"
+    r"can'?t reproduce|cannot reproduce|needs? (?:repro|reproduction|info|more info|"
+    r"triage|decision|design)|waiting|blocked|on hold|duplicate|invalid|wontfix|"
+    r"won't fix|stale)\b",
+    re.I,
+)
 OLD_ISSUE_YEARS = 3
 
 
@@ -64,6 +72,9 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     labels = {str(lab).lower() for lab in issue.get("labels") or []}
     if _NOT_A_TASK_RE.search(title) or labels & _NOT_A_TASK_LABELS:
         return "an announcement, roadmap, or tracker rather than a task"
+    not_ready = next((lab for lab in labels if _NOT_READY_RE.search(lab)), None)
+    if not_ready:
+        return f"labelled '{not_ready}'"
     created = str(issue.get("created_at") or "")[:4]
     if created.isdigit() and int(created) <= datetime.now(UTC).year - OLD_ISSUE_YEARS:
         return f"open since {created}"

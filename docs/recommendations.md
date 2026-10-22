@@ -57,7 +57,7 @@ Three things only break ties. Together they can move an organization by a fifth 
 
 With several interests, the list is reordered a little so each interest appears near the top (maximal marginal relevance, Carbonell and Goldstein, 1998).
 
-A fit is called strong only when nothing decides against it: not when most of an organization's ideas need a language you did not list (it says "Most of its ideas need Fortran, which you did not list"), when its stated idea sizes cannot fit your hours, when most of its ideas are hard and you are new, or when your interest is so broad that it matches dozens of organizations.
+A fit is good only when the organization names at least one of your interests itself; a match only through a neighbouring subject is partial. It is strong only when two kinds of evidence (a tag and its description, ideas, or code) agree on the interest, and nothing decides against it: not when most of an organization's ideas need a language you did not list (it says "Most of its ideas need Fortran, which you did not list"), when its stated idea sizes cannot fit your hours, when most of its ideas are hard and you are new, or when your interest is so broad that it matches dozens of organizations.
 
 The numeric `match_score` in JSON output only orders results. Please never present it, or the fit level, as a probability of anything.
 
@@ -85,7 +85,8 @@ Google announces each year's organizations around February. Until then, `orgs` a
 ## Repositories, issues, and ideas
 
 - **`repos ORG`** ranks an organization's repositories by whether its ideas page names them, open beginner issues, recent activity, and now also whether their language, topics, and description match your skills and interests. Very large repositories (over about 1 GB) say so, because cloning and building take longer.
-- **Starter issues in `recommend`** must be first tasks: announcements, roadmaps, trackers, epics, "what can I work on?" lists, issues open three years or more, issues in repositories marked deprecated or legacy, and issues that need only skills you did not list are skipped (the table says how many). Issues from the wider language search must come from organizations near the top of your ranking. When nothing is left, it says what to do instead.
+- **Caveats name the language most of an organization's active code is in** when you did not list it ("Its code is mostly Rust: the main language of 6 of its 14 GitHub repositories pushed in the last year").
+- **Starter issues in `recommend`** must be first tasks: announcements, roadmaps, trackers, epics, "what can I work on?" lists, issues open three years or more, issues in repositories marked deprecated or legacy, issues labelled intermediate, advanced, "can't reproduce", "needs triage", duplicate, or similar, and issues that need only skills you did not list are skipped (the table says how many). Issues from the wider language search must come from organizations near the top of your ranking. When nothing is left, it says what to do instead.
 - **`issues`** keeps its order (availability, the beginner score, and an organization's own repositories before the ones its ideas page links to) and says what in each issue fits you. **`recommend`** goes further with its starter issues: an issue that names a skill you have or a subject you care about moves up, and people new to open source get a small lift for documentation and test issues. Personalised first-issue research found that newcomers' first issues share their task type, language, and domain ([Xiao et al., ASE 2023](https://arxiv.org/abs/2308.09038)).
 - **Ideas that fit you** leave out page headings and fragments ("Description", "Project 2", "Benefit to ...") and ideas marked as taken.
 - **`ideas ORG`** matches ideas by concept, so `reactjs` matches React and `c` no longer matches every idea that contains the letter c, and lists the skills each idea would teach.
@@ -112,8 +113,14 @@ A third set of 12 personas from a second blind reviewer, in ecosystems the first
 
 Run `python scripts/eval_matching.py` to reproduce them. A test (`tests/unit/test_match_benchmark.py`) fails if a change makes them clearly worse, and CI runs it on the monthly data refresh too.
 
+## What independent reviewers found
+
+Twice, a reviewer who never saw the code read the live `recommend` output for all 46 personas and graded it as a mentor would. Both times every output was honest: no chance of acceptance, the 2027 list never presented as confirmed, and the eligibility rules stated correctly. About 70% of the top three organizations were graded good or strong (a mean of about 2 out of 3), and the learning path was judged right for about two thirds of people. Their findings led to the stricter evidence, the screened starter issues, the eligibility notes, and the sitting-out flags described above. What they still found weak is listed next.
+
 ## Known limits
 
+- **Starter issues are thin.** After screening, about four in ten people get no starter issue and are pointed to the best organization's repositories instead; and a few issues that pass the checks are still unsuitable (already claimed in a comment the tool did not catch, or declined by a maintainer). Read each thread before you start.
+- **Some ideas lists are noisy.** Ideas pages are written in many formats, and some headings still slip through as ideas.
 - **Very vague input** ("ai" alone) still gives a long list; the tip suggests narrower words, and adding one helps most.
 - **Organizations with many tags** (polyglot runtimes, umbrellas) still match many searches, but count a little less per match than focused organizations.
 - **Reputation is invisible.** Some organizations are known for welcoming newcomers in ways their listing and ideas page do not show. Evidence comes only from public data, so ask in each community.

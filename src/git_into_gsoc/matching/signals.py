@@ -121,6 +121,8 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
         "url": url,
         "layout": layout,
         "count": len(real),
+        # Every block the parser found, headings included: the base for evidence counts.
+        "blocks": len(ideas),
         "difficulty": dict(difficulty),
         "size": dict(size),
         "skills": _top(skills, 20),

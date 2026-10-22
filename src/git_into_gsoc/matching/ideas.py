@@ -138,15 +138,19 @@ _HEADING_WORDS = frozenset(
 )
 _HEADING_RE = re.compile(
     r"^(?:project\s*\d+|idea\s*\d+|benefit to .+|why .+\?|what is .+\?|"
-    r"projects under other organizations|see the official timeline.*|.*\[taken.*\].*)$",
+    r"projects under other organizations|see the official timeline.*|.*\[taken.*\].*|"
+    r"details of .+|how to .+|folders and files|\(?done\)?.*|table of contents|"
+    r"(?:project )?ideas? list|getting started|resources|references|links|notes)$",
     re.I,
 )
+# Emoji, pilcrows and other marks that headings carry on rendered pages.
+_MARKS_RE = re.compile(r"[\u00b6\u2190-\u2bff\U0001f000-\U0001faff\u2705\u274c]")
 _EDIT_LINK_RE = re.compile(r"\[[^\]]*\]")
 
 
 def is_real_idea(title: str, *, labelled: bool = False) -> bool:
     """False for a heading, a page fragment, or an idea marked as taken."""
-    cleaned = _EDIT_LINK_RE.sub("", title).strip(" :-|.\u2014").lower()
+    cleaned = _MARKS_RE.sub("", _EDIT_LINK_RE.sub("", title)).strip(" :-|.\u2014").lower()
     if not cleaned or cleaned in _HEADING_WORDS or _HEADING_RE.match(cleaned):
         return False
     if re.search(r"\btaken\b", title, re.I):
@@ -222,7 +226,12 @@ def ideas_for(
 ) -> list[dict[str, Any]]:
     """The ideas from a signals summary that fit best, with what each asks and teaches."""
     scored = []
+    seen: set[str] = set()
     for idea in ideas:
+        title_key = str(idea.get("t") or "").strip().lower()
+        if title_key in seen:
+            continue  # the same idea listed twice on one page
+        seen.add(title_key)
         if not is_real_idea(
             str(idea.get("t") or ""), labelled=bool(idea.get("d") or idea.get("s"))
         ):

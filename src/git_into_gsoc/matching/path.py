@@ -34,10 +34,15 @@ def learning_path(
     name = _quote(top["name"]) if top else '"ORG"'
     level = person.experience or "some"
     learn: list[str] = []
+    org_name = str((top or {}).get("name") or "").lower()
     for group in ideas_that_fit or []:
         if top and group.get("org") == top.get("name"):
             for idea in group.get("ideas") or []:
-                learn.extend(s for s in idea.get("you_would_learn") or [] if s not in learn)
+                learn.extend(
+                    s
+                    for s in idea.get("you_would_learn") or []
+                    if s not in learn and s.split(" (")[0].lower() not in org_name
+                )
     steps: list[dict[str, Any]] = []
 
     def add(step: str, why: str, command: str | None = None) -> None:
