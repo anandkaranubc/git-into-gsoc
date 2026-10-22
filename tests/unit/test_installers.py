@@ -289,6 +289,7 @@ def _offer_uv(
     python: str = "python-that-does-not-exist",
     pipx_python: str | None = None,
     pipx_has_environment: bool = True,
+    pipx_script: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run install.sh's offer_uv on a PATH with no uv, pipx, or Python (unless asked).
 
@@ -338,6 +339,9 @@ def _offer_uv(
             (bin_dir / "pipx").write_text(f"#!/bin/sh\necho {fake}\n")
         else:
             (bin_dir / "pipx").write_text(f"#!{fake}\n# pipx 1.0: no `environment` command\n")
+        (bin_dir / "pipx").chmod(0o755)
+    if pipx_script is not None:
+        (bin_dir / "pipx").write_text(pipx_script)
         (bin_dir / "pipx").chmod(0o755)
     script = (
         "set -euo pipefail\n"
@@ -405,6 +409,15 @@ def test_a_pipx_on_an_old_python_is_not_used(tmp_path: Path) -> None:
     result = _offer_uv(ubuntu, flag=False, pipx_python="3.10", pipx_has_environment=False)
     assert result.returncode == 1
     assert "pipx is here, but it runs on Python 3.10" in result.stderr
+
+
+@posix_only
+def test_a_pipx_wrapped_in_a_shell_script_is_still_tried(tmp_path: Path) -> None:
+    # Nix and hand-made setups start pipx with `#!/bin/sh`: that line names no Python, so
+    # the installer cannot tell, and tries pipx rather than calling it too old.
+    result = _offer_uv(tmp_path, flag=False, pipx_script="#!/bin/sh\nexit 2\n")
+    assert result.returncode == 0 and result.stdout.strip() == "uv-ready"
+    assert "pipx is here" not in result.stderr
 
 
 _PS_PIPX = r"""

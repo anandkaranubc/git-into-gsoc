@@ -245,7 +245,8 @@ pipx_python() {
     printf '%s\n' "$py"
   elif [[ -n "${PIPX_DEFAULT_PYTHON:-}" ]]; then
     printf '%s\n' "$PIPX_DEFAULT_PYTHON"
-  elif IFS= read -r line <"$(command -v pipx)" 2>/dev/null && [[ "$line" == '#!'* ]]; then
+  elif IFS= read -r line <"$(command -v pipx)" 2>/dev/null && [[ "$line" == '#!'*python* ]]; then
+    # Only a Python names it; a shell wrapper (Nix's `#!/bin/sh`) cannot tell.
     printf '%s\n' "${line#\#!}"
   else
     return 1
