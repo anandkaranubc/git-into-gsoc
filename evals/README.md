@@ -196,6 +196,22 @@ On common beginners the current ranker finds more of the right organizations tha
 
 Their floors follow the convention of the other sets: the first look less 0.01 nDCG@10 and 0.02 P@5, and one more wrong pick (`dev3` 0.44, 0.40, 11; `holdout5` 0.54, 0.46, 6).
 
+## Round 7: a language family counts together (written up after the one read)
+
+Reading `dev3`'s wrong picks showed organizations whose code is in a language the person does not know reaching common beginners' top fives. The check that notes this, and costs x0.95 (`OTHER_MAIN_LANGUAGE`, the main code language; not the ideas cost #288 removed), rarely fired. It took the single largest GitHub language, so TypeScript and JavaScript split an organization below the 40% cut (Accord Project: 11 TypeScript and 7 JavaScript of 33 repositories), and documentation sites in HTML could come out on top. Now a language family counts together (TypeScript, Vue and Svelte with JavaScript), and HTML and CSS are left out. The cost itself is unchanged: changing it from x0.95 to x0.6 never fixed `dev3`.
+
+Tuned on `dev`, `dev2` and `dev3`: wrong@5 31 to 28 in total (out: Ruby, MariaDB, the D Language Foundation, Accord Project; in: Unikraft and AOSSIE, both graded 3), `dev2` nDCG@10 0.618 to 0.625, `dev3` 0.459 to 0.457, `dev` unchanged. One real cost: Jenkins, graded 3 for two web beginners, leaves their top fives, because its code is mostly Java even though some of its ideas are web work.
+
+The rule was written before any held-out read: both arms pinned (before: main a444f90 plus only the new data; after: that plus only this change) and read once in the same run. `holdout5` and `holdout4` had to show no more wrong picks and at most 0.01 less nDCG@10, and `test` had to keep its floors.
+
+| One read, same run | Before | After |
+|---|---|---|
+| `holdout5` nDCG@10, P@5, strong@10, wrong@5 | 0.554, 0.480, 0.550, 5 | **0.567, 0.500, 0.583, 4** |
+| `holdout4` nDCG@10, P@5, strong@10, wrong@5 | 0.477, 0.227, 0.811, 13 | 0.479, 0.227, 0.811, 13 |
+| `test` nDCG@10, P@5, strong@10, wrong@5 | 0.816, 0.600, 0.927, 7 | 0.821, 0.600, 0.927, 7 |
+
+All held, so it ships. This was `holdout5`'s first reading after its first look, and `holdout4`'s third (after its first look and the ideas refresh decision). With three readings, `holdout4` retires as a deciding set, as `holdout3` did: it stays in the benchmark, sealed, and its floors still guard against regressions, but the next change is decided on `holdout5` and a new sealed set of specialists.
+
 ## Tried and not kept
 
 Each was tuned on `dev` and `dev2` only and rejected there. `test` and `holdout4` were not read for any of them.
