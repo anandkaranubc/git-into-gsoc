@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.17.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.3...v0.17.0) (2026-10-22)
+
+
+### Features
+
+* **issue:** name pull requests that look like the same work but never link the issue ([#225](https://github.com/anandkaranubc/git-into-gsoc/issues/225)) ([3c1edfc](https://github.com/anandkaranubc/git-into-gsoc/commit/3c1edfcc22cceab821c6519777383655ee7ba1fe))
+* **matching:** a second blind development set, and the fixes it pointed to ([#229](https://github.com/anandkaranubc/git-into-gsoc/issues/229)) ([4462e3e](https://github.com/anandkaranubc/git-into-gsoc/commit/4462e3e1116e4ac62a4fd53f6b6279d882b6e2a5))
+
+
+### Bug Fixes
+
+* **issue:** catch more ways newcomers say they are taking an issue ([#227](https://github.com/anandkaranubc/git-into-gsoc/issues/227)) ([d9aafaf](https://github.com/anandkaranubc/git-into-gsoc/commit/d9aafaf7b96819c9bbc4a1c43af928e0c01320da))
+
+
+### Documentation
+
+* refresh the start demo after the ranking update ([#228](https://github.com/anandkaranubc/git-into-gsoc/issues/228)) ([6cff740](https://github.com/anandkaranubc/git-into-gsoc/commit/6cff74002350c2be97794dc42ede50431db1822f))
+
 ## [0.16.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.2...v0.16.3) (2026-10-22)
 
 
