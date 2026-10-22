@@ -84,6 +84,18 @@ Tuned on `dev` and `dev2`. `test` was read twice, each time after the change had
 
 No persona on `test` moved, so its gain is in the accepted projects only.
 
+### Deciding the 2026-10-22 ideas refresh (written before the deciding reads)
+
+The monthly snapshot refresh reads ideas pages with the shared reader, which finds real ideas on many more pages (LibreOffice 4 to 105, Julia 5 to 65) and drops junk (74 blog posts at UC OSPO). On the original grades it lowered P@5 on most splits, mostly because organizations it surfaced had never been graded, so they counted as misses. To score both versions fairly, the top ten of each, for every `dev`, `dev2` and `test` persona, were pooled, and every pair no reviewer had graded was graded blind (136 pairs), the way TREC completes judgments. The graders saw the persona, the earlier grades for calibration, the official listing, and the organization's ideas page when unsure. They never saw a ranking or which version surfaced an organization.
+
+Before reading `test` personas or `holdout4`, the rule is fixed. The refresh ships together with round 6 if all three hold:
+
+1. `holdout4`, read once on the refreshed data with round 6: nDCG@10 at least 0.459 (its first look, 0.469, less 0.01) and wrong@5 at most 13 (its first look, 12, plus 1).
+2. `test` personas on the completed grades, refreshed data: P@5 at least 0.60 and nDCG@10 at least 0.77, the floors.
+3. Accepted-project MRR over `dev` and `test` together is not lower with the refreshed data than with the shipped data, both with round 6.
+
+If any fails, the refresh does not ship and the numbers go to the owner; nothing is re-tuned to pass. Already read before this rule was written: `dev` and `dev2` on the completed grades (shipped 0.822 and 0.681 nDCG@10, refreshed 0.822 and 0.673; `dev2` wrong@5 8 against 11), and once, by mistake, the accepted projects of `test` (MRR 0.471 shipped, 0.481 refreshed). That reading chose nothing.
+
 ## `holdout3.json` (no longer blind)
 
 15 personas written and graded by a third reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover kinds of people the other sets miss: quantum computing, browser engines, networking, cheminformatics, brain imaging, FPGA and open hardware, video codecs, Qt desktop apps, Vue or Angular with six hours a week, React Native, symbolic math, privacy and cryptography, translation and localization, someone who types almost nothing, and a career changer who knows SQL and Excel. Two have a typo on purpose, and two have no strong fit among the 2026 organizations.
