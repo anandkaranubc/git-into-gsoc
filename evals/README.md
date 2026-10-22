@@ -70,7 +70,7 @@ Round 6 came from reading the wrong picks on `dev2`, `holdout2` and `holdout3`, 
 - **Words that narrow an interest.** Someone who types "music notation", "database internals" or "realtime chat" means something narrower than the subject it reads as (music, databases, communication). The words beyond the subject's name ("notation", "internals", "storage engine", "chat") now count: an organization whose listing or ideas never name one of them matches that interest 15% less, and one that does says so in its evidence. A word only counts when at most 15% of organizations name it, so a common word changes nothing.
 - **Two readings fixed.** A "quantum chemistry" tag is chemistry, not quantum computing, and "routing protocols" or "packet capture" is networking, not maps.
 
-Tuned on `dev` and `dev2`, then `test` was read once:
+Tuned on `dev` and `dev2`. `test` was read twice, each time after the change had been chosen and only to check nothing got worse: after the narrowing words (personas unchanged, accepted-project MRR 0.455 to 0.471), and after the two readings (unchanged). Neither read chose between options.
 
 | | Before | After |
 |---|---|---|
