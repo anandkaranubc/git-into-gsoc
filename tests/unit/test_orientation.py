@@ -645,3 +645,113 @@ def test_installing_npm_itself_is_not_the_project_install() -> None:
         "      - run: npm clean-install\n      - run: npm run test:unit\n"
     )
     assert [c["command"] for c in ci_install_commands({"t.yml": workflow})] == ["npm clean-install"]
+
+
+def test_ci_install_commands_never_suggest_a_system_wide_install() -> None:
+    from git_into_gsoc.github.orientation import ci_install_commands
+
+    # OSGeo/gdal code_checks.yml (2026-10-22): a PR draft for a GDAL issue said to run
+    # this "as CI does", to install a citation checker with sudo.
+    gdal = (
+        "jobs:\n  cff:\n    steps:\n      - run: |\n"
+        "          PYTHON_CMD=python3 && sudo $PYTHON_CMD -m pip install "
+        "--break-system-packages cffconvert\n"
+        "          PYTHON_CMD=python3 && $PYTHON_CMD -m pip install cmake-format pyyaml\n"
+        "          cffconvert --validate\n"
+    )
+    assert ci_install_commands({"code_checks.yml": gdal}) == []
+
+
+def test_tool_installs_count_only_where_the_tests_run_or_the_project_installs() -> None:
+    from git_into_gsoc.github.orientation import ci_install_commands
+
+    tests = "jobs:\n  t:\n    steps:\n      - run: pip install tox\n      - run: tox -e py\n"
+    lint = "jobs:\n  l:\n    steps:\n      - run: pip install codespell\n      - run: codespell\n"
+    build = (
+        "jobs:\n  b:\n    steps:\n      - run: pip install cython numpy\n"
+        "      - run: pip install -e . --no-build-isolation\n"
+    )
+    commands = ci_install_commands({"lint.yml": lint, "tests.yml": tests, "build.yml": build})
+    # In workflow order, so a build dependency still comes before the project.
+    assert [c["command"] for c in commands] == [
+        "pip install tox",
+        "pip install cython numpy",
+        "pip install -e . --no-build-isolation",
+    ]
+    node = "jobs:\n  t:\n    steps:\n      - run: npm install --no-audit\n      - run: npm install -D eslint\n"
+    assert [c["command"] for c in ci_install_commands({"n.yml": node})] == [
+        "npm install --no-audit",
+        "npm install -D eslint",
+    ]
+
+
+def test_a_command_continued_over_several_lines_is_read_whole() -> None:
+    from git_into_gsoc.github.orientation import ci_install_commands, ci_test_commands
+
+    # MDAnalysis gh-ci-cron.yaml (2026-10-22), shortened.
+    workflow = (
+        "jobs:\n  t:\n    steps:\n      - run: |\n"
+        "          python -m pip install        \\\n"
+        '            "cython>=0.28"           \\\n'
+        "            packaging \\\n"
+        "            # Base deps\n"
+        "          python -m pip install pytest-xdist pytest-timeout\n"
+        "          python -m pip install --no-build-isolation -v -e ./package\n"
+        "      - run: |\n          pytest -n auto \\\n            --timeout=200 testsuite/\n"
+    )
+    assert [c["command"] for c in ci_install_commands({"cron.yml": workflow})] == [
+        'python -m pip install "cython>=0.28" packaging',
+        "python -m pip install pytest-xdist pytest-timeout",
+        "python -m pip install --no-build-isolation -v -e ./package",
+    ]
+    assert [c["command"] for c in ci_test_commands({"cron.yml": workflow})] == [
+        "pytest -n auto --timeout=200 testsuite/"
+    ]
+    long = "jobs:\n  t:\n    steps:\n      - run: pip install -r requirements.txt " + "pkg " * 60
+    (command,) = [c["command"] for c in ci_install_commands({"l.yml": long + "\n"})]
+    assert len(command) <= 160 and command.endswith(" pkg ...")
+
+
+def test_a_yarn_script_is_a_test_command_not_an_install() -> None:
+    from git_into_gsoc.github.orientation import ci_install_commands, ci_test_commands
+
+    # Rocket.Chat's ci-test-unit.yml, Joplin's ui-tests.yml, and Zulip's zulip-ci.yml
+    # (2026-10-22).
+    workflow = (
+        "jobs:\n  t:\n    steps:\n      - run: yarn\n      - run: yarn install --frozen-lockfile\n"
+        "      - run: yarn build\n      - run: yarn test:e2e --shard=1/2\n"
+        "      - run: yarn test-ui-ios\n      - run: yarn testunit --concurrency=1\n"
+        "      - run: ./tools/test-help-documentation --skip-external-links\n"
+    )
+    assert [c["command"] for c in ci_install_commands({"t.yml": workflow})] == [
+        "yarn",
+        "yarn install --frozen-lockfile",
+    ]
+    assert [c["command"] for c in ci_test_commands({"t.yml": workflow})] == [
+        "yarn test:e2e --shard=1/2",
+        "yarn test-ui-ios",
+        "yarn testunit --concurrency=1",
+        "./tools/test-help-documentation --skip-external-links",
+    ]
+
+
+def test_a_standard_test_runner_comes_before_a_project_script() -> None:
+    from git_into_gsoc.github.orientation import ci_test_commands
+
+    # SymPy (2026-10-22): bin/test quality runs only the code-quality tests.
+    workflow = (
+        "jobs:\n  q:\n    steps:\n      - run: bin/test quality\n"
+        "  t:\n    steps:\n      - run: pytest -n auto\n"
+    )
+    assert [c["command"] for c in ci_test_commands({"t.yml": workflow})] == [
+        "pytest -n auto",
+        "bin/test quality",
+    ]
+    # A path that only starts like a test script runs no tests.
+    other = "jobs:\n  d:\n    steps:\n      - run: |\n"
+    for line in ("scripts/testdata/gen.sh", "scripts/testing-setup.sh", "cp scripts/test-data/a ."):
+        assert ci_test_commands({"d.yml": other + f"          {line}\n"}) == [], line
+    assert [
+        c["command"]
+        for c in ci_test_commands({"d.yml": other + "          bash scripts/run-tests.sh\n"})
+    ] == ["bash scripts/run-tests.sh"]

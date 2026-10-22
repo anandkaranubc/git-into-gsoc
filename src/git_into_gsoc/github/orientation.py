@@ -45,12 +45,20 @@ ARCH_DOC_RE = re.compile(
     r"[^/]*\.(?:md|rst|txt|adoc)$",
     re.I,
 )
+# A project's own test script, when it is the command being run: Zulip runs
+# ./tools/test-backend, SymPy bin/test; `cp scripts/test-data/x .` runs no tests.
+_TEST_SCRIPT = (
+    r"(?:^|[;&|]\s*|\b(?:bash|sh|python3?|node)\s+)\.?/?(?:tools|scripts|bin)/"
+    # Each part after a dash or underscore is letters and digits only, so a name splits
+    # one way (CodeQL flagged `[-_]\w+` repeated as exponential backtracking).
+    r"(?:run[-_])?tests?(?:[-_][^\W_]+)*(?:\.\w+)?(?=\s|$)"
+)
 TEST_RUNNER_RE = re.compile(
-    r"\b(pytest|python -m pytest|tox\b|nox\b|npm (?:run )?test|pnpm (?:run )?test|yarn test|"
+    r"\b(pytest|python -m pytest|tox\b|nox\b|npm (?:run )?test\w*|pnpm (?:run )?test\w*|yarn test\w*|"
     r"cargo test|go test|make (?:test|check)|mvn (?:test|verify)|gradle(?:w)? test|ctest|"
     r"meson test|bundle exec rspec|rspec|phpunit|dotnet test|swift test|mix test|"
     r"ninja test|hatch test|poetry run pytest|uv run pytest|just test|"
-    r"python -m unittest|autotest\.py|\w+_unittest\.py)\b",
+    r"python -m unittest|autotest\.py|\w+_unittest\.py)\b|" + _TEST_SCRIPT,
     re.I,
 )
 CONVENTIONAL_RE = re.compile(
@@ -317,14 +325,53 @@ def ci_test_commands(workflows: dict[str, str], *, limit: int = 4) -> list[dict[
     seen: set[str] = set()
     for path, text in workflows.items():
         for block in _run_blocks(text):
-            for line in block.splitlines():
-                command = line.strip().rstrip("\\").strip()
+            for command in _commands(block):
                 if not command or command.startswith("#"):
+                    continue
+                # "pip install pytest-xdist" installs a test runner; it runs nothing.
+                if _INSTALL_RE.search(command):
                     continue
                 if TEST_RUNNER_RE.search(command) and command not in seen:
                     seen.add(command)
-                    found.append({"command": command[:160], "source": path})
+                    found.append({"command": _shorten(command), "source": path})
+    # A project's own script (SymPy's bin/test quality runs only the code-quality tests)
+    # comes after a standard runner; Zulip has only scripts, so they are what it lists.
+    found.sort(key=lambda c: bool(_TEST_SCRIPT_RE.search(c["command"])))
     return found[:limit]
+
+
+_TEST_SCRIPT_RE = re.compile(_TEST_SCRIPT, re.I)
+
+
+def _commands(block: str) -> list[str]:
+    """The commands in a `run:` block, with lines continued by a backslash joined.
+
+    MDAnalysis spreads one `pip install` over a dozen lines; read line by line, a draft
+    said to run `python -m pip install` with nothing to install.
+    """
+    out: list[str] = []
+    current = ""
+    for line in block.splitlines():
+        part = line.strip()
+        if part.endswith("\\"):
+            current += part[:-1].strip() + " "
+            continue
+        out.append(_COMMENT_RE.sub("", current + part).strip())
+        current = ""
+    if current:
+        out.append(_COMMENT_RE.sub("", current).strip())
+    return out
+
+
+# A shell comment ends the command, also after a continued line ("pkg \ # Base deps").
+_COMMENT_RE = re.compile(r"(?:^|\s)#.*$")
+
+
+def _shorten(command: str, limit: int = 160) -> str:
+    """A long command cut at a word, ending in "..." so it never looks complete."""
+    if len(command) <= limit:
+        return command
+    return command[: limit - 4].rsplit(" ", 1)[0] + " ..."
 
 
 _RUNTIME_KEYS = {
@@ -449,7 +496,8 @@ def ci_environment(workflows: dict[str, str]) -> dict[str, Any]:
 _INSTALL_RE = re.compile(
     r"\b(?:pip3? install|python -m pip install|uv (?:sync|pip install)|poetry install|"
     r"pdm install|hatch env create|conda env create|npm (?:ci|clean-install|install)|"
-    r"yarn(?: install)?\b|"
+    # Bare "yarn" installs; "yarn test:e2e" or "yarn build" runs a script.
+    r"yarn(?: install)?(?=\s*$|\s+-|\s*[;&|])|"
     r"pnpm install|bundle install|go mod download|cargo (?:build|fetch))",
     re.I,
 )
@@ -464,24 +512,58 @@ _TOOLING_ONLY_RE = re.compile(
 )
 
 
+# Never advice for someone's own machine: `sudo pip install` and
+# `--break-system-packages` change the system's own Python. GDAL's code-check workflow
+# (2026-10-22) does both, to install a citation checker, and a PR draft repeated it.
+_SYSTEM_WIDE_RE = re.compile(r"\bsudo\b|--break-system-packages", re.I)
+_PIP_ARGS_RE = re.compile(r"\b(?:pip3? install|-m pip install|uv pip install)\b(.*)$", re.I)
+_NPM_ADD_ARGS_RE = re.compile(r"\b(?:npm (?:install|i)|pnpm (?:install|add)|yarn add)\b(.*)$", re.I)
+
+
+def _installs_the_project(command: str) -> bool:
+    """False for a command that only installs named tools ("pip install cffconvert")."""
+    for pattern in (_PIP_ARGS_RE, _NPM_ADD_ARGS_RE):
+        match = pattern.search(command)
+        if not match:
+            continue
+        args = match.group(1).split()
+        # The project itself (".", ".[test]", -e), a dependency list (-r, --group), or,
+        # for npm with only flags, the dependencies in package.json.
+        if any(
+            a.startswith((".", "-e", "--editable", "-r", "--requirement", "--group"))
+            or "requirements" in a
+            for a in args
+        ):
+            return True
+        return all(a.startswith("-") for a in args)
+    return True
+
+
 def ci_install_commands(workflows: dict[str, str], *, limit: int = 3) -> list[dict[str, str]]:
-    """Commands CI runs to install the project and its dependencies, from `run:` steps."""
+    """Commands CI runs to install the project and its dependencies, from `run:` steps.
+
+    A command that only installs a named tool counts when its workflow also runs the
+    tests or installs the project: a lint workflow's tools say nothing about setting up
+    the project.
+    """
     found: list[dict[str, str]] = []
     seen: set[str] = set()
     for path, text in workflows.items():
         for block in _run_blocks(text):
-            for line in block.splitlines():
-                command = line.strip().rstrip("\\").strip()
+            for command in _commands(block):
                 if (
                     command
                     and not command.startswith("#")
                     and _INSTALL_RE.search(command)
                     and not _TOOLING_ONLY_RE.search(command)
+                    and not _SYSTEM_WIDE_RE.search(command)
                     and command not in seen
                 ):
                     seen.add(command)
-                    found.append({"command": command[:160], "source": path})
-    return found[:limit]
+                    found.append({"command": _shorten(command), "source": path})
+    useful = {c["source"] for c in ci_test_commands(workflows, limit=len(seen) + 50)}
+    useful |= {c["source"] for c in found if _installs_the_project(c["command"])}
+    return [c for c in found if c["source"] in useful][:limit]
 
 
 def _run_blocks(text: str) -> list[str]:
