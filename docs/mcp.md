@@ -49,6 +49,7 @@ Every tool returns JSON as text. A parameter shown with a default is optional. R
 How the parameters work:
 
 - `technologies`, `topics`, and `interests` are comma-separated, for example `"python,rust"`. Short forms such as `js`, `golang`, `cpp`, and `ml` are understood.
+- A list such as `["python", "rust"]` is also accepted for `technologies`, `topics`, `interests`, and `skills`. A few guessed names reach the right parameter (`tech` or `languages` for `technologies`, `org` for `name`). Any other unknown argument is a tool error that lists the real parameters, so a misspelled filter is never silently ignored.
 - `year=0` means the default target year, 2027. When that year's organizations are not announced yet, the latest official list is used and `catalog.note` says so.
 - `full_name` and `repo` take `owner/name` or a GitHub URL.
 - `ref` takes `owner/name#123`, an issue URL, or `owner/name` together with `number`. Passing a pull request number is an error.

@@ -319,3 +319,52 @@ def test_an_unknown_argument_is_an_error_that_names_the_real_ones() -> None:
     message = str(caught.value)
     assert "gsoc_search_orgs does not take 'bogus'" in message
     assert "technologies, topics" in message
+
+
+def test_a_list_for_a_single_value_parameter_is_an_error_unless_it_has_one_item() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    assert _validate("gsoc_find_issues", {"languages": ["python"]})["language"] == "python"
+    with pytest.raises(ValidationError, match="takes one value for 'language'"):
+        _validate("gsoc_find_issues", {"languages": ["python", "rust"]})
+
+
+_REAL_PATH = __import__("pytest").mark.skipif(
+    __import__("sys").platform == "win32",
+    reason="an event loop opens a socket pair, which the network guard blocks on Windows",
+)
+
+
+@_REAL_PATH
+def test_guessed_names_reach_the_tool_through_a_real_call(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # Through MCPServer.call_tool, as a client's request goes: if an SDK upgrade validated
+    # arguments some other way, the direct checks above would pass while real calls
+    # skipped the mapping. This one would fail.
+    import asyncio
+
+    from git_into_gsoc import mcp_server
+
+    seen: dict[str, object] = {}
+
+    class _Recorder:
+        def match_orgs(self, **kwargs: object) -> dict[str, object]:
+            seen.update(kwargs)
+            return {"organizations": []}
+
+    monkeypatch.setattr(mcp_server, "toolkit", lambda: _Recorder())
+    asyncio.run(mcp_server.mcp.call_tool("gsoc_search_orgs", {"tech": "rust", "limit": 3}))
+    assert seen["technologies"] == ["rust"] and seen["limit"] == 3
+
+
+@_REAL_PATH
+def test_an_unknown_argument_comes_back_as_a_tool_error_through_a_real_call() -> None:
+    import asyncio
+
+    import pytest
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from git_into_gsoc import mcp_server
+
+    with pytest.raises(ToolError, match="gsoc_search_orgs does not take 'bogus'"):
+        asyncio.run(mcp_server.mcp.call_tool("gsoc_search_orgs", {"bogus": 1}))

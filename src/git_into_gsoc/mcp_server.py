@@ -789,6 +789,11 @@ _ARGUMENT_GUESSES: dict[str, tuple[str, ...]] = {
 _Model = TypeVar("_Model", bound=BaseModel)
 
 
+# Parameters the tools document as comma-separated lists; a list sent for one of them is
+# joined. Any other text parameter holds one value.
+_LIST_PARAMETERS = frozenset({"technologies", "topics", "interests", "skills"})
+
+
 def _tolerant_arguments(tool_name: str, model: type[_Model]) -> type[_Model]:
     """An argument model that maps guessed names, joins lists, and names unknown keys.
 
@@ -833,7 +838,15 @@ def _tolerant_arguments(tool_name: str, model: type[_Model]) -> type[_Model]:
                     if isinstance(parsed, list):
                         value = parsed
                 if target in text_fields and isinstance(value, list | tuple):
-                    value = ", ".join(str(item) for item in value)
+                    if target in _LIST_PARAMETERS:
+                        value = ", ".join(str(item) for item in value)
+                    elif len(value) == 1:
+                        value = str(value[0])
+                    else:
+                        raise ValueError(
+                            f"{tool_name} takes one value for {target!r}, not a list of "
+                            f"{len(value)}; call it once for each."
+                        )
                 out[target] = value
             if unknown:
                 raise ValueError(
