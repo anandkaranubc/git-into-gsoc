@@ -111,6 +111,28 @@ _CLAIM_PATTERNS = [
     r"\bi want to (?:work on|fix|take|tackle|solve|resolve) (?:this|it)\b",
     r"\bi(?:'ll| will) be (?:taking|working on|picking up)\b",
     r"\b(?:formally |officially )?take (?:this|the) issue\b",
+    # Forms still missed in both samples, kept general (third sample measures them).
+    r"(?:^|[.!?,]\s*|\bhi,?\s+)am (?:actively |currently |still )?working on\b",
+    r"(?<!anyone )(?<!someone )(?<!is )(?<!are )(?<!you )(?<!if )\bworking on (?:it|a fix)\b",
+    r"\b(?:should|shall|can|could|may) i (?:directly |go ahead and )?(?:submit|open|raise|make|create|send)"
+    r" (?:a |the |my )?(?:pr|pull request)\b",
+    r"\bwould you (?:mind|prefer|like) (?:if|that|it if) i\b",
+    r"\b(?:i(?:'ll| will)|will) (?:be )?(?:raising|opening|submitting|sending|creating) (?:a |the |my )?"
+    r"(?:pr|pull request)\b",
+    r"\bi(?:'ll| will) have a look (?:into|at) (?:this|it)\b",
+    r"\btrying to (?:resolve|fix|solve) (?:this|it)\b",
+    r"\bi can fix (?:this|it|both|them)\b",
+    # A third sample (387 comments, 20 more organizations) found these missing: Checkstyle
+    # contributors split big issues with "I am on it" and "I'll cover <part>".
+    r"\bi(?:'m| am| m)? on (?:it|this)\b",
+    r"\bi(?:'ll| will) (?:cover|take on|take care of)\b",
+    r"\bi(?:'ll| will) take (?:the|this|it|these|those|that|both|all|over)\b",
+    r"\bi(?:'m| am) (?:covering|taking over|taking (?:this|it))\b|\bi(?:'ve| have) taken\b",
+    r"\bcan (?:this|it) (?:issue )?be assigned to me\b",
+    r"\b(?:could|can|may) i (?:claim|look (?:on|at|into))\b",
+    r"\bi (?:really )?want to (?:work on|fix|take|tackle|solve|resolve|contribute to)\b",
+    r"\b(?:i'?d be|i(?:'m| am)?) glad to (?:help with|help on|work|take|fix|submit a fix|contribute)\b",
+    r"\bi was (?:just )?working on (?:this|it)\b",
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
     r"^\s*/(?:assign(?:-me)?|take|claim)\s*$",
     r"^\s*\.take(?:-issue)?\s*$",
