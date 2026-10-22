@@ -228,7 +228,9 @@ def gsoc_org_details(name: str, year: int = 0) -> str:
     """Full profile for one org: ideas page, contributor guide, channels, GitHub orgs,
     projects per year, and recent accepted project titles. Accepts the full name or a
     whole word of it ("mailman"); a word that fits several orgs returns their names to
-    choose from, and an unknown name returns close matches in did_you_mean."""
+    choose from, and an unknown name returns close matches in did_you_mean.
+    `statement_on_file` is what the monthly check found the org said about the coming
+    year (also in issue bodies, which the live `gsoc_posts` search misses); give its date."""
     return _dump(toolkit().org_details(name, year=year or None))
 
 

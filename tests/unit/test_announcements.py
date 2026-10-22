@@ -259,3 +259,68 @@ def test_org_says_when_it_could_not_search_for_posts(monkeypatch) -> None:  # ty
     details["gsoc_posts"] = {"year": 2027, "posts": [], "error": found["error"]}
     output = CliRunner().invoke(cli.app, ["org", "LU"], env={"COLUMNS": "200"}).output
     assert "Could not search its issues" in output and "secondary rate limit" in output
+
+
+def test_org_shows_the_statement_the_monthly_check_found(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # SymPy's "we will not participate" is in an issue body, which only the monthly
+    # check reads; `org` searched titles live and never showed it.
+    from typer.testing import CliRunner
+
+    from git_into_gsoc import cli, service
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    said = {
+        "status": "reported",
+        "url": "https://github.com/sympy/sympy/issues/30671",
+        "year": 2027,
+        "checked": "2026-10-22",
+        "date": "2026-10-04",
+        "quote": "It's likely that as a result of this we will not participate in GSoC this year.",
+        "by_maintainer": False,
+    }
+    monkeypatch.setattr(service, "signals_for", lambda slug: {"participation": said})
+    toolkit = GSoCToolkit()
+    toolkit.settings.target_year = 2027
+    org = OrgSummary(name="SymPy", slug="sympy", github_orgs=["sympy"], official=True)
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, **k: org)
+
+    class Catalog:
+        def model_dump(self) -> dict[str, Any]:
+            return {"year": 2026}
+
+    monkeypatch.setattr(toolkit.gsoc, "catalog", lambda year: (Catalog(), None))
+    monkeypatch.setattr(
+        toolkit,
+        "gsoc_posts_for",
+        lambda owners, **k: {"year": 2027, "posts": [], "error": {"error": "limit"}},
+    )
+    details = toolkit.org_details("SymPy")
+    assert details["statement_on_file"] == said
+    monkeypatch.setattr(cli, "_toolkit", lambda: toolkit)
+    output = CliRunner().invoke(cli.app, ["org", "SymPy"], env={"COLUMNS": "250"}).output
+    assert "Could not search its issues for posts about GSoC 2027" in output
+    assert "The monthly check on 2026-10-22 found that someone wrote in its tracker on" in output
+    assert "we will not participate" in output and "not the organization's own statement" in output
+
+    # A live post with the same link is not repeated, and another year's statement is left out.
+    live = {
+        "year": 2027,
+        "posts": [
+            {
+                "url": said["url"],
+                "title": "x",
+                "status": "mentions",
+                "created_at": "2026-10-04",
+                "state": "open",
+                "by_maintainer": True,
+            }
+        ],
+    }
+    monkeypatch.setattr(toolkit, "gsoc_posts_for", lambda owners, **k: live)
+    output = CliRunner().invoke(cli.app, ["org", "SymPy"], env={"COLUMNS": "250"}).output
+    assert "monthly check" not in output
+    monkeypatch.setattr(
+        service, "signals_for", lambda slug: {"participation": {**said, "year": 2026}}
+    )
+    assert "statement_on_file" not in toolkit.org_details("SymPy")

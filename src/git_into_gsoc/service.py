@@ -541,6 +541,11 @@ class GSoCToolkit:
         result = {"found": True, "catalog": catalog.model_dump(), "organization": org.model_dump()}
         if org.github_orgs:
             result["gsoc_posts"] = self.gsoc_posts_for(org.github_orgs[:3], year=year)
+        # The monthly check also reads issue bodies (SymPy's "we will not participate"
+        # is in one), which the live title search here never sees.
+        said = signals_for(org.slug).get("participation") or {}
+        if said.get("status") and int(said.get("year") or 0) == (year or self.settings.target_year):
+            result["statement_on_file"] = said
         return result
 
     def gsoc_posts_for(

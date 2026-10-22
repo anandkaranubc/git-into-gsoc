@@ -716,7 +716,7 @@ def org_cmd(
             "Check its website to see whether it plans to apply again.[/yellow]"
         )
     console.print(Panel(Text.from_markup("\n".join(lines)), title=title))
-    _print_gsoc_posts(data.get("gsoc_posts") or {})
+    _print_gsoc_posts(data.get("gsoc_posts") or {}, data.get("statement_on_file"))
     if org.get("recent_projects"):
         table = Table(title="Recent accepted projects (for scope reference, never copy)")
         table.add_column("Year")
@@ -756,16 +756,39 @@ _POST_STATUS = {
 }
 
 
-def _print_gsoc_posts(found: dict[str, Any]) -> None:
+_ON_FILE = {
+    "not_taking_part": "it said it will not take part in GSoC {year}",
+    "undecided": "it had not decided about GSoC {year} yet",
+    "posted": "its maintainers had posted about GSoC {year}",
+}
+
+
+def _on_file_line(said: dict[str, Any]) -> str:
+    """The monthly check's statement, dated, for when the live search does not show it."""
+    year = said.get("year")
+    if said["status"] == "reported":
+        what = (
+            f'someone wrote in its tracker on {said.get("date")}: "{said.get("quote")}" '
+            "(a report, not the organization's own statement)"
+        )
+    else:
+        what = _ON_FILE.get(str(said["status"]), "it posted about GSoC {year}").format(year=year)
+    return f"The monthly check on {said.get('checked')} found that {what}: {said.get('url')}"
+
+
+def _print_gsoc_posts(found: dict[str, Any], said: dict[str, Any] | None = None) -> None:
     posts = found.get("posts") or []
     error = found.get("error")
-    if not posts and not error:
+    if said and any(p.get("url") == said.get("url") for p in posts):
+        said = None  # the live answer already shows it
+    if not posts and not error and not said:
         return
-    console.print(f"\n[bold]Posts about GSoC {found.get('year')} in its repositories[/bold]")
+    year = found.get("year") or (said or {}).get("year")
+    console.print(f"\n[bold]Posts about GSoC {year} in its repositories[/bold]")
     if error:
         # Saying nothing here would read as "it has posted nothing about the year".
         console.print(
-            f"  [yellow]Could not search its issues for posts about GSoC {found.get('year')}: "
+            f"  [yellow]Could not search its issues for posts about GSoC {year}: "
             f"{escape(str(error.get('error') or 'GitHub search failed'))}[/yellow]"
         )
         console.print(f"  [dim]{escape(str(error.get('hint') or 'Run it again later.'))}[/dim]")
@@ -778,6 +801,8 @@ def _print_gsoc_posts(found: dict[str, Any]) -> None:
         who = "a maintainer" if post.get("by_maintainer") else f"@{post.get('author')}"
         console.print(f"  {post['created_at']}  {escape(post['title'])}  {status}")
         console.print(f"  [dim]{post['url']}  (by {escape(who)}, {post['state']})[/dim]")
+    if said:
+        console.print(f"  {escape(_on_file_line(said))}")
 
 
 @app.command("projects", rich_help_panel="Find an organization")
