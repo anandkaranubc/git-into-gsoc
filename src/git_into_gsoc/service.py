@@ -1617,6 +1617,7 @@ class GSoCToolkit:
                 taking_part,
                 ideas,
                 top_has_starter=_has_starter(taking_part, passed) if not issue_error else None,
+                program=program,
             ),
             "next_steps": [
                 "Shortlist three organizations and join their community channels",

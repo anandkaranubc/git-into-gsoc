@@ -92,8 +92,11 @@ def test_recommend_says_the_list_is_last_years_and_shows_evidence(api: respx.Moc
     assert group["ideas"][0]["you_have"] == ["Python"]
     assert group["ideas"][0]["you_would_learn"] == ["NumPy/SciPy"]
     steps = [s["step"] for s in data["learning_path"]]
-    assert steps[0].startswith("Practise the pull request routine")
-    assert "OpenAstronomy" in steps[1]
+    # The calendar first: the 2027 list is not out, so the ideas are last year's.
+    assert steps[0].startswith("Know where GSoC is in its year: the 2027 organizations")
+    practise = next(i for i, s in enumerate(steps) if s.startswith("Practise the pull request"))
+    assert "OpenAstronomy" in steps[practise + 1]
+    assert steps[-1].startswith("Draft your proposal early")
 
 
 def test_recommend_moves_an_org_that_says_it_sits_out_and_skips_its_issues(

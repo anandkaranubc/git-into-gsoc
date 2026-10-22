@@ -9,11 +9,14 @@ the pace. Each step names the command that does it.
 
 from __future__ import annotations
 
+import math
 from typing import Any
 
 from git_into_gsoc.matching.profile import ContributorProfile
 
 GUIDE = "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide"
+# The longest a GSoC coding period can run (official FAQ).
+MAX_WEEKS = 22
 
 
 def _quote(name: str) -> str:
@@ -26,13 +29,17 @@ def learning_path(
     ideas_that_fit: list[dict[str, Any]] | None = None,
     *,
     top_has_starter: bool | None = None,
+    program: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """Steps for this person, built around their best-fitting organization.
 
     The skill to learn comes from the top organization's ideas that fit the
     person, not from everything its page lists. With `top_has_starter` False (no
     open beginner issue there right now), the first-task step goes through its ideas
-    and mentors instead of an issue search that would come back empty.
+    and mentors instead of an issue search that would come back empty. `program`
+    (target year, list year, confirmed) puts the calendar first; a blind review of 46
+    paths found none said where the program was in its year, and none reached the
+    application itself.
     """
     top = orgs[0] if orgs else None
     name = _quote(top["name"]) if top else '"ORG"'
@@ -48,10 +55,52 @@ def learning_path(
                     if s not in learn and s.split(" (")[0].lower() not in org_name
                 )
     steps: list[dict[str, Any]] = []
+    # When this tool could not read the ideas page, point at the page itself.
+    unread = any(
+        "ideas page" in str(c) and "open it" in str(c) for c in (top or {}).get("caveats") or []
+    )
+    ideas_url = str((top or {}).get("ideas_url") or "")
+    ideas_command = f"Open {ideas_url}" if unread and ideas_url else f"git-into-gsoc ideas {name}"
 
     def add(step: str, why: str, command: str | None = None) -> None:
         steps.append({"step": step, "why": why, "command": command})
 
+    if program:
+        target, listed = program.get("target_year"), program.get("list_year")
+        if program.get("confirmed"):
+            add(
+                f"Check the GSoC {target} timeline: when proposals open and close.",
+                "Every step below has to fit before the proposal deadline.",
+                "git-into-gsoc program",
+            )
+        else:
+            add(
+                f"Know where GSoC is in its year: the {target} organizations are not "
+                "announced yet.",
+                f"The organizations and ideas here are from {listed}; most return, but none is "
+                "confirmed until the official list is published.",
+                "git-into-gsoc program",
+            )
+    hours = person.hours_per_week
+    if hours and hours <= 10:
+        small, medium = math.ceil(90 / hours), math.ceil(175 / hours)
+        if medium <= MAX_WEEKS:
+            plan = f"a 175-hour project fits (about {medium} weeks)"
+        elif small <= MAX_WEEKS:
+            plan = (
+                f"plan for a 90-hour project (about {small} weeks); a 175-hour one would take "
+                f"about {medium}"
+            )
+        else:
+            plan = (
+                f"even a 90-hour project would take about {small} weeks, so find more hours "
+                "before you apply"
+            )
+        add(
+            f"Plan around {hours} hours a week: {plan}. GSoC allows at most {MAX_WEEKS} weeks.",
+            "Mentors ask how much time you have; a project that fits it is one you can finish.",
+            None,
+        )
     if level == "new":
         add(
             "Practise the pull request routine once: fork, branch, commit, push, open a pull request.",
@@ -65,7 +114,8 @@ def learning_path(
         f"git-into-gsoc org {name}",
     )
     add(
-        "Pick its most active repository, set it up, and run the tests.",
+        "Pick the repository that fits your skills (its main code comes first in `repos`), "
+        "set it up, and run the tests.",
         "Getting the project to build is the first real barrier; solve it before choosing an issue.",
         f"git-into-gsoc repos {name}, then git-into-gsoc orient OWNER/REPO",
     )
@@ -75,7 +125,7 @@ def learning_path(
             "closest to you.",
             "No starter issue from it passed the checks above; at organizations like this, "
             "first tasks often come from mentors and ideas rather than labelled issues.",
-            f"git-into-gsoc ideas {name}",
+            ideas_command,
         )
     elif level == "new":
         add(
@@ -94,27 +144,31 @@ def learning_path(
             "Choose an idea, ask its mentors which issue would show you can do it, and review an "
             "open pull request.",
             "Reviews and a well-chosen issue show judgement as well as code.",
-            f"git-into-gsoc ideas {name}",
+            ideas_command,
         )
     if learn:
         add(
-            f"Learn {learn[0]} by reading the code that uses it in this project.",
+            f"Learn the basics of {learn[0]} with a short tutorial before you take on an idea "
+            "that needs it.",
             f"The ideas there that fit you also ask for: {', '.join(learn[:3])}.",
-            f"git-into-gsoc ideas {name}",
+            ideas_command,
         )
+    add(
+        "Read the projects it accepted in past years, to see their size and how they were "
+        "written up.",
+        "Past projects show what this organization's mentors expect from a proposal.",
+        f"git-into-gsoc projects --org {name}",
+    )
     add(
         "Before proposals open, talk with a mentor about one idea in your own words.",
         "A proposal built on earlier contact and merged work is what reviewers score.",
-        f"git-into-gsoc ideas {name}",
+        ideas_command,
     )
-    hours = person.hours_per_week
-    if hours and hours <= 8:
-        add(
-            f"At {hours} hours a week, aim for one small pull request every two weeks and a small "
-            "(about 90 hour) project.",
-            "Steady small changes beat a rushed large one.",
-            None,
-        )
+    add(
+        "Draft your proposal early, then check it against what organizations reject.",
+        "A draft a mentor has seen before the deadline is far stronger than one sent at the end.",
+        "git-into-gsoc proposal",
+    )
     for number, step in enumerate(steps, start=1):
         step["n"] = number
     return steps

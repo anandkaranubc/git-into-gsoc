@@ -175,13 +175,17 @@ def test_learning_path_changes_with_experience_and_hours() -> None:
         build_profile(technologies=["python"], experience="new", hours_per_week=5), orgs, fitting
     )
     steps = [s["step"] for s in new]
-    assert steps[0].startswith("Practise the pull request routine")
+    # At 5 hours a week the pace comes first, with the weeks worked out.
+    assert steps[0].startswith("Plan around 5 hours a week: plan for a 90-hour project")
+    assert "about 18 weeks" in steps[0] and "at most 22 weeks" in steps[0]
+    assert steps[1].startswith("Practise the pull request routine")
     assert any("documentation, test, or small bug" in s for s in steps)
-    assert any(s.startswith("Learn C++ by reading the code") for s in steps)
+    assert any(s.startswith("Learn the basics of C++") for s in steps)
     # No learning step without ideas that fit: a page's whole skill list is not a plan.
     plain = learning_path(build_profile(technologies=["python"]), orgs)
     assert not any(s["step"].startswith("Learn") for s in plain)
-    assert steps[-1].startswith("At 5 hours a week")
+    assert steps[-1].startswith("Draft your proposal early")
+    assert any("projects --org" in (s["command"] or "") for s in new)
     assert [s["n"] for s in new] == list(range(1, len(new) + 1))
     assert all(
         '"Star Lab"' in (s["command"] or '"Star Lab"') for s in new if "org" in (s["command"] or "")
@@ -375,8 +379,8 @@ def test_the_path_never_says_learn_the_organizations_own_product() -> None:
     orgs = [{"name": "Blender Foundation"}]
     fitting = [{"org": "Blender Foundation", "ideas": [{"you_would_learn": ["Blender", "Python"]}]}]
     steps = [s["step"] for s in learning_path(build_profile(technologies=["c++"]), orgs, fitting)]
-    assert any(s.startswith("Learn Python") for s in steps)
-    assert not any(s.startswith("Learn Blender") for s in steps)
+    assert any(s.startswith("Learn the basics of Python") for s in steps)
+    assert not any("Blender with" in s for s in steps)
 
 
 def test_governance_test_and_reserved_issues_are_not_first_tasks() -> None:
@@ -495,3 +499,32 @@ def test_a_broad_interest_is_not_widened_to_every_part_of_it() -> None:
     assert "web" in websites and "backend" not in websites  # websites is not caring about APIs
     robots = wanted_domains(build_profile(interests=["robotics"]))
     assert "robotics" in robots
+
+
+def test_the_path_says_where_the_program_is_and_links_an_unreadable_ideas_page() -> None:
+    orgs = [
+        {
+            "name": "Quiet Lab",
+            "ideas_url": "https://quiet.example/ideas",
+            "caveats": [
+                "This tool could not pick out ideas on its ideas page; open it to read them"
+            ],
+        }
+    ]
+    person = build_profile(technologies=["python"], experience="new", hours_per_week=10)
+    program = {"target_year": 2027, "list_year": 2026, "confirmed": False}
+    path = learning_path(person, orgs, top_has_starter=False, program=program)
+    assert path[0]["command"] == "git-into-gsoc program"
+    assert "from 2026" in path[0]["why"]
+    # At 10 hours a week a 175-hour project fits in 18 weeks.
+    assert path[1]["step"].startswith("Plan around 10 hours a week: a 175-hour project fits")
+    mentors = next(s for s in path if s["step"].startswith("Ask its mentors"))
+    assert mentors["command"] == "Open https://quiet.example/ideas"
+    confirmed = learning_path(person, orgs, program={**program, "confirmed": True})
+    assert confirmed[0]["step"].startswith("Check the GSoC 2027 timeline")
+
+
+def test_too_few_hours_for_any_project_is_said_plainly() -> None:
+    path = learning_path(build_profile(technologies=["python"], hours_per_week=3), [])
+    assert path[0]["step"].startswith("Plan around 3 hours a week: even a 90-hour project")
+    assert "find more hours" in path[0]["step"]
