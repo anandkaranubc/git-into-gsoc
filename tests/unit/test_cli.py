@@ -291,7 +291,7 @@ def test_the_issues_table_reads_like_words_and_flags_old_requests(monkeypatch) -
     result = runner.invoke(app, ["issues", "--repo", "acme/lib"], env={"COLUMNS": "160"})
     assert result.exit_code == 0, result.output
     assert "likely taken" in result.output and "likely_taken" not in result.output
-    assert result.output.count("someone asked before: ask first") == 1
+    assert result.output.count("asked before") == 1
     assert "no beginner label" in result.output
 
 
@@ -331,3 +331,26 @@ def test_an_empty_repo_search_names_its_owner_in_the_tip() -> None:
     steps = _when_no_issues("python", org=None, repo="MDAnalysis/mdacli")
     assert "git-into-gsoc repos MDAnalysis" in steps[-1]
     assert "ORG NAME" not in " ".join(steps)
+
+
+def test_a_long_issue_reference_stays_on_one_line(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # 0.18.2's clean-install check at 110 columns showed "learning-unlimited/ESP-Website#"
+    # with "2455" on the next line, beside a long status note.
+    from git_into_gsoc import cli
+
+    row = _listed(
+        "available",
+        repo="learning-unlimited/ESP-Website",
+        number=2455,
+        title="Grade range errors are confusing when a class has no grades set at all",
+        assessment={"claims": [{"login": "a"}]},
+    )
+
+    class Fake:
+        def find_issues(self, **k):  # type: ignore[no-untyped-def]
+            return {"issues": [row], "note": "Searching", "next_steps": []}
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    result = runner.invoke(app, ["issues", "--org", "Learning Unlimited"], env={"COLUMNS": "110"})
+    assert result.exit_code == 0, result.output
+    assert "learning-unlimited/ESP-Website#2455" in result.output

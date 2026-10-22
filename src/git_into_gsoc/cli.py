@@ -1251,7 +1251,10 @@ def issues_cmd(
     table = Table(title="Beginner-friendly issues", caption=data["note"])
     table.add_column("Score", justify="right")
     table.add_column("Status")
-    table.add_column("Issue", overflow="fold")
+    # People copy "owner/repo#N" into `issue`: keep it on one line where it fits. At 110
+    # columns "learning-unlimited/ESP-Website#2455" broke before "2455".
+    longest = max(len(f"{i['repo']}#{i['number']}") for i in data["issues"])
+    table.add_column("Issue", overflow="fold", min_width=min(longest, 40))
     table.add_column("Title", overflow="fold")
     for issue in data["issues"]:
         status = issue["availability"]
@@ -1268,7 +1271,7 @@ def issues_cmd(
         shown = f"[{_STATUS_STYLE.get(status, '')}]{status.replace('_', ' ')}[/]"
         if status == "available" and ((issue.get("assessment") or {}).get("claims")):
             # Free by the rules, but someone asked months ago: a beginner should know.
-            shown += "\n[dim]someone asked before: ask first[/dim]"
+            shown += "\n[dim]asked before[/dim]"
         table.add_row(f"{issue['beginner_score']:.0f}", shown, ref, issue["title"])
     console.print(table)
     console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
