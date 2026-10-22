@@ -89,6 +89,11 @@ def test_ideas_pages_get_no_github_token_and_listings_do(monkeypatch: pytest.Mon
 
     def posts(request: httpx.Request) -> httpx.Response:
         query = request.url.params["q"]
+        if "org:fossasia" in query:
+            # The canary: one label finds 5, the label OR another finds 7.
+            return httpx.Response(
+                200, json={"total_count": 7 if " OR " in query else 5, "items": []}
+            )
         if "org:broken" in query:
             return httpx.Response(500)
         return httpx.Response(200, json=sitting_out if "org:example" in query else {"items": []})
@@ -131,3 +136,63 @@ def test_a_failed_beginner_label_count_keeps_last_months_figure() -> None:
     fresh = {"a": {"github": {"active_repos": 4}}}  # the listing worked, the search did not
     merged = keep_previous(fresh, previous)
     assert merged["a"]["github"] == {"active_repos": 4, "beginner_issues_year": 9}
+
+
+def test_a_statement_not_found_again_stays_with_its_old_date() -> None:
+    said = {"status": "reported", "year": 2027, "checked": "2026-10-22", "url": "https://x/1"}
+    previous = {"sympy": {"participation": said}}
+    fresh = {"sympy": {"github": {"active_repos": 3}}}  # the refresh found nothing this time
+    assert keep_previous(fresh, previous)["sympy"]["participation"] == said
+    newer = {"status": "posted", "year": 2027, "checked": "2026-11-02", "url": "https://x/2"}
+    replaced = keep_previous({"sympy": {"participation": newer}}, previous)
+    assert replaced["sympy"]["participation"] == newer
+
+
+def test_a_canary_decides_whether_or_group_searches_can_be_trusted() -> None:
+    from types import SimpleNamespace
+
+    from git_into_gsoc.matching.signals import search_trustworthy
+
+    def toolkit(alone: int | None, either: int | None) -> SimpleNamespace:
+        def opened(owners: list[str], *, since: str, labels: list[str]) -> int | None:
+            return either if len(labels) > 1 else alone
+
+        return SimpleNamespace(github=SimpleNamespace(beginner_issues_opened=opened))
+
+    previous = {"big": {"github": {"owners": ["fossasia"], "beginner_issues_year": 100}}}
+    assert search_trustworthy(toolkit(80, 95), previous)  # OR finds at least as many
+    assert search_trustworthy(toolkit(1864, 1862), previous)  # approximate totals
+    assert not search_trustworthy(toolkit(80, 0), previous)  # the 2026-10-22 failure
+    assert not search_trustworthy(toolkit(80, 12), previous)  # fewer: the OR is broken
+    assert not search_trustworthy(toolkit(None, 95), previous)  # a failed search
+    assert not search_trustworthy(toolkit(0, 0), previous)  # nothing to compare
+
+
+def test_a_failed_canary_keeps_last_months_counts_and_statements() -> None:
+    from git_into_gsoc.matching.signals import _github_for
+
+    class GitHub:
+        calls = 0
+
+        def list_owner_repos(self, owner: str) -> list[dict[str, Any]]:
+            return []
+
+        def beginner_issues_opened(self, *a: Any, **k: Any) -> int:
+            GitHub.calls += 1
+            return 0
+
+    from types import SimpleNamespace
+
+    toolkit = SimpleNamespace(github=GitHub())
+    summary = _github_for(toolkit, ["lab"], datetime.now(UTC), searches=False)
+    assert summary is not None and "beginner_issues_year" not in summary
+    assert GitHub.calls == 0  # no search when the canary failed
+    previous = {
+        "lab": {"github": {"beginner_issues_year": 9}, "participation": {"status": "posted"}}
+    }
+    fresh = {"lab": {"github": summary, "_participation_failed": True}}
+    merged = keep_previous(fresh, previous)["lab"]
+    assert (
+        merged["github"]["beginner_issues_year"] == 9
+        and merged["participation"]["status"] == "posted"
+    )

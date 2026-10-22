@@ -225,7 +225,38 @@ BEGINNER_SEARCH_LABELS = (
 )
 
 
-def _github_for(toolkit: Any, owners: list[str], now: datetime) -> dict[str, Any] | None:
+CANARY_SHARE = 0.8
+
+
+def search_trustworthy(toolkit: Any, previous: dict[str, dict[str, Any]] | None = None) -> bool:
+    """Whether this run's searches with an OR group can be trusted: a canary.
+
+    One label alone, then that label OR another, over the same busy organization:
+    a working engine never finds fewer for the OR. On the 2026-10-22 refresh, GitHub
+    Actions' built-in token got empty or wrong answers to every OR group (40
+    beginner-label counts went to 0, Apache's 1,929 to 28, and three participation
+    statements were lost), while plain searches worked. When the canary fails, the
+    run keeps last month's search results instead of replacing them.
+    """
+    busiest = max(
+        (previous or {}).items(),
+        key=lambda kv: int((kv[1].get("github") or {}).get("beginner_issues_year") or 0),
+        default=("", {}),
+    )[1]
+    owner = ((busiest.get("github") or {}).get("owners") or ["fossasia"])[0]
+    since = (datetime.now(UTC) - timedelta(days=365)).date().isoformat()
+    one = toolkit.github.beginner_issues_opened([owner], since=since, labels=["good first issue"])
+    either = toolkit.github.beginner_issues_opened(
+        [owner], since=since, labels=["good first issue", "beginner"]
+    )
+    # Totals for big result sets are approximate (Apache: 1,864 alone, 1,862 with the
+    # OR); the failure was far larger (1,929 to 28), so allow a small shortfall.
+    return bool(one) and either is not None and either >= CANARY_SHARE * one
+
+
+def _github_for(
+    toolkit: Any, owners: list[str], now: datetime, *, searches: bool = True
+) -> dict[str, Any] | None:
     """Repository evidence, or None when there are no owners or every listing failed."""
     from git_into_gsoc.errors import GigError
 
@@ -242,6 +273,8 @@ def _github_for(toolkit: Any, owners: list[str], now: datetime) -> dict[str, Any
     if not listed:
         return None
     summary = summarize_repos(repos, owners[:3], now=now)
+    if not searches:
+        return summary  # last month's count stands (see search_trustworthy)
     # Over the first three owners only (as the listing above), so for an organization
     # with more it is a lower bound; "N issues opened" stays true.
     labelled = toolkit.github.beginner_issues_opened(
@@ -287,7 +320,11 @@ def keep_previous(
                 **kept["github"],
                 "beginner_issues_year": old["github"]["beginner_issues_year"],
             }
-        if kept.pop("_participation_failed", False) and old.get("participation"):
+        failed = kept.pop("_participation_failed", False)
+        if old.get("participation") and (failed or "participation" not in kept):
+            # A statement not found again stays, with its old `checked` date: the
+            # search reads only the newest issues, and a post does not stop being true
+            # because it scrolled out of them. A newer statement replaces it.
             kept["participation"] = old["participation"]
         merged[slug] = kept
     return merged
@@ -340,6 +377,14 @@ def build_signals(
 
     now = datetime.now(UTC)
     ttl = toolkit.settings.archive_ttl_seconds
+    searches = search_trustworthy(toolkit, previous)
+    if not searches:
+        print(
+            "Searches with an OR group failed the canary check: keeping last month's "
+            "beginner-label counts and participation. Run the refresh with a personal "
+            "read-only token to refresh them.",
+            file=sys.stderr,
+        )
 
     def one(raw: dict[str, Any]) -> tuple[str, dict[str, Any]]:
         owners, _ = github_refs(
@@ -353,11 +398,15 @@ def build_signals(
             print(f"ideas page failed for {raw.get('slug')}: {exc}", file=sys.stderr)
         if ideas:
             entry["ideas"] = ideas
-        github = _github_for(toolkit, owners, now)
+        github = _github_for(toolkit, owners, now, searches=searches)
         if github:
             entry["github"] = github
         if owners:
-            entry.update(_participation_for(toolkit, owners, now))
+            entry.update(
+                _participation_for(toolkit, owners, now)
+                if searches
+                else {"_participation_failed": True}
+            )
         return str(raw.get("slug") or raw.get("name")), entry
 
     with ThreadPoolExecutor(max_workers=8) as pool:
