@@ -19,7 +19,7 @@ Never invent organizations, issues, mentors, or deadlines. Never encourage bulk,
 ## When working on this codebase
 
 - Set up with `python3 -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]"`.
-- Before you finish, run `ruff check src tests`, `ruff format src tests`, `mypy src`, and `pytest`. All four must pass.
+- Before you finish, run `ruff check src tests scripts`, `ruff format src tests scripts`, `mypy src`, and `pytest`. All four must pass. CI also requires 85% test coverage.
 - Tests block real network access. Mock HTTP with `respx` and keep sample responses in `tests/fixtures/`.
 - Put shared logic in `src/git_into_gsoc/service.py` or a focused module. `cli.py` and `mcp_server.py` are thin layers over it.
 - Every CLI option needs help text. Errors should say what happened and what to try next.

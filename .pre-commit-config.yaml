@@ -14,7 +14,8 @@ repos:
       - id: detect-private-key
 
   # Ruff and mypy come from the project's own virtual environment, so the
-  # versions and dependencies always match what CI and pyproject.toml use.
+  # versions and dependencies match what CI and pyproject.toml use. That holds
+  # only when the environment is active: commit from a terminal where it is.
   - repo: local
     hooks:
       - id: ruff

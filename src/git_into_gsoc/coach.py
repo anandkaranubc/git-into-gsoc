@@ -67,17 +67,12 @@ def hours_note(hours_per_week: Any) -> str | None:
             f"Source: {GSOC_FAQ_URL}"
         )
     sizes = " and ".join(too_long)
-    fitting = [size for size in PROJECT_HOURS if size not in too_long]
-    # Lead with what fits: a blind beginner run read the old "would not fit" opening
-    # as discouraging, though a small project fit their 8 hours exactly.
-    fit = f"a small project (about 90 hours) fits in about {small} weeks"
-    if "medium" in fitting:
-        fit += f", and a medium one (about 175 hours) in about {weeks['medium']}"
+    fits = " or ".join(size for size in PROJECT_HOURS if size not in too_long)
     return (
-        f"At {hours} hours a week, {fit}. The longest coding period is "
-        f"{LONGEST_CODING_WEEKS} weeks, and only if your mentor agrees, so {sizes} projects "
-        f"would not fit. Choose a {' or '.join(fitting)} idea and state your hours in the "
-        f"proposal. Source: {GSOC_FAQ_URL}"
+        f"At {hours} hours a week, a small project (about 90 hours) takes about {small} "
+        f"weeks, and {sizes} projects would not fit in the longest coding period "
+        f"({LONGEST_CODING_WEEKS} weeks, and only if your mentor agrees). Choose a {fits} "
+        f"idea and state your hours in the proposal. Source: {GSOC_FAQ_URL}"
     )
 
 
