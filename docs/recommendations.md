@@ -131,10 +131,13 @@ Twice, a reviewer who never saw the code read the live `recommend` output for al
 
 Starter issues were then compared in blind pairs: for each of the 46 personas, a reviewer read the live thread of every issue in two lists without knowing which version made which, graded each issue good, ok, or bad for that person, and picked the list they would rather hand over. Against the version before the stricter screen, the current one kept the same number of good issues (8 against 8), cut bad ones from 26 to 8, cut the people handed a bad issue from 19 to 7, and was preferred for 19 people against 6 (21 ties). The price is that 9 more people get an empty list with a note on where to look instead. Two further rules were tested against the reviewers' grades and left out because they would have dropped good issues: skipping an issue that a merged pull request mentions (4 good, 13 ok, and 7 bad issues), and skipping one that several pull requests tried and failed (a single example).
 
+`repos` was checked the same way: for 20 personas and their top organization, a reviewer read each suggested repository on GitHub. The first review graded 38 of 98 top-five repositories bad. A blind paired review of the old and new versions found good ones up from 29 to 35 and bad ones down from 34 to 27. 16 of 20 people now have a good repository first, against 14 before, and the reviewer preferred the new list for 8 people against 2 (10 ties). A small penalty for repositories in a language the person did not list was tried and left out: it dropped a C library a physicist could use, and brought in a logo repository.
+
 What the reviewers still found weak is listed next.
 
 ## Known limits
 
+- **Some suggested repositories are quiet.** `repos` cannot yet tell a repository where outsiders' pull requests get merged from one where only the core team works, so a quiet helper repository can still reach the top five. Run `git-into-gsoc repo owner/name` on your pick: it checks exactly that.
 - **Starter issues are thin.** Recent issues with a beginner label that suit a given person are scarce in their best organizations, so after screening about six in ten people get no starter issue and are pointed to the best organization's repositories and chat instead. About one in four issues that pass the checks is still unsuitable, most often because it was already fixed without a linked pull request, or is not really a task (a question, a broken link to fix by a maintainer). Read each thread before you start.
 - **Some ideas lists are noisy.** Ideas pages are written in many formats, and some headings still slip through as ideas.
 - **Very vague input** ("ai" alone) still gives a long list; the tip suggests narrower words, and adding one helps most.
