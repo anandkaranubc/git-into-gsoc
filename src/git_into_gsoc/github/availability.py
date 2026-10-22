@@ -90,6 +90,17 @@ CONTESTED_MIN_CLAIMANTS = 3
 STALE_DAYS = 365
 
 _CLAIM_PATTERNS = [
+    # A plan is a claim. This project's own good-first issues ask "comment with what you
+    # plan to do", and a "## Planned change ... I will add ..." comment read as no claim
+    # (a launch audit, 0.23.0). Measured on the five labelled samples (1,900 comments):
+    # seven more claims caught, one more false alarm ("I'll update the PR to whichever
+    # you pick", from someone whose open pull request already marks the issue taken).
+    # One line only, and no two runs of spaces that could share the same characters: a
+    # "## Plan" line padded with 50,000 spaces must not make the match backtrack.
+    r"^\ufeff?[ \t]*#{1,6}[ \t]*(?:planned change|my plan|plan|proposed (?:change|fix|"
+    r"approach|plan|solution)|approach)[ \t]*(?::[ \t]*)?$",
+    r"\bi(?:'ll| will) (?:add|update|write|rewrite|change|document|refactor|create|replace|"
+    r"remove|move|rename|clarify|improve|extend)\b",
     r"\bi(?:'m| am) (?:currently |now )?working on (?:this|it|the issue)\b",
     r"\bi(?:'ll| will) (?:take|work on|pick up|handle|fix) (?:this|it)\b",
     r"(?<!how )\b(?:can|could|may) i (?:please )?(?:work on|take|pick up|tackle|fix|be assigned|"

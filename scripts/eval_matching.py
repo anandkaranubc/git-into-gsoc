@@ -20,7 +20,8 @@ printed, and it must never be used for tuning. ``holdout3`` was sealed until a
 reading of it decided a change, so it is no longer blind. ``dev2.json`` and
 ``dev3.json`` are more development sets for tuning; ``dev3`` holds common kinds of
 beginners. ``holdout5.json`` is sealed too: common beginners from the same batch as
-``dev3``, split off by a fixed seed before anyone read them. All of these are left
+``dev3``, split off by a fixed seed before anyone read them. ``holdout6.json`` is sealed
+as well: specialists the other sets do not cover. All of these are left
 out of ``all`` so the numbers documented for the first 46 personas keep their meaning.
 
 ``completed_grades.json`` holds blind grades for pairs the reviewers never graded,
@@ -28,7 +29,7 @@ from pooling the top ten of compared versions (see evals/README.md). They count 
 with ``--grades completed``; the documented numbers and the floors use the reviewers'
 grades alone. ``judged@10`` says what share of each top ten has any grade at all.
 
-Usage: python scripts/eval_matching.py [--split dev|dev2|dev3|test|holdout2|holdout3|holdout4|holdout5|all] [--ranker both|current|baseline] [--grades original|completed] [--json]
+Usage: python scripts/eval_matching.py [--split dev|dev2|dev3|test|holdout2|holdout3|holdout4|holdout5|holdout6|all] [--ranker both|current|baseline] [--grades original|completed] [--json]
 """
 
 from __future__ import annotations
@@ -117,7 +118,7 @@ def _dcg(gains: list[int]) -> float:
 
 
 # Splits kept blind for later rounds: only their totals are ever shown.
-SEALED = frozenset({"holdout4", "holdout5"})
+SEALED = frozenset({"holdout4", "holdout5", "holdout6"})
 # Splits shown on their own and left out of `all`.
 OUTSIDE_ALL = SEALED | {"dev2", "dev3", "holdout3"}
 
@@ -133,6 +134,7 @@ def load_personas() -> list[dict[str, Any]]:
         "holdout3.json",
         "holdout4.json",
         "holdout5.json",
+        "holdout6.json",
     ):
         path = EVALS / name
         if path.is_file():
@@ -277,10 +279,11 @@ def main(argv: list[str] | None = None) -> int:
             "holdout3",
             "holdout4",
             "holdout5",
+            "holdout6",
             "all",
         ),
         default="all",
-        help="Which personas and cases to score; holdout4 and holdout5 are sealed, so only their totals are shown",
+        help="Which personas and cases to score; holdout4, holdout5 and holdout6 are sealed, so only their totals are shown",
     )
     parser.add_argument("--ranker", choices=("both", "current", "baseline"), default="both")
     parser.add_argument(
@@ -297,7 +300,17 @@ def main(argv: list[str] | None = None) -> int:
     present = {p["split"] for p in load_personas()}
     order = [
         x
-        for x in ("dev", "dev2", "dev3", "test", "holdout2", "holdout3", "holdout4", "holdout5")
+        for x in (
+            "dev",
+            "dev2",
+            "dev3",
+            "test",
+            "holdout2",
+            "holdout3",
+            "holdout4",
+            "holdout5",
+            "holdout6",
+        )
         if x in present
     ]
     splits = [*order, "all"] if args.split == "all" else [args.split]

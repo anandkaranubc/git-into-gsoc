@@ -212,6 +212,21 @@ The rule was written before any held-out read: both arms pinned (before: main a4
 
 All held, so it ships. This was `holdout5`'s first reading after its first look, and `holdout4`'s third (after its first look and the ideas refresh decision). With three readings, `holdout4` retires as a deciding set, as `holdout3` did: it stays in the benchmark, sealed, and its floors still guard against regressions, but the next change is decided on `holdout5` and a new sealed set of specialists.
 
+## `holdout6.json` (specialists, sealed)
+
+15 personas in areas no earlier set covers: compilers, the Linux kernel, robotics with ROS 2, astronomy data pipelines, GIS in Python, security fuzzing, Erlang or Elixir, functional languages, audio DSP, CAD, healthcare data standards for a web developer, a PHP learning platform, formal methods, bioimage analysis, and scientific visualization. Two have a typo. A seventh reviewer wrote and graded them, seeing only the official 2026 list and the organizations' own pages, never the code, the other sets, or the tool's output. A script checked the file before it was added (names on the official list, grades, no organization both graded and a wrong pick, no dashes, links or personal details) without anyone reading the personas.
+
+It is sealed, the way `holdout4` and `holdout5` are, and was added when `holdout4` retired as a deciding set. First look, on `main` a6aa0cb, before any change was made for it:
+
+| `holdout6` | Keyword ranker | Current |
+|---|---|---|
+| nDCG@10 | 0.498 | **0.612** |
+| P@5 | 0.333 | **0.453** |
+| strong@10 | 0.747 | **0.827** |
+| wrong@5 | 6 | **5** |
+
+Only 56% of the current ranker's top-ten entries had any grade at that look (judged@10 0.56). The reviewer could not read the ideas pages of 8 organizations (RTEMS Project, preCICE, Metaflow, OpenAFS, Open HealthCare Network, KDE Community, ScummVM, Uramaki LAB) and left them ungraded for every persona. An ungraded organization in a top ten counts as a miss here, so when a change brings one of them, or any other ungraded organization, into a top ten, grade the new pairs blind before calling it a regression. Its floors follow the usual convention: 0.60, 0.43, 6.
+
 ## Tried and not kept
 
 Each was tuned on `dev` and `dev2` only and rejected there. `test` and `holdout4` were not read for any of them.

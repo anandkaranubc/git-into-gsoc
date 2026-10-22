@@ -42,6 +42,9 @@ from git_into_gsoc.matching.profile import (
         ("code quality", "developer tools"),
         ("mailing lists", "communication"),
         ("hardware design", "embedded"),
+        # A common beginner's interest that read as data science or as nothing.
+        ("data structures", "algorithms"),
+        ("competitive programming", "algorithms"),
     ],
 )
 def test_peoples_words_reach_the_concept_they_mean(typed: str, concept: str) -> None:
@@ -169,3 +172,14 @@ def test_competency_words_count_when_typed_but_not_in_an_ideas_page() -> None:
     assert find_tag_concepts("mailing lists") == {"communication": 1}
     assert find_tag_concepts("code quality") == {"developer tools": 1}
     assert resolve("hardware design").concepts == ("embedded",)
+
+
+def test_misspelled_algorithm_words_reach_algorithms_through_the_fuzzy_path() -> None:
+    # dev3 (common beginners): "data structers" read as data science.
+    for typed, meant in [
+        ("data structers", "data structures"),
+        ("algoritms", "algorithms"),
+        ("competitive programing", "competitive programming"),
+    ]:
+        found = resolve(typed)
+        assert found.concepts == ("algorithms",) and found.corrected_from == meant
