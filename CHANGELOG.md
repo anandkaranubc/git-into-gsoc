@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.1...v0.16.2) (2026-10-22)
+
+
+### Bug Fixes
+
+* **install:** build the source at the release's tag, not the newest commit ([#213](https://github.com/anandkaranubc/git-into-gsoc/issues/213)) ([70a7885](https://github.com/anandkaranubc/git-into-gsoc/commit/70a7885a17076f713bc35e1c0af2c8262db039ec))
+* **issue:** catch more ways a project says an issue is not open ([#217](https://github.com/anandkaranubc/git-into-gsoc/issues/217)) ([d155b34](https://github.com/anandkaranubc/git-into-gsoc/commit/d155b34b1bf787b91a7494e509b93a2a42ab138a))
+* **issue:** count pull requests that name an imported issue's Jira key ([#222](https://github.com/anandkaranubc/git-into-gsoc/issues/222)) ([da93aa6](https://github.com/anandkaranubc/git-into-gsoc/commit/da93aa69360a1c2472d0b3da3c52ada6f8f5e9f0))
+* **issue:** give a true hint for an issue link on another site ([#220](https://github.com/anandkaranubc/git-into-gsoc/issues/220)) ([dffd595](https://github.com/anandkaranubc/git-into-gsoc/commit/dffd5954e5fd36b3802b925973d0e056c142be6f))
+* **issues:** say when the request limit left issues unchecked ([#218](https://github.com/anandkaranubc/git-into-gsoc/issues/218)) ([bf4ad49](https://github.com/anandkaranubc/git-into-gsoc/commit/bf4ad49768e16c019df1d7dff6e13f388c1b2934))
+* **issue:** warn when the repository will not review the work ([#219](https://github.com/anandkaranubc/git-into-gsoc/issues/219)) ([67bc082](https://github.com/anandkaranubc/git-into-gsoc/commit/67bc082389a36e8256f3de4e96392cebe91fb2b9))
+* **repo:** stop grading a quiet repository on its old pull requests ([#221](https://github.com/anandkaranubc/git-into-gsoc/issues/221)) ([c9afbc6](https://github.com/anandkaranubc/git-into-gsoc/commit/c9afbc6ce6e32c7e7c52de8c346c97c5c9e42c6b))
+
+
+### Documentation
+
+* never name another project's issue in a commit or pull request ([#214](https://github.com/anandkaranubc/git-into-gsoc/issues/214)) ([be93e98](https://github.com/anandkaranubc/git-into-gsoc/commit/be93e989ce7b32b0fe2829e6dade5c2639a948dd))
+
 ## [0.16.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.0...v0.16.1) (2026-10-22)
 
 
