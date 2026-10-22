@@ -147,10 +147,11 @@ class GitHubClient:
     Two kinds of method. Reads of the thing the person asked for (`get_repo`,
     `get_issue`, `assess`, `repo_health`) raise `HttpError` or `NotFoundError` with a
     message that says what to try. Reads that only feed a score or a list
-    (`community_profile`, `list_labels`, `get_issue_timeline`, ...) swallow HTTP
+    (`get_issue_timeline`, `list_assignees`, `recent_comments`, ...) swallow HTTP
     errors and return an empty value or None, so one failed call cannot sink a whole
-    report (some callers then read the gap as missing). A token raises the request
-    limit and turns on the GraphQL path in `repo_health`; nothing needs one.
+    report; what the report then says about the gap is the caller's job. A token
+    raises the request limit and turns on the GraphQL path in `repo_health`; nothing
+    needs one.
     """
 
     def __init__(
