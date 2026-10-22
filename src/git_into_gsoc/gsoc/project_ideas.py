@@ -177,7 +177,9 @@ _AI_RE = re.compile(r"\b(ai|llm|llms|chatgpt|copilot|gemini|claude|language mode
 _POLICY_RE = re.compile(
     r"\b(propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
-    r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|accept\w*)\b",
+    r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|accept\w*|"
+    # MetaBrainz: "We discourage the use of AI tools in communications and contributions."
+    r"discourag\w*|encourag\w*|avoid\w*|refrain\w*|not (?:use|rely))\b",
     re.I,
 )
 
@@ -418,7 +420,20 @@ def _looks_like_html(raw: str) -> bool:
 
 
 def to_lines(raw: str, base_url: str | None = None) -> list[str]:
-    return html_to_lines(raw, base_url) if _looks_like_html(raw) else markdown_to_lines(raw)
+    lines = html_to_lines(raw, base_url) if _looks_like_html(raw) else markdown_to_lines(raw)
+    # A paragraph with line breaks (<br>) arrives as one line: MariaDB writes "Skills
+    # needed: C++, bison" and "Mentors: ..." in one, and neither label was read. Split
+    # only such lines: a link and its text on two lines must stay one ("Topic (url)").
+    out: list[str] = []
+    for line in lines:
+        parts = line.split("\n")
+        # A label after a break ("...bison<br>Mentors: ..."), not a label whose value
+        # wraps onto the next lines (Submitty's "Expected Outcomes: This project ...").
+        if len(parts) > 1 and any(_label(part.strip()) for part in parts[1:]):
+            out.extend(parts)
+        else:
+            out.append(line)
+    return out
 
 
 # ------------------------------------------------------------------ parsing
@@ -588,17 +603,21 @@ def normalize_difficulty(value: str) -> str | None:
 def _paragraphs(text: str) -> list[str]:
     """Join wrapped lines into paragraphs; a heading or a list item starts a new one."""
     chunks: list[list[str]] = []
+    after_heading = False
     for line in text.splitlines():
         if not line.strip():
             continue
-        if not chunks or _heading(line) or _BULLET_RE.match(line):
+        heading = bool(_heading(line))
+        # A heading is a paragraph of its own: "About AI" is not the start of the rule.
+        if not chunks or heading or after_heading or _BULLET_RE.match(line):
             chunks.append([line])
         else:
             chunks[-1].append(line)
+        after_heading = heading
     return [" ".join(chunk) for chunk in chunks]
 
 
-def ai_policy_sentences(text: str, limit: int = 3) -> list[str]:
+def ai_policy_sentences(text: str, limit: int = 4) -> list[str]:
     """Sentences that look like a rule about AI/LLM use (not AI as a topic).
 
     Links are ignored when matching: a list of links to sub-pages is not a rule,
@@ -689,6 +708,29 @@ def _is_non_idea(title: str) -> bool:
     )
 
 
+def _without_urls(text: str) -> str:
+    """A heading without the address of the link it is ("ListenBrainz (https://...)"),
+    or a wiki's section edit link ("Add support for SPFS[edit]")."""
+    bare = re.sub(r"\s*\(https?://[^)\s]+\)", "", text)
+    return re.sub(r"\s*\[edit\]\s*$", "", bare).strip() or text
+
+
+def _leaf_sections(lines: list[str], *, level: int) -> list[tuple[int, str, list[str], str]]:
+    """Each heading with only its own text (the lines before the next heading), and the
+    last heading at `level` above it."""
+    sections: list[tuple[int, str, list[str], str]] = []
+    parent = ""
+    for line in lines:
+        head = _heading(line)
+        if head:
+            if head[0] <= level:
+                parent = head[1] if head[0] == level else ""
+            sections.append((head[0], head[1], [], parent))
+        elif sections:
+            sections[-1][2].append(line)
+    return sections
+
+
 def _is_aside(section: str | None) -> bool:
     """A whole heading that is about something else: "Communications", "FAQ".
 
@@ -707,12 +749,23 @@ def _is_list_heading(section: str) -> bool:
     )
 
 
+# A line that only states a project's size: "Full-time project 350h", "175 hours".
+_SIZE_LINE_RE = re.compile(
+    r"(?:(?:full|part)[- ]time\s+)?(?:project\s*)?[:(,-]?\s*(?:90|175|350)\s*(?:h|hrs?|hours?)\)?",
+    re.I,
+)
+
+
 def _parse_block(
     title: str, body: list[str], *, section: str | None, source_url: str
 ) -> ProjectIdea:
-    idea = ProjectIdea(title=_clean(title)[:200], section=section, source_url=source_url)
+    idea = ProjectIdea(
+        title=_without_urls(_clean(title))[:200], section=section, source_url=source_url
+    )
     free_text: list[str] = []
     current: str | None = None
+    cell: str | None = None
+    cells = sum(1 for line in body if _norm_label(_clean(line)) in _LABEL_LOOKUP) >= 2
     for line in body:
         head = _heading(line)
         if head:
@@ -739,8 +792,16 @@ def _parse_block(
             continue
         if current:
             _assign(idea, current, line)
+        elif cell:
+            _assign(idea, cell, line)
+        elif not idea.size and _SIZE_LINE_RE.fullmatch(_clean(line).strip(" .")):
+            _assign(idea, "size", line)  # MariaDB: "**Full-time project 350h**"
         else:
             free_text.append(line)
+        # SageMath lays an idea out as table cells: "Mentor", then "Travis Scrimshaw".
+        # A line that is only a label's name labels the one line after it, in a block
+        # with several such lines: one "Mentors" in a page's contents is a link.
+        cell = None if current or not cells else _LABEL_LOOKUP.get(_norm_label(_clean(line)))
     if not idea.description:
         text = " ".join(_clean(x) for x in free_text if not _URL_RE.fullmatch(x.strip()))
         idea.description = text[:500].strip()
@@ -837,7 +898,7 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
     for line in lines:
         head = _heading(line)
         if head:
-            current = head[1]
+            current = _without_urls(head[1])
             previous = ""
             continue
         if _is_nav_heading(current):
@@ -957,7 +1018,9 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         doc.sub_pages = _sub_pages(lines)
         # A page that is mostly links to other pages, such as an umbrella
         # organization's list of its projects, is an index even without headings.
-        mostly_links = len(doc.sub_pages) >= 3 and len(doc.sub_pages) * 3 >= len(lines)
+        # Label lines ("Mentors: ...") split out of a paragraph are not more prose.
+        prose = sum(1 for line in lines if not _label(line))
+        mostly_links = len(doc.sub_pages) >= 3 and len(doc.sub_pages) * 3 >= prose
         doc.layout = "index" if mostly_links else "unstructured"
         doc.ai_policy = ai_policy_sentences("\n".join(lines))
         return doc
@@ -976,7 +1039,24 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         if best is None or key > best[:3]:
             best = (*key, ideas, outside)
     assert best is not None
-    _, _, _, ideas, outside = best
+    _, _, level, ideas, outside = best
+    # Some pages put ideas at two heading levels: ListenBrainz's 2026 page has three
+    # under "## Ideas" as ### and its two Android ideas as ##. A heading above the
+    # ideas' level whose own text, before the next heading, holds two idea fields is an
+    # idea too. Headings below it ("Prerequisites", "Expected Outcome:") are parts of one.
+    known = {i.title.lower() for i in ideas}
+    parents = {_without_urls(_clean(i.title)).lower() for i in ideas}
+    for depth, title, body, parent in _leaf_sections(lines, level=level):
+        if depth == level or _is_non_idea(title) or title.rstrip().endswith(":"):
+            continue
+        if depth > level and _without_urls(_clean(parent)).lower() in parents:
+            continue  # a part of an idea: its "Prerequisites" or "Expected Outcome"
+        if _label(title) or _without_urls(_clean(title)).lower() in known:
+            continue
+        extra = _parse_block(title, body, section=None, source_url=source_url)
+        if _labelled(extra) >= 2:
+            ideas.append(extra)
+            known.add(extra.title.lower())
     for idea in ideas:
         if idea.section and _is_list_heading(idea.section):
             idea.section = None  # "Ideas List / Cronjob Optimization" says nothing more

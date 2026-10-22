@@ -70,13 +70,38 @@ def wanted_domains(person: ContributorProfile) -> set[str]:
     return wanted
 
 
+# What a contributor does on any project ("Debug; fix CI failures", "Write Python code
+# with unit tests"), listed under Oppia's skills: not what the project is about. Read as
+# subjects, they put developer tools in 10 of Oppia's 11 ideas and all 9 of InVesalius'.
+_COMPETENCY_RE = re.compile(
+    r"\bdebug\w*|\bunit tests?\b|\b(?:write|writing|add|adding)\s+(?:\w+\s+){0,3}?tests?\b|"
+    r"\bfix(?:ing)?\s+(?:\w+\s+){0,2}?(?:ci|tests?|failures?|bugs?)\b|\bci failures?\b|"
+    r"\bflak\w*|\bcode reviews?\b|\broot cause\b",
+    re.I,
+)
+_PRACTICE_SUBJECTS = frozenset({"developer tools", "devops"})
+
+
+def skill_concepts(skill: str) -> list[str]:
+    """Concepts a skills-field entry names, without the ones only its competencies name.
+
+    "Write Python code with unit tests" is something a contributor does; "test
+    frameworks" or "testing" can be what a project is about, and stay.
+    """
+    found = list(find_tag_concepts(skill))
+    if _PRACTICE_SUBJECTS & set(found) and _COMPETENCY_RE.search(skill):
+        still = set(find_tag_concepts(_COMPETENCY_RE.sub(" ", skill)))
+        found = [c for c in found if c not in _PRACTICE_SUBJECTS or c in still]
+    return found
+
+
 def idea_concepts(
     *, skills: list[str] | None = None, text: str = "", known: list[str] | None = None
 ) -> tuple[list[str], list[str]]:
     """Skill concepts and subject concepts an idea names (labelled skills first)."""
     found: dict[str, None] = dict.fromkeys(known or [])
     for skill in skills or []:
-        found.update(dict.fromkeys(find_tag_concepts(skill)))
+        found.update(dict.fromkeys(skill_concepts(skill)))
     found.update(dict.fromkeys(find_concepts(text)))
     skill_keys = [c for c in found if kind_of(c) == SKILL and c not in _EVERYWHERE]
     domain_keys = [c for c in found if kind_of(c) == DOMAIN]

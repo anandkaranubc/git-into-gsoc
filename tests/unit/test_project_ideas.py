@@ -716,3 +716,121 @@ def test_a_missing_github_wiki_page_is_not_read_as_the_wiki_home() -> None:
     home += '<body><div id="wiki-body"><a href="Testing">Testing</a></div></body></html>'
     respx.get(page).mock(return_value=httpx.Response(200, text=home))
     assert fetch_ideas_document(CachedHttpClient(get_settings()), page, ttl=10) is None
+
+
+# ListenBrainz's 2026 ideas page (shortened): three ideas as ### under "## Ideas", and
+# its two Android ideas written as ##.
+LISTENBRAINZ = """# Development/Summer of Code/2026/ListenBrainz (https://wiki.musicbrainz.org/x)
+## Getting started
+Read the getting started page.
+## Ideas
+### Showcase MusicBrainz events in ListenBrainz
+**Proposed mentors**: lucifer
+**Languages/skills**: Python, React
+**Estimated project length**: 90 hours
+### User onboarding
+**Proposed mentors**: monkey
+**Languages/skills**: React
+**Estimated project length**: 90 hours
+## Integrate Remote Playback and Listening now
+**Proposed mentors**: jasje
+**Languages/skills**: Kotlin, Compose, Android
+**Estimated project length**: 175 hours
+**Difficulty**: Hard
+## Compose Multiplatform Migration
+**Proposed mentors**: jasje
+**Languages/skills**: Kotlin, Compose, Android
+**Difficulty**: Hard
+"""
+
+
+def test_ideas_at_two_heading_levels_are_all_read() -> None:
+    doc = extract_ideas(markdown_to_lines(LISTENBRAINZ), source_url="https://x")
+    titles = [i.title for i in doc.ideas]
+    assert "Integrate Remote Playback and Listening now" in titles
+    assert "Compose Multiplatform Migration" in titles
+    assert len(titles) == 4 and "Getting started" not in titles
+    android = next(i for i in doc.ideas if i.title.startswith("Integrate"))
+    assert android.mentors == ["jasje"] and android.hours == 175 and android.difficulty == "hard"
+
+
+def test_a_heading_that_is_a_link_keeps_its_name_and_its_link() -> None:
+    lines = [
+        "# Ideas",
+        "## Bug Logging Tool (BLT) (https://owasp.org/www-project-bug-logging-tool/)",
+        "Mentors: Donnie",
+        "Skills: Python",
+        "## OWASP Cornucopia (https://cornucopia.owasp.org/)",
+        "Mentors: Colin",
+        "Skills: JavaScript",
+    ]
+    doc = extract_ideas(lines, source_url="https://x")
+    assert [i.title for i in doc.ideas] == ["Bug Logging Tool (BLT)", "OWASP Cornucopia"]
+    assert doc.ideas[0].links[0] == "https://owasp.org/www-project-bug-logging-tool/"
+
+
+def test_an_ai_rule_that_discourages_is_quoted_first() -> None:
+    # MetaBrainz's ideas page (2026): the sentence that matters most for a first comment
+    # was dropped, and the heading ran into it.
+    text = (
+        "## About AI/Large Language models\n"
+        "**We discourage the use of AI tools in communications and contributions.**\n"
+        "The goal of GSoC is for you to learn.\n"
+        "However, if you do use any AI or LLMs, you must disclose their use in your PRs.\n"
+    )
+    assert ai_policy_sentences(text) == [
+        "We discourage the use of AI tools in communications and contributions.",
+        "However, if you do use any AI or LLMs, you must disclose their use in your PRs.",
+    ]
+
+
+def test_labels_split_by_line_breaks_and_a_lone_size_line_are_read() -> None:
+    # MariaDB's 2026 page: skills and mentors share one paragraph, split by <br>, and the
+    # size is a bold line of its own.
+    html = (
+        "<html><body><h2>Ideas</h2>"
+        "<h4>MDEV-28395 LOAD DATA plugins</h4><p><b>Full-time project 350h</b></p>"
+        "<p>Implement support for LOAD plugins.</p>"
+        "<p><b>Skills needed:</b> C++, bison<br><b>Mentors:</b> Sergei Golubchik</p>"
+        "<h4>MDEV-7924 START SLAVE UNTIL to Support Timestamps</h4>"
+        "<p><b>Part-time project 175h</b></p>"
+        "<p><b>Skills needed:</b> C++, Lex/Yacc<br><b>Mentors:</b> Brandon Nesterenko</p>"
+        "</body></html>"
+    )
+    doc = extract_ideas(to_lines(html, base_url="https://mariadb.com/x"), source_url="https://x")
+    first, second = doc.ideas
+    assert (first.skills, first.mentors, first.hours) == (
+        ["C++", "bison"],
+        ["Sergei Golubchik"],
+        350,
+    )
+    assert (second.mentors, second.hours) == (["Brandon Nesterenko"], 175)
+
+
+def test_an_idea_laid_out_as_table_cells_is_read() -> None:
+    # SageMath's 2026 page: each idea's details are cells, a label then its value.
+    lines = [
+        "# Ideas",
+        "## Implement KLR algebras and their representations",
+        "Mentor",
+        "Travis Scrimshaw",
+        "Area",
+        "Algebra",
+        "Difficulty",
+        "Hard",
+        "Length",
+        "175 hours",
+        "## Interface combinatorial species and Usain-Boltz",
+        "Mentor",
+        "Martin Rubey",
+        "Difficulty",
+        "Easy",
+        "Length",
+        "90 hours",
+    ]
+    first, second = extract_ideas(lines, source_url="https://x").ideas
+    assert (first.mentors, first.difficulty, first.hours) == (["Travis Scrimshaw"], "hard", 175)
+    assert (second.mentors, second.hours) == (["Martin Rubey"], 90)
+    # One label name alone, such as a "Mentors" link in a page's contents, labels nothing.
+    toc = ["# Ideas", "## Contents", "Mentors", "Students", "## Add types", "Some prose here."]
+    assert all(not i.mentors for i in extract_ideas(toc, source_url="https://x").ideas)

@@ -36,7 +36,7 @@ from git_into_gsoc.matching.concepts import (
     kind_of,
     resolve,
 )
-from git_into_gsoc.matching.ideas import is_real_idea
+from git_into_gsoc.matching.ideas import is_real_idea, skill_concepts
 
 SIGNALS_FILE = "org_signals.json"
 # MediaWiki section headings end in an "[edit]" link.
@@ -99,7 +99,7 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
             size[str(idea["size"])] += 1
         labelled: set[str] = set()
         for skill in idea.get("skills") or []:
-            labelled.update(find_tag_concepts(str(skill)))
+            labelled.update(skill_concepts(str(skill)))
         text = " ".join([str(idea.get("title") or ""), str(idea.get("description") or "")])
         named = set(find_concepts(text)) | labelled
         skills.update(labelled)
