@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.20.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.19.1...v0.20.0) (2026-10-22)
+
+
+### Features
+
+* **participation:** find a "not this year" statement in an issue body, and show it as a dated report ([#261](https://github.com/anandkaranubc/git-into-gsoc/issues/261)) ([2fe6041](https://github.com/anandkaranubc/git-into-gsoc/commit/2fe6041c72fa8aa28727e96eecf7b3fc14019103))
+* **path:** the calendar, the pace, and the application, from a blind review of 46 paths ([#277](https://github.com/anandkaranubc/git-into-gsoc/issues/277)) ([dbb7b80](https://github.com/anandkaranubc/git-into-gsoc/commit/dbb7b8040943343077189290864323a4452f11f0))
+
+
+### Bug Fixes
+
+* command hints you can paste, and a start footer that fits an installer that already ran setup ([#268](https://github.com/anandkaranubc/git-into-gsoc/issues/268)) ([79f40e3](https://github.com/anandkaranubc/git-into-gsoc/commit/79f40e3f4223eb5b55751a5d02e95eb879cfa17f))
+* **drafts:** a claim draft for a repository leads with that repository's own rule ([#276](https://github.com/anandkaranubc/git-into-gsoc/issues/276)) ([05ac30b](https://github.com/anandkaranubc/git-into-gsoc/commit/05ac30bc780fb67981bc4d7a0e83015c74fd453b))
+* **drafts:** an install step before the tests, and one Node install, not two ([#275](https://github.com/anandkaranubc/git-into-gsoc/issues/275)) ([9445512](https://github.com/anandkaranubc/git-into-gsoc/commit/9445512fd12c73444be97a548856adb461f4d1be))
+* **ideas:** read omegaUp's labels and OpenStreetMap's idea templates ([#274](https://github.com/anandkaranubc/git-into-gsoc/issues/274)) ([7817ab0](https://github.com/anandkaranubc/git-into-gsoc/commit/7817ab0cb6f89d76fd51979acdd2e365e2c81893))
+* **issue:** give the same caution as the list, and say what "recent" means ([#272](https://github.com/anandkaranubc/git-into-gsoc/issues/272)) ([4b1e915](https://github.com/anandkaranubc/git-into-gsoc/commit/4b1e915b9e4e2c0c11de547c8e37b2770145b699))
+* **matching:** findings from a blind beginner test on web and education ([#269](https://github.com/anandkaranubc/git-into-gsoc/issues/269)) ([3b99446](https://github.com/anandkaranubc/git-into-gsoc/commit/3b99446bd9faffdcb522a5c7715a528ef204de36))
+* **repo:** count a README's contributing section, plain merge figures, and a next step ([#271](https://github.com/anandkaranubc/git-into-gsoc/issues/271)) ([b243b95](https://github.com/anandkaranubc/git-into-gsoc/commit/b243b9510528ef4a3f676778165e79c393f8b108))
+
+
+### Documentation
+
+* re-render the start demo for the shared hours rule ([#279](https://github.com/anandkaranubc/git-into-gsoc/issues/279)) ([37b0154](https://github.com/anandkaranubc/git-into-gsoc/commit/37b01547104b452213f80ee8def49b1e6deae6b1))
+
 ## [0.19.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.19.0...v0.19.1) (2026-10-22)
 
 
