@@ -396,6 +396,25 @@ def _issue_repo(issue: dict[str, Any]) -> str:
     return "/".join(parts[:2]) if len(parts) >= 2 else ""
 
 
+_FIX_VERB = r"\b(?:fix(?:e[sd])?|close[sd]?|resolve[sd]?)\b"
+
+
+def says_it_fixes(text: str, repo: str, number: object) -> bool:
+    """True when a pull request's text says it fixes this issue.
+
+    GitHub closes an issue only for "Fixes #671" merged into the default branch. mofa's
+    "- Fixes issue #671" and mixxx's "Fixes first-run experience for #14905's underlying
+    UX issue" (merged into a release branch) left both issues open, and `recommend`
+    showed them as free starter issues.
+    """
+    if not number or not text:
+        return False
+    ref = rf"(?:{re.escape(repo)})?#{number}(?!\d)|{re.escape(repo)}/issues/{number}(?!\d)"
+    # Up to 80 characters of the same sentence: a full stop ends it, a dot in a link
+    # ("github.com/...") does not.
+    return bool(re.search(rf"{_FIX_VERB}(?:[^.\n]|\.(?=\S)){{0,80}}?(?:{ref})", text, re.I))
+
+
 def assess_issue(
     issue: dict[str, Any],
     timeline: list[dict[str, Any]],
@@ -480,6 +499,7 @@ def assess_issue(
                 if merged_at and opened and merged_at < opened:
                     earlier.add(key)
                 touched = _dt(source.get("updated_at"))
+                text = f"{source.get('title') or ''}\n{source.get('body') or ''}"
                 linked[key] = LinkedPullRequest(
                     number=int(number) if number else None,
                     url=source.get("html_url"),
@@ -487,6 +507,7 @@ def assess_issue(
                     author=_login(source.get("user")),
                     draft=bool(source.get("draft")),
                     idle_days=(now - touched).days if touched else None,
+                    fixes=merged and says_it_fixes(text, repo, issue.get("number")),
                 )
         elif kind == "connected":
             caveats.append(
@@ -508,6 +529,7 @@ def assess_issue(
         touched = _dt(pull.get("updated_at"))
         if merged_at and opened and merged_at < opened:
             earlier.add(f"comment-{where}-{number}")
+        text = f"{pull.get('title') or ''}\n{pull.get('body') or ''}"
         linked[f"comment-{where}-{number}"] = LinkedPullRequest(
             number=number,
             url=pull.get("html_url") or f"https://github.com/{where}/pull/{number}",
@@ -516,6 +538,7 @@ def assess_issue(
             draft=bool(pull.get("draft")),
             idle_days=(now - touched).days if touched else None,
             via_comment=True,
+            fixes=state == "merged" and says_it_fixes(text, repo, issue.get("number")),
         )
 
     assignees = [a for a in (_login(x) for x in issue.get("assignees") or []) if a]
@@ -529,7 +552,7 @@ def assess_issue(
     # often a follow-up to it ("Follow-up on PR #1695", opened 26 minutes after the merge).
     before = {id(linked[k]) for k in earlier if k in linked}
     merged_prs = [p for p in prs if p.state == "merged" and id(p) not in before]
-    if any(not p.via_comment for p in merged_prs):
+    if any(not p.via_comment and not p.fixes for p in merged_prs):
         caveats.append("A merged PR references this issue; it may already be partly fixed")
     # A comment can link a merged pull request as the fix or as an example to copy.
     for p in [p for p in merged_prs if p.via_comment][:2]:
@@ -582,6 +605,17 @@ def assess_issue(
                 "whether its author is still working on it before you start"
             )
         return result(Availability.LIKELY_TAKEN, reason)
+
+    # Merged and saying it fixes this, but GitHub left the issue open (no closing
+    # keyword it knows, or a merge into a release branch): probably done already.
+    fixed = [p for p in merged_prs if p.fixes]
+    if fixed:
+        return result(
+            Availability.LIKELY_TAKEN,
+            f"Merged PR {_pull_ref(fixed[0], repo)} says it fixes this, though the issue is "
+            "still open: it is probably done. Ask in the thread whether anything is left "
+            "before you start",
+        )
 
     names = [
         str(lab.get("name") if isinstance(lab, dict) else lab) for lab in issue.get("labels") or []

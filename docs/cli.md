@@ -111,6 +111,8 @@ Notes on `issues` and `issue`:
 - Cautions: an issue that may not suit a first contribution (a tracker or call for testing, one open for years, one with no beginner label, one several people asked for, one whose label says the project wants no AI-generated work) shows a caution saying why and comes after the issues without one.
 - Statuses: the top candidates are verified against their timelines and get a status from `available` to `unknown`; [find an issue that is free](guide/05-choose-an-issue.md#find-an-issue-that-is-actually-free) defines each one and says what to do.
 - `issue` adds a caveat when a pull request opened since the issue looks like the same work but never links the issue (one extra search), and names first a label saying the project wants no AI-generated work. A GitLab issue link from any GitLab server (gitlab.com, gitlab.gnome.org, invent.kde.org) is checked through GitLab's public API for state, assignees, labels, and merge requests; its comments need a sign-in, so it says to read them yourself.
+- An issue that a merged pull request says it fixes ("Fixes issue #12", "This should resolve #12") is `likely_taken` even while it stays open, because GitHub closes an issue only for a few exact phrases merged into the default branch. A merged pull request that only mentions the issue stays a caveat.
+- `recommend` marks a starter issue that someone asked to work on before, with no pull request since, as "asked before", as `issues` does.
 - When nothing turns up, `issues` says what to try next instead of printing an empty table.
 
 Notes on `orient` and `pointers`:

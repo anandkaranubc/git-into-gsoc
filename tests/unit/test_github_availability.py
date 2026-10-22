@@ -929,3 +929,63 @@ def test_claims_from_a_fifth_sample_of_new_organizations() -> None:
     ]
     for text in not_claims:
         assert not is_claim(text), text
+
+
+def _merged_pr(number: int, body: str, *, merged_days_ago: int = 1) -> dict[str, Any]:
+    event = _pr(number, "closed", merged=True)
+    event["source"]["issue"]["body"] = body
+    event["source"]["issue"]["title"] = "Remove dead config"
+    event["source"]["issue"]["pull_request"]["merged_at"] = _iso(merged_days_ago)
+    return event
+
+
+def test_a_merged_pr_that_says_it_fixes_the_issue_makes_it_likely_taken() -> None:
+    # mofa's issue 671 stayed open for seven months after "- Fixes issue #671" was
+    # merged: GitHub closes issues only for "Fixes #671". `recommend` showed it as free.
+    issue = _issue(number=671)
+    found = assess_issue(issue, [_merged_pr(672, "Summary\n- Fixes issue #671\n")], now=NOW)
+    assert found.availability == Availability.LIKELY_TAKEN
+    assert found.reason.startswith("Merged PR #672 says it fixes this, though the issue is still")
+    assert not any("partly fixed" in c for c in found.caveats)
+    # A merged PR that only mentions the issue is still a caveat, as before.
+    mention = assess_issue(issue, [_merged_pr(673, "Related to #671.")], now=NOW)
+    assert mention.availability == Availability.AVAILABLE
+    assert any("partly fixed" in c for c in mention.caveats)
+
+
+def test_which_words_say_a_pr_fixes_an_issue() -> None:
+    from git_into_gsoc.github.availability import says_it_fixes
+
+    for text in (
+        "Fixes #671",
+        "fixes issue #671",
+        "Closes acme/lib#671",
+        "Resolved: #671",
+        "Fix for #671's crash",
+        "fixes https://github.com/acme/lib/issues/671",
+    ):
+        assert says_it_fixes(text, "acme/lib", 671), text
+    for text in (
+        "Related to #671",
+        "Fixes #6710",
+        "Fixes #12. Mentioned in #671",
+        "See #671; this fixes the docs",
+        "Fixes #671",
+        "",
+    ):
+        number = 999 if text == "Fixes #671" else 671
+        assert not says_it_fixes(text, "acme/lib", number), text
+
+
+def test_a_real_issue_fixed_by_an_unlinked_merge_is_likely_taken() -> None:
+    # Recorded from mofa's issue 671 (names replaced): "- Fixes issue #671" was merged
+    # in March 2026, GitHub never closed the issue, and `recommend` offered it as free.
+    import json
+    from pathlib import Path
+
+    data = json.loads(
+        (Path(__file__).parents[1] / "fixtures" / "issue_fixed_by_unlinked_merge.json").read_text()
+    )
+    found = assess_issue(data["issue"], data["timeline"], now=NOW)
+    assert found.availability == Availability.LIKELY_TAKEN
+    assert "Merged PR #672 says it fixes this" in found.reason
