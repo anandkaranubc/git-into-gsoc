@@ -1576,6 +1576,10 @@ def diagnose_cmd(
         return
     data = _markup_safe(data)
     console.print(f"[bold]{data['summary']}[/bold]")
+    if data.get("step"):
+        console.print(f"\n[bold]The failing step ({data['step']['command']}) printed[/bold]")
+        for line in data["step"]["printed"]:
+            console.print(f"  [dim]{line}[/dim]")
     for cause in data["causes"]:
         console.print(
             f"\n[yellow]{cause['id'].replace('_', ' ')}[/yellow]  line {cause['line']}: [dim]{cause['quote']}[/dim]"

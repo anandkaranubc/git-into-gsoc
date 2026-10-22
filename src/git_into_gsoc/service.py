@@ -61,7 +61,7 @@ from git_into_gsoc.github.pointers import (
     title_keywords,
 )
 from git_into_gsoc.github.prcheck import check_pull_request
-from git_into_gsoc.github.pulls import pull_request_status
+from git_into_gsoc.github.pulls import FAILED_CONCLUSIONS, pull_request_status
 from git_into_gsoc.github.repos import (
     OUTSIDE_BUDGET,
     OUTSIDE_CHECKED,
@@ -403,6 +403,10 @@ def _when_no_issues(
         "ask in the project's channel before you start."
     )
     return steps
+
+
+# A link a failed CI step printed, usually to the project's own instructions.
+_LINK_RE = re.compile(r"https?://[^\s\"'<>)]+")
 
 
 class GSoCToolkit:
@@ -2844,6 +2848,7 @@ class GSoCToolkit:
             test_dirs=found.get("test_dirs") or [],
             news_dir=found.get("news_fragments"),
         )
+        self._explain_failed_checks(owner, repo, checks, report["findings"])
         return {
             "ref": f"{owner}/{repo}#{num}",
             "url": pull.get("html_url"),
@@ -2855,6 +2860,73 @@ class GSoCToolkit:
                 "whether the change is right; only reviewers can."
             ),
         }
+
+    def _explain_failed_checks(
+        self, owner: str, repo: str, checks: list[dict[str, Any]], findings: list[dict[str, Any]]
+    ) -> None:
+        """Add what the failed CI jobs printed to the "checks" finding, read from their logs.
+
+        A beginner saw only "Failing checks: Check Authors"; the job's own log said "This
+        author is not included in the .mailmap file" and linked SymPy's instructions.
+        Reads at most two failed GitHub Actions jobs, and only the end of each log.
+        """
+        from git_into_gsoc.diagnose import diagnose_output
+
+        finding = next((f for f in findings if f["id"] == "checks" and f["status"] == "fail"), None)
+        failed = [
+            c
+            for c in checks
+            if str(c.get("conclusion") or "").lower() in FAILED_CONCLUSIONS
+            and c.get("app") == "github-actions"
+            and c.get("id")
+        ]
+        if finding is None or not failed:
+            return
+        if not self.github.token:
+            finding["detail"] += (
+                " The logs were not read: GitHub shows CI logs only with a token (`gh auth login`)."
+            )
+            return
+        logs: list[dict[str, Any]] = []
+        for check in failed[:2]:
+            name = clean_untrusted(str(check.get("name")), limit=80)
+            try:
+                tail = self.github.job_log_tail(owner, repo, int(check["id"]))
+            except GigError as exc:
+                status = getattr(exc, "status_code", None)
+                if isinstance(exc, NotFoundError) or status == 410:
+                    # Logs expire (Zulip's answered 410 Gone after its retention period).
+                    why = "GitHub no longer keeps this log"
+                elif status == 403:
+                    why = "GitHub did not let this token read it"
+                else:
+                    why = str(exc)
+                logs.append({"check": name, "not_read": clean_untrusted(why, limit=160)})
+                continue
+            found = diagnose_output(tail)
+            entry: dict[str, Any] = {"check": name}
+            if found.get("step"):
+                entry["step"] = found["step"]
+            if found["causes"]:
+                cause = found["causes"][0]
+                entry["cause"] = {k: cause[k] for k in ("id", "quote", "means")}
+            logs.append(entry)
+        finding["logs"] = logs
+        said = []
+        for entry in logs:
+            if entry.get("step"):
+                printed = entry["step"]["printed"]
+                link = next((m.group(0) for line in printed if (m := _LINK_RE.search(line))), "")
+                words = " ".join(line for line in printed if not _LINK_RE.fullmatch(line))
+                quoted = words[:240].rstrip(" .:") + ("..." if len(words) > 240 else "")
+                line = f'{entry["check"]}: `{entry["step"]["command"]}` printed "{quoted}"'
+                said.append(line + (f", and links {link}" if link else ""))
+            elif entry.get("cause"):
+                said.append(f"{entry['check']}: {entry['cause']['means']}")
+            elif entry.get("not_read"):
+                said.append(f"{entry['check']}: the log was not read ({entry['not_read']})")
+        if said:
+            finding["detail"] = " ".join(f"{line}." for line in said) + " " + finding["detail"]
 
     def _ci_setup(self, repo: str) -> dict[str, Any]:
         """What the repository's CI sets up and runs: environment, install, and test commands."""

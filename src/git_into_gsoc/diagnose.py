@@ -204,6 +204,69 @@ def _evidence(pattern: Pattern, lines: list[str]) -> tuple[int, str, re.Match[st
     return named[0] if named else (others[0] if others else None)
 
 
+_STEP_START = re.compile(r"^##\[group\]Run (.+)$")
+_PROCESS_FAILED = re.compile(r"^##\[error\]Process completed with exit code \d+")
+# Red text: projects print their own explanation of a failed check in red (SymPy's
+# "This author is not included in the .mailmap file:").
+_RED_ON = re.compile(r"(?:\x1b|\^\[)\[(?:\d+;)*(?:31|91)(?:;\d+)*m")
+_RESET = re.compile(r"(?:\x1b|\^\[)\[0?m")
+_ERRORISH = re.compile(
+    r"\berror\b|\bfail|\bnot\b|\bmust\b|\bmissing\b|\bplease\b|\brequired?\b|\bsee:?$|https?://",
+    re.I,
+)
+# Logs list other people's names and addresses (SymPy's prints every new author).
+_EMAIL = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+# Passing tests and progress dots are not what went wrong (Django's "... ok",
+# Vitest's "✓ matches expected screenshots", pytest's ".....F.. [ 93%]").
+_PROGRESS = re.compile(r"^[.sFExX]+\s*\[\s*\d+%\]$|^\s*[✓√]\s")
+
+
+def failing_step(text: str, *, limit: int = 6) -> dict[str, Any] | None:
+    """What the failing step of a GitHub Actions log printed, or None for other output.
+
+    The step is the last "Run ..." group before "Process completed with exit code".
+    Its red lines and error annotations come first, then lines that read like an
+    error, then the rest. Quoted lines are cleaned, and email addresses are hidden.
+    """
+    raw = [_CI_PREFIX.sub("", line, count=1) for line in (text or "").splitlines()]
+    end = next((n for n, line in enumerate(raw) if _PROCESS_FAILED.match(line)), None)
+    if end is None:
+        return None
+    start = next((n for n in range(end - 1, -1, -1) if _STEP_START.match(raw[n])), None)
+    if start is None:
+        return None
+    step = _STEP_START.match(raw[start])
+    command = _COLOUR.sub("", step.group(1) if step else "").strip()
+    body = next((n + 1 for n in range(start, end) if raw[n].startswith("##[endgroup]")), start + 1)
+    red: list[str] = []
+    rest: list[str] = []
+    in_red = False
+    for line in raw[body:end]:
+        annotation = line.startswith("##[error]")
+        if line.startswith("##[") and not annotation:
+            continue
+        in_red = in_red or bool(_RED_ON.search(line))
+        shown = _COLOUR.sub("", line.removeprefix("##[error]")).strip()
+        if shown and not _NOT_EVIDENCE.search(shown) and not _PROGRESS.search(shown):
+            (red if in_red or annotation else rest).append(shown)
+        last_red = max((m.end() for m in _RED_ON.finditer(line)), default=-1)
+        if max((m.end() for m in _RESET.finditer(line)), default=-1) > last_red:
+            in_red = False
+    # Without red text, a failure's summary is at the end of the step.
+    tail = rest[-60:]
+    errorish = [shown for shown in tail if _ERRORISH.search(shown)][-limit:]
+    printed: list[str] = []
+    for shown in red or errorish or tail[-limit:]:
+        quote = clean_untrusted(_EMAIL.sub("<email>", shown), limit=200)
+        if quote and quote not in printed:
+            printed.append(quote)
+        if len(printed) >= limit:
+            break
+    if not printed:
+        return None
+    return {"command": clean_untrusted(command, limit=120), "printed": printed}
+
+
 def diagnose_output(text: str, *, ci: dict[str, Any] | None = None) -> dict[str, Any]:
     """Likely causes for a failed run, each with the line that matched.
 
@@ -271,12 +334,23 @@ def diagnose_output(text: str, *, ci: dict[str, Any] | None = None) -> dict[str,
         if ci.get("runners"):
             ci_notes.append("CI runs on: " + ", ".join(ci["runners"]))
 
+    step = failing_step(text)
     if causes:
         summary = f"Most likely: {causes[0]['means']}"
+    elif step:
+        # A project's own check usually says what is wrong and links its instructions.
+        summary = (
+            f"No known failure shape matched, but the failing step (`{step['command']}`) "
+            "printed its own explanation, quoted below. Read it first, then follow any link "
+            "it gives."
+        )
     else:
         summary = (
             "No known failure shape matched. Ask in the project's channel with the last twenty "
             "lines of output, your operating system, and your runtime version "
             "(`git-into-gsoc draft question` gives the structure)."
         )
-    return {"causes": causes, "ci": ci_notes, "summary": summary, "lines_read": len(lines)}
+    result = {"causes": causes, "ci": ci_notes, "summary": summary, "lines_read": len(lines)}
+    if step:
+        result["step"] = step
+    return result
