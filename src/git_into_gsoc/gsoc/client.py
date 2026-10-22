@@ -103,6 +103,39 @@ def _archive_slug(raw: dict[str, Any]) -> str | None:
     return match.group(1) if match else None
 
 
+# Words that end in "s" but are not plurals of a shorter word ("news" is not "new").
+_NOT_PLURAL = frozenset({"news", "series", "species"})
+
+
+def _word_forms(token: str) -> set[str]:
+    """A word with its plural or singular: "polynomial" also finds "Polynomials"."""
+    forms = {token}
+    if len(token) <= 3 or not token.isalpha() or token in _NOT_PLURAL:
+        return forms  # acronyms and short words stay exact
+    # Both guesses for an "-es" or "-ies" plural: "classes" is "class" but "databases" is
+    # "database", and "libraries" is "library" but "movies" is "movie". The wrong guess
+    # is not a word, so it finds nothing.
+    if token.endswith("ies"):
+        forms |= {token[:-3] + "y", token[:-1]}
+    elif token.endswith(("ses", "xes", "ches", "shes")):
+        forms |= {token[:-2], token[:-1]}
+        if token.endswith("ses"):
+            forms.add(token[:-2] + "is")  # "analyses" is "analysis"
+    elif token.endswith("is"):
+        forms.add(token[:-2] + "es")  # "analysis" and "analyses"
+    elif token.endswith("s") and not token.endswith(("ss", "us")):
+        forms.add(token[:-1])
+    elif token.endswith("y") and token[-2:-1] not in "aeiou":
+        forms.add(token[:-1] + "ies")
+    else:
+        forms.add(token + ("es" if token.endswith(("s", "x", "ch", "sh")) else "s"))
+    return forms
+
+
+def _mentions_any(text: str, token: str) -> bool:
+    return any(mentions(text, form) for form in _word_forms(token))
+
+
 class GSoCClient:
     def __init__(
         self,
@@ -496,8 +529,8 @@ class GSoCClient:
                     summary = _clean_text(project.get("short_description"), 240)
                     score = float(year - 2000) / 100
                     if tokens:
-                        title_hits = sum(1 for t in tokens if mentions(title, t))
-                        text_hits = sum(1 for t in tokens if mentions(summary, t))
+                        title_hits = sum(1 for t in tokens if _mentions_any(title, t))
+                        text_hits = sum(1 for t in tokens if _mentions_any(summary, t))
                         if not (title_hits or text_hits):
                             continue
                         score += 3 * title_hits + text_hits
