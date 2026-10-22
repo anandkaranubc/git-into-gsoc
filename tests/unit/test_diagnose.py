@@ -240,3 +240,37 @@ FAILED (errors=1, skipped=1530, expected failures=7)
     # The same log's import check: a count of zero is not a failure.
     assert diagnose_output("Checked 115 modules (0 disabled, 0 failed on import)")["causes"] == []
     assert _ids(diagnose_output("Error: EACCES: permission denied, mkdir")) == ["permission"]
+
+
+def test_a_name_missing_from_an_installed_module_is_not_a_missing_module() -> None:
+    # NumPy's CI (2026-10-22): the test is newer than the built copy it imports from.
+    numpy = (
+        "E   ImportError: cannot import name 'HAS_SUBPROCESSES' from 'numpy.testing' "
+        "(/tmp/build-install/usr/lib/python3/dist-packages/numpy/testing/__init__.py)"
+    )
+    report = diagnose_output(numpy)
+    assert _ids(report) == ["import_mismatch"]
+    assert report["causes"][0]["name"] == "HAS_SUBPROCESSES"
+    assert "rebuild" in " ".join(report["causes"][0]["try"])
+    circular = (
+        "ImportError: cannot import name 'Parser' from partially initialized module "
+        "'lib.parser' (most likely due to a circular import)"
+    )
+    assert _ids(diagnose_output(circular)) == ["import_mismatch"]
+    esm = (
+        "SyntaxError: The requested module './utils.js' does not provide an export named "
+        "'formatDate'"
+    )
+    assert diagnose_output(esm)["causes"][0]["name"] == "formatDate"
+    webpack = "export 'formatDate' (imported as 'formatDate') was not found in './utils'"
+    assert _ids(diagnose_output(webpack)) == ["import_mismatch"]
+    # Meson trying archivers in turn is not a missing command.
+    probe = (
+        "Detecting archiver via: `llvm-ar-20 --version` -> [Errno 2] No such file or "
+        "directory: 'llvm-ar-20'"
+    )
+    assert diagnose_output(probe)["causes"] == []
+    # A module that is not there at all is still a missing module.
+    assert _ids(diagnose_output("ModuleNotFoundError: No module named 'numpy'")) == [
+        "missing_module"
+    ]

@@ -32,8 +32,24 @@ def _p(id_: str, pattern: str, means: str, *try_: str) -> Pattern:
 
 PATTERNS: tuple[Pattern, ...] = (
     _p(
+        # NumPy's CI (2026-10-22): a test imported a name its built copy did not have yet,
+        # and the advice was to install a missing dependency.
+        "import_mismatch",
+        r"cannot import name '(\w+)' from (?:partially initialized module )?'[\w.]+'|"
+        r"does not provide an export named '(\w+)'|export '(\w+)' \(imported as '\w+'\) was not found",
+        "A module was found, but it lacks a name the code imports. Usually the installed copy "
+        "is older or newer than the code: a dependency at another version, or the project's "
+        "own build left behind after you pulled new changes.",
+        "If the module belongs to the project, reinstall or rebuild it the way CI does, so the "
+        "installed copy matches the code.",
+        "If it is a dependency, compare its version (`pip show NAME` or `npm ls NAME`) with the "
+        "version the project asks for, and install that one.",
+        "If the line says 'circular import', two modules import each other: look at the "
+        "imports your change added.",
+    ),
+    _p(
         "missing_module",
-        r"ModuleNotFoundError: No module named '([\w.]+)'|ImportError: cannot import name|"
+        r"ModuleNotFoundError: No module named '([\w.]+)'|"
         r"Cannot find module '([^']+)'|Error: Cannot find package",
         "A dependency is not installed in the environment you ran the command from.",
         "Check that your virtual environment is active (`which python` should point inside it).",
@@ -160,7 +176,12 @@ _CI_PREFIX = re.compile(r"^\ufeff?(?:[^\t]*\t[^\t]*\t)?\d{4}-\d\d-\d\dT[\d:.]+Z 
 _COLOUR = re.compile(r"(?:\x1b|\^\[)\[[\d;]*[A-Za-z]")
 # A test that passed, or failed as expected, is not evidence, even when its name says
 # "permission denied". unittest ends such lines with "... ok", pytest prints PASSED.
-_PASSED = re.compile(r" \.\.\. (?:ok|skipped\b.*|expected failure)$|\b(?:PASSED|XFAIL|XPASS)\b")
+# Nor is a build tool trying one tool after another: Meson prints "Detecting archiver
+# via: `llvm-ar-20 --version` -> [Errno 2] No such file or directory" and then finds ar.
+_NOT_EVIDENCE = re.compile(
+    r" \.\.\. (?:ok|skipped\b.*|expected failure)$|\b(?:PASSED|XFAIL|XPASS)\b|"
+    r"^Detecting [\w ]+ via: "
+)
 _NAMED_TEST = re.compile(r"^(?:FAILED|FAIL|--- FAIL:) |^(?:FAIL|ERROR): test\w* \(")
 _STYLE = next(p for p in PATTERNS if p.id == "style_check")
 
@@ -170,7 +191,7 @@ def _evidence(pattern: Pattern, lines: list[str]) -> tuple[int, str, re.Match[st
     hits = (
         (n, line, m)
         for n, line in enumerate(lines, 1)
-        if (m := pattern.regex.search(line)) and not _PASSED.search(line)
+        if (m := pattern.regex.search(line)) and not _NOT_EVIDENCE.search(line)
     )
     if pattern.id != "test_failure":
         return next(hits, None)
@@ -223,6 +244,7 @@ def diagnose_output(text: str, *, ci: dict[str, Any] | None = None) -> dict[str,
         commands = ci.get("test_commands") or []
         installs = ci.get("install_commands") or []
         if installs and ids & {
+            "import_mismatch",
             "missing_module",
             "command_not_found",
             "lockfile",
