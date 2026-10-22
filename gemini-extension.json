@@ -1,6 +1,6 @@
 {
   "name": "git-into-gsoc",
-  "version": "0.23.0",
+  "version": "0.24.0",
   "description": "Evidence-based preparation for Google Summer of Code: organizations, repositories, free beginner issues, orientation, and proposals.",
   "mcpServers": {
     "git-into-gsoc": {

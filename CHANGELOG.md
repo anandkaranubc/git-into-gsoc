@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.23.0...v0.24.0) (2026-10-22)
+
+
+### Features
+
+* **home:** suggest gh auth login when no GitHub token is found ([#257](https://github.com/anandkaranubc/git-into-gsoc/issues/257)) ([6e236b8](https://github.com/anandkaranubc/git-into-gsoc/commit/6e236b8b1d49846a0bb986f0f92ac43b7e44758b)), closes [#165](https://github.com/anandkaranubc/git-into-gsoc/issues/165)
+
+
+### Bug Fixes
+
+* **ideas:** keep a size stated in other hours, such as 300 or 80 to 160, with the nearest GSoC size ([#321](https://github.com/anandkaranubc/git-into-gsoc/issues/321)) ([1d60ff2](https://github.com/anandkaranubc/git-into-gsoc/commit/1d60ff296e501bf48028a7de75e02c2408329a4c))
+* **issues:** a comment with a plan is a claim, and --org lists no other organizations as not searched ([#345](https://github.com/anandkaranubc/git-into-gsoc/issues/345)) ([1c8cadb](https://github.com/anandkaranubc/git-into-gsoc/commit/1c8cadb5adca67ee9bf223e6b0af0f267b0e2b2d))
+* **issues:** use singular wording for one unlabelled issue ([#348](https://github.com/anandkaranubc/git-into-gsoc/issues/348)) ([e8e2603](https://github.com/anandkaranubc/git-into-gsoc/commit/e8e2603b187549c422561bd8e91c31b6416a3486))
+* **matching:** algorithms and data structures are a subject of their own ([#330](https://github.com/anandkaranubc/git-into-gsoc/issues/330)) ([7ed1974](https://github.com/anandkaranubc/git-into-gsoc/commit/7ed1974cb7c5abedff526f34999bd7045036c1a4))
+* **matching:** an interest widens to narrower subjects, not to skills under it ([#347](https://github.com/anandkaranubc/git-into-gsoc/issues/347)) ([a8d99a0](https://github.com/anandkaranubc/git-into-gsoc/commit/a8d99a09542fcf683a317ef12f0ad79f3fb556a4))
+* **matching:** count a language family together when naming an organization's main code ([#329](https://github.com/anandkaranubc/git-into-gsoc/issues/329)) ([b861de5](https://github.com/anandkaranubc/git-into-gsoc/commit/b861de586dbddc2fc6575f3ebd8105ec9ba30c5f))
+* **repos:** "gsoc" marks an application repo only as its first word, so git-into-gsoc is code ([#344](https://github.com/anandkaranubc/git-into-gsoc/issues/344)) ([da87255](https://github.com/anandkaranubc/git-into-gsoc/commit/da87255652cab06a84d265d8896218a9de8624df))
+* say feedback becomes a public issue, list GitLab in the privacy page, and one good first issue at a time ([#340](https://github.com/anandkaranubc/git-into-gsoc/issues/340)) ([25ab20c](https://github.com/anandkaranubc/git-into-gsoc/commit/25ab20c0f8036dbc8513abe1e5342817f2eb42c9))
+
+
+### Documentation
+
+* **distribution:** Smithery takes no new servers, and two listing requests are filed ([#335](https://github.com/anandkaranubc/git-into-gsoc/issues/335)) ([1892870](https://github.com/anandkaranubc/git-into-gsoc/commit/1892870fa6247a7c1f6e7d72304e2b5d9107fd4c))
+* **evals:** the known weak spots, and three more things tried and not kept ([#339](https://github.com/anandkaranubc/git-into-gsoc/issues/339)) ([3cd4656](https://github.com/anandkaranubc/git-into-gsoc/commit/3cd4656b983751955b59c9e6f72eece17c39181b))
+* **guide:** close the last chapter the way the others close ([#333](https://github.com/anandkaranubc/git-into-gsoc/issues/333)) ([f0768f6](https://github.com/anandkaranubc/git-into-gsoc/commit/f0768f65e4209393ebe35c408931499512cb4f07))
+* **guide:** split two long paragraphs in guides 6 and 7 ([#346](https://github.com/anandkaranubc/git-into-gsoc/issues/346)) ([ee04b37](https://github.com/anandkaranubc/git-into-gsoc/commit/ee04b37ce2b26cae63723b9eab228a30507016da))
+* **tests:** say the fenced-block case was caught in review, not which session found it ([#334](https://github.com/anandkaranubc/git-into-gsoc/issues/334)) ([0ff9a36](https://github.com/anandkaranubc/git-into-gsoc/commit/0ff9a369056f3f293f2935e7523c91aa38a83ccd))
+* the progress summary as it prints today, and token setup that works without a copy of the code ([#337](https://github.com/anandkaranubc/git-into-gsoc/issues/337)) ([ee3278d](https://github.com/anandkaranubc/git-into-gsoc/commit/ee3278dcc95223f2a5015a53a484ad21176870f2))
+
 ## [0.23.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.22.0...v0.23.0) (2026-10-22)
 
 
