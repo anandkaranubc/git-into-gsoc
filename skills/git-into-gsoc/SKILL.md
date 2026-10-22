@@ -46,7 +46,10 @@ answers to `gsoc_recommend_path` (it saves their profile on their computer), and
 show three organizations with a reason each, quoted from their `evidence`, plus
 the first step of `learning_path`. The
 `get_started` MCP prompt runs exactly this. In a terminal, `git-into-gsoc start`
-asks the same questions itself.
+asks the same questions itself. If `gsoc_recommend_path` is refused (some clients
+cannot ask the person to approve a tool that saves), use the read-only
+`gsoc_search_orgs` and `gsoc_org_details` instead, so the answer still names real
+organizations.
 
 When the first message already asks for everything at once ("which organization,
 which issue, and can you write my proposal"), use what they told you, ask at most
