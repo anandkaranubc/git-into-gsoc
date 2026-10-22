@@ -207,10 +207,17 @@ def plugin_copilot(box: Sandbox, source: str) -> tuple[str, str]:
     output = box.run(["copilot", "mcp", "get", NAME])
     if "Plugin" not in output:
         raise CheckFailed(f"`copilot mcp get` does not show the plugin server:\n{_tail(output)}")
-    # Copilot CLI starts MCP servers only for a signed-in session, so the server itself
-    # is not started here. A signed-in run once showed it expands ${CLAUDE_PLUGIN_ROOT}
-    # in args and starts the server in the plugin folder.
-    return "registered", "plugin installed and its server registered (start needs a Copilot login)"
+    # Copilot reads .github/plugin/plugin.json before .claude-plugin/, and only the
+    # Copilot manifest names the folder ${PLUGIN_ROOT}.
+    command = (_line_with(output, "Command:") or "").removeprefix("Command:").split()
+    if distribution.COPILOT_PLUGIN_ROOT not in command:
+        raise CheckFailed(f"Copilot did not read .github/plugin/plugin.json: {' '.join(command)}")
+    # Copilot CLI starts MCP servers only for a signed-in session, so start the same
+    # command here, with the folder it would expand ${PLUGIN_ROOT} to.
+    if source.startswith(("http", REPO)):
+        return "registered", "plugin installed and its server registered (start needs a login)"
+    argv = [source if a == distribution.COPILOT_PLUGIN_ROOT else a for a in command]
+    return "ok", "plugin installed; " + box.smoke({"command": argv[0], "args": argv[1:]})
 
 
 def plugin_gemini(box: Sandbox, source: str) -> tuple[str, str]:

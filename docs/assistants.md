@@ -170,7 +170,7 @@ Use one route per assistant. Setup skips an assistant that already has the plugi
 | Claude Code | Plugin and setup: the server connects |
 | Codex | Plugin and setup: the server answers, from the plugin's own folder |
 | Gemini CLI | Extension and setup: the server connects |
-| Copilot CLI | Plugin and setup: the server is registered. Copilot starts servers only for a signed-in session, so CI cannot start it; a signed-in check on 2026-10-21 (no prompt sent) showed Copilot launching the plugin's server from the plugin folder, and that command answering with 25 tools |
+| Copilot CLI | Plugin and setup: Copilot registers the server from its own manifest, and the exact command it registered answers. Copilot starts servers only for a signed-in session, so the check starts that command itself |
 | Antigravity | Plugin and setup: the converted plugin's server answers |
 | Cursor | The button's config and setup: Cursor's agent CLI starts the server and lists its tools |
 | VS Code | The button's config: VS Code accepts it and the server answers |

@@ -8,7 +8,8 @@ Several assistants read another assistant's plugin format, so a few files cover 
 
 | File | Read by |
 |---|---|
-| `.claude-plugin/plugin.json` and `marketplace.json` | Claude Code, Cursor, GitHub Copilot CLI, VS Code agent plugins, Devin, Factory Droid, Antigravity's converter, and Codex when `.codex-plugin` is missing |
+| `.claude-plugin/plugin.json` and `marketplace.json` | Claude Code, Cursor, VS Code agent plugins, Devin, Factory Droid, Antigravity's converter, and Codex when `.codex-plugin` is missing. GitHub Copilot CLI reads the marketplace here |
+| `.github/plugin/plugin.json` | GitHub Copilot CLI, which reads it before `.claude-plugin`. It names the plugin folder `${PLUGIN_ROOT}`, as Copilot's reference does. The awesome-copilot marketplace's checks accept only this location, `.plugin/`, or a root `plugin.json` |
 | `.codex-plugin/plugin.json` | Codex. It is read first, and only it can carry Codex's start timeout and the variables to pass on |
 | `gemini-extension.json` | Gemini CLI, Qwen Code, Antigravity's converter |
 | `server.json` | The official MCP registry, and the directories that copy it (Glama, PulseMCP) |
@@ -30,7 +31,7 @@ python scripts/sync_integrations.py --check   # what the tests run
 
 ## What happens at release
 
-Release Please bumps `version` in `pyproject.toml`, `src/git_into_gsoc/__init__.py`, both plugin manifests, `gemini-extension.json`, and `server.json`. After the release:
+Release Please bumps `version` in `pyproject.toml`, `src/git_into_gsoc/__init__.py`, the three plugin manifests, `gemini-extension.json`, and `server.json`. After the release:
 
 - `release.yml` uploads the wheel and source archive to PyPI, and dispatches `mcp-registry.yml`, which attaches the wheel, source archive, and `git-into-gsoc.mcpb` to the release and publishes the registry entry. The committed `server.json` lists only the PyPI package, with no version, which means the newest release. The workflow keeps every other field and replaces the package list with that release's bundle and its PyPI version. The registry accepts a PyPI package only after PyPI serves that version, so the workflow waits up to 10 minutes for it, and retries for up to 10 more when the registry still answers that the version was not found. If it never does, the entry lists only the bundle and the run shows a warning.
 - Claude Code, Codex, and Copilot see the new `version` and offer the update. Gemini CLI compares release tags, so `--auto-update` installs pick it up at the next start.

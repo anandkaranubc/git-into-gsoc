@@ -12,7 +12,12 @@ def _load(name: str) -> dict:  # type: ignore[type-arg]
     return json.loads((ROOT / name).read_text(encoding="utf-8"))
 
 
-VERSIONED = (".claude-plugin/plugin.json", ".codex-plugin/plugin.json", "gemini-extension.json")
+VERSIONED = (
+    ".claude-plugin/plugin.json",
+    ".codex-plugin/plugin.json",
+    ".github/plugin/plugin.json",
+    "gemini-extension.json",
+)
 
 
 def test_manifests_match_their_single_definition() -> None:
@@ -65,10 +70,12 @@ def test_each_plugin_runs_the_server_from_its_own_installed_copy() -> None:
     claude = _load(".claude-plugin/plugin.json")["mcpServers"]["git-into-gsoc"]
     codex = _load(".codex-plugin/plugin.json")["mcpServers"]["git-into-gsoc"]
     gemini = _load("gemini-extension.json")["mcpServers"]["git-into-gsoc"]
+    copilot = _load(".github/plugin/plugin.json")["mcpServers"]["git-into-gsoc"]
     assert claude["args"] == ["--from", "${CLAUDE_PLUGIN_ROOT}", "git-into-gsoc", "mcp"]
+    assert copilot["args"] == ["--from", "${PLUGIN_ROOT}", "git-into-gsoc", "mcp"]
     assert gemini["args"] == ["--from", "${extensionPath}", "git-into-gsoc", "mcp"]
     assert codex["args"] == ["--from", ".", "git-into-gsoc", "mcp"] and codex["cwd"] == "."
-    for entry in (claude, codex, gemini):
+    for entry in (claude, codex, gemini, copilot):
         assert entry["command"] == "uvx"
     # Codex passes servers only a few variables and allows 10 s to start by default.
     assert "GITHUB_TOKEN" in codex["env_vars"] and codex["startup_timeout_sec"] >= 60
@@ -81,6 +88,8 @@ def test_plugins_find_the_skill_and_their_images() -> None:
     plugin = _load(".claude-plugin/plugin.json")
     codex = _load(".codex-plugin/plugin.json")
     assert codex["skills"] == "./skills/"
+    # awesome-copilot's checks read Copilot's manifest, which names the skill folder.
+    assert _load(".github/plugin/plugin.json")["skills"] == "skills/"
     for path in (plugin["icon"], codex["interface"]["logo"], codex["interface"]["composerIcon"]):
         assert (ROOT / path).is_file(), path
     marketplace = _load(".claude-plugin/marketplace.json")

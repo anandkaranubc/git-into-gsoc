@@ -67,6 +67,7 @@ PROXY_VARS = ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY")
 
 # How each host names the folder a plugin or extension was installed into.
 CLAUDE_PLUGIN_ROOT = "${CLAUDE_PLUGIN_ROOT}"  # also read by Cursor, Copilot, VS Code, Devin
+COPILOT_PLUGIN_ROOT = "${PLUGIN_ROOT}"  # Copilot CLI's documented name
 GEMINI_EXTENSION_PATH = "${extensionPath}"  # also rewritten by Antigravity's converter
 
 
@@ -189,8 +190,10 @@ def goose_install_link(command: list[str] | None = None) -> str:
 # ---------------------------------------------------------------------- manifests
 #
 # Several hosts read another host's manifest, so a few files cover many tools:
-#   .claude-plugin/  Claude Code, Cursor, Copilot CLI, VS Code agent plugins, Devin,
-#                    Factory Droid, and Antigravity's converter
+#   .claude-plugin/  Claude Code, Cursor, VS Code agent plugins, Devin, Factory Droid,
+#                    and Antigravity's converter
+#   .github/plugin/  Copilot CLI (read before .claude-plugin), and the checks that
+#                    github/awesome-copilot runs before it lists a plugin
 #   .codex-plugin/   Codex (read before .claude-plugin; only it can carry Codex's
 #                    start timeout and the variables to pass on)
 #   gemini-extension.json  Gemini CLI, Qwen Code, and Antigravity's converter
@@ -218,6 +221,26 @@ def claude_plugin(version: str) -> dict[str, Any]:
         "license": LICENSE,
         "keywords": KEYWORDS,
         "mcpServers": {SERVER_NAME: stdio_entry(plugin_command(CLAUDE_PLUGIN_ROOT))},
+    }
+
+
+def copilot_plugin(version: str) -> dict[str, Any]:
+    """Copilot CLI's own manifest, with only the fields its reference lists.
+
+    Copilot CLI checks .github/plugin/ before .claude-plugin/, and the awesome-copilot
+    marketplace accepts only this location, .plugin/, or a root plugin.json.
+    """
+    return {
+        "name": SERVER_NAME,
+        "version": version,
+        "description": DESCRIPTION,
+        "author": AUTHOR,
+        "homepage": SITE_URL,
+        "repository": REPO_URL,
+        "license": LICENSE,
+        "keywords": KEYWORDS,
+        "skills": "skills/",
+        "mcpServers": {SERVER_NAME: stdio_entry(plugin_command(COPILOT_PLUGIN_ROOT))},
     }
 
 
@@ -323,6 +346,7 @@ def manifests(version: str) -> dict[str, dict[str, Any]]:
         ".claude-plugin/plugin.json": claude_plugin(version),
         ".claude-plugin/marketplace.json": claude_marketplace(),
         ".codex-plugin/plugin.json": codex_plugin(version),
+        ".github/plugin/plugin.json": copilot_plugin(version),
         "gemini-extension.json": gemini_extension(version),
         "server.json": registry_entry(version),
     }
