@@ -1615,7 +1615,13 @@ def draft_cmd(
     for field in data["must_fill"]:
         console.print(f"  ☐ {escape(field)}")
     console.print("\n[bold]Rules, with sources[/bold]")
+    # The project's own rules first; the rest are general practice from well-run
+    # projects, so say that instead of leaving pandas and Kubernetes unexplained.
+    headed = False
     for rule in data["rules"]:
+        if rule.get("scope") == "general" and not headed:
+            console.print("  [dim]General practice, from projects that wrote it down:[/dim]")
+            headed = True
         console.print(f"  • {escape(rule['rule'])}\n    [dim]{rule['source']}[/dim]")
     console.print(f"\n[dim]{escape(data['note'])}[/dim]")
 

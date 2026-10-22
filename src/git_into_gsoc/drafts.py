@@ -11,7 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from git_into_gsoc.text import straight_quotes
+from git_into_gsoc.text import clean_untrusted, straight_quotes
 
 DRAFT_KINDS = ("intro", "question", "claim", "pr", "review-reply", "status", "final")
 
@@ -170,7 +170,9 @@ _CONVENTION_PATTERNS = [
     (
         "no_assignment",
         re.compile(
-            r"\b(?:we )?do(?:es)? not assign|don't assign|not assign(?:ed)? issues|no (?:need to )?(?:ask for )?assign",
+            # CircuitVerse: "Start working immediately - no need to wait for assignment".
+            r"\b(?:we )?do(?:es)? not assign|don't assign|not assign(?:ed)? issues|"
+            r"no (?:need to )?(?:ask for |wait for |be )?assign",
             re.I,
         ),
     ),
@@ -178,13 +180,33 @@ _CONVENTION_PATTERNS = [
         "command",
         re.compile(r"(?<![\w/])(/assign(?:-me)?|\.take(?:-issue)?|/take|@\w+bot claim)\b", re.I),
     ),
+    # OpenMRS: "claim the issue by clicking the "Claim Issue" button" in JIRA.
+    ("claim_by", re.compile(r"\bclaim (?:the|an|this) issue by ([^.\n]{3,80})", re.I)),
+    # The p5.js web editor: "You have been assigned to the issue" before you start.
+    (
+        "wait_assigned",
+        re.compile(
+            r"\byou (?:have been|are|must be|should be) assigned (?:to )?the issue\b|"
+            r"(?<!need to )(?<!not )(?<!n't )\bwait (?:until|to be|for) (?:a maintainer )?(?:to )?assign",
+            re.I,
+        ),
+    ),
     (
         "comment",
         re.compile(
             r"\b(leave|post|add) a comment\b.*\b(intention|working on|claim|interest)", re.I
         ),
     ),
-    ("comment", re.compile(r"\bcomment (?:on|in) the issue\b", re.I)),
+    # Only when the same sentence is about claiming: CircuitVerse's "Getting Help" list
+    # says "Comment on the issue/PR with @username", which is how to ask for help.
+    (
+        "comment",
+        re.compile(
+            r"\bcomment (?:on|in) the issue\b(?=[^.\n]{0,100}\b(?:work(?:ing)? on|assign|claim|"
+            r"take|pick))",
+            re.I,
+        ),
+    ),
 ]
 
 
@@ -194,9 +216,28 @@ def claim_convention(text: str) -> dict[str, str]:
     for kind, pattern in _CONVENTION_PATTERNS:
         match = pattern.search(text)
         if match:
-            found = match.group(1) if match.groups() else match.group(0)
-            return {"kind": kind, "text": found.strip()}
+            if kind == "comment":
+                # The whole sentence, not the verb the pattern captured ("Add").
+                found = _sentence_at(text, match.start(), match.end())
+            else:
+                found = match.group(1) if match.groups() else match.group(0)
+            # Strangers wrote this, and it is quoted in rules an assistant reads.
+            found = " ".join(clean_untrusted(found, limit=200).split())
+            return {"kind": kind, "text": found.strip().rstrip(".")}
     return {"kind": "unknown", "text": ""}
+
+
+# The end of a sentence, with any closing quote or markdown after it ("issue".** Add).
+_SENTENCE_END = re.compile(r"[.!?][*_`\"')\]]*(?=\s|$)|\n")
+
+
+def _sentence_at(text: str, start: int, end: int) -> str:
+    """The sentence or list item around text[start:end], without markdown."""
+    left = max((m.end() for m in _SENTENCE_END.finditer(text, 0, start)), default=0)
+    right = _SENTENCE_END.search(text, end)
+    sentence = text[left : right.start() if right else len(text)]
+    sentence = re.sub(r"^\s*(?:[-*+>]|\d+[.)])\s+", "", sentence)
+    return re.sub(r"[*_`]+", "", sentence).strip()
 
 
 def _intro(ctx: dict[str, Any]) -> str:
@@ -245,6 +286,9 @@ def _claim(ctx: dict[str, Any]) -> str:
         lines.insert(
             1, "(This project does not assign issues: open the PR when ready instead of waiting.)"
         )
+    elif convention.get("kind") == "wait_assigned":
+        lines.append("")
+        lines.append("(This project assigns issues: wait until a maintainer assigns you.)")
     if any("assigned to the author" in gate for gate in ctx.get("gates") or []):
         lines.append("")
         lines.append(
@@ -459,14 +503,56 @@ _RENDERERS = {
 }
 
 
+def _project_rules(kind: str, ctx: dict[str, Any]) -> list[dict[str, str]]:
+    """What this project's own guide says, before the general rules.
+
+    A blind test passed --repo and got the same pandas and Kubernetes rules as without
+    it. With a repository, the first rule now says what its contributing guide says
+    about claiming, or that it says nothing.
+    """
+    if kind != "claim" or "claim_convention" not in ctx:
+        return []
+    convention = ctx.get("claim_convention") or {}
+    source = str(ctx.get("contributing_url") or "")
+    said = convention.get("text", "")
+    if convention.get("kind") == "command":
+        rule = f"This project's contributing guide says to claim an issue with {said}."
+    elif convention.get("kind") == "no_assignment":
+        rule = (
+            "This project's contributing guide says it does not assign issues: open the "
+            "pull request when it is ready instead of waiting."
+        )
+    elif convention.get("kind") == "comment":
+        rule = f'This project\'s contributing guide says: "{said}". Do that, with your plan.'
+    elif convention.get("kind") == "claim_by":
+        rule = f"This project's contributing guide says to claim an issue by {said}."
+    elif convention.get("kind") == "wait_assigned":
+        rule = (
+            "This project's contributing guide says to wait until a maintainer assigns you "
+            "before you start work."
+        )
+    elif source:
+        rule = (
+            "This project's contributing guide does not say how to claim an issue. Post one "
+            "comment with your plan in the issue, and follow what maintainers answer there."
+        )
+    else:
+        rule = (
+            "This project has no contributing guide that says how to claim an issue. Post "
+            "one comment with your plan in the issue, and follow what maintainers answer."
+        )
+    return [{"rule": rule, "source": source or "no contributing guide found", "scope": "project"}]
+
+
 def render_draft(kind: str, *, context: dict[str, Any]) -> dict[str, Any]:
     if kind not in _RENDERERS:
         raise ValueError(f"Unknown draft kind: {kind}. Choose one of {', '.join(DRAFT_KINDS)}.")
+    general = [{**rule, "scope": "general"} for rule in _RULES[kind]]
     return {
         "kind": kind,
         "template": _RENDERERS[kind](context),
         "must_fill": list(_MUST_FILL[kind]),
-        "rules": [dict(rule) for rule in _RULES[kind]],
+        "rules": [*_project_rules(kind, context), *general],
         "note": (
             "Replace every <placeholder> with your own observation. Send nothing you cannot "
             "back up; reviewers read the same public history you do."
