@@ -60,7 +60,20 @@ def test_hours_note_says_which_project_sizes_fit() -> None:
     # medium one (about 175 hours) fits in 12 weeks.
     assert "Choose a small or medium idea" in (hours_note(15) or "")
     assert "Choose a small idea" in (hours_note(5) or "")
-    assert hours_note(16) is None  # 350 hours in 22 weeks
+    # 8 hours: what fits comes first, then a medium project at the very limit, said as
+    # advice (no room for exams or setbacks), apart from Google's 22-week limit.
+    eight = hours_note(8) or ""
+    assert eight.startswith(
+        "At 8 hours a week, a small project (about 90 hours) fits in about 12 weeks"
+    )
+    assert (
+        "a medium one (about 175 hours) would take about 22 weeks, the longest period "
+        "allowed, which leaves no room for exams or setbacks" in eight
+    )
+    assert "Choose a small idea and state your hours in your proposal" in eight
+    # 16 hours: 350 hours is 22 weeks, at the limit; 20 hours: 18 weeks, all fit.
+    assert "a large one (about 350 hours) would take about 22 weeks" in (hours_note(16) or "")
+    assert hours_note(20) is None
     assert hours_note(None) is None and hours_note("lots") is None
 
 

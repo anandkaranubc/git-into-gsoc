@@ -9,17 +9,18 @@ the pace. Each step names the command that does it.
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
-from git_into_gsoc.coach import GSOC_FAQ_URL, LONGEST_CODING_WEEKS, PROJECT_HOURS
+from git_into_gsoc.coach import (
+    GSOC_FAQ_URL,
+    LONGEST_CODING_WEEKS,
+    STANDARD_CODING_WEEKS,
+    fitting_size,
+    project_weeks,
+)
 from git_into_gsoc.matching.profile import ContributorProfile
 
 GUIDE = "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide"
-# The standard coding period; longer, up to LONGEST_CODING_WEEKS, needs the mentor's yes.
-STANDARD_WEEKS = 12
-# A project "fits" with room for exams and setbacks, not right at the limit.
-COMFORTABLE_WEEKS = LONGEST_CODING_WEEKS - 4
 
 
 def _quote(name: str) -> str:
@@ -27,27 +28,31 @@ def _quote(name: str) -> str:
 
 
 def _pace(hours: int) -> str:
-    """Which project size fits these hours, with the weeks worked out and room to spare."""
-    small = math.ceil(PROJECT_HOURS["small"] / hours)
-    medium = math.ceil(PROJECT_HOURS["medium"] / hours)
+    """Which project size fits these hours, by the same rule as `start`'s hours note."""
+    weeks = project_weeks(hours)
+    fit = fitting_size(hours)
+    small, medium = weeks["small"], weeks["medium"]
     longer = (
-        f"longer than the standard {STANDARD_WEEKS}, which your mentor has to agree to; GSoC "
-        f"allows at most {LONGEST_CODING_WEEKS} weeks"
+        f"longer than the standard {STANDARD_CODING_WEEKS}, which your mentor has to agree "
+        f"to; GSoC allows at most {LONGEST_CODING_WEEKS} weeks"
     )
-    if medium <= STANDARD_WEEKS:
-        return f"a 175-hour project fits the standard {STANDARD_WEEKS} weeks (about {medium})"
-    if medium <= COMFORTABLE_WEEKS:
+    if "medium" in fit["comfortable"]:
+        if medium <= STANDARD_CODING_WEEKS:
+            return f"a 175-hour project fits the standard {STANDARD_CODING_WEEKS} weeks (about {medium})"
         return f"a 175-hour project fits in about {medium} weeks, {longer}"
-    if small <= COMFORTABLE_WEEKS:
-        stretch = f", {longer}" if small > STANDARD_WEEKS else ""
+    if "small" in fit["comfortable"]:
+        stretch = f", {longer}" if small > STANDARD_CODING_WEEKS else ""
+        where = "too close to the limit" if "medium" in fit["tight"] else "past the limit"
         return (
             f"plan for a 90-hour project (about {small} weeks{stretch}); a 175-hour one would "
-            f"take about {medium}, too close to the limit"
+            f"take about {medium}, {where}"
         )
-    return (
-        f"even a 90-hour project would take about {small} weeks, too close to the "
-        f"{LONGEST_CODING_WEEKS}-week limit, so find more hours before you apply"
+    where = (
+        f"longer than the {LONGEST_CODING_WEEKS}-week limit"
+        if "small" in fit["too_long"]
+        else f"too close to the {LONGEST_CODING_WEEKS}-week limit"
     )
+    return f"even a 90-hour project would take about {small} weeks, {where}, so find more hours before you apply"
 
 
 def learning_path(
@@ -83,9 +88,7 @@ def learning_path(
                 )
     steps: list[dict[str, Any]] = []
     # When this tool could not read the ideas page, point at the page itself.
-    unread = any(
-        "ideas page" in str(c) and "open it" in str(c) for c in (top or {}).get("caveats") or []
-    )
+    unread = bool((top or {}).get("ideas_unread"))
     ideas_url = str((top or {}).get("ideas_url") or "")
     ideas_command = f"Open {ideas_url}" if unread and ideas_url else f"git-into-gsoc ideas {name}"
 

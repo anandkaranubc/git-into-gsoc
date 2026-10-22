@@ -43,7 +43,34 @@ BUDGET_HORIZON_DAYS = 120
 # period runs 8 to 22 weeks (past the standard end only if the mentor agrees).
 PROJECT_HOURS = {"small": 90, "medium": 175, "large": 350}
 LONGEST_CODING_WEEKS = 22
+STANDARD_CODING_WEEKS = 12
 GSOC_FAQ_URL = "https://developers.google.com/open-source/gsoc/faq"
+# Our advice, not a GSoC rule: leave this many weeks before the longest period for
+# exams and setbacks.
+SPARE_WEEKS = 4
+
+
+def project_weeks(hours: int) -> dict[str, int]:
+    """Weeks each project size takes at these hours a week, rounded up."""
+    return {size: -(-total // hours) for size, total in PROJECT_HOURS.items()}
+
+
+def fitting_size(hours: int) -> dict[str, list[str]]:
+    """Project sizes by how they fit these hours: `comfortable` (with SPARE_WEEKS to
+    spare), `tight` (within the longest period but with no room left), `too_long`.
+
+    One rule for `start`'s hours note and the learning path, so one person never gets
+    two answers.
+    """
+    out: dict[str, list[str]] = {"comfortable": [], "tight": [], "too_long": []}
+    for size, weeks in project_weeks(hours).items():
+        if weeks > LONGEST_CODING_WEEKS:
+            out["too_long"].append(size)
+        elif weeks > LONGEST_CODING_WEEKS - SPARE_WEEKS:
+            out["tight"].append(size)
+        else:
+            out["comfortable"].append(size)
+    return out
 
 
 def hours_note(hours_per_week: Any) -> str | None:
@@ -54,9 +81,10 @@ def hours_note(hours_per_week: Any) -> str | None:
         return None
     if hours <= 0:
         return None
-    weeks = {size: -(-total // hours) for size, total in PROJECT_HOURS.items()}
-    too_long = [size for size, w in weeks.items() if w > LONGEST_CODING_WEEKS]
-    if not too_long:
+    weeks = project_weeks(hours)
+    fit = fitting_size(hours)
+    too_long = fit["too_long"]
+    if not too_long and not fit["tight"]:
         return None
     small = weeks["small"]
     if "small" in too_long:
@@ -66,13 +94,30 @@ def hours_note(hours_per_week: Any) -> str | None:
             "weeks). You can still contribute now and apply when you have more time. "
             f"Source: {GSOC_FAQ_URL}"
         )
-    sizes = " and ".join(too_long)
-    fits = " or ".join(size for size in PROJECT_HOURS if size not in too_long)
+    # What fits first, then what would only just fit (advice), then what does not
+    # (Google's limit).
+    parts: list[str] = []
+    for size in fit["comfortable"]:
+        lead = "a small project" if size == "small" else f"a {size} one"
+        parts.append(
+            f"{lead} (about {PROJECT_HOURS[size]} hours) fits in about {weeks[size]} weeks"
+        )
+    for size in fit["tight"]:
+        lead = "a small project" if size == "small" else f"a {size} one"
+        parts.append(
+            f"{lead} (about {PROJECT_HOURS[size]} hours) would take about {weeks[size]} weeks, "
+            "the longest period allowed, which leaves no room for exams or setbacks"
+        )
+    if too_long:
+        sizes = " and ".join(too_long)
+        parts.append(
+            f"{sizes} projects would not fit in the longest coding period "
+            f"({LONGEST_CODING_WEEKS} weeks, and only if your mentor agrees)"
+        )
+    choose = " or ".join(fit["comfortable"] or fit["tight"])
     return (
-        f"At {hours} hours a week, a small project (about 90 hours) takes about {small} "
-        f"weeks, and {sizes} projects would not fit in the longest coding period "
-        f"({LONGEST_CODING_WEEKS} weeks, and only if your mentor agrees). Choose a {fits} "
-        f"idea and state your hours in the proposal. Source: {GSOC_FAQ_URL}"
+        f"At {hours} hours a week, " + "; ".join(parts) + f". Choose a {choose} idea and "
+        f"state your hours in your proposal. Source: {GSOC_FAQ_URL}"
     )
 
 

@@ -115,6 +115,7 @@ class OrgMatch:
     caveats: list[str] = field(default_factory=list)
     skills_to_learn: list[str] = field(default_factory=list)
     extra_reasons: list[str] = field(default_factory=list)
+    ideas_unread: bool = False
 
     @property
     def participation(self) -> dict[str, Any] | None:
@@ -671,9 +672,10 @@ class OrgIndex:
                 f"Not an official statement about GSoC {said_year}; check its channels: "
                 f"{said.get('url')}"
             )
-        if profile.ideas.get("url") and (
+        ideas_unread = bool(profile.ideas.get("url")) and (
             not profile.ideas.get("count") or _poorly_split(profile.ideas)
-        ):
+        )
+        if ideas_unread:
             caveats.append(_unread_ideas(str(profile.ideas.get("layout") or "")))
         needs = _mostly_needs(profile, person) if not person.empty else []
         if needs:
@@ -730,6 +732,7 @@ class OrgIndex:
             caveats=caveats,
             skills_to_learn=_skills_to_learn(profile, person) if not person.empty else [],
             extra_reasons=extra,
+            ideas_unread=ideas_unread,
         )
 
 

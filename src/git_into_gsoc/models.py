@@ -119,6 +119,8 @@ class OrgSummary(BaseModel):
     skills_to_learn: list[str] = Field(default_factory=list)
     # What it posted about the coming GSoC, from the monthly check or a live one.
     participation: dict[str, Any] | None = None
+    # The tool could not read ideas from its ideas page: send people to the page itself.
+    ideas_unread: bool = False
     recent_projects: list[PastProject] = Field(default_factory=list)
 
 

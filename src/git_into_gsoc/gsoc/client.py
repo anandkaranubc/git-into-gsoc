@@ -413,6 +413,7 @@ class GSoCClient:
                     "caveats": m.caveats,
                     "skills_to_learn": m.skills_to_learn,
                     "participation": m.participation,
+                    "ideas_unread": m.ideas_unread,
                 }
             )
             for m in matches

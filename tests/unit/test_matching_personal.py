@@ -506,9 +506,7 @@ def test_the_path_says_where_the_program_is_and_links_an_unreadable_ideas_page()
         {
             "name": "Quiet Lab",
             "ideas_url": "https://quiet.example/ideas",
-            "caveats": [
-                "This tool could not pick out ideas on its ideas page; open it to read them"
-            ],
+            "ideas_unread": True,
         }
     ]
     person = build_profile(technologies=["python"], experience="new", hours_per_week=10)
@@ -540,6 +538,8 @@ def test_the_pace_leaves_room_and_says_when_the_mentor_must_agree() -> None:
     assert "your mentor has to agree to" in _pace(10)
     assert _pace(15).startswith("a 175-hour project fits the standard 12 weeks")
     assert "find more hours" in _pace(4)
+    # 4 and 3 hours: 23 and 30 weeks are past the limit, not merely close to it.
+    assert "longer than the 22-week limit" in _pace(4) and "longer than" in _pace(3)
 
 
 def test_an_experienced_person_is_asked_to_check_eligibility_first() -> None:
