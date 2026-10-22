@@ -98,28 +98,58 @@ function Get-ReleaseWheelSpec([string]$Version) {
   return $null
 }
 
-function Get-InstallSpec {
+# The sources to try, best first. Each later one is also a fallback when installing an
+# earlier one fails: right after a release, PyPI can serve its provenance before every
+# PyPI server offers the files, so for a few minutes the release wheel works and PyPI not.
+function Get-InstallSpecs {
   # CI passes a wheel it just built: cloning the repository through pipx takes minutes.
-  if ($env:GIG_INSTALL_SPEC) { return $env:GIG_INSTALL_SPEC }
+  if ($env:GIG_INSTALL_SPEC) { return @($env:GIG_INSTALL_SPEC) }
+  $specs = @()
   $version = Get-LatestReleaseVersion
   if ($version) {
     $spec = Get-VerifiedPyPISpec $version
     if ($spec) {
       Log "Using $spec from PyPI (published by $OwnRepo)"
-      return $spec
+      $specs += $spec
     }
     $spec = Get-ReleaseWheelSpec $version
     if ($spec) {
-      Log "Using release v$version from GitHub"
-      return $spec
+      if (-not $specs) { Log "Using release v$version from GitHub" }
+      $specs += $spec
     }
   }
-  if (-not $env:GIG_REPO_URL) { Log "Could not look up the newest release (no network, or GitHub is busy)" }
-  Log "Using the source on GitHub ($RepoUrl)"
-  if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
-    throw "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
+  $hasGit = [bool](Get-Command git -ErrorAction SilentlyContinue)
+  if (-not $specs) {
+    if (-not $env:GIG_REPO_URL) { Log "Could not look up the newest release (no network, or GitHub is busy)" }
+    Log "Using the source on GitHub ($RepoUrl)"
+    if (-not $hasGit) {
+      throw "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
+    }
   }
-  return "git+$RepoUrl"
+  if ($hasGit) { $specs += "git+$RepoUrl" }
+  return $specs
+}
+
+# Runs $Install with each source until one works. A native command that fails does not
+# stop PowerShell, so the exit code is checked; otherwise an update that failed would
+# leave the old version in place and still report success.
+function Install-FirstWorking([scriptblock]$Install) {
+  $specs = @(Get-InstallSpecs)
+  foreach ($spec in $specs) {
+    # With $PSNativeCommandUseErrorActionPreference on, a failed command throws instead.
+    try { & $Install $spec } catch { $global:LASTEXITCODE = 1 }
+    if ($LASTEXITCODE -eq 0) {
+      if ($spec -ne $specs[0]) { Log "Installed from $spec instead" }
+      return
+    }
+    Write-Host ""  # the tool's last error line can lack a newline
+    if ($spec -like "git-into-gsoc==*") {
+      Log "Could not install $spec from PyPI. A new release can take a few minutes to reach every PyPI server, so trying the next source."
+    } else {
+      Log "Could not install $spec. Trying the next source."
+    }
+  }
+  throw "Could not install git-into-gsoc from any source. Check your internet connection and try again in a few minutes."
 }
 
 # uv installs Python by itself, so a computer without Python 3.11 can still install
@@ -176,16 +206,15 @@ if (-not $SkillOnly) {
     & $venvPy -m pip install -q -e $Root
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
   } elseif (Get-Command uv -ErrorAction SilentlyContinue) {
-    $spec = Get-InstallSpec
     Log "Installing git-into-gsoc with uv"
-    uv tool install -q --force $spec
+    # A release minutes old can be missing from uv's cached copy of the PyPI index.
+    Install-FirstWorking { param($spec) uv tool install --refresh-package git-into-gsoc -q --force $spec }
     $bin = "$(uv tool dir --bin)".Trim()
     $GigBin = Join-Path $bin "git-into-gsoc.exe"
     Add-ToUserPath $bin
   } elseif (Get-Command pipx -ErrorAction SilentlyContinue) {
-    $spec = Get-InstallSpec
     Log "Installing git-into-gsoc with pipx"
-    pipx install --force $spec | Out-Null
+    Install-FirstWorking { param($spec) pipx install --force $spec | Out-Null }
     $bin = "$(pipx environment --value PIPX_BIN_DIR 2>$null)".Trim()
     if (-not $bin) { $bin = Join-Path $env:USERPROFILE ".local\bin" }
     $GigBin = Join-Path $bin "git-into-gsoc.exe"
@@ -198,7 +227,7 @@ if (-not $SkillOnly) {
     if (-not (Test-Path $venv)) { & $py[0] @($py[1..($py.Length)] | Where-Object { $_ }) -m venv $venv }
     $venvPy = Join-Path $venv "Scripts\python.exe"
     & $venvPy -m pip install -q -U pip
-    & $venvPy -m pip install -q (Get-InstallSpec)
+    Install-FirstWorking { param($spec) & $venvPy -m pip install -q $spec }
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
     Add-ToUserPath (Join-Path $venv "Scripts")
   }

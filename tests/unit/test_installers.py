@@ -36,8 +36,12 @@ def _check(
     provenance: str | None,
     wheel: bool = True,
     env: dict[str, str] | None = None,
+    every: bool = False,
 ) -> str:
-    """Run install.sh's choose_spec with a stub curl that serves canned replies."""
+    """Run install.sh's choose_spec with a stub curl that serves canned replies.
+
+    Returns the first source, or with ``every`` all sources to try, one per line.
+    """
     text = (ROOT / "install.sh").read_text()
     functions = []
     for name in (
@@ -69,10 +73,14 @@ def _check(
     script = (
         "set -euo pipefail\n"
         f'OWN_REPO="{OURS}"\nREPO_URL="${{GIG_REPO_URL:-https://github.com/{OURS}}}"\n'
-        'GIT_SPEC="git+${REPO_URL}"\nSPEC=""\n'
+        'GIT_SPEC="git+${REPO_URL}"\nSPEC=""\nSPECS=()\n'
         'log() { :; }\ndie() { echo "died: $*" >&2; exit 1; }\n'
         + "".join(functions)
-        + 'choose_spec\necho "$SPEC"\n'
+        + (
+            "choose_spec\nprintf '%s\\n' \"${SPECS[@]}\"\n"
+            if every
+            else 'choose_spec\necho "$SPEC"\n'
+        )
     )
     result = subprocess.run(
         ["bash", "-c", script],
@@ -109,6 +117,64 @@ def test_without_pypi_the_newest_release_wheel_is_used(tmp_path: Path) -> None:
 @posix_only
 def test_no_release_wheel_or_no_network_means_the_git_source(tmp_path: Path) -> None:
     assert _check(tmp_path, provenance=None, wheel=False) == GIT
+
+
+@posix_only
+def test_each_later_source_is_kept_as_a_fallback(tmp_path: Path) -> None:
+    assert _check(tmp_path, provenance=_provenance(OURS), every=True).splitlines() == [
+        "git-into-gsoc==1.2.3",
+        WHEEL,
+        GIT,
+    ]
+
+
+def _install_first(tmp_path: Path, *, failing: str) -> subprocess.CompletedProcess[str]:
+    """Run install.sh's install_first with a stub installer that fails on some sources."""
+    stub = tmp_path / "stub-install"
+    stub.write_text(
+        "#!/usr/bin/env bash\n"
+        f'echo "$1" >> "{tmp_path}/tried"\n'
+        f'case "$1" in {failing}) exit 1 ;; esac\n'
+    )
+    stub.chmod(0o755)
+    script = (
+        "set -euo pipefail\n"
+        f'SPECS=("git-into-gsoc==1.2.3" "{WHEEL}" "{GIT}")\nSPEC="${{SPECS[0]}}"\n'
+        'log() { printf \'==> %s\\n\' "$*"; }\ndie() { echo "died: $*" >&2; exit 1; }\n'
+        + _function("install_first")
+        + f'install_first "{stub}"\necho "done"\n'
+    )
+    return subprocess.run(["bash", "-c", script], capture_output=True, text=True, timeout=30)
+
+
+@posix_only
+def test_a_pypi_release_not_served_yet_falls_back_to_the_release_wheel(tmp_path: Path) -> None:
+    # Right after a release, PyPI can answer the provenance check while the install of
+    # that version still fails for a few minutes.
+    result = _install_first(tmp_path, failing="git-into-gsoc==*")
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "tried").read_text().splitlines() == ["git-into-gsoc==1.2.3", WHEEL]
+    assert "can take a few minutes to reach every PyPI server" in result.stdout
+    assert f"Installed from {WHEEL} instead" in result.stdout
+    assert result.stdout.rstrip().endswith("done")
+
+
+@posix_only
+def test_when_every_source_fails_the_installer_stops_with_advice(tmp_path: Path) -> None:
+    result = _install_first(tmp_path, failing="*")
+    assert result.returncode == 1
+    assert len((tmp_path / "tried").read_text().splitlines()) == 3
+    assert "died: Could not install git-into-gsoc from any source" in result.stderr
+    assert "done" not in result.stdout
+
+
+def test_the_powershell_installer_checks_each_install_and_falls_back() -> None:
+    text = (ROOT / "install.ps1").read_text(encoding="utf-8")
+    # A failed native command does not stop PowerShell, so every route must go through
+    # the loop that reads $LASTEXITCODE.
+    assert text.count("Install-FirstWorking {") == 3
+    assert "$LASTEXITCODE -eq 0" in text
+    assert "Get-InstallSpec " not in text and "(Get-InstallSpec)" not in text
 
 
 @posix_only

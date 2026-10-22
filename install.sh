@@ -140,6 +140,9 @@ install_checkout() {
 #   2. The wheel attached to the newest GitHub release: a finished package, so neither
 #      Git nor a build step is needed.
 #   3. The source on GitHub (needs Git), when the release cannot be looked up.
+# Each later source is also a fallback when installing an earlier one fails. Right after
+# a release, PyPI can serve its provenance before every PyPI server offers the files, so
+# for a few minutes the PyPI install can fail while the release wheel works.
 # An explicit GIG_REPO_URL means "install exactly this source", so 1 and 2 are skipped.
 OWN_REPO="anandkaranubc/git-into-gsoc"
 GIT_SPEC="git+${REPO_URL}"
@@ -179,24 +182,52 @@ release_wheel_spec() {
   printf '%s\n' "$url"
 }
 
+# Sets SPECS to the sources to try, best first, and SPEC to the first of them.
 SPEC=""
+SPECS=()
 choose_spec() {
-  local version
+  local version spec
+  SPECS=()
   if version="$(latest_release_version)"; then
-    if SPEC="$(verified_pypi_spec "$version")"; then
-      log "Using ${SPEC} from PyPI (published by ${OWN_REPO})"
-      return
+    if spec="$(verified_pypi_spec "$version")"; then
+      log "Using ${spec} from PyPI (published by ${OWN_REPO})"
+      SPECS+=("$spec")
     fi
-    if SPEC="$(release_wheel_spec "$version")"; then
-      log "Using release v${version} from GitHub"
-      return
+    if spec="$(release_wheel_spec "$version")"; then
+      [[ ${#SPECS[@]} -gt 0 ]] || log "Using release v${version} from GitHub"
+      SPECS+=("$spec")
     fi
   fi
-  SPEC="$GIT_SPEC"
-  [[ -n "${GIG_REPO_URL:-}" ]] || log "Could not look up the newest release (no network, or GitHub is busy)"
-  log "Using the source on GitHub (${REPO_URL})"
-  command -v git >/dev/null 2>&1 || die "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
+  if [[ ${#SPECS[@]} -eq 0 ]]; then
+    [[ -n "${GIG_REPO_URL:-}" ]] || log "Could not look up the newest release (no network, or GitHub is busy)"
+    log "Using the source on GitHub (${REPO_URL})"
+    command -v git >/dev/null 2>&1 || die "Installing from the source needs Git, which was not found. Check your internet connection and try again in a few minutes, or install Git from https://git-scm.com/downloads first."
+    SPECS=("$GIT_SPEC")
+  elif command -v git >/dev/null 2>&1; then
+    SPECS+=("$GIT_SPEC")
+  fi
+  SPEC="${SPECS[0]}"
 }
+
+# Runs the given install command with each source from choose_spec until one works.
+install_first() {
+  local spec
+  for spec in "${SPECS[@]}"; do
+    if "$@" "$spec"; then
+      [[ "$spec" == "$SPEC" ]] || log "Installed from ${spec} instead"
+      return 0
+    fi
+    echo  # the tool's last error line can lack a newline
+    if [[ "$spec" == git-into-gsoc==* ]]; then
+      log "Could not install ${spec} from PyPI. A new release can take a few minutes to reach every PyPI server, so trying the next source."
+    else
+      log "Could not install ${spec}. Trying the next source."
+    fi
+  done
+  die "Could not install git-into-gsoc from any source. Check your internet connection and try again in a few minutes."
+}
+
+pipx_install_quiet() { pipx install --force "$1" >/dev/null; }
 
 # --------------------------------------------------- uv, when nothing else fits
 # uv installs Python by itself, so a computer without Python 3.11 can still install
@@ -246,14 +277,14 @@ $(python_hint)"
 install_remote() {
   offer_uv
   choose_spec
-  local spec="$SPEC"
   if command -v uv >/dev/null 2>&1; then
     log "Installing git-into-gsoc with uv"
-    uv tool install -q --force "$spec"
+    # A release minutes old can be missing from uv's cached copy of the PyPI index.
+    install_first uv tool install --refresh-package git-into-gsoc -q --force
     GIG_BIN="$(uv tool dir --bin)/git-into-gsoc"
   elif command -v pipx >/dev/null 2>&1; then
     log "Installing git-into-gsoc with pipx"
-    pipx install --force "$spec" >/dev/null
+    install_first pipx_install_quiet
     GIG_BIN="$(pipx environment --value PIPX_BIN_DIR 2>/dev/null || echo "${HOME}/.local/bin")/git-into-gsoc"
   else
     check_python
@@ -265,7 +296,7 @@ install_remote() {
       "$PYTHON" -m venv --clear "${base}/venv"
     fi
     "${base}/venv/bin/python" -m pip install -q -U pip
-    "${base}/venv/bin/python" -m pip install -q "$spec"
+    install_first "${base}/venv/bin/python" -m pip install -q
     ln -sf "${base}/venv/bin/git-into-gsoc" "${HOME}/.local/bin/git-into-gsoc"
     ln -sf "${base}/venv/bin/gsoc" "${HOME}/.local/bin/gsoc"
     GIG_BIN="${HOME}/.local/bin/git-into-gsoc"
