@@ -26,6 +26,11 @@ jobs:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         id: release
         with:
+          # With the built-in token, GitHub holds CI and CodeQL on the release pull
+          # request until someone closes and reopens it. A token from the owner,
+          # stored as RELEASE_PLEASE_TOKEN, makes them start by themselves. Without
+          # the secret this falls back to the built-in token (docs/releasing.md).
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
 

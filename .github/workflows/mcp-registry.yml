@@ -9,15 +9,14 @@ name: Release assets and MCP registry
 # io.github.anandkaranubc/* is granted to this repository's owner.
 #
 # The release workflow dispatches this one after Release Please creates a
-# release, because a release created with the built-in Actions token does not
-# fire the `release` event. Running it again for a tag refreshes the wheel and
+# release. It has no `release` trigger: a release created with the built-in
+# token fires no event, and one created with RELEASE_PLEASE_TOKEN would start
+# this workflow a second time. Running it again for a tag refreshes the wheel and
 # the source archive. The registry records the bundle's checksum when a version
 # is published and cannot be edited by this workflow, so an already published
 # bundle is never replaced: the run only checks that it still matches.
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       tag:
