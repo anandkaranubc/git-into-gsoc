@@ -104,7 +104,9 @@ def test_the_sealed_set_stays_out_of_all_and_shows_totals_only(
 
 
 def test_completed_grades_only_fill_gaps_and_hold_no_personal_details(bench: ModuleType) -> None:
-    rows = json.loads((ROOT / "evals" / "completed_grades.json").read_text())["grades"]
+    rows = json.loads((ROOT / "evals" / "completed_grades.json").read_text(encoding="utf-8"))[
+        "grades"
+    ]
     personas = {p["id"]: p for p in bench.load_personas()}
     names = {org.name for org in bench.catalog().orgs}
     seen = set()
