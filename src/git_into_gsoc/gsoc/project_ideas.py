@@ -424,6 +424,8 @@ def _looks_like_html(raw: str) -> bool:
 
 
 def to_lines(raw: str, base_url: str | None = None) -> list[str]:
+    """An ideas page as lines, whether it arrived as HTML or as markdown; a line with
+    breaks inside it is split where a label starts, so each label is read."""
     lines = html_to_lines(raw, base_url) if _looks_like_html(raw) else markdown_to_lines(raw)
     # A paragraph with line breaks (<br>) arrives as one line: MariaDB writes "Skills
     # needed: C++, bison" and "Mentors: ..." in one, and neither label was read. Split
