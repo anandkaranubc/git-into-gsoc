@@ -338,8 +338,12 @@ def _has_starter(orgs: list[dict[str, Any]], issues: list[dict[str, Any]]) -> bo
 
 
 def _unread(status: dict[str, str], lead: Any) -> int:
-    """0 for a repository whose pull requests were read, 1 failed, 2 never tried."""
-    return {"checked": 0, "failed": 1}.get(status.get(lead.full_name, ""), 2)
+    """0 for a repository that was tried, read or not, 1 for one never tried.
+
+    A failed read keeps its score from before the check (no bonus, no penalty) and says
+    so, so a passing network error cannot push a project's main repository off the list.
+    """
+    return 0 if lead.full_name in status else 1
 
 
 def _when_no_issues(
@@ -820,8 +824,12 @@ class GSoCToolkit:
                 f"GitHub issues: {ideas_step}"
                 if len(judged) >= 3 and not any(f.authors for f in judged)
                 else "",
-                f"{failed} repositories could not be checked (GitHub's request limit), so "
-                "they are listed after the checked ones."
+                (
+                    f"{failed} {'repository' if failed == 1 else 'repositories'} could not be "
+                    "read, so "
+                    + ("its" if failed == 1 else "their")
+                    + " place in this list does not reflect outside contributions."
+                )
                 if failed
                 else "",
             )

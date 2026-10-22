@@ -758,14 +758,30 @@ def test_in_an_all_quiet_organization_no_unchecked_repository_rises_above_a_chec
     assert "None of the 15 repositories checked" in found["note"]
 
 
-def test_a_repository_whose_pull_requests_could_not_be_read_says_so_and_stays_below(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    toolkit, _ = _quiet_lab(monkeypatch, 6, failing={"tool-0", "tool-1"})
-    found = toolkit.discover_repos("lab", limit=6)
+def test_a_failed_read_keeps_its_place_and_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
+    # tool-0, the main repository, fails to load; the others are quiet and lose points.
+    toolkit, _ = _quiet_lab(monkeypatch, 12, failing={"tool-0"})
+    found = toolkit.discover_repos("lab")
     names = [r["full_name"] for r in found["repos"]]
-    # tool-0 and tool-1 have the most stars, but they could not be checked.
-    assert names.index("lab/tool-0") > names.index("lab/tool-2")
-    unread = next(r for r in found["repos"] if r["full_name"] == "lab/tool-0")
-    assert any("could not be read" in x for x in unread["reasons"])
-    assert "2 repositories could not be checked" in found["note"]
+    assert names[0] == "lab/tool-0"  # a passing error does not push it off the list
+    assert any("could not be read" in x for x in found["repos"][0]["reasons"])
+    assert "1 repository could not be read" in found["note"]
+    assert "request limit" not in found["note"]  # the cause is not known
+
+
+def test_an_outside_merge_older_than_a_busy_sample_still_counts() -> None:
+    # 29 team pull requests in the last 3 days, and an outsider's merged 30 days ago that
+    # was updated yesterday: the outsider counts, though "none" could claim only 3 days.
+    pulls = [_closed("core", "MEMBER", 0.1 * n) for n in range(29)]
+    outsider = _closed("ana", "CONTRIBUTOR", 30)
+    outsider["updated_at"] = _iso(1)
+    found = outside_merges([*pulls, outsider])
+    assert found.authors == 1
+    points, reason = outside_merges_points(found)
+    assert points > 0 and "in the last 180 days" in reason
+
+
+def test_a_sample_spanning_hours_says_the_last_day() -> None:
+    found = outside_merges([_closed("core", "MEMBER", 0.01 * n) for n in range(30)])
+    _, reason = outside_merges_points(found)
+    assert "in the last day" in reason and "1 days" not in reason

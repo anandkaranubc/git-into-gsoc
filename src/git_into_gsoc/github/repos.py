@@ -241,8 +241,10 @@ def outside_merges(
     start = window
     if len(pulls) >= page and stamps and min(stamps) > window:
         start = min(stamps)
+    # Count every outside merge the sample holds within the full window; the shorter
+    # span only limits what a "none merged" claim may say.
     return OutsideMerges(
-        authors=outside_authors_merged(pulls, since=start),
+        authors=outside_authors_merged(pulls, since=window),
         humans=sum(1 for p in pulls if not is_bot(p.get("user"))),
         sampled=len(pulls),
         days=max(1, (now - start).days),
@@ -252,10 +254,11 @@ def outside_merges(
 def outside_merges_points(found: OutsideMerges) -> tuple[float, str]:
     """Points and a reason from how many outside contributors got work merged lately."""
     period = (
-        f"in the last {found.days} days"
-        if found.days < OUTSIDE_WINDOW_DAYS
-        else f"in the last {OUTSIDE_WINDOW_DAYS} days"
+        "in the last day"
+        if found.days <= 1
+        else f"in the last {min(found.days, OUTSIDE_WINDOW_DAYS)} days"
     )
+    full = f"in the last {OUTSIDE_WINDOW_DAYS} days"
     if not found.sampled:
         return -QUIET_POINTS, "No closed pull requests yet, so no sign it takes outside work"
     if not found.humans:
@@ -268,9 +271,10 @@ def outside_merges_points(found: OutsideMerges) -> tuple[float, str]:
             f"No pull request from outside the team merged {period} (its last "
             f"{found.sampled} closed)",
         )
+    # A merge was counted over the full window, whatever span "none" could claim.
     if found.authors >= 3:
-        return 6.0, f"{found.authors} people outside the team got a pull request merged {period}"
-    return 2.0, f"{found.authors} outside contributor(s) got a pull request merged {period}"
+        return 6.0, f"{found.authors} people outside the team got a pull request merged {full}"
+    return 2.0, f"{found.authors} outside contributor(s) got a pull request merged {full}"
 
 
 def pull_stats(
