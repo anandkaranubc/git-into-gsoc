@@ -1,4 +1,11 @@
-"""Typer CLI for git-into-gsoc."""
+"""The command line: most commands call one GSoCToolkit method and render the result.
+
+Command docstrings are the `--help` text people read, so they are written for people;
+a test checks that every command and option has help text and is listed in
+docs/cli.md. Every string from data goes through `escape` (`_markup_safe`) before
+rich renders it: issue titles, labels, and project pages are text strangers wrote,
+and the person's own notes must print literally.
+"""
 
 from __future__ import annotations
 
@@ -1569,6 +1576,10 @@ def diagnose_cmd(
         return
     data = _markup_safe(data)
     console.print(f"[bold]{data['summary']}[/bold]")
+    if data.get("step"):
+        console.print(f"\n[bold]The failing step ({data['step']['command']}) printed[/bold]")
+        for line in data["step"]["printed"]:
+            console.print(f"  [dim]{line}[/dim]")
     for cause in data["causes"]:
         console.print(
             f"\n[yellow]{cause['id'].replace('_', ' ')}[/yellow]  line {cause['line']}: [dim]{cause['quote']}[/dim]"
@@ -1766,12 +1777,15 @@ def recommend_cmd(
         issues.add_column("Fits you", overflow="fold")
         for issue in data["starter_issues"]:
             status = issue["availability"]
-            issues.add_row(
-                f"[{_STATUS_STYLE.get(status, '')}]{status}[/]",
-                f"{issue['repo']}#{issue['number']}",
-                issue["title"],
-                "; ".join(issue.get("fits_you") or []),
-            )
+            shown = f"[{_STATUS_STYLE.get(status, '')}]{status}[/]"
+            if status == "available" and (issue.get("assessment") or {}).get("claims"):
+                # As in `issues`: free by the rules, but someone asked months ago
+                # (rust-lang/beyond-refs#27, 177 days); ask them before starting.
+                shown += "\n[dim]asked before[/dim]"
+            ref = f"{issue['repo']}#{issue['number']}"
+            if issue.get("caution"):
+                ref += f"\n[yellow]! {issue['caution']}[/yellow]"
+            issues.add_row(shown, ref, issue["title"], "; ".join(issue.get("fits_you") or []))
         console.print(issues)
     elif data.get("starter_issue_error"):
         console.print(

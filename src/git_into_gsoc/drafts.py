@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
 from git_into_gsoc.text import clean_untrusted, straight_quotes
 
 DRAFT_KINDS = ("intro", "question", "claim", "pr", "review-reply", "status", "final")
@@ -272,10 +273,21 @@ def _claim(ctx: dict[str, Any]) -> str:
     ref = f"{issue.get('repo')}#{issue.get('number')}" if issue.get("number") else "<owner/repo#N>"
     files = ", ".join(ctx.get("files") or []) or "<file or function>"
     convention = ctx.get("claim_convention") or {}
+    earlier = issue.get("earlier_claims") or []
+    opening = "I'd like to work on this."
+    if earlier and (issue.get("earlier_claim_count") or len(earlier)) < CONTESTED_MIN_CLAIMANTS:
+        # One or two people asked and nothing followed: ask the newest first. With more,
+        # the plan below has to carry the comment (see the warning).
+        who = earlier[0]
+        said = "were told yes" if who.get("granted") else "asked to work on this"
+        opening = (
+            f"@{who['login']}, you {said} {who['days_ago']} days ago. "
+            "Are you still on it? If not, I'd like to take it."
+        )
     lines = [
         f"On {ref}, one comment:",
         "",
-        "I'd like to work on this. I reproduced it on <commit> with <steps>.",
+        f"{opening} I reproduced it on <commit> with <steps>.",
         f"The cause looks to be in {files}: <one sentence hypothesis>.",
         "Plan: <one or two lines>. I expect to open a PR by <date>.",
         "If someone is already on it, tell me and I'll pick another issue.",
@@ -531,6 +543,14 @@ def _project_rules(kind: str, ctx: dict[str, Any]) -> list[dict[str, str]]:
             "This project's contributing guide says to wait until a maintainer assigns you "
             "before you start work."
         )
+    elif convention.get("kind") == "unread":
+        # A rate limit is not "no guide": the rule may be there, unread.
+        rule = (
+            f"GitHub did not answer for this project's {said}, so its rule for claiming an "
+            "issue was not read. Read its contributing guide on GitHub, if it has one, "
+            "before you claim, or run this again later."
+        )
+        source = source or "not read: GitHub did not answer"
     elif source:
         rule = (
             "This project's contributing guide does not say how to claim an issue. Post one "
@@ -545,6 +565,8 @@ def _project_rules(kind: str, ctx: dict[str, Any]) -> list[dict[str, str]]:
 
 
 def render_draft(kind: str, *, context: dict[str, Any]) -> dict[str, Any]:
+    """The template, the fields that must be filled, and the sourced rules for one
+    kind of draft. Raises ValueError for a kind that is not in DRAFT_KINDS."""
     if kind not in _RENDERERS:
         raise ValueError(f"Unknown draft kind: {kind}. Choose one of {', '.join(DRAFT_KINDS)}.")
     general = [{**rule, "scope": "general"} for rule in _RULES[kind]]

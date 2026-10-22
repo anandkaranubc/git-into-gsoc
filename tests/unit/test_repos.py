@@ -1,3 +1,6 @@
+"""Repository functions and the `repos` command: pull request statistics, labels, toolchains,
+mirrors, and the ranking with its outside-merge checks."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

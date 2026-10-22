@@ -364,6 +364,8 @@ class _LineParser(HTMLParser):
 
 
 def html_to_lines(raw: str, base_url: str | None = None) -> list[str]:
+    """HTML as markdown-like lines: headings, bullets, bold labels, and links, with
+    scripts, menus, and footers left out."""
     parser = _LineParser(base_url)
     parser.feed(raw[:MAX_CHARS])
     parser.close()
@@ -389,6 +391,8 @@ def _promotable(line: str) -> bool:
 
 
 def markdown_to_lines(raw: str) -> list[str]:
+    """Markdown or reStructuredText as lines: underlined headings become `#` headings;
+    front matter, comments, and rules are dropped."""
     lines: list[str] = []
     text = _FRONT_MATTER_RE.sub("", raw[:MAX_CHARS], count=1)
     text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)
@@ -420,6 +424,8 @@ def _looks_like_html(raw: str) -> bool:
 
 
 def to_lines(raw: str, base_url: str | None = None) -> list[str]:
+    """An ideas page as lines, whether it arrived as HTML or as markdown; a line with
+    breaks inside it is split where a label starts, so each label is read."""
     lines = html_to_lines(raw, base_url) if _looks_like_html(raw) else markdown_to_lines(raw)
     # A paragraph with line breaks (<br>) arrives as one line: MariaDB writes "Skills
     # needed: C++, bison" and "Mentors: ..." in one, and neither label was read. Split
@@ -576,6 +582,8 @@ def mentor_names(parts: list[str]) -> list[str]:
 
 
 def normalize_size(value: str) -> tuple[str | None, int | None]:
+    """(size, hours) from a size value: "175 hours" and "medium" both give ("medium",
+    175); (None, None) when neither a GSoC hour count nor a size word is found."""
     hours = _HOURS_RE.search(value or "")
     if hours:
         number = int(hours.group(1))
@@ -588,6 +596,8 @@ def normalize_size(value: str) -> tuple[str | None, int | None]:
 
 
 def normalize_difficulty(value: str) -> str | None:
+    """The page's difficulty word as "easy", "medium", or "hard" ("beginner" is easy,
+    "challenging" is hard), or None when it uses no such word."""
     text = (value or "").lower()
     if not text.strip():
         return None
@@ -1011,6 +1021,14 @@ def _is_template(idea: ProjectIdea) -> bool:
 
 
 def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
+    """Read the ideas on a page that is already split into lines.
+
+    The result's `layout` says what was found: "headings", with the ideas in
+    `ideas`; "index", a page that mostly links to other pages, with those pages in
+    `sub_pages` and the page's own blocks in `fallback_ideas` when they may still
+    be the ideas; or "unstructured", when nothing read as an idea. `ai_policy`
+    holds the page's sentences about AI use that sit outside any idea block.
+    """
     doc = IdeasDocument(source_url=source_url, fetched_url=source_url)
     doc.headings = [h[1] for line in lines if (h := _heading(line))][:60]
     levels = _candidate_levels(lines)

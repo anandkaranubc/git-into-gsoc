@@ -1,4 +1,5 @@
-"""Mentoring-organization intelligence.
+"""Mentoring organizations: the list for a year, one organization's record, and
+past projects.
 
 Three sources are layered:
 
@@ -170,6 +171,7 @@ class GSoCClient:
         return self._archive
 
     def list_year_organizations(self, year: int | None = None) -> list[dict[str, Any]]:
+        """One year's organizations from the community archive, as raw records."""
         year = year or LATEST_ARCHIVED_YEAR
         data = self.http.get_json(
             self._archive_url(f"{int(year)}.json"), ttl=self.settings.archive_ttl_seconds
@@ -432,6 +434,7 @@ class GSoCClient:
         year: int | None = None,
         limit: int = 15,
     ) -> tuple[OrgCatalog, list[OrgSummary]]:
+        """`rank_organizations` without the profile, for callers that only want the list."""
         catalog, ranked, _ = self.rank_organizations(
             query=query,
             technologies=technologies,

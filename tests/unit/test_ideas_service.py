@@ -1,3 +1,6 @@
+"""The `ideas` command: pages, umbrella sub-pages, issue trackers, past proposals, and the one
+reader the snapshot shares."""
+
 from __future__ import annotations
 
 from pathlib import Path

@@ -103,7 +103,7 @@ argument `mcp`. Without the terminal tool, any MCP client can run
 `uvx git-into-gsoc@latest mcp`, which needs only uv.
 [mcp.example.json](../assets/mcp.example.json) shows the shape for clients
 that read a JSON file, such as Cursor. The repository's
-[assistant setup guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/guide/03-connect-your-ai-assistant.md)
+[assistant page](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/assistants.md)
 has the commands for each client.
 
 Running `git-into-gsoc mcp` by hand shows nothing: the server waits for an

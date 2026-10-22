@@ -1,4 +1,4 @@
-"""High-level facade used by CLI and MCP tools."""
+"""The service layer: every CLI command and MCP tool calls a method of GSoCToolkit."""
 
 from __future__ import annotations
 
@@ -24,7 +24,8 @@ from git_into_gsoc.config import (
     latest_program_year,
 )
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
-from git_into_gsoc.errors import GigError, InputError, reset_phrase
+from git_into_gsoc.errors import GigError, InputError, RateLimitError, reset_phrase
+from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
     active_committers,
@@ -60,7 +61,7 @@ from git_into_gsoc.github.pointers import (
     title_keywords,
 )
 from git_into_gsoc.github.prcheck import check_pull_request
-from git_into_gsoc.github.pulls import pull_request_status
+from git_into_gsoc.github.pulls import FAILED_CONCLUSIONS, pull_request_status
 from git_into_gsoc.github.repos import (
     OUTSIDE_BUDGET,
     OUTSIDE_CHECKED,
@@ -404,7 +405,20 @@ def _when_no_issues(
     return steps
 
 
+# A link a failed CI step printed, usually to the project's own instructions.
+_LINK_RE = re.compile(r"https?://[^\s\"'<>)]+")
+
+
 class GSoCToolkit:
+    """What the CLI and the MCP server share: one client for each source, and the
+    saved progress.
+
+    Each public method gathers what a command needs from GitHub, the GSoC site, and
+    the progress file, and returns a plain dict ready for JSON or for rendering.
+    Expected failures (bad input, a limit, an unreachable source) raise GigError with
+    a hint that says what to try; the CLI and the server turn that into a message.
+    """
+
     def __init__(self) -> None:
         self.settings = get_settings()
         self.http = CachedHttpClient(self.settings)
@@ -415,6 +429,8 @@ class GSoCToolkit:
         self.progress = ProgressStore()
 
     def program_info(self, year: int | None = None, project_size: str = "medium") -> dict[str, Any]:
+        """The timeline and phase of `year` (the target year by default), with the
+        official sources and rules. Dates Google has not published are estimates."""
         year = validate_year(year, latest=latest_program_year(self.settings))
         year = year or self.settings.target_year
         offline = False
@@ -534,6 +550,9 @@ class GSoCToolkit:
         )
 
     def org_details(self, name: str, year: int | None = None) -> dict[str, Any]:
+        """One organization's record, its posts about the coming GSoC, and the
+        statement the monthly check has on file. `found` is False, with suggestions,
+        when the name matches nothing."""
         org = self.gsoc.get_organization(name, year=year)
         if not org:
             return self._org_not_found(name, year=year)
@@ -665,6 +684,9 @@ class GSoCToolkit:
         }
 
     def evaluate_repo(self, full_name: str) -> dict[str, Any]:
+        """A repository's health score and contribution guide, with advice read from
+        the grade. A read-only mirror is not graded: its GitHub history says nothing
+        about the project."""
         owner, name = parse_repo(full_name)
         source = mirror_source(self.github.get_repo(owner, name))
         if source:
@@ -1075,6 +1097,15 @@ class GSoCToolkit:
         max_results: int = 10,
         year: int | None = None,
     ) -> dict[str, Any]:
+        """Free beginner issues, each checked for claims and linked pull requests.
+
+        With no language, organization, or repository, the saved profile's first
+        language is used. `scope` "gsoc" searches the GitHub owners of GSoC
+        organizations that use the language (and match the saved interests, when
+        enough do); "all" searches every repository. `org` may be a GSoC
+        organization's name or a GitHub login. The note says what was searched and
+        what was left out.
+        """
         from_profile = False
         asked_org = org  # cleared below when it names a GSoC organization
         self.github.rate_limited = None
@@ -1238,6 +1269,13 @@ class GSoCToolkit:
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
+        """Whether one issue is free to pick up, with the reasons and caveats.
+
+        `ref` is owner/repo#N, an issue URL, or a GitLab issue link. On top of the
+        timeline assessment it checks the repository (archived, retired, or quiet
+        for a year), look-alike pull requests that never linked the issue, a label
+        that asks for no AI help, and the same caution `issues` shows in its list.
+        """
         if number is None and parse_gitlab_issue(ref):
             # GNOME, KDE, and others keep issues on GitLab; its public API has the basics.
             found = gitlab_issue_status(
@@ -1352,6 +1390,8 @@ class GSoCToolkit:
         }
 
     def profile_from_github(self, username: str) -> dict[str, Any]:
+        """Read a GitHub user's languages and merged pull requests in other people's
+        repositories, and save them to the profile."""
         profile = self.github.infer_profile_languages(username)
         merged = self.github.merged_pull_requests_elsewhere(username)
         if merged is not None:
@@ -1446,8 +1486,8 @@ class GSoCToolkit:
         """Organizations, ideas, starter issues, and a learning path for one person.
 
         Every organization comes with its fit, the evidence for it, and caveats.
-        With `check_posts`, the top five are checked for posts saying they will not
-        take part in the coming year (one search each).
+        With `check_posts`, the top five (three without a token) are checked for
+        posts saying they will not take part in the coming year (one search each).
         """
         if experience is not None and experience.strip().lower() not in EXPERIENCE_LEVELS:
             raise InputError(
@@ -2119,7 +2159,8 @@ class GSoCToolkit:
         if "pull_request" in issue:
             raise InputError(
                 f"{full}#{num} is a pull request, not an issue",
-                hint="Pass the issue number the PR addresses.",
+                hint="Pass the issue number the PR addresses. To check a pull request, run "
+                f"`git-into-gsoc pr-check {full}#{num}`.",
             )
         raw = self.github.get_repo(owner, repo)
         branch = str(raw.get("default_branch") or "HEAD")
@@ -2353,6 +2394,22 @@ class GSoCToolkit:
                 context["issue"]["title"] = clean_untrusted(status.get("title"), limit=200)
                 context["issue"]["availability"] = status.get("availability")
                 context["issue"]["reason"] = status.get("reason")
+                # Free by the rules, but someone asked over a month ago and opened nothing:
+                # the claim should ask them first (`issue` already said so; `draft` did not).
+                # Newest first. A maintainer's old "yes" with no PR since counts too: that
+                # person is the one most worth asking.
+                earlier = [
+                    {
+                        "login": clean_untrusted(c.get("login"), limit=40),
+                        "days_ago": c["days_ago"],
+                        "granted": bool(c.get("granted")),
+                    }
+                    for c in (status.get("assessment") or {}).get("claims") or []
+                    if c.get("login") and c.get("days_ago") is not None
+                ]
+                if earlier and status.get("availability") == "available":
+                    context["issue"]["earlier_claims"] = earlier[:3]
+                    context["issue"]["earlier_claim_count"] = len(earlier)
             except GigError as exc:
                 context["issue"]["note"] = str(exc)
         if repo:
@@ -2406,7 +2463,13 @@ class GSoCToolkit:
             guide = self.github.contribution_guide(repo)
             context["channels"] = context.get("channels") or guide.communication_channels
             text = guide.contributing_text or guide.contributing_excerpt
-            context["claim_convention"] = claim_convention(text)
+            context["claim_convention"] = (
+                {"kind": "unread", "text": ", ".join(guide.unread)}
+                if guide.unread and not text
+                else claim_convention(text)
+            )
+            if guide.unread and not text:
+                context["guide_unread"] = ", ".join(guide.unread)
             context["dco"] = bool(
                 re.search(r"Signed-off-by|git commit -s|Developer Certificate", text)
             )
@@ -2425,6 +2488,14 @@ class GSoCToolkit:
             if k in {"org", "channels", "issue", "claim_convention", "contributing_url"}
         }
         warnings: list[str] = []
+        if kind == "pr" and context.get("guide_unread"):
+            # The sign-off and AI-disclosure lines come from the guide; unread, they are
+            # left out without saying so, though the project may require them.
+            warnings.append(
+                f"GitHub did not answer for this project's {context['guide_unread']}, so its "
+                "contributing guide was not read. Check it on GitHub for a sign-off or "
+                "AI-disclosure rule before you open the pull request."
+            )
         if context.get("issue", {}).get("availability") not in (None, "available"):
             issue_info = context["issue"]
             if issue_info["availability"] == "not_open" and kind == "claim":
@@ -2439,6 +2510,24 @@ class GSoCToolkit:
                 warnings.append(
                     f"Issue availability is {issue_info['availability']}; check the thread "
                     "before claiming."
+                )
+        issue_ctx = context.get("issue") or {}
+        earlier = issue_ctx.get("earlier_claims") or []
+        if kind == "claim" and earlier:
+            newest, count = earlier[0], issue_ctx.get("earlier_claim_count") or len(earlier)
+            if count >= CONTESTED_MIN_CLAIMANTS:
+                # The same advice `issue` gives: one more request is the noise maintainers dread.
+                warnings.append(
+                    f"{count} people asked to work on this, the latest @{newest['login']} "
+                    f"{newest['days_ago']} days ago, and none opened a pull request. Post a "
+                    "concrete plan instead of another request, or pick another issue."
+                )
+            else:
+                said = "was told yes" if newest["granted"] else "asked to work on this"
+                warnings.append(
+                    f"@{newest['login']} {said} {newest['days_ago']} days ago and no pull request "
+                    "followed. Ask them in the thread first, and pick another issue if they are "
+                    "still on it."
                 )
         for url in context.get("closed_channels") or []:
             warnings.append(
@@ -2774,6 +2863,7 @@ class GSoCToolkit:
             test_dirs=found.get("test_dirs") or [],
             news_dir=found.get("news_fragments"),
         )
+        self._explain_failed_checks(owner, repo, checks, report["findings"])
         return {
             "ref": f"{owner}/{repo}#{num}",
             "url": pull.get("html_url"),
@@ -2785,6 +2875,77 @@ class GSoCToolkit:
                 "whether the change is right; only reviewers can."
             ),
         }
+
+    def _explain_failed_checks(
+        self, owner: str, repo: str, checks: list[dict[str, Any]], findings: list[dict[str, Any]]
+    ) -> None:
+        """Add what the failed CI jobs printed to the "checks" finding, read from their logs.
+
+        A beginner saw only "Failing checks: Check Authors"; the job's own log said "This
+        author is not included in the .mailmap file" and linked SymPy's instructions.
+        Reads at most two failed GitHub Actions jobs, and only the end of each log.
+        """
+        from git_into_gsoc.diagnose import diagnose_output
+
+        finding = next((f for f in findings if f["id"] == "checks" and f["status"] == "fail"), None)
+        failed = [
+            c
+            for c in checks
+            if str(c.get("conclusion") or "").lower() in FAILED_CONCLUSIONS
+            and c.get("app") == "github-actions"
+            and c.get("id")
+        ]
+        if finding is None or not failed:
+            return
+        if not self.github.token:
+            finding["detail"] += (
+                " The logs were not read: GitHub shows CI logs only with a token (`gh auth login`)."
+            )
+            return
+        logs: list[dict[str, Any]] = []
+        for check in failed[:2]:
+            name = clean_untrusted(str(check.get("name")), limit=80)
+            try:
+                tail = self.github.job_log_tail(owner, repo, int(check["id"]))
+            except RateLimitError:
+                why = "GitHub's rate limit stopped it; run pr-check again after it resets"
+                logs.append({"check": name, "not_read": why})
+                continue
+            except GigError as exc:
+                status = getattr(exc, "status_code", None)
+                if isinstance(exc, NotFoundError) or status == 410:
+                    # Logs expire (Zulip's answered 410 Gone after its retention period).
+                    why = "GitHub no longer keeps this log"
+                elif status == 403:
+                    why = "GitHub did not let this token read it"
+                else:
+                    why = str(exc)
+                logs.append({"check": name, "not_read": clean_untrusted(why, limit=160)})
+                continue
+            found = diagnose_output(tail)
+            entry: dict[str, Any] = {"check": name}
+            if found.get("step"):
+                entry["step"] = found["step"]
+            if found["causes"]:
+                cause = found["causes"][0]
+                entry["cause"] = {k: cause[k] for k in ("id", "quote", "means")}
+            logs.append(entry)
+        finding["logs"] = logs
+        said = []
+        for entry in logs:
+            if entry.get("step"):
+                printed = entry["step"]["printed"]
+                link = next((m.group(0) for line in printed if (m := _LINK_RE.search(line))), "")
+                words = " ".join(line for line in printed if not _LINK_RE.fullmatch(line))
+                quoted = words[:240].rstrip(" .:") + ("..." if len(words) > 240 else "")
+                line = f'{entry["check"]}: `{entry["step"]["command"]}` printed "{quoted}"'
+                said.append(line + (f", and links {link}" if link else ""))
+            elif entry.get("cause"):
+                said.append(f"{entry['check']}: {entry['cause']['means']}")
+            elif entry.get("not_read"):
+                said.append(f"{entry['check']}: the log was not read ({entry['not_read']})")
+        if said:
+            finding["detail"] = " ".join(f"{line}." for line in said) + " " + finding["detail"]
 
     def _ci_setup(self, repo: str) -> dict[str, Any]:
         """What the repository's CI sets up and runs: environment, install, and test commands."""

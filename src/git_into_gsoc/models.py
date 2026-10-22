@@ -37,6 +37,8 @@ class Availability(StrEnum):
 
 
 class IssueClaim(BaseModel):
+    """Someone asking to work on an issue, as read from its comments."""
+
     login: str
     at: datetime
     days_ago: int
@@ -44,6 +46,8 @@ class IssueClaim(BaseModel):
 
 
 class LinkedPullRequest(BaseModel):
+    """A pull request on an issue's timeline, or one a comment points at."""
+
     number: int | None = None
     url: str | None = None
     state: str = "unknown"
@@ -52,9 +56,14 @@ class LinkedPullRequest(BaseModel):
     idle_days: int | None = None
     # True when only a comment on the issue points at the PR, not GitHub's links.
     via_comment: bool = False
+    # True when the PR's title or body says it fixes this issue ("Fixes issue #671").
+    fixes: bool = False
 
 
 class IssueAssessment(BaseModel):
+    """Whether an issue is free to pick up, and the evidence: claims, linked pull
+    requests, assignees, and caveats to read before starting."""
+
     availability: Availability
     reason: str
     claims: list[IssueClaim] = Field(default_factory=list)
@@ -71,6 +80,8 @@ class ContactChannel(BaseModel):
 
 
 class PastProject(BaseModel):
+    """An accepted project from a past year, from the community archive."""
+
     year: int
     org: str
     title: str
@@ -81,6 +92,10 @@ class PastProject(BaseModel):
 
 
 class OrgSummary(BaseModel):
+    """One mentoring organization. The fields from `match_score` to `ideas_unread`
+    are filled in by `rank_organizations` and `recent_projects` by
+    `get_organization`; the rest come from the official list or the archive."""
+
     name: str
     slug: str | None = None
     description: str = ""
@@ -125,6 +140,9 @@ class OrgSummary(BaseModel):
 
 
 class OrgCatalog(BaseModel):
+    """Which year's list was used, where it came from (official, archive, or
+    snapshot), and a note saying why."""
+
     year: int
     source: str
     note: str
@@ -201,6 +219,8 @@ class RepoHealth(BaseModel):
 
 
 class IssueCandidate(BaseModel):
+    """An issue from a search, with its availability and beginner score once checked."""
+
     repo: str
     number: int
     title: str
@@ -237,6 +257,9 @@ class ContributionItem(BaseModel):
 
 
 class ContributionGuide(BaseModel):
+    """A repository's contributing guide, code of conduct, toolchain, channels, and
+    beginner labels."""
+
     repo: str
     contributing_url: str | None = None
     contributing_excerpt: str = ""
@@ -248,9 +271,14 @@ class ContributionGuide(BaseModel):
     setup_hints: list[str] = Field(default_factory=list)
     communication_channels: list[str] = Field(default_factory=list)
     beginner_issue_labels: list[str] = Field(default_factory=list)
+    # Reads GitHub did not answer ("community profile", "contributing guide", "README"):
+    # the guide may exist even though nothing above names it.
+    unread: list[str] = Field(default_factory=list)
 
 
 class RepoLead(BaseModel):
+    """A repository `repos` ranks as a first stop, with the reasons for its points."""
+
     full_name: str
     url: str
     description: str | None = None
@@ -288,6 +316,8 @@ class ProjectIdea(BaseModel):
 
 
 class IdeasDocument(BaseModel):
+    """An ideas page as read: its layout, the ideas found, and the pages it links to."""
+
     source_url: str
     fetched_url: str
     layout: str = "unstructured"  # headings | index | unstructured | issues
@@ -324,6 +354,9 @@ class LogEntry(BaseModel):
 
 
 class ProgressState(BaseModel):
+    """Everything progress.json holds: the profile, the phases done, the shortlist,
+    tracked repositories and issues, and the weekly log."""
+
     version: int = 1
     target_year: int = DEFAULT_TARGET_YEAR
     profile: dict[str, Any] = Field(default_factory=dict)
@@ -340,6 +373,9 @@ class ProgressState(BaseModel):
 
 
 class Milestone(BaseModel):
+    """One date on the program timeline; `window_days` says how far an estimated
+    date may move."""
+
     key: str
     label: str
     at: datetime

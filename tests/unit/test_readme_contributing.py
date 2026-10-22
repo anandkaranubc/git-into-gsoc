@@ -70,12 +70,12 @@ def test_the_readme_is_read_only_when_there_is_no_contributing_file(
         fetched.append(path)
         return f"## How to contribute\n\n{RULES}"
 
-    monkeypatch.setattr(client, "get_raw_file", raw)
+    monkeypatch.setattr(client, "_raw_file", raw)
     readme = {"html_url": "https://github.com/acme/site/blob/main/README.md"}
     profile: dict[str, Any] = {"files": {"readme": readme}}
-    assert client.readme_contributing_path("acme", "site", profile) == "README.md"
+    assert client._readme_guide_path("acme", "site", profile) == "README.md"
     with_file = {"files": {"readme": readme, "contributing": {"html_url": "x"}}}
-    assert client.readme_contributing_path("acme", "site", with_file) is None
+    assert client._readme_guide_path("acme", "site", with_file) is None
     assert fetched == ["README.md"]
 
 

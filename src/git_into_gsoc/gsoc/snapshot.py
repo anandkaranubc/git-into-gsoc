@@ -10,7 +10,9 @@ source is down, and never needs the 15 MB archive just to rank organizations:
   (name, tags, description, links, channels), used when the live site and the
   archive are both unavailable, and by ranking for the description text.
 
-Refresh before a release with ``python -m git_into_gsoc.gsoc.snapshot``.
+The snapshot-refresh workflow runs ``python -m git_into_gsoc.gsoc.snapshot`` every
+Monday and opens a pull request when the data changed; run it by hand before a
+release if that is sooner.
 """
 
 from __future__ import annotations

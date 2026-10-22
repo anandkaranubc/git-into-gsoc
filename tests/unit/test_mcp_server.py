@@ -1,3 +1,6 @@
+"""The MCP server: tools, annotations, errors as tool errors, prompts, resources, and the
+instructions clients keep."""
+
 from __future__ import annotations
 
 
