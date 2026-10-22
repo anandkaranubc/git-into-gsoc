@@ -100,6 +100,10 @@ def test_setup_without_any_assistant_does_not_say_restart(
     assert "No AI assistant detected" not in words
     assert "MCP command" not in words
     assert "Setup complete" not in words
+    # With --no-skill nothing is copied, so the short message would be false.
+    bare = runner.invoke(app, ["setup", "--no-skill"])
+    assert bare.exit_code == 0, bare.output
+    assert "only the skill was copied" not in " ".join(bare.stdout.split())
 
 
 def test_setup_with_an_assistant_suggests_a_natural_first_question(

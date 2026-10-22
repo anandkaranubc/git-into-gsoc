@@ -2115,14 +2115,18 @@ def setup_cmd(
             output,
         )
         return
-    if not plan.assistants and not (dry_run or remove) and not plan.manual:
+    copied = [
+        c
+        for c in plan.changes
+        if c.kind == "skill" and c.action in {"created", "updated", "unchanged"}
+    ]
+    if not plan.assistants and not (dry_run or remove) and not plan.manual and copied:
         # A blind beginner install (2026-10-22) read a yellow "No AI assistant detected",
         # a table of skill folders, and an "MCP command" line as errors. With no
         # assistant there is nothing to connect, so say only what happened.
-        copied = [c for c in plan.changes if c.kind == "skill" and c.action != "skipped"]
-        where = f" to {_short_path(copied[0].path, plan.home, plan.project)}" if copied else ""
+        where = _short_path(copied[0].path, plan.home, plan.project)
         console.print(
-            f"No AI assistant was found, so only the skill was copied{where}. That is fine: "
+            f"No AI assistant was found, so only the skill was copied to {where}. That is fine: "
             "every feature works in the terminal. Try [cyan]git-into-gsoc start[/cyan]. If you "
             "use an assistant this did not find, name it, for example "
             "[cyan]git-into-gsoc setup --assistant claude-code[/cyan]."
