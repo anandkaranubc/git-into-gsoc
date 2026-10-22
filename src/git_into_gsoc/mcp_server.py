@@ -1,4 +1,9 @@
-"""MCP server exposing git-into-gsoc intelligence tools."""
+"""The MCP server: each tool is a thin wrapper over one GSoCToolkit method.
+
+The tool docstrings are the descriptions every assistant reads before it decides
+what to call, so they are written for models. Change them only with
+before-and-after assistant runs, as the skill text is.
+"""
 
 from __future__ import annotations
 
@@ -88,6 +93,7 @@ _toolkit: GSoCToolkit | None = None
 
 
 def toolkit() -> GSoCToolkit:
+    """One GSoCToolkit per server process, created on first use."""
     global _toolkit
     if _toolkit is None:
         _toolkit = GSoCToolkit()
