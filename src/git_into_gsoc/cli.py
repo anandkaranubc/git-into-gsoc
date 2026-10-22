@@ -361,8 +361,9 @@ def _render_next_steps(data: dict[str, Any]) -> None:
     _numbered([f"{step['title']}\n[cyan]{step['command']}[/cyan]" for step in data["next_steps"]])
     _say(
         "\n[dim]Change your answers any time: run start again, or git-into-gsoc profile.\n"
-        "Prefer an AI assistant? After `git-into-gsoc setup`, ask it in your own words, "
-        'such as "Which GSoC issue should I try first?"[/dim]'
+        'Prefer an AI assistant? Ask it in your own words, such as "Which GSoC issue '
+        'should I try first?" If it does not know git-into-gsoc yet, run '
+        "`git-into-gsoc setup` once.[/dim]"
     )
 
 

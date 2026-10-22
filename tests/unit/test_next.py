@@ -249,6 +249,29 @@ def test_a_tracked_issue_counts_as_a_chosen_repository() -> None:
     assert not any(a["title"].startswith("Pick the repository") for a in actions)
 
 
+def test_every_hint_in_next_is_a_command_you_can_paste() -> None:
+    from git_into_gsoc.coach import plan_actions
+    from git_into_gsoc.models import ProgressState
+
+    # A blind beginner run (2026-10-22) pasted "progress complete_phase --phase
+    # community" and got a shell error, and ran `repo` without --track, so `next`
+    # kept asking it to pick a repository.
+    shortlisted = ProgressState(
+        profile={"technologies": ["javascript"]}, shortlisted_orgs=["omegaUp"]
+    )
+    actions = plan_actions(shortlisted, {"timeline": []}, tracked_issues=[], new_issues=[])
+    pick = next(a for a in actions if a["title"].startswith("Pick the repository"))
+    assert "git-into-gsoc repo owner/name --track" in pick["command"]
+    chosen = ProgressState(
+        profile={"technologies": ["javascript"]},
+        shortlisted_orgs=["omegaUp"],
+        tracked_repos=["omegaup/omegaup"],
+    )
+    actions = plan_actions(chosen, {"timeline": []}, tracked_issues=[], new_issues=[])
+    intro = next(a for a in actions if a["title"].startswith("Introduce yourself"))
+    assert "git-into-gsoc progress complete_phase --phase community" in intro["why"]
+
+
 def test_a_tracked_issue_keeps_its_caution(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     # `issue` warned about an old claim on ArduPilot/ardupilot#9828; `next` only said
     # "no open PR or recent claim ... It is still free".
