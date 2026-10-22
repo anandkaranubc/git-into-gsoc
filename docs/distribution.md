@@ -13,6 +13,7 @@ Several assistants read another assistant's plugin format, so a few files cover 
 | `.codex-plugin/plugin.json` | Codex. It is read first, and only it can carry Codex's start timeout and the variables to pass on |
 | `gemini-extension.json` | Gemini CLI, Qwen Code, Antigravity's converter |
 | `server.json` | The official MCP registry, and the directories that copy it (Glama, PulseMCP) |
+| `glama.json` | Glama, which lets the GitHub accounts named there claim its listing |
 | `skills/git-into-gsoc/` | Every host above finds it in the default `skills/` folder; `npx skills add` and `gh skill install` read it too |
 | `.github/workflows/mcp-registry.yml` builds `git-into-gsoc.mcpb` | Claude Desktop and other hosts that install MCP bundles |
 
@@ -77,7 +78,7 @@ Each needs the repository owner's account or decision, and most are reviewed by 
 | Where | What it reaches | How |
 |---|---|---|
 | Anthropic plugin directory | Claude Code's built-in marketplace, so `claude plugin install git-into-gsoc` works with no `--marketplace`; also claude.ai and Cowork | Submit at claude.ai/directory/manage. Anthropic's [publishing page](https://claude.com/docs/directory/publish) says this needs a paid plan, a person reviews each new listing, and local servers are accepted only inside a plugin, not as an MCP bundle. `claude plugin validate . --profile directory` passes, and CI runs it. The README lists the network destinations under "Where the results come from" and in [sources](sources.md). Run the portal's Validate first. By Anthropic's [pre-submission checklist](https://claude.com/docs/plugins/pre-submission-checklist), expect a reviewer hold, not a refusal, for two data files over 256 KiB (`src/git_into_gsoc/data/official_orgs.json` and `org_signals.json`), `brand/favicon/favicon.ico`, the `uvx` launcher, and a GitHub token read from the environment. The same checklist blocks an unpinned `uvx` launcher. Whether it counts `uvx --from ${CLAUDE_PLUGIN_ROOT}` as unpinned is unknown: the local validator does not check launchers (tried on 2026-10-22 with pinned and unpinned `npx` and `uvx`, and it reported the same for all). If Validate reports "Unpinned uvx launcher", the plugin needs another way to start the server, such as `uv run --frozen` with a committed `uv.lock` |
-| Glama claim | A "claimed by its maintainer" badge and a tool score, which awesome-mcp-servers asks for | Add `glama.json` with `{"$schema": "https://glama.ai/mcp/schemas/server.json", "maintainers": ["anandkaranubc"]}`, then sign in to Glama and claim. The score also needs a Dockerfile set up on Glama's site |
+| Glama claim | A "claimed by its maintainer" badge and a tool score, which awesome-mcp-servers asks for | `glama.json` at the root names `anandkaranubc` as maintainer. Sign in to Glama with that GitHub account and select Claim on the listing. The score also needs a Dockerfile set up on Glama's site |
 | github/awesome-copilot | The default plugin marketplace in Copilot CLI and VS Code | The external-plugin issue form, with a release tag and its full commit SHA |
 | Cursor Marketplace and cursor.directory | Cursor's plugin browser | cursor.com/marketplace/publish (reviewed). cursor.directory/plugins/new: sign in and paste the repository URL |
 | Antigravity marketplace | Antigravity | The interest form linked from antigravity.google/docs/plugins |
