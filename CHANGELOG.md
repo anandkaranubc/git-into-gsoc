@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.16.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.16.0...v0.16.1) (2026-10-22)
+
+
+### Bug Fixes
+
+* **install:** fall back to the release wheel while PyPI catches up with a new release ([#208](https://github.com/anandkaranubc/git-into-gsoc/issues/208)) ([c7fbecc](https://github.com/anandkaranubc/git-into-gsoc/commit/c7fbecce9bc95cc7739ac3b93e5f5e60f92ecf15))
+* **issues:** catch 'I am on it' and other claims a third sample showed missing ([#207](https://github.com/anandkaranubc/git-into-gsoc/issues/207)) ([6eae5ce](https://github.com/anandkaranubc/git-into-gsoc/commit/6eae5ce869e99b62d37c5e0f731a6c182049ef21))
+* **skill:** when gsoc_recommend_path is refused, name organizations from the read-only tools ([#212](https://github.com/anandkaranubc/git-into-gsoc/issues/212)) ([52590bf](https://github.com/anandkaranubc/git-into-gsoc/commit/52590bf6f9d466752f9e129584036b5354a1fe50))
+
 ## [0.16.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.15.0...v0.16.0) (2026-10-22)
 
 
