@@ -1,3 +1,6 @@
+"""The ideas reader on real page shapes: headings, bullets, HTML, tables, MediaWiki
+templates, index pages, Google Docs, and the sentences that state an AI policy."""
+
 from __future__ import annotations
 
 from pathlib import Path
