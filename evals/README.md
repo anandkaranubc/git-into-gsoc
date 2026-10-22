@@ -153,6 +153,16 @@ It is the hardest set so far: few organizations fit these people well, so P@5 is
 
 Measured on 2026-10-21 with the data shipped then, after the fifth round of changes. Round 5 added one wrong pick on the test half (5 to 6) and improved every other number there. A later change, after a blind beginner test, cost an organization a little (x0.95) when most of its ideas need a skill the person did not list. It helped the sets it was tuned on (`dev` nDCG@10 0.804 to 0.815, `dev2` 0.623 to 0.635) and accepted-project MRR (0.510 to 0.518), but made both held-out sets worse (`holdout2`: one more wrong pick, P@5 0.500 to 0.483; `holdout3`: nDCG@10 0.493 to 0.484, strong@10 0.700 to 0.667). It did not generalize, so it was taken out; the caveat that names the missing skill stays. Before that, the third round made matching stricter so evidence never overstates (a skill no longer counts through a neighbouring skill or a subject), which cost a little on the test half (nDCG@10 0.804 to 0.790) in exchange for evidence a live reviewer could trust. `tests/unit/test_match_benchmark.py` keeps the current ranker above floors a little under these numbers and above the baseline, so the monthly evidence refresh or a code change cannot quietly make recommendations worse.
 
+## Tried and not kept
+
+Each was tuned on `dev` and `dev2` only and rejected there. `test` and `holdout4` were not read for any of them.
+
+- **Ideas evidence weighted by share** ("named in 1 of 34 ideas" counting less than "1 of 3"), 2026-10-22, on the refreshed ideas data. Twelve settings (full weight from 5% to 50% of ideas, square root or linear): none helped both sets; the ones that raised `dev2` nDCG@10 added one to three wrong picks on each set.
+- **Ideas evidence weights scaled** (skills ×0.6 to ×1.1, mentions ×0.4 to ×1.2): the best of 25 settings beat the current weights by about one persona. Noise.
+- **Breadth counted without ideas evidence**, so a readable ideas page would not make an organization look broader: worse on both sets with the shipped and the refreshed data (`dev2` nDCG@10 on completed grades 0.673 to 0.644 with the refreshed data).
+- **A cost for organizations that match no interest directly**, only through a neighbouring subject (×0.7 to ×0.95), after #291 and the refresh. The 14 pairs it newly surfaced were graded blind first. It removed one wrong pick on `dev` and up to two on `dev2`, left P@5 unchanged, and lowered nDCG@10 at every setting (`dev` 0.821 to 0.816 and `dev2` 0.662 to 0.657 on completed grades at ×0.7). It pushed out graded partial fits for broad umbrellas.
+- **"Most of its ideas need X" as a ×0.95 cost**: it helped the sets it was tuned on and hurt both held-out sets, so it was taken out (#288). The caveat stays.
+
 ## Adding to the benchmark
 
 - A new persona needs the same rubric and a reviewer who has not seen the code; put it in the `test` split unless you also re-tune.

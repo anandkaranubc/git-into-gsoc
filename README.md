@@ -67,16 +67,13 @@ You get the organizations that fit you, a shortlist, and your next steps with th
 
 ## Use it in your AI assistant
 
-The installer already connects the assistants it finds. To add git-into-gsoc as a plugin that updates with your assistant instead, run one line. You need [uv](https://docs.astral.sh/uv/), a free tool that starts the git-into-gsoc server your assistant talks to.
+The installer already connects the assistants it finds. To add git-into-gsoc as a plugin that updates with your assistant instead, run one line. You need [uv](https://docs.astral.sh/uv/), a free tool that starts the git-into-gsoc server your assistant talks to. For Claude Code:
 
-| Assistant | Command |
-|---|---|
-| Claude Code | `claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc` |
-| Codex | `codex plugin marketplace add anandkaranubc/git-into-gsoc`, then `codex plugin add git-into-gsoc@git-into-gsoc` |
-| GitHub Copilot CLI | `copilot plugin marketplace add anandkaranubc/git-into-gsoc`, then `copilot plugin install git-into-gsoc@git-into-gsoc` |
-| Gemini CLI (paid plans; on a free Google account use Antigravity) | `gemini extensions install https://github.com/anandkaranubc/git-into-gsoc --auto-update` |
-| Antigravity | `agy plugin install https://github.com/anandkaranubc/git-into-gsoc` |
-| VS Code, Cursor, Windsurf, and others | [Setup for each assistant](docs/assistants.md) |
+```bash
+claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc
+```
+
+[Use it in your AI assistant](docs/assistants.md) has the line for Codex, GitHub Copilot CLI, Gemini CLI, Antigravity, VS Code, Cursor, Windsurf, and Claude Desktop, and how to update or remove each one.
 
 Then ask in your own words, for example: *"I want to do Google Summer of Code. I know Python and like science. Where do I start?"* The assistant uses the same live data as the terminal and shows its sources.
 

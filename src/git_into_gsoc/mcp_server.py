@@ -766,6 +766,110 @@ def weekly_checkin_prompt() -> str:
     )
 
 
+# Names assistants guess for a parameter, mapped to the ones a tool may really take; the
+# first that the tool has wins. A real Codex run (2026-10-22) sent gsoc_org_details
+# {"org": ...} three times, and gsoc_search_orgs {"tech": "rust"}, which the SDK
+# silently dropped, so the search ran with no technology at all.
+_ARGUMENT_GUESSES: dict[str, tuple[str, ...]] = {
+    "tech": ("technologies", "skills", "language"),
+    "techs": ("technologies", "skills", "language"),
+    "technology": ("technologies", "skills", "language"),
+    "tech_stack": ("technologies", "skills"),
+    "stack": ("technologies", "skills"),
+    "languages": ("technologies", "language", "skills"),
+    "lang": ("language", "technologies"),
+    "skills": ("technologies",),
+    "topic": ("topics", "interests"),
+    "interest": ("interests", "topics"),
+    "interests": ("topics",),
+    "org": ("name",),
+    "organization": ("name", "org"),
+    "organisation": ("name", "org"),
+    "org_name": ("name", "org"),
+    "name": ("org",),
+    "repo": ("full_name",),
+    "repository": ("full_name", "repo"),
+    "max_results": ("limit",),
+}
+
+
+_Model = TypeVar("_Model", bound=BaseModel)
+
+
+# Parameters the tools document as comma-separated lists; a list sent for one of them is
+# joined. Any other text parameter holds one value.
+_LIST_PARAMETERS = frozenset({"technologies", "topics", "interests", "skills"})
+
+
+def _tolerant_arguments(tool_name: str, model: type[_Model]) -> type[_Model]:
+    """An argument model that maps guessed names, joins lists, and names unknown keys.
+
+    Lists become the comma-separated strings the tools document. Any other unknown key
+    is an error that lists the real parameters, so the assistant corrects the call
+    instead of getting results that quietly ignored it.
+    """
+    from pydantic import model_validator
+
+    fields = model.model_fields
+    text_fields = {
+        name for name, info in fields.items() if info.annotation in (str, str | None, "str")
+    }
+
+    class Arguments(model):  # type: ignore[valid-type, misc]
+        @model_validator(mode="before")
+        @classmethod
+        def _normalize(cls, data: Any) -> Any:
+            if not isinstance(data, dict):
+                return data
+            out: dict[str, Any] = {}
+            unknown: list[str] = []
+            for key, value in data.items():
+                target = key
+                if key not in fields:
+                    target = next(
+                        (
+                            t
+                            for t in _ARGUMENT_GUESSES.get(key, ())
+                            if t in fields and t not in data
+                        ),
+                        "",
+                    )
+                    if not target:
+                        unknown.append(key)
+                        continue
+                if target in text_fields and isinstance(value, str) and value.startswith("["):
+                    try:  # a JSON list sent as a string, which some clients do
+                        parsed = json.loads(value)
+                    except ValueError:
+                        parsed = None
+                    if isinstance(parsed, list):
+                        value = parsed
+                if target in text_fields and isinstance(value, list | tuple):
+                    if target in _LIST_PARAMETERS:
+                        value = ", ".join(str(item) for item in value)
+                    elif len(value) == 1:
+                        value = str(value[0])
+                    else:
+                        raise ValueError(
+                            f"{tool_name} takes one value for {target!r}, not a list of "
+                            f"{len(value)}; call it once for each."
+                        )
+                out[target] = value
+            if unknown:
+                raise ValueError(
+                    f"{tool_name} does not take {', '.join(map(repr, unknown))}. "
+                    f"Its parameters are: {', '.join(fields)}."
+                )
+            return out
+
+    Arguments.__name__ = model.__name__
+    return Arguments
+
+
+for _tool in mcp._tool_manager.list_tools():
+    _tool.fn_metadata.arg_model = _tolerant_arguments(_tool.name, _tool.fn_metadata.arg_model)
+
+
 # The SDK logs at INFO; httpx then logs every request URL, search terms included, into
 # the assistant's MCP log. Keep warnings and errors only.
 for _logger in ("httpx", "httpcore"):

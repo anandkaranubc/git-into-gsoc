@@ -56,6 +56,8 @@ class LinkedPullRequest(BaseModel):
     idle_days: int | None = None
     # True when only a comment on the issue points at the PR, not GitHub's links.
     via_comment: bool = False
+    # True when the PR's title or body says it fixes this issue ("Fixes issue #671").
+    fixes: bool = False
 
 
 class IssueAssessment(BaseModel):
@@ -269,6 +271,9 @@ class ContributionGuide(BaseModel):
     setup_hints: list[str] = Field(default_factory=list)
     communication_channels: list[str] = Field(default_factory=list)
     beginner_issue_labels: list[str] = Field(default_factory=list)
+    # Reads GitHub did not answer ("community profile", "contributing guide", "README"):
+    # the guide may exist even though nothing above names it.
+    unread: list[str] = Field(default_factory=list)
 
 
 class RepoLead(BaseModel):
