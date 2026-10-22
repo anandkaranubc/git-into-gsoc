@@ -675,18 +675,10 @@ class OrgIndex:
         active = int(profile.github.get("active_repos") or 0)
         if active:
             readiness_lines.append(f"{active} GitHub repositories pushed in the last year")
-        labelled = profile.github.get("beginner_issues_year")
-        if labelled == 0 and active:
-            # First, so it is seen: there is no labelled first task to look for here.
-            # Only the common spellings are counted; a project with its own label
-            # ("Easy to Fix") may still mark first tasks, so say what was measured.
-            readiness_lines.insert(
-                0,
-                "No GitHub issue with a common beginner label (good first issue, beginner, "
-                "easy, starter) opened in the past year: ask its mentors for a first task, "
-                "starting from its ideas page",
-            )
-        elif labelled:
+        labelled = int(profile.github.get("beginner_issues_year") or 0)
+        if labelled:
+            # Only a count is shown. Zero is not: MDAnalysis marks first tasks
+            # "Difficulty-easy" and Neovim "complexity:low", which the common spellings miss.
             readiness_lines.append(
                 f"{labelled} GitHub issue(s) with a common beginner label opened in the past year"
             )
