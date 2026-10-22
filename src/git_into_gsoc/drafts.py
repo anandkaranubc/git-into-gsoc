@@ -491,6 +491,18 @@ _PLAN_RE = re.compile(
     re.I,
 )
 _TRIED_RE = re.compile(r"\b(?:tried|attempted|searched|checked|looked at|ran|read)\b", re.I)
+# Signs the writer looked at this issue, beyond the words the plan check knows: a file,
+# a line, a code span or a camelCase name (frameCount, not iOS or macOS), a cause, a concrete next step, or a fix ready.
+_LOOKED_RE = re.compile(
+    r"`[^`\n]+`|\b[\w/-]+\.(?:py|js|ts|tsx|jsx|java|kt|c|cc|cpp|h|go|rs|rb|php|css|scss|html|"
+    r"md|rst|yml|yaml|json|toml)\b|\bline \d+\b|\b[a-z]{2,}[A-Z][a-z]\w*\b|root cause|investigated|"
+    r"\bready (?:locally|to open)\b|\b(?:fix|fixes|change|patch)(?:es)? ready\b|"
+    r"(?i:\bI(?:'ve| have) (?:also |already )?(?:made|added|fixed|implemented|written|opened))\b|"
+    r"\b(?:I'll|I will|I'd|I would|I can)\s+(?:\w+\s+){0,2}?(?:trace|track down|investigate|"
+    r"implement|match|keep|adjust|rename|replace|move|remove|write|refactor|look into|"
+    r"handle|test)\b|\bby (?:adding|keeping|changing|returning|using|replacing|moving|"
+    r"removing|renaming|checking)\b|\b\d\. \w+ing\b",
+)
 _ASK_TO_ASK_RE = re.compile(r"\b(?:can i ask|may i ask|anyone (?:here|around|online))\b", re.I)
 _PRIVATE_RE = re.compile(r"\b(?:dm me|direct message|message me privately|private message)\b", re.I)
 _ISSUE_REF_RE = re.compile(r"#\d+|/issues/\d+")
@@ -614,13 +626,17 @@ def check_message(kind: str, text: str) -> dict[str, Any]:
                 )
             )
     elif kind == "claim":
-        if _BARE_CLAIM_RE.search(body) and words < 25:
+        # Skills and enthusiasm do not make a request less bare: "I have strong skills in
+        # Python, ML, DL ... Kindly assign this issue to me" says nothing about the issue.
+        looked = _PLAN_RE.search(body) or _TRIED_RE.search(body) or _LOOKED_RE.search(body)
+        if _BARE_CLAIM_RE.search(body) and (words < 25 or not looked):
             findings.append(
                 _finding(
                     "bare_claim",
                     "fail",
                     "A bare request to work on it",
-                    "Add how you reproduced it and a one or two line plan.",
+                    "Add how you reproduced it and a one or two line plan. A list of your "
+                    "skills does not tell the maintainer how you would fix this issue.",
                     PANDAS_CONTRIBUTING,
                 )
             )

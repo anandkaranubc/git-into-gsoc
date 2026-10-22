@@ -143,6 +143,31 @@ def test_check_message_kind_rules() -> None:
         "looks to be in reader.py. Plan: return an empty list early. PR by Friday.",
     )
     assert _ids(planned, "fail") == set() and _ids(planned, "warn") == set()
+    # Padding a bare request with skills does not make it a plan.
+    padded = check_message(
+        "claim",
+        "Hello sir, I am a GSoC aspirant. I have strong skills in Python, ML, DL and web "
+        "development. I am very passionate about open source. Kindly assign this issue to me. "
+        "I will complete it ASAP.",
+    )
+    assert "bare_claim" in _ids(padded, "fail")
+    # Product names are not code names.
+    products = check_message(
+        "claim",
+        "Hello, I have strong iOS and macOS skills and years of experience with Swift and "
+        "SwiftUI development on eBay apps. I am passionate about open source. Kindly assign "
+        "this issue to me please.",
+    )
+    assert "bare_claim" in _ids(products, "fail")
+    # A long request that shows the writer opened the code is not bare, even without a
+    # word the plan check knows.
+    looked = check_message(
+        "claim",
+        "Could I work on this? The empty list is never handled in parser.py, so the loop "
+        "reads past the end; returning early there with a clear error seems enough, and a "
+        "small test would cover it.",
+    )
+    assert "bare_claim" not in _ids(looked, "fail")
     question = check_message("question", "Can I ask something about the build. It fails for me.")
     assert "question" in _ids(question, "fail")
     assert {"ask_to_ask", "tried"} <= _ids(question, "warn")
