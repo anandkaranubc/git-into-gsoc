@@ -13,9 +13,10 @@ from __future__ import annotations
 
 import html
 import re
+from collections import Counter
 from html.parser import HTMLParser
 from typing import ClassVar
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
@@ -247,8 +248,9 @@ class _LineParser(HTMLParser):
         ("title", 2),
     )
 
-    def __init__(self) -> None:
+    def __init__(self, base_url: str | None = None) -> None:
         super().__init__(convert_charrefs=True)
+        self.base_url = base_url
         self.lines: list[str] = []
         self._buf: list[str] = []
         self._skip = 0
@@ -331,8 +333,13 @@ class _LineParser(HTMLParser):
             self._bold -= 1
             self._buf.append("**")
         elif tag == "a" and self._href:
-            if self._href.startswith(("http://", "https://")):
-                self._buf.append(f" ({self._href})")
+            href = self._href
+            if self.base_url and not href.startswith(("#", "mailto:", "javascript:")):
+                # ML4SCI links each project's ideas as "/gsoc/projects/2026/...": a
+                # relative link was dropped, so the umbrella page lost all of them.
+                href = urljoin(self.base_url, href)
+            if href.startswith(("http://", "https://")):
+                self._buf.append(f" ({href})")
             self._href = None
 
     def handle_data(self, data: str) -> None:
@@ -344,8 +351,8 @@ class _LineParser(HTMLParser):
         self._flush()
 
 
-def html_to_lines(raw: str) -> list[str]:
-    parser = _LineParser()
+def html_to_lines(raw: str, base_url: str | None = None) -> list[str]:
+    parser = _LineParser(base_url)
     parser.feed(raw[:MAX_CHARS])
     parser.close()
     return [html.unescape(line) for line in parser.lines]
@@ -400,8 +407,8 @@ def _looks_like_html(raw: str) -> bool:
     return "<html" in head or "<body" in head or "<!doctype html" in head or "<div" in head
 
 
-def to_lines(raw: str) -> list[str]:
-    return html_to_lines(raw) if _looks_like_html(raw) else markdown_to_lines(raw)
+def to_lines(raw: str, base_url: str | None = None) -> list[str]:
+    return html_to_lines(raw, base_url) if _looks_like_html(raw) else markdown_to_lines(raw)
 
 
 # ------------------------------------------------------------------ parsing
@@ -760,27 +767,130 @@ def _is_nav_heading(title: str) -> bool:
     )
 
 
+# Link texts that say nothing about where they lead ("List of proposals" beside each
+# of ML4SCI's 18 projects): such a link is named after the line just before it.
+_GENERIC_LINK_TEXT = re.compile(
+    r"^(?:list of (?:proposals|projects|ideas)|proposals|projects|(?:project )?ideas?"
+    r"(?: page| list)?|here|more|read more|details|link|click here|see more|list|"
+    r"(?:google summer of code|gsoc)(?: 20\d\d)?(?: (?:project )?ideas?(?: page| list)?)?)$",
+    re.I,
+)
+_ONLY_LINK_RE = re.compile(r"[-*\s]*([^()\n]{2,160}?)\s*\((https?://[^)\s]+)\)\s*")
+# Pages about the program itself, never one organization's ideas.
+_PROGRAM_SITES = ("summerofcode.withgoogle.com", "developers.google.com/open-source/gsoc")
+
+
+def _lead_name(line: str) -> str:
+    """'CMS (http://cms.cern/) is a high-energy physics experiment...' -> 'CMS'."""
+    text = re.sub(r"\s*\(https?://[^)]*\)", "", line).strip(" -*")
+    match = re.match(r"(?:The\s+)?(.{2,60}?)(?:\s+(?:is|are|was|focuses|aims)\b|[.:;,]|$)", text)
+    return _clean(match.group(1)) if match else ""
+
+
+def _slug_name(url: str) -> str:
+    """'.../project_EXXA.html' -> 'EXXA'."""
+    stem = urlparse(url).path.rstrip("/").rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    stem = re.sub(r"^(?:project|proposals?|ideas?)[_-]", "", stem, flags=re.I)
+    return stem.replace("_", " ").replace("-", " ").strip()
+
+
 def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
     """Outbound links grouped under headings: the shape of an umbrella index page."""
     pages: list[dict[str, str]] = []
     current = ""
+    previous = ""
     seen: set[str] = set()
+    generic_links: Counter[str] = Counter()  # per heading
     for line in lines:
         head = _heading(line)
         if head:
             current = head[1]
+            previous = ""
             continue
         if _is_nav_heading(current):
             continue
         titles = {url.rstrip(".,;:)"): text for text, url in _MD_LINK_RE.findall(line)}
+        # A line that is nothing but one HTML link renders as "text (url)".
+        only_link = _ONLY_LINK_RE.fullmatch(line)
+        if only_link:
+            titles.setdefault(only_link.group(2).rstrip(".,;:)"), only_link.group(1))
         for url in _URL_RE.findall(line):
             cleaned = url.rstrip(".,;:)")
-            if cleaned in seen:
+            if cleaned in seen or any(site in cleaned for site in _PROGRAM_SITES):
                 continue
+            if re.search(r"github\.com/[^/]+/[^/]+/edit/", cleaned):
+                continue  # "Improve this page" links to the page's own source
             seen.add(cleaned)
-            title = _clean(titles.get(cleaned) or "") or current or cleaned
-            pages.append({"title": title, "url": cleaned})
-    return pages[:40]
+            text = _clean(titles.get(cleaned) or "")
+            generic = ""
+            if text and _GENERIC_LINK_TEXT.match(text):
+                # The sentence before names the project ("CMS is a ... experiment"), but
+                # only if it mentions the page's own name; "This project" does not.
+                lead, slug = _lead_name(previous), _slug_name(cleaned)
+                squash = re.compile(r"[^a-z0-9]")
+                fits = (
+                    lead[:1].isupper()  # not "purpose of EXXA"
+                    and slug
+                    and squash.sub("", slug.lower()) in squash.sub("", lead.lower())
+                )
+                text, generic = (lead, "") if fits else ("", slug or lead)
+                generic_links[current] += 1
+            title = text or current or cleaned
+            pages.append({"title": title, "url": cleaned, "section": current, "generic": generic})
+        previous = line
+    # A generic link ("ideas", "GSoC 2026") is named after its heading when the heading
+    # covers one sub-project (Python's "pocketpy": chat, homepage, ideas). A heading with
+    # several generic links lists many projects ("List of proposals" beside each of
+    # ML4SCI's), so each is named after the page it leads to.
+    for page in pages:
+        fallback = page.pop("generic")
+        if fallback and (not page["section"] or generic_links[page["section"]] > 1):
+            page["title"] = fallback
+    if any(page["section"] for page in pages):
+        # Links above the first heading are the site's menu ("Getting Started",
+        # "Mentors", other years' pages), not its projects. A page with no headings
+        # at all keeps them: there the links are the content.
+        pages = [page for page in pages if page["section"]]
+    # "page.html#contact" is a part of a page, not another page.
+    kept: list[dict[str, str]] = []
+    bases: set[str] = set()
+    for page in pages:
+        base = page["url"].split("#", 1)[0]
+        if base in bases:
+            continue
+        bases.add(base)
+        kept.append(page)
+    return kept[:40]
+
+
+def ideas_from_link_list(doc: IdeasDocument, *, page_url: str, section: str) -> list[ProjectIdea]:
+    """A page that only lists its ideas as links, one per idea, on the same site.
+
+    ML4SCI's project pages list each proposal as a link under "Project Proposals". The
+    titles are the ideas; every proposal page holds the details.
+    """
+    host = urlparse(page_url).netloc
+    ideas: list[ProjectIdea] = []
+    for page in doc.sub_pages:
+        where = urlparse(page["url"])
+        if where.netloc != host:
+            continue
+        # The link's own address must name a proposal or idea: ML4SCI links its project
+        # pages as project_*.html (each holds several ideas) and each idea as
+        # proposal_*.html, as CERN-HSF does.
+        if not re.search(r"proposal|idea", where.path, re.I):
+            continue
+        if not re.search(r"proposal|idea|project", page.get("section", ""), re.I):
+            continue
+        title = page["title"]
+        if not title or title == page.get("section") or _GENERIC_LINK_TEXT.match(title):
+            title = _slug_name(page["url"])  # the page's own name, such as "BOA"
+        if not title:
+            continue
+        ideas.append(
+            ProjectIdea(title=title, section=section, links=[page["url"]], source_url=page_url)
+        )
+    return ideas
 
 
 _TEMPLATE_TITLES = {"title", "project title", "idea title", "your title", "name of the project"}
@@ -955,6 +1065,6 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         raw = http.get_text(target, ttl=ttl)
     except HttpError:
         return None
-    doc = extract_ideas(to_lines(raw), source_url=url)
+    doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
     return doc

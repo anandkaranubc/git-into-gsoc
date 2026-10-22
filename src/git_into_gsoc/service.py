@@ -86,6 +86,7 @@ from git_into_gsoc.gsoc.ideas import fetch_ideas_text
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
+    ideas_from_link_list,
     issues_page_target,
     rank_ideas,
 )
@@ -2338,10 +2339,50 @@ class GSoCToolkit:
                 "a browser; some wikis block automated readers.",
             }
         followed: list[dict[str, str]] = []
-        if follow and doc.layout == "index" and doc.sub_pages:
-            for page in [p for p in doc.sub_pages if _looks_like_ideas_page(p)][:8]:
+        listed = (
+            ideas_from_link_list(doc, page_url=doc.fetched_url or org.ideas_url or "", section="")
+            if doc.layout == "index"
+            else []
+        )
+        if len(listed) >= 3:
+            # The index lists one link per idea (CERN-HSF's "Full List of Proposals"): the
+            # links are the ideas, and opening each page would read its headings
+            # ("Description", "Requirements") as ideas.
+            for idea in listed:
+                idea.section = None
+            doc.ideas = listed
+        elif follow and doc.layout == "index" and doc.sub_pages:
+            # Pages on the ideas page's own site first: ML4SCI's 18 project pages sat
+            # behind links to CERN, arXiv and the GSoC rules.
+            here = doc.fetched_url or org.ideas_url or ""
+            home = urlparse(here).netloc
+            pages = sorted(
+                (
+                    p
+                    for p in doc.sub_pages
+                    if _looks_like_ideas_page(p) and not _other_page(p, here)
+                ),
+                key=lambda p: urlparse(p["url"]).netloc != home,
+            )
+            same_site = [p for p in pages if urlparse(p["url"]).netloc == home]
+            if len(same_site) >= 3:
+                # An index of its own project pages: links elsewhere on it (CERN, arXiv
+                # papers) describe the projects and hold no ideas.
+                pages = same_site
+            for page in pages[:MAX_FOLLOWED_PAGES]:
                 child = fetch_ideas_document(self.http, page["url"], ttl)
-                if child is None or not child.ideas:
+                if child is None:
+                    continue
+                if not child.ideas:
+                    # A project page that only lists its proposals as links.
+                    child.ideas = ideas_from_link_list(
+                        child, page_url=page["url"], section=page["title"]
+                    )
+                # A page that lists ideas already read under their own project (an
+                # institution's page on ML4SCI) adds nothing new.
+                known = {i.links[0] for i in doc.ideas if i.links}
+                child.ideas = [i for i in child.ideas if not (i.links and i.links[0] in known)]
+                if not child.ideas:
                     continue
                 for idea in child.ideas:
                     idea.section = page["title"]
@@ -2750,6 +2791,21 @@ def _license_label(license_obj: Any) -> str | None:
 
 def _quote_label(label: str) -> str:
     return f'"{label}"' if " " in label else label
+
+
+# Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18.
+MAX_FOLLOWED_PAGES = 20
+_YEAR_RE = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
+
+
+def _other_page(page: dict[str, str], here: str) -> bool:
+    """The ideas page itself, or one for another year (a site menu links them all)."""
+    url = page.get("url", "")
+    if url.rstrip("/") == here.rstrip("/"):
+        return True
+    years = set(_YEAR_RE.findall(here))
+    named = set(_YEAR_RE.findall(f"{url} {page.get('title', '')}"))
+    return bool(years and named and not named & years)
 
 
 def _looks_like_ideas_page(page: dict[str, str]) -> bool:
