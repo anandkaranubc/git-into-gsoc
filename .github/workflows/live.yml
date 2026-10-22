@@ -87,7 +87,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python -m pip install --quiet uv==0.11.26
-          version="$(gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName)"
+          version="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName)"
           version="${version#v}"
           cutoff="$(python - "$version" <<'PY'
           import json, sys, urllib.request
@@ -132,12 +132,14 @@ jobs:
           $env:GIG_HOME = Join-Path $env:RUNNER_TEMP "home-race"
           $env:GIG_DATA_DIR = Join-Path $env:RUNNER_TEMP "gig-data"
           Get-Content -Raw .\install.ps1 | Invoke-Expression
-          # A new terminal reads PATH from the registry, not from this session.
+          # uv came from pip into setup-python's folder, which is only on this session's
+          # PATH; find its tool folder before PATH is reloaded the way a new terminal does.
+          $toolDir = "$(uv tool dir)".Trim()
           $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
           $installed = "$(git-into-gsoc --version | Select-Object -Last 1)".Trim()
           Write-Host "Installed $installed"
           if ($installed -ne $env:EXPECTED_VERSION) { throw "installed '$installed', expected '$env:EXPECTED_VERSION'" }
           # uv's receipt names the source: the GitHub release wheel, not PyPI.
-          $receipt = Join-Path "$(uv tool dir)".Trim() "git-into-gsoc\uv-receipt.toml"
+          $receipt = Join-Path $toolDir "git-into-gsoc\uv-receipt.toml"
           Get-Content $receipt
           if (-not (Select-String -Path $receipt -Pattern "releases/download/" -Quiet)) { throw "installed from somewhere other than the release wheel" }
