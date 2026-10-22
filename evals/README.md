@@ -96,6 +96,17 @@ Before reading `test` personas or `holdout4`, the rule is fixed. The refresh shi
 
 If any fails, the refresh does not ship and the numbers go to the owner; nothing is re-tuned to pass. Already read before this rule was written: `dev` and `dev2` on the completed grades (shipped 0.822 and 0.681 nDCG@10, refreshed 0.822 and 0.673; `dev2` wrong@5 8 against 11), and once, by mistake, the accepted projects of `test` (MRR 0.471 shipped, 0.481 refreshed). That reading chose nothing.
 
+The result, read once on the refreshed data with round 6 (`main` plus the shared reader's fixes):
+
+| | Shipped data | Refreshed data |
+|---|---|---|
+| `holdout4` nDCG@10, P@5, strong@10, wrong@5 | 0.469, 0.200, 0.778, 12 (first look) | 0.472, 0.227, 0.811, 12 |
+| `test` personas on completed grades | 0.829, 0.637, 0.885, 6 | 0.832, 0.600, 0.919, 7 |
+| Accepted projects MRR, `dev` and `test` | 0.525 | 0.542 |
+| `dev2` on completed grades (read before the rule) | 0.681, 0.387, 0.911, 8 | 0.673, 0.373, 0.911, 11 |
+
+All three conditions held, so the refresh ships. It finds more of the strong matches and puts accepted projects' organizations higher, at the cost of a slightly less precise top five: `test` P@5 falls from 0.637 to 0.600 whether or not the new grades are counted, and `dev2` gains three wrong picks at rank five (MetaBrainz, Ruby and Meshery, each from real new evidence). Keeping only grades made without an ideas page points the same way on every split. The floors were reset around the new result, as for every earlier round: `test` P@5 to 0.58 and `dev2` wrong@5 to 12.
+
 ## `holdout3.json` (no longer blind)
 
 15 personas written and graded by a third reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover kinds of people the other sets miss: quantum computing, browser engines, networking, cheminformatics, brain imaging, FPGA and open hardware, video codecs, Qt desktop apps, Vue or Angular with six hours a week, React Native, symbolic math, privacy and cryptography, translation and localization, someone who types almost nothing, and a career changer who knows SQL and Excel. Two have a typo on purpose, and two have no strong fit among the 2026 organizations.
