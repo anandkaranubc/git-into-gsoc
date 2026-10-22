@@ -531,6 +531,14 @@ def _project_rules(kind: str, ctx: dict[str, Any]) -> list[dict[str, str]]:
             "This project's contributing guide says to wait until a maintainer assigns you "
             "before you start work."
         )
+    elif convention.get("kind") == "unread":
+        # A rate limit is not "no guide": the rule may be there, unread.
+        rule = (
+            f"GitHub did not answer for this project's {said}, so its rule for claiming an "
+            "issue was not read. Read its contributing guide on GitHub before you claim, or "
+            "run this again later."
+        )
+        source = source or "not read: GitHub did not answer"
     elif source:
         rule = (
             "This project's contributing guide does not say how to claim an issue. Post one "

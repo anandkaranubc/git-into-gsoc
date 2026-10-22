@@ -2406,7 +2406,11 @@ class GSoCToolkit:
             guide = self.github.contribution_guide(repo)
             context["channels"] = context.get("channels") or guide.communication_channels
             text = guide.contributing_text or guide.contributing_excerpt
-            context["claim_convention"] = claim_convention(text)
+            context["claim_convention"] = (
+                {"kind": "unread", "text": ", ".join(guide.unread)}
+                if guide.unread and not text
+                else claim_convention(text)
+            )
             context["dco"] = bool(
                 re.search(r"Signed-off-by|git commit -s|Developer Certificate", text)
             )

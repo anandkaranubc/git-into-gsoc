@@ -248,6 +248,9 @@ class ContributionGuide(BaseModel):
     setup_hints: list[str] = Field(default_factory=list)
     communication_channels: list[str] = Field(default_factory=list)
     beginner_issue_labels: list[str] = Field(default_factory=list)
+    # Reads GitHub did not answer ("community profile", "contributing guide", "README"):
+    # the guide may exist even though nothing above names it.
+    unread: list[str] = Field(default_factory=list)
 
 
 class RepoLead(BaseModel):

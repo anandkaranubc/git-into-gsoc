@@ -933,24 +933,46 @@ class GitHubClient:
         owner, repo = parse_repo(full_name)
         full_name = f"{owner}/{repo}"
         with ThreadPoolExecutor(max_workers=3) as pool:
-            profile_f = pool.submit(self.community_profile, owner, repo)
+            profile_f = pool.submit(self._community_profile, owner, repo)
             root_f = pool.submit(self.root_listing, owner, repo)
             labels_f = pool.submit(self.list_labels, owner, repo)
-            profile, root, labels = profile_f.result(), root_f.result(), labels_f.result()
+            profile_or_none, root, labels = profile_f.result(), root_f.result(), labels_f.result()
+        # As in `repo_health`: a read GitHub did not answer is unread, not "no guide". A
+        # rate limit used to make `draft claim` say "no contributing guide found".
+        unread = [] if profile_or_none is not None else ["community profile"]
+        profile = profile_or_none or {}
         files = profile.get("files") or {}
         path = contributing_path(profile)
-        text = (self.get_raw_file(owner, repo, path) if path else None) or ""
+        text = ""
+        if path:
+            try:
+                text = self._raw_file(owner, repo, path) or ""
+            except HttpError:
+                unread.append("contributing guide")
         coc = files.get("code_of_conduct_file") or files.get("code_of_conduct") or {}
         try:
             language = self.get_repo(owner, repo).get("language")
         except HttpError:
             language = None
         toolchain, devcontainer = detect_toolchain(root, language=language)
-        readme = None if path else self.readme_contributing_path(owner, repo, profile)
+        readme = None
+        if not path and (readme_file := readme_path(profile)):
+            try:
+                readme_text = self._raw_file(owner, repo, readme_file)
+            except HttpError:
+                unread.append("README")
+            else:
+                if readme_text and readme_contributing_section(readme_text):
+                    readme = readme_file
         hints = list(toolchain)
         if devcontainer:
             hints.insert(0, "Dev container available: open in Codespaces/VS Code for a ready env")
-        if not hints:
+        if unread:
+            hints.append(
+                f"GitHub did not answer for its {', '.join(unread)}, so the contributing "
+                "guide was not read; run it again later"
+            )
+        elif not hints:
             # Naming a file the repository does not have read as a contradiction next
             # to "No CONTRIBUTING guide detected" (a blind beginner run, 2026-10-22).
             hints.append(
@@ -974,6 +996,7 @@ class GitHubClient:
             setup_hints=hints,
             communication_channels=channels_in(text),
             beginner_issue_labels=beginner or ["good first issue"],
+            unread=unread,
         )
 
     def list_owner_repos(self, owner: str, *, pages: int = 1) -> list[dict[str, Any]]:
