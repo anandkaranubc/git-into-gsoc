@@ -18,7 +18,7 @@ from html.parser import HTMLParser
 from typing import ClassVar
 from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
-from git_into_gsoc.http_client import CachedHttpClient, HttpError
+from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
 from git_into_gsoc.text import clean_untrusted
 
@@ -539,16 +539,18 @@ def _person(part: str) -> str | None:
         return text
     if not 1 <= len(words) <= 5:
         return None
-    for word in words:
+    # R's mentors are "TD Hocking": initials before one surname are a name.
+    initials = len(words) == 2 and len(words[0]) <= 3 and not words[1].isupper()
+    for position, word in enumerate(words):
         lower = word.lower().strip(".")
-        if lower in _NAME_PARTICLES:
-            continue
+        if lower in _NAME_PARTICLES or (initials and position == 0 and word.isupper()):
+            continue  # "A Chetia": an initial, not the article
         if lower in _ROLE_WORDS or lower in _LINKING_WORDS:
             return None
         if not word[0].isalpha() or word[0].islower():
             return None
-        if len(word) >= 2 and word.isupper():  # "AI", "CCSP": titles, not names
-            return None
+        if len(word) >= 2 and word.isupper() and not (initials and position == 0):
+            return None  # "AI", "CCSP": titles, not names
     return text
 
 
@@ -1100,10 +1102,34 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         return None
     try:
         raw = http.get_text(target, ttl=ttl)
+    except NotFoundError:
+        # The raw file name is a guess. A GitHub wiki page can live in a folder
+        # (CGAL's GSoC/Project-Ideas.md), differ in case (AboutCode), or be Org mode
+        # (R): the page itself, as GitHub renders it, is then the way in. Any other
+        # failure (blocked, rate-limited) would fail there too. Only wiki pages: a
+        # missing file's page is GitHub's app around nothing.
+        if target == url.split("#", 1)[0] or not _GITHUB_WIKI_RE.match(url):
+            return None
+        try:
+            target = url.split("#", 1)[0]
+            raw = http.get_text(target, ttl=ttl)
+        except HttpError:
+            return None
+        body = _github_wiki_body(raw, target)
+        if body is None:
+            return None
+        raw = body
     except HttpError:
         return None
     doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
+    if _looks_like_html(raw):
+        # R lists its projects in a table: Proposal, Hours, Status, Mentors, Languages.
+        # Flattened into lines, every cell reads as text and nothing as an idea.
+        rows = table_ideas(raw, source_url=url)
+        if len(rows) >= MIN_IDEAS_FOR_LAYOUT and len(rows) > len(doc.ideas):
+            doc.ideas, doc.fallback_ideas, doc.sub_pages = rows, [], []
+            doc.layout = "table"
     if _MEDIAWIKI_RE.search(raw[:20_000]):
         # OpenStreetMap writes each idea as a {{GSoC idea |title=... |skills=...}}
         # template. The rendered page shows them as boxes this cannot tell apart from
@@ -1118,6 +1144,133 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
             doc.layout = "templates"
             doc.fetched_url = wikitext_url
     return doc
+
+
+_GITHUB_WIKI_RE = re.compile(r"https?://(?:www\.)?github\.com/[^/]+/[^/]+/wiki/", re.I)
+
+
+def _github_wiki_body(html: str, url: str) -> str | None:
+    """The page's own text from a rendered GitHub wiki page, or None when it is gone.
+
+    GitHub sends a missing wiki page to the wiki's Home (Libreswan's 2026 ideas link),
+    and its menus ("Navigation Menu", "Clone this wiki locally") are headings that
+    hide R's table of projects.
+    """
+    parsed = urlparse(url)
+    if parsed.netloc.lower().removeprefix("www.") != "github.com" or "/wiki/" not in parsed.path:
+        return html
+    page = parsed.path.rstrip("/").rsplit("/", 1)[-1].lower()
+    if page != "home" and re.search(r"<title>\s*Home\s*·", html):
+        return None
+    start = html.find('id="wiki-body"')
+    if start == -1:
+        return html
+    end = html.find('id="wiki-footer"', start)
+    return "<div " + html[start : end if end != -1 else len(html)]
+
+
+class _TableParser(HTMLParser):
+    """Rows of every table: each cell's text and its first link."""
+
+    def __init__(self, base_url: str) -> None:
+        super().__init__(convert_charrefs=True)
+        self.base_url = base_url
+        self.tables: list[list[list[tuple[str, str | None]]]] = []
+        self._cell: list[str] | None = None
+        self._link: str | None = None
+        self._depth = 0
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag == "table":
+            self._depth += 1
+            if self._depth == 1:
+                self.tables.append([])
+        elif self._depth == 1 and tag == "tr":
+            self.tables[-1].append([])
+        elif self._depth == 1 and tag in ("td", "th") and self.tables and self.tables[-1]:
+            self._cell, self._link = [], None
+        elif tag == "a" and self._cell is not None and self._link is None:
+            href = dict(attrs).get("href")
+            if href and not href.startswith("#"):
+                self._link = urljoin(self.base_url, href)
+        elif tag == "br" and self._cell is not None:
+            self._cell.append(", ")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("td", "th") and self._cell is not None and self.tables and self.tables[-1]:
+            text = " ".join("".join(self._cell).split())
+            self.tables[-1][-1].append((text, self._link))
+            self._cell = None
+        elif tag == "table" and self._depth:
+            self._depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._cell is not None:
+            self._cell.append(data)
+
+
+# Table headers, by the field their column fills. "Project", "Proposal", or "Idea"
+# needs one more idea field beside it; "Topic", "Title", or "Name" needs two, since an
+# event's agenda (Topic, Speaker, Duration) is a table too.
+_TABLE_COLUMNS = (
+    ("title", re.compile(r"proposal|project|idea|title|topic|^name$", re.I)),
+    ("mentors", re.compile(r"mentor", re.I)),
+    ("size", re.compile(r"hours|size|length|duration", re.I)),
+    ("difficulty", re.compile(r"difficult|level|complexity", re.I)),
+    ("skills", re.compile(r"skill|language|technolog|stack|tools|tech\b", re.I)),
+)
+_STRONG_TITLE = re.compile(r"proposal|project|idea", re.I)
+# GCC's wiki lists past years' accepted projects as Project, Student, Mentors.
+_PAST_COLUMN = re.compile(r"student|contributor|participant|accepted|\byear\b", re.I)
+
+
+def table_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
+    """Ideas from every table with a title column and enough idea fields.
+
+    CCExtractor keeps one table per area, so all of them count, in page order.
+    """
+    parser = _TableParser(source_url)
+    try:
+        parser.feed(html_text[:MAX_CHARS])
+    except Exception:
+        return []
+    ideas: list[ProjectIdea] = []
+    seen: set[str] = set()
+    for rows in parser.tables:
+        if len(rows) < 2:
+            continue
+        header = [text.lower() for text, _ in rows[0]]
+        if any(_PAST_COLUMN.search(name) for name in header):
+            continue
+        columns: dict[str, int] = {}
+        for index, name in enumerate(header):
+            for field, pattern in _TABLE_COLUMNS:
+                if field not in columns and pattern.search(name):
+                    columns[field] = index
+                    break
+        if "title" not in columns:
+            continue
+        needed = 1 if _STRONG_TITLE.search(header[columns["title"]]) else 2
+        if len(columns) - 1 < needed:
+            continue
+        for row in rows[1:]:
+            if len(row) <= columns["title"]:
+                continue
+            title, link = row[columns["title"]]
+            # R's first row is "MENTORS-COPY-THIS-TEMPLATE".
+            low = title.lower()
+            if not title or "template" in low or low in _TEMPLATE_TITLES or low in seen:
+                continue
+            seen.add(low)
+            idea = ProjectIdea(title=_clean(title)[:200], source_url=source_url)
+            if link:
+                idea.links.append(link)
+            for field, index in columns.items():
+                if field != "title" and index < len(row) and row[index][0]:
+                    _assign(idea, field, row[index][0])
+            idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
+            ideas.append(idea)
+    return ideas
 
 
 _MEDIAWIKI_RE = re.compile(r'<meta name="generator" content="MediaWiki', re.I)

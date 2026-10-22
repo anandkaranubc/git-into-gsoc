@@ -71,6 +71,10 @@ def test_org_ideas_follows_umbrella_sub_pages(api: respx.MockRouter) -> None:
     api.get("https://raw.githubusercontent.com/wiki/beta/beta/GSoC-2026-Ideas.md").mock(
         return_value=httpx.Response(404)
     )
+    # A 404 for the raw file makes the reader try the page itself; it is gone too.
+    api.get("https://github.com/beta/beta/wiki/GSoC-2026-Ideas").mock(
+        return_value=httpx.Response(404)
+    )
     api.get("https://gamma.example.org/summer-of-code").mock(
         return_value=httpx.Response(200, text="# Gamma\n\nNothing here yet.\n")
     )
