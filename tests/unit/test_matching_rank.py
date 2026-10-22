@@ -422,6 +422,6 @@ def test_a_reported_statement_is_a_quoted_caveat_and_leaves_the_score() -> None:
     signals = {"year": 2026, "organizations": {"symbolic-lab": {"participation": said}}}
     reported = _rank([org], signals=signals, interests=["mathematics"])[0]
     caveat = next(c for c in reported.caveats if "wrote in its tracker" in c)
-    assert "someone outside its team" in caveat and "2026-10-04" in caveat
+    assert "someone GitHub does not list as a maintainer" in caveat and "2026-10-04" in caveat
     assert "Not an official statement about GSoC 2027" in caveat
     assert reported.score == plain.score
