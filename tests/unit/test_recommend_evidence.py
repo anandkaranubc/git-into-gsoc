@@ -236,7 +236,11 @@ def test_an_empty_starter_list_names_where_to_look(
     data = toolkit.recommend_path(technologies=["python"], interests=["mathematics"])
     assert data["starter_issues"] == []
     top = data["recommended_orgs"][0]["name"]
-    assert f'git-into-gsoc issues --org "{top}"' in data["starter_issue_note"]
+    assert f'git-into-gsoc ideas "{top}"' in data["starter_issue_note"]
+    # The path agrees: no step sends the person back to the search that came back empty.
+    commands = " ".join(step["command"] for step in data["learning_path"])
+    assert "issues --org" not in commands
+    assert any("passed the checks" in step["why"] for step in data["learning_path"])
 
 
 def test_starter_issues_search_every_language_more_owners_and_beginner_labels(

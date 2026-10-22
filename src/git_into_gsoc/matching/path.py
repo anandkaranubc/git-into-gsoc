@@ -73,8 +73,8 @@ def learning_path(
         add(
             "Ask its mentors which small task would help a newcomer, starting from the idea "
             "closest to you.",
-            "It has no open beginner issue right now; at organizations like this, first tasks "
-            "come from mentors and ideas rather than labelled issues.",
+            "No starter issue from it passed the checks above; at organizations like this, "
+            "first tasks often come from mentors and ideas rather than labelled issues.",
             f"git-into-gsoc ideas {name}",
         )
     elif level == "new":

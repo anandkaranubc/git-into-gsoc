@@ -233,9 +233,9 @@ def _no_issue_note(orgs: list[dict[str, Any]]) -> str:
     return (
         "No open first task passed the checks in these organizations right now (announcements, "
         "trackers, claimed, old, or out-of-profile issues are left out). Look in "
-        f'{orgs[0]["name"]}\'s repositories with `git-into-gsoc repos "{name}"` and '
-        f'`git-into-gsoc issues --org "{name}"`, or ask in its chat which task would suit a '
-        "newcomer."
+        f'{orgs[0]["name"]}\'s repositories with `git-into-gsoc repos "{name}"`, or start from '
+        f'its ideas with `git-into-gsoc ideas "{name}"` and ask its mentors in its chat which '
+        "task would suit a newcomer."
     )
 
 
@@ -1305,6 +1305,7 @@ class GSoCToolkit:
         languages = languages_of(person)
         issue_language = languages[0] if languages else (techs[0] if techs else None)
         issues: list[dict[str, Any]] = []
+        passed: list[dict[str, Any]] = []  # every issue that passed the checks, not only five
         issue_error: dict[str, str] | None = None
         issue_scope = None
         hidden = 0
@@ -1380,6 +1381,7 @@ class GSoCToolkit:
                             continue
                         candidates += own["issues"]
                     screened, hidden, skipped = screen(candidates)
+                passed = screened
                 issues = personalize(screened, person)[:5]
             except GigError as exc:
                 issue_error = exc.to_dict()
@@ -1428,7 +1430,7 @@ class GSoCToolkit:
                 person,
                 taking_part,
                 ideas,
-                top_has_starter=_has_starter(taking_part, issues) if not issue_error else None,
+                top_has_starter=_has_starter(taking_part, passed) if not issue_error else None,
             ),
             "next_steps": [
                 "Shortlist three organizations and join their community channels",
