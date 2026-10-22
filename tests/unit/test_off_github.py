@@ -164,3 +164,27 @@ def test_a_language_search_names_the_organizations_it_could_not_search(monkeypat
     note = toolkit._skipped_off_github("c", year=None)
     assert "outside GitHub: GNOME Foundation, FFmpeg." in note
     assert "Apache" not in note
+
+
+def test_a_named_organization_does_not_list_other_organizations_off_github(
+    monkeypatch: Any,
+) -> None:
+    # `issues --org CERN-HSF --language python` said "Not searched, because their code is
+    # outside GitHub: Python Software Foundation, The ns-3 Network Simulator Project,
+    # SageMath" (a launch audit, 0.23.0): organizations nobody asked about.
+    toolkit = GSoCToolkit()
+    cern = OrgSummary(name="CERN-HSF", github_orgs=["HSF"])
+    monkeypatch.setattr(
+        toolkit.gsoc, "get_organization", lambda name, **k: cern if "cern" in name.lower() else None
+    )
+    monkeypatch.setattr(toolkit.github, "search_issues", lambda *a, **k: [])
+    monkeypatch.setattr(
+        toolkit,
+        "gsoc_github_orgs",
+        lambda **k: ({"psf": "PSF"}, ["psf"], "Searching GitHub orgs of GSoC organizations."),
+    )
+    monkeypatch.setattr(toolkit, "_skipped_off_github", lambda language, year=None: " OFF-GITHUB")
+    named = toolkit.find_issues(org="CERN-HSF", language="python")
+    assert "OFF-GITHUB" not in named["note"]
+    # Without an organization, the note still names the ones it could not search.
+    assert "OFF-GITHUB" in toolkit.find_issues(language="python")["note"]

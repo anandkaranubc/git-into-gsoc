@@ -229,13 +229,38 @@ Only 56% of the current ranker's top-ten entries had any grade at that look (jud
 
 ## Tried and not kept
 
-Each was tuned on `dev` and `dev2` only and rejected there. `test` and `holdout4` were not read for any of them.
+Each was tuned on the development sets only (`dev` and `dev2`, and `dev3` once it existed) and rejected there. No sealed set and not `test` was read for any of them.
 
 - **Ideas evidence weighted by share** ("named in 1 of 34 ideas" counting less than "1 of 3"), 2026-10-22, on the refreshed ideas data. Twelve settings (full weight from 5% to 50% of ideas, square root or linear): none helped both sets; the ones that raised `dev2` nDCG@10 added one to three wrong picks on each set.
 - **Ideas evidence weights scaled** (skills ×0.6 to ×1.1, mentions ×0.4 to ×1.2): the best of 25 settings beat the current weights by about one persona. Noise.
 - **Breadth counted without ideas evidence**, so a readable ideas page would not make an organization look broader: worse on both sets with the shipped and the refreshed data (`dev2` nDCG@10 on completed grades 0.673 to 0.644 with the refreshed data).
 - **A cost for organizations that match no interest directly**, only through a neighbouring subject (×0.7 to ×0.95), after #291 and the refresh. The 14 pairs it newly surfaced were graded blind first. It removed one wrong pick on `dev` and up to two on `dev2`, left P@5 unchanged, and lowered nDCG@10 at every setting (`dev` 0.821 to 0.816 and `dev2` 0.662 to 0.657 on completed grades at ×0.7). It pushed out graded partial fits for broad umbrellas.
 - **"Most of its ideas need X" as a ×0.95 cost**: it helped the sets it was tuned on and hurt both held-out sets, so it was taken out (#288). The caveat stays.
+- **A stronger main-language cost** (×0.95 down to ×0.6) on `dev`, `dev2` and `dev3`: it never fixed `dev3`'s wrong picks, because the check rarely fired. The structural fix in round 7 replaced it, with the cost unchanged.
+- **A "science field you did not name" caveat with a ×0.95 cost** on `dev`, `dev2` and `dev3`. It removed two of `dev3`'s wrong picks (ML4SCI twice) but dropped ML4SCI where `dev`'s grader rates it 3. The caveat was also wrong for about 4 of the 18 organizations it named (Catrobat as physics, Open Food Facts as climate, SymPy as physics, IOOS as biology). A caveat that overstates its evidence is not shipped.
+
+A product experiment, decided by its own rule:
+
+- **Unlabelled small issues as starter tasks** when a person's starter list is empty, 2026-10-22.
+  - **Rule:** written before any data (sha256 prefix 74304bf37f38cb90).
+  - **Amendment before grading** (19:06:31Z, sha256 prefix fd82f99ccce88a51): every label was hidden, quality was graded from the issue text alone, and a separate checker opened each page only to say whether it was taken.
+  - **Result:** coverage passed (13 of 18 empty lists gained a candidate). But 76% of the 34 sampled candidates were graded "no", against 27% of 15 labelled controls, and 14 candidates were already taken. Not shipped. The learning path's step to ask the mentors stays the answer for an empty list.
+
+## Known weak spots
+
+As of 2026-10-22, after round 7. Each was measured or seen in a blind check.
+
+- **Wrong picks for common beginners.** `dev3` still has 8 wrong picks in its top fives, as many as the keyword ranker. Two causes remain:
+  - Organizations built around a field of science (ML4SCI, QC-Devs, OpenAstronomy) reach people who asked only for a method, such as machine learning or data analysis. The graders disagree: `dev`'s grader rates ML4SCI 3 for an ML and computer vision learner, and `dev3`'s grader calls it wrong for general ML beginners.
+  - Some organizations have only one active GitHub repository (Graphite, the R project), so the check that says their code is in a language you do not know cannot fire.
+- **An umbrella organization whose own repositories hold no code.** The `start` demo profile (Python; science and data; 8 hours a week) gets UC OSPO first. Its GitHub owner has only its website repository and one repository with no outside merges in 180 days, because its GSoC projects live in other organizations' repositories, linked from its ideas page. `repos` then has nothing useful to show, so the next step is its ideas page. Found in an independent launch audit of 0.23.0.
+- **Jenkins for web beginners.** Since round 7, Jenkins leaves two web beginners' top fives in `dev3`, because its code is mostly Java even though some of its ideas are web work.
+- **A less precise top five after the ideas refresh.** `test` P@5 fell from 0.637 to 0.600 when many more ideas pages were read. Strong matches and accepted projects improved.
+- **Many people get no starter issue.** In a clean run, 18 of 33 personas got none. Offering unlabelled issues instead was rejected (above).
+- **Shown starter issues are often already asked for.** In a blind check, 10 of 15 starter issues `recommend` showed were judged taken: mostly an unanswered request to be assigned, and two already fixed by a merged pull request. #332 marks both cases.
+- **Beginner counts and participation statements do not update monthly** until the refresh workflow has a read-only token of its own. The built-in Actions token fails the search canary, so the last values are kept.
+- **Reviews by agents.** Every grade here comes from agent reviewers who saw only official listings and ideas pages, never from real beginners.
+- **Noise.** The sets have 10 to 20 personas, so a difference under about 0.01 nDCG@10 or one wrong pick is within noise.
 
 ## Adding to the benchmark
 
