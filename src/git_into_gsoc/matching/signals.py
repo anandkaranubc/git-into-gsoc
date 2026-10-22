@@ -242,6 +242,8 @@ def _github_for(toolkit: Any, owners: list[str], now: datetime) -> dict[str, Any
     if not listed:
         return None
     summary = summarize_repos(repos, owners[:3], now=now)
+    # Over the first three owners only (as the listing above), so for an organization
+    # with more it is a lower bound; "N issues opened" stays true.
     labelled = toolkit.github.beginner_issues_opened(
         owners[:3],
         since=(now - timedelta(days=365)).date().isoformat(),
