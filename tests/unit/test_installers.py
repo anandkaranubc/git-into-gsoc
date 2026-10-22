@@ -288,14 +288,18 @@ def _offer_uv(
     have_uv: bool = False,
     python: str = "python-that-does-not-exist",
     pipx_python: str | None = None,
+    pipx_has_environment: bool = True,
 ) -> subprocess.CompletedProcess[str]:
     """Run install.sh's offer_uv on a PATH with no uv, pipx, or Python (unless asked).
 
     `pipx_python` adds a pipx that runs on a Python of that version ("3.9" or "3.12").
+    Without `pipx_has_environment` it is pipx 1.0 (Ubuntu 22.04's), which cannot say
+    which Python it uses: only the first line of its script names it.
     """
     text = (ROOT / "install.sh").read_text()
     functions = []
-    names = ("pipx_python", "pipx_ok", "python_ok", "python_version", "venv_ok", "python_hint")
+    names = ("pipx_python", "pipx_python_run", "pipx_ok", "python_ok", "python_version")
+    names += ("venv_ok", "python_hint")
     for name in (*names, "ask_yes", "offer_uv"):
         found = re.search(rf"^{name}\(\) \{{\n.*?^\}}\n", text, re.M | re.S)
         assert found, f"{name} not found in install.sh"
@@ -330,7 +334,10 @@ def _offer_uv(
             f'case "$2" in *print*) echo {pipx_python};; *) exit {1 if old else 0};; esac\n'
         )
         fake.chmod(0o755)
-        (bin_dir / "pipx").write_text(f"#!/bin/sh\necho {fake}\n")
+        if pipx_has_environment:
+            (bin_dir / "pipx").write_text(f"#!/bin/sh\necho {fake}\n")
+        else:
+            (bin_dir / "pipx").write_text(f"#!{fake}\n# pipx 1.0: no `environment` command\n")
         (bin_dir / "pipx").chmod(0o755)
     script = (
         "set -euo pipefail\n"
@@ -392,6 +399,12 @@ def test_a_pipx_on_an_old_python_is_not_used(tmp_path: Path) -> None:
     newer.mkdir()
     result = _offer_uv(newer, flag=False, pipx_python="3.12")
     assert result.returncode == 0 and result.stdout.strip() == "uv-ready"
+    # Ubuntu 22.04's pipx 1.0 has no `environment --value`; its first line names Python.
+    ubuntu = tmp_path / "ubuntu"
+    ubuntu.mkdir()
+    result = _offer_uv(ubuntu, flag=False, pipx_python="3.10", pipx_has_environment=False)
+    assert result.returncode == 1
+    assert "pipx is here, but it runs on Python 3.10" in result.stderr
 
 
 _PS_PIPX = r"""
