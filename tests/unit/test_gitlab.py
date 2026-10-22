@@ -126,3 +126,57 @@ def test_the_issue_command_reads_gitlab_links(monkeypatch: Any) -> None:
     data = toolkit.issue_status("https://gitlab.gnome.org/GNOME/gitg/-/issues/494")
     assert data["availability"] == "available" and data["before_you_comment"]
     assert data["repo"] == "gitlab.gnome.org/GNOME/gitg"
+
+
+class RecordingHttp(FakeHttp):
+    def __init__(self, routes: dict[str, Any]) -> None:
+        super().__init__(routes)
+        self.headers: list[dict[str, str] | None] = []
+
+    def get_json(self, url: str, **kwargs: Any) -> Any:
+        self.headers.append(kwargs.get("headers"))
+        return super().get_json(url, **kwargs)
+
+
+def _note(body: str, days_ago: int, *, system: bool = False) -> dict[str, Any]:
+    return {
+        "body": body,
+        "author": {"username": "newcomer"},
+        "created_at": _iso(days_ago),
+        "system": system,
+    }
+
+
+def test_a_token_for_this_host_reads_claims_in_the_comments() -> None:
+    http = RecordingHttp(
+        {
+            API: _issue(user_notes_count=2),
+            f"{API}/related_merge_requests": [],
+            f"{API}/notes": [
+                _note("changed the description", 9, system=True),
+                _note("I'd like to work on this issue, here is my plan", 5),
+            ],
+        }
+    )
+    found = gitlab_issue_status(  # type: ignore[arg-type]
+        http,
+        "https://gitlab.gnome.org/GNOME/gitg/-/issues/494",
+        token="glpat-secret",
+        token_host="gitlab.gnome.org",
+    )
+    assert found["availability"] == "claimed"
+    assert found["assessment"]["claims"][0]["login"] == "newcomer"
+    assert not any("cannot read" in c for c in found["assessment"]["caveats"])
+
+
+def test_a_token_is_never_sent_to_another_host() -> None:
+    http = RecordingHttp({API: _issue(user_notes_count=2), f"{API}/related_merge_requests": []})
+    found = gitlab_issue_status(  # type: ignore[arg-type]
+        http,
+        "https://gitlab.gnome.org/GNOME/gitg/-/issues/494",
+        token="glpat-for-gitlab-com",
+        token_host="gitlab.com",
+    )
+    assert all(not h or "PRIVATE-TOKEN" not in h for h in http.headers)
+    assert found["availability"] == "unknown"
+    assert any("set GITLAB_TOKEN and GITLAB_HOST" in c for c in found["assessment"]["caveats"])

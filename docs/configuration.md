@@ -30,6 +30,8 @@ Put these in `.env` or export them in the process environment. Environment varia
 |---|---|---|
 | `GITHUB_TOKEN`, `GH_TOKEN`, `GIG_GITHUB_TOKEN` | unset | GitHub credential (see above) |
 | `GIG_USE_GH_CLI` | `true` | Ask the GitHub CLI for a token when none is set |
+| `GITLAB_TOKEN`, `GIG_GITLAB_TOKEN` | unset | A GitLab personal access token with `read_api`. GitLab hides issue comments without a sign-in, so with a token `issue` and `next` also read claims in the comments of GitLab issues |
+| `GITLAB_HOST`, `GIG_GITLAB_HOST` | `gitlab.com` | The GitLab server the token belongs to, such as `gitlab.gnome.org`. The token is sent to this server only. Read from the environment only, so a cloned repository's `.env` cannot redirect it |
 | `GIG_HOME` | your home folder | Where `setup` and `doctor` look for assistant config folders, mainly for tests |
 | `GIG_TARGET_YEAR` | `2027` | Program year used when a command has no `--year` |
 | `GIG_CACHE_TTL_SECONDS` | `3600` | How long GitHub responses stay fresh before revalidation |
