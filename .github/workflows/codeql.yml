@@ -12,8 +12,9 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    # Weekly, as default setup did, so main is rescanned when the queries change.
-    - cron: "17 6 * * 1"
+    # Weekly, as default setup did, so main is rescanned when the queries change. Half an
+    # hour after the snapshot refresh, so the two do not compete for a runner.
+    - cron: "47 6 * * 1"
 
 permissions:
   contents: read
