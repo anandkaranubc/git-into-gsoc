@@ -87,7 +87,12 @@ class _DotEnvWithoutRedirects(PydanticBaseSettingsSource):
 
 
 class Settings(BaseSettings):
-    """Environment-driven settings (prefix `GIG_`)."""
+    """Settings from the environment (prefix `GIG_`) and a `.env` file in the current
+    folder.
+
+    The fields in ENV_ONLY_FIELDS are never read from `.env`. The GitHub token also
+    comes from GITHUB_TOKEN, GH_TOKEN, or `gh auth token`; see `resolve_token`.
+    """
 
     model_config = SettingsConfigDict(
         env_prefix="GIG_",
@@ -201,6 +206,8 @@ def _gh_cli_token() -> str | None:
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
+    """The settings, read once per process. Tests call `get_settings.cache_clear()`
+    after changing the environment."""
     return Settings()
 
 

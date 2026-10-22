@@ -1,3 +1,6 @@
+"""The proposal checker: sections, links and their authors, timelines, phrasing, and the
+`proposal check` command."""
+
 from __future__ import annotations
 
 from pathlib import Path

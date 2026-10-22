@@ -1,3 +1,6 @@
+"""Entry points and rendering: `python -m`, the snapshot writer, tables and panels from fixture
+data, Windows code pages, and files saved by editors."""
+
 from __future__ import annotations
 
 import json

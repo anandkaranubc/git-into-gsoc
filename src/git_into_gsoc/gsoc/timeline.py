@@ -139,6 +139,11 @@ def build_timeline(
     project_size: str = "medium",
     now: datetime | None = None,
 ) -> list[Milestone]:
+    """The program's milestones in date order, each marked past, today, or upcoming.
+
+    Milestones that belong to another project size are left out; those with no
+    size apply to every project.
+    """
     now = now or datetime.now(UTC)
     items: list[Milestone] = []
     for raw in program.get("milestones", []):
@@ -165,6 +170,7 @@ def build_timeline(
 
 
 def current_phase(timeline: list[Milestone], now: datetime | None = None) -> ProgramPhase:
+    """The phase begun by the latest milestone already reached, or the one before any."""
     now = now or datetime.now(UTC)
     reached = {m.key for m in timeline if m.project_size is None and m.at <= now}
     phase = _BEFORE

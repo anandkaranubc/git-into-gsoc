@@ -73,6 +73,7 @@ def catalog() -> Catalog:
 
 
 def current_ranker(profile: dict[str, Any]) -> list[str]:
+    """The matching package's ranker, as `orgs` and `recommend` run it."""
     person = build_profile(
         technologies=profile.get("technologies"),
         interests=profile.get("interests"),

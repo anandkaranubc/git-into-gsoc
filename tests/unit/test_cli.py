@@ -1,3 +1,6 @@
+"""The CLI's output and errors: tables, hints, next steps, and the home screen, through Typer's
+test runner."""
+
 from __future__ import annotations
 
 import re

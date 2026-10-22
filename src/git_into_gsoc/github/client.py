@@ -1,4 +1,5 @@
-"""GitHub REST API client focused on contributor intelligence."""
+"""GitHub REST API client: repositories, issues, pull requests, and what they say about
+how a project treats newcomers."""
 
 from __future__ import annotations
 
@@ -68,7 +69,7 @@ def _parse_dt(value: str | None) -> datetime | None:
 
 
 def _excerpt(text: str | None, limit: int = 400) -> str:
-    """One line of an issue body. HTML comments go first: GitHub hides them from
+    """One line of an issue body, with HTML comments removed: GitHub hides them from
     people, so they are the easiest place to leave text only a model would read."""
     if not text:
         return ""
@@ -141,6 +142,18 @@ def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
 
 
 class GitHubClient:
+    """Every GitHub read the tool makes, through the shared caching HTTP client.
+
+    Two kinds of method. Reads of the thing the person asked for (`get_repo`,
+    `get_issue`, `assess`, `repo_health`) raise `HttpError` or `NotFoundError` with a
+    message that says what to try. Reads that only feed a score or a list
+    (`get_issue_timeline`, `list_assignees`, `recent_comments`, ...) swallow HTTP
+    errors and return an empty value or None, so one failed call cannot sink a whole
+    report; what the report then says about the gap is the caller's job. A token
+    raises the request limit and turns on the GraphQL path in `repo_health`; nothing
+    needs one.
+    """
+
     def __init__(
         self,
         settings: Settings | None = None,
@@ -835,7 +848,8 @@ class GitHubClient:
         if "pull_request" in issue:
             raise InputError(
                 f"{owner}/{repo}#{number} is a pull request, not an issue",
-                hint="Pass the issue number the PR addresses.",
+                hint="Pass the issue number the PR addresses. To check a pull request, run "
+                f"`git-into-gsoc pr-check {owner}/{repo}#{number}`.",
             )
         timeline = self._timeline_with_imports(owner, repo, number, issue)
         if timeline is None:

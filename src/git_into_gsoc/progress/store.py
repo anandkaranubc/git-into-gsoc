@@ -160,6 +160,14 @@ def _repo_key(full_name: str) -> str:
 
 
 class ProgressStore:
+    """Reads and writes progress.json.
+
+    Every change loads the file, edits it, and writes it back whole under a lock
+    file, so the CLI and an assistant's MCP server never lose each other's changes.
+    Reading works where writing is not allowed, and a damaged file is kept aside,
+    never overwritten.
+    """
+
     def __init__(self, path: Path | None = None) -> None:
         # Created on the first save, so reading works where writing is not allowed.
         self.path = path or (data_location() / "progress.json")
@@ -237,7 +245,7 @@ class ProgressStore:
 
     def save(self, state: ProgressState) -> ProgressState:
         state.updated_at = datetime.now(UTC)
-        # ensure all phases present
+        # A file saved before a phase was added lacks it; every phase is written.
         phases = dict(DEFAULT_PHASES)
         phases.update(state.phases)
         state.phases = phases
