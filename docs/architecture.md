@@ -106,7 +106,7 @@ Scoring lives in `scoring/` and `matching/` and is pure Python with no network, 
 
 ## How to add things
 
-**A command or MCP tool.** Add a method to `GSoCToolkit` in `service.py` that returns a dictionary. Expose it in `mcp_server.py` with a docstring that explains the parameters, because assistants read that text. Add a CLI command in `cli.py` with help text on every option. Write tests with fixtures, then update `docs/cli.md`, `docs/mcp.md`, and the skill references.
+**A command or MCP tool.** Add a method to `GSoCToolkit` in `service.py` that returns a dictionary. Expose it in `mcp_server.py` with a docstring that explains the parameters, because assistants read that text. Add a CLI command in `cli.py` with help text on every option. Write tests with fixtures and `respx` mocks, then update `docs/cli.md`, `docs/mcp.md`, and the skill's command table. `tests/unit/test_reference_docs.py` fails when a command, option, tool, or prompt is missing from those pages.
 
 **A scoring signal.** Edit the relevant function in `scoring/` (`health.py`, `issues.py`), `matching/`, or the helpers in `github/repos.py`. Append a human-readable reason whenever you change a score, and add a unit test for the new case. For organization ranking, run `python scripts/eval_matching.py --split dev` before and after; keep the test half for a final check.
 
@@ -115,6 +115,10 @@ Scoring lives in `scoring/` and `matching/` and is pure Python with no network, 
 **A journey phase.** Add it to `JourneyPhase` in `models.py` and `PHASE_GUIDES` in `guidance.py`, then update the phase table in the skill and the docs.
 
 **A data source.** Put the client in `gsoc/` or `github/`, give it the shared `CachedHttpClient`, choose a cache TTL, and make sure the caller degrades gracefully when the source is unavailable. Record the provenance in the returned data so docs and assistants can say where a fact came from.
+
+**The Agent Skill.** Assistants read `skills/git-into-gsoc/SKILL.md`. Keep it short and put depth in `references/`, which must stand on its own: an installed copy has no access to `docs/`. The description in the front matter (the `---` block at the top) says what the skill does and when to use it. `tests/unit/test_skill_package.py` checks the structure. Changing the skill changes what assistants do, so try a real assistant session before and after. The copies under `.agents/skills/` and `.claude/skills/` are written by `git-into-gsoc setup` and ignored by Git; edit only the tracked one.
+
+**Generated files.** The plugin and extension manifests (`.claude-plugin/`, `.codex-plugin/`, `.github/plugin/`, `gemini-extension.json`), the MCP registry entry `server.json`, and the install buttons in `README.md` and `docs/assistants.md` are written from `src/git_into_gsoc/install/distribution.py`. Change that file, run `python scripts/sync_integrations.py`, and commit the result; `tests/unit/test_distribution.py` fails when they differ. `python scripts/check_agents.py --setup` installs the plugin into every assistant command on your machine, in throwaway folders, and checks that each can start the server. [Distribution](distribution.md) explains the whole setup.
 
 ## Non-goals
 
