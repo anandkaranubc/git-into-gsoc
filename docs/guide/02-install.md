@@ -16,7 +16,7 @@ On Windows PowerShell:
 irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
 ```
 
-The installer downloads the newest release from [PyPI](https://pypi.org/project/git-into-gsoc/), the Python Package Index. It installs the command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with Python 3.11 or newer into a private folder in your home directory. If you have none of these, it offers to install uv, a free tool that brings its own Python. Answer yes. It then connects every AI assistant it finds ([chapter 3](03-connect-your-ai-assistant.md) explains what that means), prints a table of exactly what it created or changed, and tells you your next steps. It is safe to run again.
+The installer downloads the newest release from [PyPI](https://pypi.org/project/git-into-gsoc/), the Python Package Index. It installs the command with [uv](https://docs.astral.sh/uv/) or pipx if you have one of them, otherwise with Python 3.11 or newer into a private folder in your home directory. If you have none of these, it offers to install uv, a free tool that brings its own Python. Answer yes. It then connects every AI assistant it finds ([chapter 3](03-connect-your-ai-assistant.md) explains what that means), prints what it created or changed, and tells you your next steps. It is safe to run again.
 
 Open a new terminal and check:
 
