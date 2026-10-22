@@ -52,6 +52,10 @@ ENV_ONLY_FIELDS = frozenset(
         "ecosystems_commits_api_url",
         "cache_dir",
         "data_dir",
+        # The GitLab token is sent to this host, so a cloned repository's .env must not
+        # be able to point it at another server.
+        "gitlab_host",
+        "gig_gitlab_host",
     }
 )
 log = logging.getLogger(__name__)
@@ -73,7 +77,10 @@ class _DotEnvWithoutRedirects(PydanticBaseSettingsSource):
         if ignored:
             log.warning(
                 "Ignored %s from .env in %s: set these in the environment instead.",
-                ", ".join(f"GIG_{key.upper()}" for key in ignored),
+                ", ".join(
+                    key.upper() if key.lower().startswith("gig_") else f"GIG_{key.upper()}"
+                    for key in ignored
+                ),
                 Path.cwd(),
             )
         return {k: v for k, v in values.items() if k.lower() not in ENV_ONLY_FIELDS}
@@ -93,6 +100,16 @@ class Settings(BaseSettings):
         default=None,
         validation_alias=AliasChoices("GIG_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"),
         repr=False,
+    )
+    # A GitLab token reads issue comments, which GitLab hides without a sign-in. It is
+    # sent only to `gitlab_host` (tokens belong to one GitLab server).
+    gitlab_token: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("GIG_GITLAB_TOKEN", "GITLAB_TOKEN"),
+        repr=False,
+    )
+    gitlab_host: str = Field(
+        default="gitlab.com", validation_alias=AliasChoices("GIG_GITLAB_HOST", "GITLAB_HOST")
     )
     use_gh_cli: bool = True
     github_api_url: str = GITHUB_API

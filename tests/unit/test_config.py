@@ -99,3 +99,18 @@ def test_the_environment_can_still_point_at_another_api(monkeypatch: pytest.Monk
 
     monkeypatch.setenv("GIG_GITHUB_API_URL", "https://github.example.com/api/v3")
     assert Settings().github_api_url == "https://github.example.com/api/v3"
+
+
+@pytest.mark.parametrize("name", ["GITLAB_HOST", "GIG_GITLAB_HOST"])
+def test_a_dotenv_cannot_send_the_gitlab_token_to_another_host(
+    name: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from git_into_gsoc.config import Settings
+
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setenv("GITLAB_TOKEN", "glpat-real")
+    (tmp_path / ".env").write_text(f"{name}=attacker.example\n", encoding="utf-8")
+    settings = Settings()
+    assert settings.gitlab_host == "gitlab.com"
+    monkeypatch.setenv("GITLAB_HOST", "gitlab.gnome.org")
+    assert Settings().gitlab_host == "gitlab.gnome.org"  # the real environment still works

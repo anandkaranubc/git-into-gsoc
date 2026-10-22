@@ -55,6 +55,7 @@ from git_into_gsoc.github.pointers import (
     fix_norm,
     rank_similar,
     resolve_paths,
+    title_file_matches,
     title_keywords,
 )
 from git_into_gsoc.github.prcheck import check_pull_request
@@ -921,7 +922,13 @@ class GSoCToolkit:
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
         if number is None and parse_gitlab_issue(ref):
             # GNOME, KDE, and others keep issues on GitLab; its public API has the basics.
-            return {**gitlab_issue_status(self.http, ref), "before_you_comment": BEFORE_YOU_COMMENT}
+            found = gitlab_issue_status(
+                self.http,
+                ref,
+                token=self.settings.gitlab_token,
+                token_host=self.settings.gitlab_host,
+            )
+            return {**found, "before_you_comment": BEFORE_YOU_COMMENT}
         owner, repo, num = parse_issue_ref(ref, number)
         issue, assessment = self.github.assess(f"{owner}/{repo}", num)
         return {
@@ -1706,6 +1713,9 @@ class GSoCToolkit:
                     }
                 )
 
+        if not resolved:
+            # No file named and no code search result: try title words as a file name.
+            resolved = title_file_matches(str(issue.get("title") or ""), tree_paths)
         fixes, label, similar_note, shared = self._similar_fixes(owner, repo, issue, limit=similar)
         norm = fix_norm(fixes)
         search_links = [
@@ -2347,7 +2357,12 @@ class GSoCToolkit:
     def _tracked_gitlab_issue(self, link: str, previous: dict[str, str]) -> dict[str, Any]:
         """A tracked GitLab issue, re-checked through the host's public API when it answers."""
         try:
-            found = gitlab_issue_status(self.http, link)
+            found = gitlab_issue_status(
+                self.http,
+                link,
+                token=self.settings.gitlab_token,
+                token_host=self.settings.gitlab_host,
+            )
         except GigError:
             return _off_github_issue(link)
         before = previous.get(link)

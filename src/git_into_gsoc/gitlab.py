@@ -14,7 +14,12 @@ from typing import Any
 from urllib.parse import quote
 
 from git_into_gsoc.errors import GigError, NotFoundError
-from git_into_gsoc.github.availability import NOT_OPEN_LABELS, RESERVED_LABELS, STALE_DAYS
+from git_into_gsoc.github.availability import (
+    NOT_OPEN_LABELS,
+    RESERVED_LABELS,
+    STALE_DAYS,
+    assess_issue,
+)
 from git_into_gsoc.http_client import CachedHttpClient
 from git_into_gsoc.models import Availability
 from git_into_gsoc.text import clean_untrusted
@@ -104,8 +109,41 @@ def _status(
     return Availability.AVAILABLE, "Open, unassigned, no merge request or comments", linked, caveats
 
 
-def gitlab_issue_status(http: CachedHttpClient, url: str) -> dict[str, Any]:
-    """The same shape as the GitHub issue status, read from a GitLab host's public API."""
+def _same_host(host: str, token_host: str | None) -> bool:
+    wanted = (token_host or "").lower().removeprefix("https://").removeprefix("http://")
+    return bool(wanted) and host.lower() == wanted.strip("/").removeprefix("www.")
+
+
+def _comment_claims(
+    notes: list[dict[str, Any]], issue: dict[str, Any]
+) -> tuple[Availability, str, list[dict[str, Any]], list[str]]:
+    """Claims in GitLab comments, judged by the same rules as GitHub comments."""
+    timeline = [
+        {
+            "event": "commented",
+            "user": {"login": (n.get("author") or {}).get("username"), "type": "User"},
+            "body": str(n.get("body") or ""),
+            "created_at": n.get("created_at"),
+            "author_association": "NONE",
+        }
+        for n in notes
+        if isinstance(n, dict) and not n.get("system")
+    ]
+    found = assess_issue(
+        {"state": "open", "assignees": [], "updated_at": issue.get("updated_at")}, timeline
+    )
+    claims = [claim.model_dump(mode="json") for claim in found.claims]
+    return found.availability, found.reason, claims, list(found.caveats)
+
+
+def gitlab_issue_status(
+    http: CachedHttpClient, url: str, *, token: str | None = None, token_host: str | None = None
+) -> dict[str, Any]:
+    """The same shape as the GitHub issue status, read from a GitLab host's public API.
+
+    With a token for this host (GITLAB_TOKEN and GITLAB_HOST), the comments are read
+    too, and a claim in them counts as it does on GitHub.
+    """
     parsed = parse_gitlab_issue(url)
     if parsed is None:
         raise NotFoundError(f"Not a GitLab issue link: {url}")
@@ -131,10 +169,28 @@ def gitlab_issue_status(http: CachedHttpClient, url: str) -> dict[str, Any]:
         now=now,
     )
     notes = int(issue.get("user_notes_count") or 0)
-    if notes:
+    claims: list[dict[str, Any]] = []
+    read_comments = False
+    if notes and token and _same_host(host, token_host):
+        try:
+            found = http.get_json(
+                f"{api}/notes",
+                headers={"PRIVATE-TOKEN": token},
+                params={"per_page": 100, "sort": "asc"},
+                ttl=300,
+            )
+        except GigError:
+            found = None
+        if isinstance(found, list):
+            read_comments = True
+            comment_status, comment_reason, claims, comment_caveats = _comment_claims(found, issue)
+            caveats += comment_caveats
+            if status in {Availability.AVAILABLE, Availability.UNKNOWN}:
+                status, reason = comment_status, comment_reason
+    if notes and not read_comments:
         caveats.append(
             f"This tool cannot read the {notes} comment(s) without a {host} sign-in; read the "
-            "thread before you claim it"
+            "thread before you claim it, or set GITLAB_TOKEN and GITLAB_HOST so it can"
         )
     return {
         "repo": f"{host}/{project}",
@@ -149,7 +205,7 @@ def gitlab_issue_status(http: CachedHttpClient, url: str) -> dict[str, Any]:
         "assessment": {
             "availability": status.value,
             "reason": reason,
-            "claims": [],
+            "claims": claims,
             "linked_prs": linked,
             "assignees": [a.get("username") for a in issue.get("assignees") or []],
             "maintainer_engaged": False,

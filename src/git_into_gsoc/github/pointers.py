@@ -125,6 +125,53 @@ def _name_key(name: str) -> str:
 _PROSE_RE = re.compile(r"\.(?:md|rst|txt|adoc)$|(?:^|/)(?:contributing|changelog|readme)", re.I)
 
 
+def title_file_matches(
+    title: str, tree_paths: list[str], *, limit: int = 3
+) -> list[dict[str, Any]]:
+    """Files whose name spells two or three consecutive words of the issue title.
+
+    "Support custom profile fields in exports" points at custom_profile_fields.py. It
+    reads only the tree, so it works without a token; a match must be unique enough
+    (at most `limit` files) to be worth reading.
+    """
+    words = [w for w in re.findall(r"[a-z0-9]+", (title or "").lower()) if w not in _STOP_WORDS]
+    keys: list[str] = []
+    for size in (3, 2):
+        for start in range(len(words) - size + 1):
+            key = "".join(words[start : start + size])
+            if len(key) >= 8 and key not in keys:
+                keys.append(key)
+    by_stem: dict[str, list[str]] = {}
+    for path in tree_paths:
+        # Only code: a docs page that shares the title's words is not where a fix starts.
+        if path.startswith(_IGNORED_DIRS) or _PROSE_RE.search(path) or _DOCS_RE.search(path):
+            continue
+        stem = _name_key(path.rsplit("/", 1)[-1].split(".", 1)[0])
+        by_stem.setdefault(stem, []).append(path)
+        by_stem.setdefault(stem.rstrip("s"), []).append(path)
+    found: list[dict[str, Any]] = []
+    for key in keys:
+        hits = list(dict.fromkeys(by_stem.get(key, []) or by_stem.get(key.rstrip("s"), [])))
+        if 0 < len(hits) <= limit:
+            for hit in hits:
+                if not any(f["path"] == hit for f in found):
+                    found.append(
+                        {
+                            "path": hit,
+                            "score": 0.5,
+                            "lines": [],
+                            "reasons": [f"file name spells title words: {key}"],
+                            "confidence": "title words",
+                        }
+                    )
+    return code_first_entries(found)[:limit]
+
+
+def code_first_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    order = code_first([e["path"] for e in entries])
+    return sorted(entries, key=lambda e: order.index(e["path"]))
+
+
 def code_first(paths: list[str]) -> list[str]:
     """Code files before docs, changelogs, and release notes, keeping search order.
 

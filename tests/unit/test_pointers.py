@@ -200,3 +200,21 @@ def test_code_files_come_before_changelogs_and_docs() -> None:
         "kornia/contrib/distance_transform.py",
         "kornia/contrib/__init__.py",
     ]
+
+
+def test_title_words_that_spell_a_code_file_point_at_it() -> None:
+    from git_into_gsoc.github.pointers import title_file_matches
+
+    # Without a token there is no code search; a title that spells a file name still
+    # points somewhere useful (openfoodfacts-server#10825, "knowledge panel").
+    tree = [
+        "lib/ProductOpener/KnowledgePanels.pm",
+        "tests/unit/knowledge_panels.t",
+        "docs/api/explain-knowledge-panels.md",
+        "lib/ProductOpener/Products.pm",
+    ]
+    found = title_file_matches("Tweak the report product knowledge panel icon", tree)
+    paths = [f["path"] for f in found]
+    assert paths[0] == "lib/ProductOpener/KnowledgePanels.pm"
+    assert "docs/api/explain-knowledge-panels.md" not in paths  # docs are not a starting point
+    assert title_file_matches("Fix the button", tree) == []
