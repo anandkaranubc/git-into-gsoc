@@ -20,7 +20,7 @@ git-into-gsoc            # home: where the program is, your progress, and what t
 git-into-gsoc start      # four questions, then organizations that fit you
 ```
 
-Run with no command, `git-into-gsoc` shows a short home screen: the current GSoC phase and the next date, then either a pointer to `start` (first time) or your progress in five steps (profile, shortlist, repository, issue, weekly note) with the command for what to do now. `git-into-gsoc --help` lists every command.
+Run with no command, `git-into-gsoc` shows a short home screen: the current GSoC phase and the next date, then either a pointer to `start` (first time) or your progress in six steps (profile, shortlist, repository, issue, weekly note, merged pull request) with the command for what to do now. `git-into-gsoc --help` lists every command.
 
 `start` asks four questions and saves the answers as your profile: your GitHub username (optional; it reads the languages of your public repositories and suggests them as the next answer), the languages and tools you know, the topics you would enjoy (pick numbers from a list or type your own words), and hours per week. Press Enter to skip any question. It then shows the three organizations that fit best, with the reasons, lets you shortlist any of them by number, and prints your next steps with exact commands. Run it again whenever your answers change.
 
