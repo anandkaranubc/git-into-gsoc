@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.21.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.20.0...v0.21.0) (2026-10-22)
+
+
+### Features
+
+* **orient:** say when recent merged work goes to a branch other than the default ([#287](https://github.com/anandkaranubc/git-into-gsoc/issues/287)) ([ef132ff](https://github.com/anandkaranubc/git-into-gsoc/commit/ef132ff1a7e4e68840dae4c722b04b8d460088ab))
+
+
+### Bug Fixes
+
+* **ideas:** read GitHub wiki pages by any name, and tables of ideas ([#281](https://github.com/anandkaranubc/git-into-gsoc/issues/281)) ([879f88f](https://github.com/anandkaranubc/git-into-gsoc/commit/879f88f060ce987f12f95ad0a580081e13a5379f))
+* **issue:** a pull request in an unrelated project is not a fix for the issue ([#284](https://github.com/anandkaranubc/git-into-gsoc/issues/284)) ([f369ab2](https://github.com/anandkaranubc/git-into-gsoc/commit/f369ab2267f6afe29f67b084fe90ae44b8fa3365))
+* **issues:** catch more ways newcomers claim an issue, measured on a fifth sample ([#282](https://github.com/anandkaranubc/git-into-gsoc/issues/282)) ([68202ff](https://github.com/anandkaranubc/git-into-gsoc/commit/68202ffc8cf38a2309095e0fef63f382c685d175))
+* **matching:** say the beginner-label count is a past year's habit, not issues open now ([#285](https://github.com/anandkaranubc/git-into-gsoc/issues/285)) ([5f29b2e](https://github.com/anandkaranubc/git-into-gsoc/commit/5f29b2e680f4e58722de223d44a340f856d4e25d))
+* **signals:** a canary for searches with an OR group, and statements that stay until replaced ([#280](https://github.com/anandkaranubc/git-into-gsoc/issues/280)) ([5def78f](https://github.com/anandkaranubc/git-into-gsoc/commit/5def78f7c93ab461204749cde6bd86c90fb9e867))
+* **skill:** check the AI policy before helping with a message, and build on what earlier commenters found ([#286](https://github.com/anandkaranubc/git-into-gsoc/issues/286)) ([9050ab1](https://github.com/anandkaranubc/git-into-gsoc/commit/9050ab12497e232c65edf46b7c09a27854ad55d3))
+
+
+### Reverts
+
+* **matching:** take out the mostly-needs cost; both held-out sets disagree ([#288](https://github.com/anandkaranubc/git-into-gsoc/issues/288)) ([1884b27](https://github.com/anandkaranubc/git-into-gsoc/commit/1884b27813765ed537796c9a632e7239b8674190))
+
 ## [0.20.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.19.1...v0.20.0) (2026-10-22)
 
 
