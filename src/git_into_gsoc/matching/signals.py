@@ -214,6 +214,17 @@ def _ideas_for(toolkit: Any, raw: dict[str, Any], ttl: int) -> dict[str, Any] | 
     return summarize_ideas([i.model_dump() for i in doc.ideas], layout=doc.layout, url=str(url))
 
 
+# The labels recommend searches for its starter issues, so the count matches them.
+BEGINNER_SEARCH_LABELS = (
+    "good first issue",
+    "good-first-issue",
+    "starter",
+    "beginner",
+    "easy",
+    "first-timers-only",
+)
+
+
 def _github_for(toolkit: Any, owners: list[str], now: datetime) -> dict[str, Any] | None:
     """Repository evidence, or None when there are no owners or every listing failed."""
     from git_into_gsoc.errors import GigError
@@ -230,7 +241,15 @@ def _github_for(toolkit: Any, owners: list[str], now: datetime) -> dict[str, Any
             continue
     if not listed:
         return None
-    return summarize_repos(repos, owners[:3], now=now)
+    summary = summarize_repos(repos, owners[:3], now=now)
+    labelled = toolkit.github.beginner_issues_opened(
+        owners[:3],
+        since=(now - timedelta(days=365)).date().isoformat(),
+        labels=list(BEGINNER_SEARCH_LABELS),
+    )
+    if labelled is not None:
+        summary["beginner_issues_year"] = labelled
+    return summary
 
 
 _FAILED_LAYOUTS = {"unreachable", "error"}
@@ -258,6 +277,14 @@ def keep_previous(
             kept["ideas"] = before
         if "github" not in entry and old.get("github"):
             kept["github"] = old["github"]
+        elif "beginner_issues_year" in (old.get("github") or {}) and "beginner_issues_year" not in (
+            kept.get("github") or {}
+        ):
+            # The count's search failed this time; last month's figure stands.
+            kept["github"] = {
+                **kept["github"],
+                "beginner_issues_year": old["github"]["beginner_issues_year"],
+            }
         if kept.pop("_participation_failed", False) and old.get("participation"):
             kept["participation"] = old["participation"]
         merged[slug] = kept

@@ -675,6 +675,18 @@ class OrgIndex:
         active = int(profile.github.get("active_repos") or 0)
         if active:
             readiness_lines.append(f"{active} GitHub repositories pushed in the last year")
+        labelled = profile.github.get("beginner_issues_year")
+        if labelled == 0 and active:
+            # First, so it is seen: there is no labelled first task to look for here.
+            readiness_lines.insert(
+                0,
+                "Labelled no issues for beginners on GitHub in the past year: ask its "
+                "mentors for a first task, starting from its ideas page",
+            )
+        elif labelled:
+            readiness_lines.append(
+                f"Labelled {labelled} issue(s) for beginners on GitHub in the past year"
+            )
 
         # A fit needs something to fit: a category or a bare listing has none.
         fit = _fit_level(relevance, interests, skills) if (query or not person.empty) else None

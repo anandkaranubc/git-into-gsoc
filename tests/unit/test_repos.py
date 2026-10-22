@@ -785,3 +785,16 @@ def test_a_sample_spanning_hours_says_the_last_day() -> None:
     found = outside_merges([_closed("core", "MEMBER", 0.01 * n) for n in range(30)])
     _, reason = outside_merges_points(found)
     assert "in the last day" in reason and "1 days" not in reason
+
+
+@respx.mock
+def test_beginner_issues_opened_counts_one_search_over_owners_and_labels() -> None:
+    route = respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(200, json={"total_count": 17, "items": []})
+    )
+    count = GitHubClient().beginner_issues_opened(
+        ["ML4SCI", "other"], since="2025-10-22", labels=["good first issue", "beginner"]
+    )
+    assert count == 17
+    query = route.calls[0].request.url.params["q"]
+    assert "created:>=2025-10-22" in query and "good first issue" in query and "ML4SCI" in query

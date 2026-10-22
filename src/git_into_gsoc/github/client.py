@@ -264,6 +264,29 @@ class GitHubClient:
             return None
         return int(data.get("total_count") or 0)
 
+    def beginner_issues_opened(
+        self, owners: list[str], *, since: str, labels: list[str]
+    ) -> int | None:
+        """Issues opened since `since` (YYYY-MM-DD) with a beginner label, open or closed.
+
+        One search call; None when the search fails. It shows whether an organization
+        marks first tasks on GitHub at all, which a count of open issues on one day
+        cannot.
+        """
+        logins = [validate_login(o, kind="organization") for o in owners if o]
+        if not logins:
+            return None
+        query = build_issue_query(
+            base=["is:issue", f"created:>={since}"], labels=labels, orgs=logins
+        )
+        try:
+            data = self._api("search/issues", params={"q": query, "per_page": 1})
+        except HttpError:
+            return None
+        if not isinstance(data, dict) or "total_count" not in data:
+            return None
+        return int(data.get("total_count") or 0)
+
     def gsoc_year_posts(self, owners: list[str], year: int) -> list[dict[str, Any]]:
         """Issues in these owners' repositories whose title names GSoC and `year` (one search)."""
         logins = [validate_login(o, kind="organization") for o in dict.fromkeys(owners)]

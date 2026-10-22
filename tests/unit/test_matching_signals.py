@@ -124,3 +124,10 @@ def test_ideas_pages_get_no_github_token_and_listings_do(monkeypatch: pytest.Mon
     # The search for Broken failed, so last month's answer stands.
     assert signals["broken"]["participation"] == previous["broken"]["participation"]
     assert "_participation_failed" not in signals["broken"]
+
+
+def test_a_failed_beginner_label_count_keeps_last_months_figure() -> None:
+    previous = {"a": {"github": {"active_repos": 3, "beginner_issues_year": 9}}}
+    fresh = {"a": {"github": {"active_repos": 4}}}  # the listing worked, the search did not
+    merged = keep_previous(fresh, previous)
+    assert merged["a"]["github"] == {"active_repos": 4, "beginner_issues_year": 9}

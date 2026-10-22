@@ -381,3 +381,25 @@ def test_a_broad_word_in_a_name_is_not_what_an_organization_is_named_after() -> 
     perfusion = _org("Open Science Imaging Group", tech=["python"], topics=["science"])
     ranked = _rank([perfusion], technologies=["python"], interests=["science"], experience="some")
     assert not any(r.startswith("Named after") for r in ranked[0].reasons())
+
+
+def test_readiness_says_whether_an_organization_labels_first_tasks_on_github() -> None:
+    quiet = _org("Lab Without Labels", tech=["python"], topics=["physics"])
+    busy = _org("Labelling Lab", tech=["python"], topics=["physics"])
+
+    def github(labelled: int) -> dict[str, Any]:
+        return {"active_repos": 8, "languages": {"Python": 8}, "beginner_issues_year": labelled}
+
+    signals = {
+        "year": 2026,
+        "organizations": {
+            "lab-without-labels": {"github": github(0)},
+            "labelling-lab": {"github": github(14)},
+        },
+    }
+    ranked = {m.org.name: m for m in _rank([quiet, busy], signals=signals, interests=["physics"])}
+    assert ranked["Lab Without Labels"].readiness[0].startswith("Labelled no issues for beginners")
+    assert "mentors" in ranked["Lab Without Labels"].readiness[0]
+    assert any("Labelled 14 issue(s)" in line for line in ranked["Labelling Lab"].readiness)
+    # Evidence only: the two still tie on everything that ranks them.
+    assert ranked["Lab Without Labels"].score == ranked["Labelling Lab"].score
