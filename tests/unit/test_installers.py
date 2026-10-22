@@ -287,11 +287,21 @@ def _offer_uv(
     flag: bool,
     have_uv: bool = False,
     python: str = "python-that-does-not-exist",
+    pipx_python: str | None = None,
+    pipx_has_environment: bool = True,
+    pipx_script: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    """Run install.sh's offer_uv on a PATH with no uv, pipx, or Python (unless asked)."""
+    """Run install.sh's offer_uv on a PATH with no uv, pipx, or Python (unless asked).
+
+    `pipx_python` adds a pipx that runs on a Python of that version ("3.9" or "3.12").
+    Without `pipx_has_environment` it is pipx 1.0 (Ubuntu 22.04's), which cannot say
+    which Python it uses: only the first line of its script names it.
+    """
     text = (ROOT / "install.sh").read_text()
     functions = []
-    for name in ("python_ok", "python_version", "venv_ok", "python_hint", "ask_yes", "offer_uv"):
+    names = ("pipx_python", "pipx_python_run", "pipx_ok", "python_ok", "python_version")
+    names += ("venv_ok", "python_hint")
+    for name in (*names, "ask_yes", "offer_uv"):
         found = re.search(rf"^{name}\(\) \{{\n.*?^\}}\n", text, re.M | re.S)
         assert found, f"{name} not found in install.sh"
         functions.append(found.group(0))
@@ -316,6 +326,23 @@ def _offer_uv(
     if have_uv:
         (bin_dir / "uv").write_text("#!/bin/sh\n")
         (bin_dir / "uv").chmod(0o755)
+    if pipx_python:
+        # pipx's own Python answers the version check, and prints its version.
+        old = tuple(int(part) for part in pipx_python.split(".")) < (3, 11)
+        fake = tmp_path / "pipx-python"
+        fake.write_text(
+            "#!/bin/sh\n"
+            f'case "$2" in *print*) echo {pipx_python};; *) exit {1 if old else 0};; esac\n'
+        )
+        fake.chmod(0o755)
+        if pipx_has_environment:
+            (bin_dir / "pipx").write_text(f"#!/bin/sh\necho {fake}\n")
+        else:
+            (bin_dir / "pipx").write_text(f"#!{fake}\n# pipx 1.0: no `environment` command\n")
+        (bin_dir / "pipx").chmod(0o755)
+    if pipx_script is not None:
+        (bin_dir / "pipx").write_text(pipx_script)
+        (bin_dir / "pipx").chmod(0o755)
     script = (
         "set -euo pipefail\n"
         f'OWN_REPO="{OURS}"\n'
@@ -361,6 +388,74 @@ def test_an_existing_uv_is_used_without_offering_anything(tmp_path: Path) -> Non
     result = _offer_uv(tmp_path, flag=False, have_uv=True)
     assert result.returncode == 0 and result.stdout.strip() == "uv-ready"
     assert not (tmp_path / "calls").exists()
+
+
+@posix_only
+def test_a_pipx_on_an_old_python_is_not_used(tmp_path: Path) -> None:
+    # Ubuntu 22.04's pipx runs on Python 3.10, and `pip3 install pipx` on a Mac on 3.9.
+    # The installer used it, every source failed with "requires a different Python", and
+    # it said to check the internet connection.
+    result = _offer_uv(tmp_path, flag=False, pipx_python="3.9")
+    assert result.returncode == 1
+    assert "pipx is here, but it runs on Python 3.9" in result.stderr
+    assert "| bash -s -- --install-uv" in result.stderr
+    newer = tmp_path / "newer"
+    newer.mkdir()
+    result = _offer_uv(newer, flag=False, pipx_python="3.12")
+    assert result.returncode == 0 and result.stdout.strip() == "uv-ready"
+    # Ubuntu 22.04's pipx 1.0 has no `environment --value`; its first line names Python.
+    ubuntu = tmp_path / "ubuntu"
+    ubuntu.mkdir()
+    result = _offer_uv(ubuntu, flag=False, pipx_python="3.10", pipx_has_environment=False)
+    assert result.returncode == 1
+    assert "pipx is here, but it runs on Python 3.10" in result.stderr
+
+
+@posix_only
+def test_a_pipx_wrapped_in_a_shell_script_is_still_tried(tmp_path: Path) -> None:
+    # Nix and hand-made setups start pipx with `#!/bin/sh`: that line names no Python, so
+    # the installer cannot tell, and tries pipx rather than calling it too old.
+    result = _offer_uv(tmp_path, flag=False, pipx_script="#!/bin/sh\nexit 2\n")
+    assert result.returncode == 0 and result.stdout.strip() == "uv-ready"
+    assert "pipx is here" not in result.stderr
+
+
+_PS_PIPX = r"""
+$ErrorActionPreference = "Stop"
+$names = "Get-PipxPython", "Test-PipxOk"
+$ast = [System.Management.Automation.Language.Parser]::ParseFile($args[0], [ref]$null, [ref]$null)
+$found = $ast.FindAll({ param($n)
+  $n -is [System.Management.Automation.Language.FunctionDefinitionAst] -and $n.Name -in $names }, $true)
+foreach ($f in $found) { . ([scriptblock]::Create($f.Extent.Text)) }
+function pipx { "oldpython" }
+function oldpython { $global:LASTEXITCODE = [int]$env:FAKE_PIPX_PYTHON_EXIT }
+Write-Output "OK $(Test-PipxOk)"
+"""
+
+
+@needs_pwsh
+def test_powershell_does_not_use_a_pipx_on_an_old_python(tmp_path: Path) -> None:
+    script = tmp_path / "pipx.ps1"
+    script.write_text(_PS_PIPX, encoding="utf-8")
+    seen = {}
+    for code in ("1", "0"):
+        result = subprocess.run(
+            [
+                "pwsh",
+                "-NoProfile",
+                "-NonInteractive",
+                "-File",
+                str(script),
+                str(ROOT / "install.ps1"),
+            ],
+            capture_output=True,
+            text=True,
+            env={**os.environ, "FAKE_PIPX_PYTHON_EXIT": code},
+            timeout=60,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        seen[code] = result.stdout.strip()
+    assert seen == {"1": "OK False", "0": "OK True"}
 
 
 def _fake_python(bin_dir: Path, *, version: str = "3.12.3", has_venv: bool = True) -> str:

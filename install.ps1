@@ -164,9 +164,26 @@ function Test-PythonOk {
   try { Find-Python | Out-Null; return $true } catch { return $false }
 }
 
+# pipx installs with the Python it runs on. A pipx on Python older than 3.11 fails every
+# source with "requires a different Python", and the installer blamed the network.
+function Get-PipxPython {
+  try { return "$(pipx environment --value PIPX_DEFAULT_PYTHON 2>$null)".Trim() } catch { return "" }
+}
+
+function Test-PipxOk {
+  if (-not (Get-Command pipx -ErrorAction SilentlyContinue)) { return $false }
+  $py = Get-PipxPython
+  if (-not $py) { return $true }  # an older pipx cannot say: try it
+  try { & $py -c "import sys; raise SystemExit(sys.version_info < (3, 11))" 2>$null } catch { return $false }
+  return ($LASTEXITCODE -eq 0)
+}
+
 function Request-Uv {
-  if ((Get-Command uv -ErrorAction SilentlyContinue) -or (Get-Command pipx -ErrorAction SilentlyContinue) -or (Test-PythonOk)) { return }
-  Write-Host "This computer has no uv, no pipx, and no Python 3.11 or newer."
+  if ((Get-Command uv -ErrorAction SilentlyContinue) -or (Test-PipxOk) -or (Test-PythonOk)) { return }
+  if (Get-Command pipx -ErrorAction SilentlyContinue) {
+    Write-Host "pipx is here, but it runs on a Python older than 3.11 ($(Get-PipxPython)), and git-into-gsoc needs 3.11 or newer."
+  }
+  Write-Host "This computer has no uv, no usable pipx, and no Python 3.11 or newer."
   Write-Host "uv is a free tool from Astral (https://docs.astral.sh/uv/) that installs Python"
   Write-Host "programs and the Python they need, into your user folder only."
   $yes = $InstallUv
@@ -218,7 +235,7 @@ if (-not $SkillOnly) {
     $bin = "$(uv tool dir --bin)".Trim()
     $GigBin = Join-Path $bin "git-into-gsoc.exe"
     Add-ToUserPath $bin
-  } elseif (Get-Command pipx -ErrorAction SilentlyContinue) {
+  } elseif (Test-PipxOk) {
     Log "Installing git-into-gsoc with pipx"
     Install-FirstWorking { param($spec) pipx install --force $spec | Out-Null }
     $bin = "$(pipx environment --value PIPX_BIN_DIR 2>$null)".Trim()
