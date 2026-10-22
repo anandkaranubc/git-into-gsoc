@@ -226,3 +226,28 @@ def test_competencies_in_a_skills_field_are_not_the_project_subject() -> None:
         url="https://x",
     )
     assert "developer tools" not in summary["ideas"][0].get("k", [])
+
+
+def test_stated_hours_reach_the_time_fit() -> None:
+    # FreeBSD's "500 hours" read as large, then checked as a 350-hour project; at 20 hours
+    # a week (440 hours over the longest coding period) it fit when it does not.
+    from git_into_gsoc.matching.ideas import fit_idea
+    from git_into_gsoc.matching.profile import build_profile
+    from git_into_gsoc.matching.signals import summarize_ideas
+
+    summary = summarize_ideas(
+        [
+            {"title": "PJDFSTest rewrite", "size": "large", "hours": 500, "skills": ["C"]},
+            {"title": "Docs", "size": "medium", "hours": 175, "skills": ["Python"]},
+        ],
+        layout="headings",
+        url="https://x",
+    )
+    first, second = summary["ideas"]
+    assert (first["s"], first["h"]) == ("large", 500)
+    assert "h" not in second  # the size's own hours add nothing
+    person = build_profile(technologies=["c"], hours_per_week=20)
+    stated = fit_idea(person, skill_keys=["c"], domain_keys=[], size="large", hours=500)
+    usual = fit_idea(person, skill_keys=["c"], domain_keys=[], size="large")
+    assert stated.too_big and "large (500 hours)" in stated.notes
+    assert not usual.too_big
