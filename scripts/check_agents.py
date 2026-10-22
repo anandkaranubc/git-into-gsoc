@@ -68,6 +68,8 @@ SECRET_VARS = (
 
 @dataclass
 class Result:
+    """One agent's outcome on one route, printed as a row or as JSON."""
+
     agent: str
     route: str  # plugin | setup
     status: str  # ok | registered | failed | skipped

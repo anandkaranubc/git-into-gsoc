@@ -1,3 +1,6 @@
+"""The saved profile: `profile`, and how `recommend` and `issues` read it and what they save
+back."""
+
 from __future__ import annotations
 
 from typing import Any

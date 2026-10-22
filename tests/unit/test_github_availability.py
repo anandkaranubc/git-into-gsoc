@@ -1,3 +1,6 @@
+"""Whether an issue is free: the timeline rules, claim phrasings from real comments, releases,
+grants, and the issue search that uses them."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta

@@ -1,3 +1,6 @@
+"""The HTTP cache end to end: fresh and stale entries, ETag revalidation, retries, rate limits,
+pruning, and the response size cap, against a mocked server."""
+
 from __future__ import annotations
 
 import os
