@@ -73,6 +73,7 @@ TIME_MISFIT = 0.85
 OTHER_MAIN_LANGUAGE = 0.95
 # "Most of its ideas need X" stays a caveat only. A x0.95 cost helped the dev sets but
 # made both held-out sets worse (holdout2 and holdout3), so it was taken out.
+
 # Beginner-labelled issues in a year below which the count says nothing useful.
 MIN_LABELLED = 3
 # How much a phrase's common concept counts against its rarest one (see match_term).
@@ -256,6 +257,8 @@ def _years_line(org: OrgSummary, reference_year: int) -> tuple[float, str | None
         if year in years:
             streak += 1
         elif year != 2016 - 1:
+            # The shipped history starts in 2016, so a missing 2015 is unknown, not a
+            # year the organization sat out.
             break
     if not years:
         return 0.0, None
@@ -533,6 +536,14 @@ class OrgIndex:
         category: str = "",
         limit: int | None = None,
     ) -> list[OrgMatch]:
+        """Organizations for this person, best first.
+
+        `query` is free text to match as well; `category` must match the listing's
+        category. With a query, a category, or a non-empty profile, organizations
+        whose relevance is under FIT_MIN are left out; with none, every organization
+        is listed, ordered by its track record (years in a row, project slots, and
+        ideas readiness), then by its tie-breakers.
+        """
         query = query.strip()
         category = category.strip().lower()
         ceiling = math.log(len(self.profiles) + 1) + 1.0

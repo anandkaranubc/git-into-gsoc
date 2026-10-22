@@ -1,4 +1,6 @@
-"""Pure helpers for repository intelligence (no I/O, easy to test)."""
+"""Pure functions over GitHub repository payloads: pull request statistics, beginner
+labels, mirrors, and a repository's points as a first stop. No I/O, so each one is
+easy to test."""
 
 from __future__ import annotations
 

@@ -1,6 +1,6 @@
 # Releasing
 
-Releases are cut by [Release Please](https://github.com/googleapis/release-please) from Conventional Commits on `main`. Maintainers only need to do three things.
+Releases are cut by [Release Please](https://github.com/googleapis/release-please) from Conventional Commits on `main`. A maintainer does two things by hand: checks the embedded data is fresh, and merges the release pull request. Publishing, release assets, the registry entry, and plugin versions follow by themselves. This page is for maintainers; contributors need only [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## 1. Refresh the embedded organization snapshot
 
@@ -57,16 +57,9 @@ To rebuild the assets for a tag, run the workflow from the Actions tab with the 
 
 Release Please also bumps `version` in `.claude-plugin/plugin.json`, `.codex-plugin/plugin.json`, `.github/plugin/plugin.json`, `gemini-extension.json`, and `server.json`, so Claude Code, Codex, Copilot, and Gemini CLI offer the update. The one-click install buttons run the newest release from PyPI, and the Claude Desktop button downloads the newest release's bundle, so they need no change at release. See [distribution](distribution.md) for how the manifests are generated and checked, and for directory listings that need the owner.
 
-## Checks before merging a release
+## Checks before and after a release
 
-```bash
-ruff check src tests && ruff format --check src tests
-mypy src
-pytest
-git-into-gsoc setup --dry-run --assistant all
-```
-
-For every pull request, CI runs the lint, format, and type checks on Linux, the tests on Linux, macOS, and Windows, and both installers.
+CI already ran the [standard checks](../CONTRIBUTING.md#make-a-change) on every merged pull request. Before merging the release pull request, also run `git-into-gsoc setup --dry-run --assistant all` from a checkout of `main`, so a broken assistant setup never reaches a release.
 
 Unit tests never touch the network. After a release, run the **Live journeys** workflow from the Actions tab (it also runs every Monday). It installs the newest release on Linux, macOS, and Windows and runs beginner commands against live GitHub, GitLab, and GSoC data with `scripts/live_journeys.py`. A crash fails it. A step marked drift ran fine but gave a different answer, because live data changed; read it and update the step if the new answer is right. Run the same script on your own computer with `python scripts/live_journeys.py`. The same workflow also installs the newest release while hiding it from PyPI (`UV_EXCLUDE_NEWER`), the few minutes after a release when PyPI's index has not caught up, and checks on all three systems that the installers fall back to the wheel attached to the GitHub release.
 

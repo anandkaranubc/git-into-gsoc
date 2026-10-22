@@ -234,6 +234,37 @@ install_first() {
 
 pipx_install_quiet() { pipx install --force "$1" >/dev/null; }
 
+# pipx installs with the Python it runs on. Ubuntu 22.04's pipx runs on Python 3.10, and
+# `pip3 install pipx` on a Mac on 3.9: every source then fails with "requires a different
+# Python", and the installer blamed the network. Such a pipx is not used.
+# Its Python: what pipx says, else (pipx 1.0, Ubuntu 22.04's, has no `environment`)
+# PIPX_DEFAULT_PYTHON, else the interpreter on the first line of the pipx script.
+pipx_python() {
+  local py line
+  if py="$(pipx environment --value PIPX_DEFAULT_PYTHON 2>/dev/null)" && [[ -n "$py" ]]; then
+    printf '%s\n' "$py"
+  elif [[ -n "${PIPX_DEFAULT_PYTHON:-}" ]]; then
+    printf '%s\n' "$PIPX_DEFAULT_PYTHON"
+  elif IFS= read -r line <"$(command -v pipx)" 2>/dev/null && [[ "$line" == '#!'*python* ]]; then
+    # Only a Python names it; a shell wrapper (Nix's `#!/bin/sh`) cannot tell.
+    printf '%s\n' "${line#\#!}"
+  else
+    return 1
+  fi
+}
+# Runs pipx's Python with the given arguments. It may be "/usr/bin/env python3", so the
+# command is split into words on purpose.
+pipx_python_run() {
+  local -a cmd
+  read -r -a cmd <<<"$(pipx_python)" && [[ ${#cmd[@]} -gt 0 ]] || return 1
+  "${cmd[@]}" "$@"
+}
+pipx_ok() {
+  command -v pipx >/dev/null 2>&1 || return 1
+  pipx_python >/dev/null || return 0  # cannot tell: try it
+  pipx_python_run -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' 2>/dev/null
+}
+
 # --------------------------------------------------- uv, when nothing else fits
 # uv installs Python by itself, so a computer without Python 3.11 can still install
 # the tool. It is only offered when there is no uv, no pipx, and no usable Python.
@@ -254,14 +285,17 @@ ask_yes() {
 }
 
 offer_uv() {
-  command -v uv >/dev/null 2>&1 || command -v pipx >/dev/null 2>&1 || python_ok && return 0
+  command -v uv >/dev/null 2>&1 || pipx_ok || python_ok && return 0
   {
+    if command -v pipx >/dev/null 2>&1; then
+      echo "pipx is here, but it runs on Python $(pipx_python_run -c 'import sys; print("%d.%d" % sys.version_info[:2])' 2>/dev/null || echo "older than 3.11"), and git-into-gsoc needs 3.11 or newer."
+    fi
     if ! command -v "$PYTHON" >/dev/null 2>&1; then
       echo "This computer has no uv, no pipx, and no Python."
     elif "$PYTHON" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' 2>/dev/null; then
-      echo "This computer has Python $(python_version), but without its venv module, and no uv or pipx."
+      echo "This computer has Python $(python_version), but without its venv module, and no uv or usable pipx."
     else
-      echo "This computer has Python $(python_version), which is older than 3.11, and no uv or pipx."
+      echo "This computer has Python $(python_version), which is older than 3.11, and no uv or usable pipx."
     fi
     echo "uv is a free tool from Astral (https://docs.astral.sh/uv/) that installs Python"
     echo "programs and the Python they need, into your home folder only."
@@ -287,7 +321,7 @@ install_remote() {
     # A release minutes old can be missing from uv's cached copy of the PyPI index.
     install_first uv tool install --refresh-package git-into-gsoc -q --force
     GIG_BIN="$(uv tool dir --bin)/git-into-gsoc"
-  elif command -v pipx >/dev/null 2>&1; then
+  elif pipx_ok; then
     log "Installing git-into-gsoc with pipx"
     install_first pipx_install_quiet
     GIG_BIN="$(pipx environment --value PIPX_BIN_DIR 2>/dev/null || echo "${HOME}/.local/bin")/git-into-gsoc"
