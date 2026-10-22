@@ -179,10 +179,28 @@ jobs:
           tar xzf mcp-publisher.tar.gz mcp-publisher
           ./mcp-publisher --version
 
-      - name: Authenticate to the MCP registry with GitHub OIDC
-        if: steps.registry.outputs.publish == 'true'
-        run: ./mcp-publisher login github-oidc
-
+      # The registry checks PyPI itself, and its view can lag behind the one the wait
+      # step saw: 0.16.0 was first refused with "version '0.16.0' was not found". So
+      # retry that refusal for up to 10 minutes, logging in again each time in case the
+      # registry token expires. Then publish the bundle alone rather than nothing. Any
+      # other error fails the run at once.
       - name: Publish
         if: steps.registry.outputs.publish == 'true'
-        run: ./mcp-publisher publish
+        run: |
+          for attempt in $(seq 10); do
+            ./mcp-publisher login github-oidc
+            if ./mcp-publisher publish > publish.log 2>&1; then
+              cat publish.log
+              exit 0
+            fi
+            cat publish.log
+            if ! grep -Eq "version '[^']*' (was )?not found|PyPI could not confirm" publish.log; then
+              exit 1
+            fi
+            echo "The registry does not see git-into-gsoc ${VERSION} on PyPI yet (attempt ${attempt} of 10). Trying again in a minute."
+            sleep 60
+          done
+          echo "::warning::The registry still could not see git-into-gsoc ${VERSION} on PyPI after 10 minutes, so this version lists only the bundle. Registry versions cannot be changed, so the PyPI package returns with the next release."
+          jq '.packages |= map(select(.registryType != "pypi"))' server.json > server.tmp && mv server.tmp server.json
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

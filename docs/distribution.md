@@ -32,7 +32,7 @@ python scripts/sync_integrations.py --check   # what the tests run
 
 Release Please bumps `version` in `pyproject.toml`, `src/git_into_gsoc/__init__.py`, both plugin manifests, `gemini-extension.json`, and `server.json`. After the release:
 
-- `release.yml` uploads the wheel and source archive to PyPI, and dispatches `mcp-registry.yml`, which attaches the wheel, source archive, and `git-into-gsoc.mcpb` to the release and publishes the registry entry. The entry lists the bundle and the PyPI package. The registry accepts a PyPI package only after PyPI serves that version, so the workflow waits up to 10 minutes for it. If PyPI still does not have it, the entry lists only the bundle and the run shows a warning.
+- `release.yml` uploads the wheel and source archive to PyPI, and dispatches `mcp-registry.yml`, which attaches the wheel, source archive, and `git-into-gsoc.mcpb` to the release and publishes the registry entry. The entry lists the bundle and the PyPI package. The registry accepts a PyPI package only after PyPI serves that version, so the workflow waits up to 10 minutes for it, and retries for up to 10 more when the registry still answers that the version was not found. If it never does, the entry lists only the bundle and the run shows a warning.
 - Claude Code, Codex, and Copilot see the new `version` and offer the update. Gemini CLI compares release tags, so `--auto-update` installs pick it up at the next start.
 
 ## Compatibility checks
