@@ -1,8 +1,10 @@
-"""The command line: each command calls one GSoCToolkit method and renders the result.
+"""The command line: most commands call one GSoCToolkit method and render the result.
 
-Command docstrings are the `--help` text people read, so they are written for people
-and checked against docs/cli.md by a test. Everything printed goes through `escape`,
-because issue titles, labels and notes are text strangers wrote.
+Command docstrings are the `--help` text people read, so they are written for people;
+a test checks that every command and option has help text and is listed in
+docs/cli.md. Every string from data goes through `escape` (`_markup_safe`) before
+rich renders it: issue titles, labels, and project pages are text strangers wrote,
+and the person's own notes must print literally.
 """
 
 from __future__ import annotations
