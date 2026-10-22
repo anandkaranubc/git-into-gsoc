@@ -1,3 +1,6 @@
+"""The generated plugin manifests and registry entry: in step with their definition, versioned, and
+running the server from their own copy."""
+
 from __future__ import annotations
 
 import json

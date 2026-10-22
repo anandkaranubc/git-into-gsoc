@@ -1,3 +1,6 @@
+"""Setup: skill copies, each assistant's config file, Codex's TOML, installed plugins, removal, and
+what `doctor` finds."""
+
 from __future__ import annotations
 
 import json

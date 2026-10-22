@@ -1,3 +1,5 @@
+"""The official archive: mentor summaries per organization and the `mentors` command."""
+
 from __future__ import annotations
 
 import httpx

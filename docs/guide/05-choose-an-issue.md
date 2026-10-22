@@ -31,32 +31,9 @@ Expect a grade from A to F, the evidence behind it, and setup hints. The signals
 - **CONTRIBUTING guide, Code of Conduct, issue and PR templates, CI.**
 - **Recent pushes.** The pull request figures above come from the latest closed pull requests, however old they are. When nothing has been pushed for over a year, the tool says so first, marks each of those figures "Before it went quiet", and grades the repository D at best, because a new pull request there may get no reply.
 
-### How the grade is worked out
+### What the grade means
 
-Each signal adds points, and the points add up to exactly 100. A repository with every signal at its best scores 100, and each missing signal costs exactly its points, so two repositories that both show 100 really are equal.
-
-| Signal | Most points | How the points are earned |
-|---|---|---|
-| Recent push | 16 | 16 within two weeks, 12 within 45 days, 6 within 120 days |
-| CONTRIBUTING guide | 12 | A CONTRIBUTING file, or a README section on contributing with real rules in it |
-| Outside merge rate | 12 | 12 at 40% or more, 6 at 20% or more, once ten outside PRs are sampled |
-| Open beginner issues | 10 | 10 when one is free, 4 when the label has no open issues, 2 when every one is assigned |
-| Time to a first human reply | 10 | 10 within a day, 6 within three days. With too few replies measured, time to merge: 10 within three days, 5 within ten |
-| Merge rate of all human PRs | 8 | 8 at 50% or more, 4 at 25% or more |
-| CI on pull requests | 8 | At least one workflow |
-| Different outside authors merged | 6 | 2 for each, up to three |
-| People who landed a single commit last year | 6 | 6 for ten or more, 3 for three or more |
-| Code of Conduct | 4 | Found in the repository |
-| Issue or PR templates | 4 | Either one found |
-| License | 4 | Detected by GitHub |
-
-The outside merge rate is worth more than the merge rate of all PRs, because most PRs in a busy project come from the core team. The grade follows the score: A from 85, B from 72, C from 58, D from 45, and F below that. Two rules can then hold it down, however many points the rest earns: the outside merge rate limits described above (a B or a C at best), and a year without a push (a D at best). An archived repository is an F.
-
-A figure that rests on too few PRs is shown but scores nothing, since a handful of PRs is not evidence either way. The single-commit count comes from a community service (ecosyste.ms). When it has no commit history for the repository, the count is left out and the score is out of the other 94 points, because a gap in someone else's data says nothing about the project.
-
-The advice under the grade follows the grade: "Strong candidate" for an A, "Promising, with caveats" for a B, "Risky" for a C or a D, and "Poor fit" for an F.
-
-Under the checks, "Where it lost points" lists each signal that earned less than its most, using the names in the table above, with the reason when the lines above do not give it. It also says when a signal was left out for lack of data, and which rule held the grade down, if one did. A line marked with a dot (·) instead of a check mark is a fact that earns nothing either way, such as a figure based on too few PRs. The last line names the command to run next: `orient` and `issues --repo` for an A or a B, and `repos` to compare other repositories for anything lower.
+Each signal adds points, and the points add up to 100: A from 85, B from 72, C from 58, D from 45, and F below that. Two rules can hold a grade down whatever the total: the outside merge rate limits above, and a year without a push (a D at best). An archived repository is an F. Under the checks, "Where it lost points" names each signal that earned less than its most, and why. The last line names the command to run next: `orient` and `issues --repo` for an A or a B, `repos` to compare other repositories for anything lower. The advice follows the grade: "Strong candidate" for an A, "Promising, with caveats" for a B, "Risky" for a C or a D, and "Poor fit" for an F. [Sources and limitations](../sources.md#how-the-repository-grade-is-worked-out) has the point table.
 
 "Getting set up" lists the toolchain files found in the repository root, whether a dev container exists (one click in Codespaces or VS Code gets you a working environment), the CONTRIBUTING link, and the chat channels it mentions. Read the README and CONTRIBUTING on GitHub before writing code. A high grade does not guarantee mentoring, and a missing file can mean the guide lives elsewhere. If the repository is archived, look for the project's current repository before continuing.
 
