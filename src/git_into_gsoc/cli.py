@@ -1318,8 +1318,10 @@ def issue_cmd(
     lines = [
         f"[bold]{data['title']}[/bold]",
         data["url"],
-        f"Status: [{style}]{data['availability']}[/] ({data['reason']})",
+        f"Status: [{style}]{data['availability'].replace('_', ' ')}[/] ({data['reason']})",
     ]
+    if data.get("caution"):
+        lines.append(f"[yellow]! May not suit a first contribution: {data['caution']}[/yellow]")
     if assessment["maintainer_engaged"]:
         lines.append("Maintainers have commented in this thread.")
     for pr in assessment["linked_prs"]:

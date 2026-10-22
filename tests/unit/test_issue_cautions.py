@@ -59,3 +59,65 @@ def test_the_issues_table_shows_the_caution(monkeypatch: Any) -> None:
     result = CliRunner().invoke(app, ["issues", "--repo", "acme/lib"], env={"COLUMNS": "200"})
     assert result.exit_code == 0, result.output
     assert "! an announcement, roadmap, tracker, or call for testing" in result.output
+
+
+def test_issue_gives_the_same_caution_as_the_list(monkeypatch: Any) -> None:
+    # A blind beginner test (2026-10-22) opened an issue the list marked "has no
+    # beginner label, only 'help wanted'"; `issue` said only "available".
+    from typer.testing import CliRunner
+
+    from git_into_gsoc import cli
+    from git_into_gsoc.cli import app
+    from git_into_gsoc.models import Availability, IssueAssessment
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    found = IssueAssessment(
+        availability=Availability.LIKELY_TAKEN, reason="An open pull request references it"
+    )
+    issue = {
+        "title": "Speed up the parser",
+        "html_url": "https://github.com/acme/lib/issues/9",
+        "labels": [{"name": "help wanted"}],
+        "body": "The parser is slow on large files.",
+        "created_at": "2026-09-01T00:00:00Z",
+        "user": {"login": "maintainer"},
+    }
+    monkeypatch.setattr(toolkit.github, "assess", lambda full, num: (issue, found))
+    monkeypatch.setattr(toolkit.github, "get_repo", lambda owner, name: {"archived": False})
+    monkeypatch.setattr(toolkit.github, "unlinked_pulls", lambda *a: [])
+    data = toolkit.issue_status("acme/lib#9")
+    assert data["caution"] == "has no beginner label, only 'help wanted'"
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: toolkit)
+    out = CliRunner().invoke(app, ["issue", "acme/lib#9"], env={"COLUMNS": "120"}).output
+    assert "Status: likely taken" in out and "likely_taken" not in out
+    assert "May not suit a first contribution: has no beginner label" in out
+
+
+def test_the_list_says_when_issues_have_no_beginner_label(monkeypatch: Any) -> None:
+    from git_into_gsoc.models import Availability, IssueCandidate
+    from git_into_gsoc.service import GSoCToolkit
+
+    def candidate(number: int, labels: list[str]) -> IssueCandidate:
+        return IssueCandidate(
+            repo="acme/lib",
+            number=number,
+            title=f"Issue {number}",
+            url=f"https://github.com/acme/lib/issues/{number}",
+            labels=labels,
+            availability=Availability.AVAILABLE,
+        )
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.github, "list_labels", lambda owner, name: [])
+    monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ([], [], "Searching acme/lib."))
+    for found, expected in (
+        ([candidate(1, ["good first issue"]), candidate(2, ["help wanted"])], "1 of these have"),
+        ([candidate(3, ["help wanted"])], "None of these has a beginner label"),
+    ):
+        monkeypatch.setattr(
+            toolkit.github, "find_beginner_issues", lambda found=found, **k: list(found)
+        )
+        note = toolkit.find_issues(repo="acme/lib", scope="all")["note"]
+        assert expected in note, note

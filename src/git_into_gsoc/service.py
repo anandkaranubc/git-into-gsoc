@@ -98,7 +98,7 @@ from git_into_gsoc.gsoc.project_ideas import (
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
-from git_into_gsoc.labels import no_ai_label
+from git_into_gsoc.labels import is_beginner_label, no_ai_label
 from git_into_gsoc.matching.concepts import SKILL, kind_of
 from git_into_gsoc.matching.concepts import resolve as resolve_concept
 from git_into_gsoc.matching.ideas import ideas_for
@@ -1194,6 +1194,18 @@ class GSoCToolkit:
         listed = _with_cautions(
             personalize([_issue_dict(i) for i in issues], person, reorder=False), person
         )
+        # "good first issue" and "help wanted" are searched together; say how many came
+        # only from "help wanted", which often marks larger work.
+        unlabelled = sum(
+            not any(is_beginner_label(str(lab)) for lab in i.get("labels") or []) for i in listed
+        )
+        if unlabelled and not label:
+            note += (
+                " None of these has a beginner label, only labels such as 'help wanted', which "
+                "often mark larger work."
+                if unlabelled == len(listed)
+                else f" {unlabelled} of these have no beginner label and are marked."
+            )
         return {
             "scope": "gsoc" if use_gsoc else "custom",
             "language_used": language,
@@ -1262,6 +1274,20 @@ class GSoCToolkit:
         ]
         if no_ai := no_ai_label(labels):
             assessment.caveats.insert(0, _no_ai_caveat(no_ai))
+        # The same reason `issues` gives in its list: a blind test opened an issue the list
+        # marked "has no beginner label, only 'help wanted'", and `issue` did not say so.
+        caution = starter_problem(
+            {
+                "repo": f"{owner}/{repo}",
+                "title": issue.get("title"),
+                "labels": labels,
+                "body_excerpt": " ".join(clean_untrusted(issue.get("body"), limit=400).split()),
+                "created_at": issue.get("created_at"),
+                "author": (issue.get("user") or {}).get("login"),
+                "assessment": {"claims": [c.model_dump(mode="json") for c in assessment.claims]},
+            },
+            self._saved_person(),
+        )
         return {
             "repo": f"{owner}/{repo}",
             "number": num,
@@ -1271,6 +1297,7 @@ class GSoCToolkit:
             "comments": issue.get("comments"),
             "availability": assessment.availability.value,
             "reason": assessment.reason,
+            "caution": caution,
             "assessment": assessment.model_dump(mode="json"),
             "before_you_comment": BEFORE_YOU_COMMENT,
         }

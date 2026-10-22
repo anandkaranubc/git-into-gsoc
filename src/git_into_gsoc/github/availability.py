@@ -589,7 +589,12 @@ def assess_issue(
         )
     if activity_days is not None and activity_days > STALE_DAYS and not maintainer_engaged:
         return result(Availability.STALE, f"No activity for {activity_days} days")
-    return result(Availability.AVAILABLE, "Open, unassigned, no open PR or recent claim")
+    # "Recent" said in days: a beginner read "no recent claim" right above a claim made
+    # 50 days ago and could not tell which was true.
+    return result(
+        Availability.AVAILABLE,
+        f"Open, unassigned, no open PR, and no claim in the last {RECENT_CLAIM_DAYS} days",
+    )
 
 
 def unverified_assessment() -> IssueAssessment:
