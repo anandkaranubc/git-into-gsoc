@@ -1253,6 +1253,8 @@ class GSoCToolkit:
                 " None of these has a beginner label, only labels such as 'help wanted', which "
                 "often mark larger work."
                 if unlabelled == len(listed)
+                else " 1 of these has no beginner label and is marked."
+                if unlabelled == 1
                 else f" {unlabelled} of these have no beginner label and are marked."
             )
         return {
