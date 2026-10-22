@@ -1,3 +1,6 @@
+"""The home screen and the guided `start` setup: topic parsing, milestones, the four
+questions, and what each answer saves."""
+
 from __future__ import annotations
 
 import json

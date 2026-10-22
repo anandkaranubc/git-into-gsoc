@@ -46,4 +46,6 @@ There is no CLI command to remove an entry or undo a completed phase. The store 
 
 If accepted, agree on a reporting schedule with your mentor. If you are not selected, you can still keep contributing, learn from feedback, or explore another project.
 
+**Ready to keep going:** you have a weekly note habit, and `git-into-gsoc next` gives you one next step whenever you sit down. That is the end of the guide; the steps repeat for every issue and every proposal.
+
 [Return to the guide](../README.md) · [Command reference](../cli.md)
