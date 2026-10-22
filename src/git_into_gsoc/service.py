@@ -1338,7 +1338,7 @@ class GSoCToolkit:
                 self.progress.set_profile(github=login)
                 warning = (
                     f"Saved @{login}, but GitHub could not be reached ({exc}). Run "
-                    f"`profile --github {login}` again when online to add your languages."
+                    f"`git-into-gsoc profile --github {login}` again when online to add your languages."
                 )
         self.progress.set_profile(
             technologies=[plain_skill(t) for t in technologies or []] or None,
@@ -1548,7 +1548,8 @@ class GSoCToolkit:
         if source == "none":
             note = (
                 "No technologies or interests given and no saved profile. Run "
-                "`profile --tech ... --interests ...` once, or pass --tech/--interests. " + note
+                "`git-into-gsoc start` once (four quick questions), or pass --tech and --interests. "
+                + note
             )
         return {
             "profile": profile,

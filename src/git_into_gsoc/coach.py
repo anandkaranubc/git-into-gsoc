@@ -247,7 +247,7 @@ def plan_actions(
         actions.append(
             _action(
                 f"Pick the repository to start in at {first}",
-                f'git-into-gsoc repos "{first}"   # then: git-into-gsoc repo owner/name',
+                f'git-into-gsoc repos "{first}"   # then: git-into-gsoc repo owner/name --track',
                 why,
             )
         )
@@ -258,7 +258,8 @@ def plan_actions(
                 f"Introduce yourself once, publicly, in {first}'s channel before claiming anything",
                 f'git-into-gsoc org "{first}"   # channels; then: git-into-gsoc draft intro',
                 "Every org admin guide says: talk to the org first. Mentors rank people "
-                "they have spoken with. Mark it done with: progress complete_phase --phase community",
+                "they have spoken with. Mark it done with: "
+                "git-into-gsoc progress complete_phase --phase community",
             )
         )
     elif not tracked_issues:
