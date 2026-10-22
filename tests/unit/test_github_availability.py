@@ -577,8 +577,8 @@ def test_a_pr_in_an_unrelated_project_that_mentions_the_issue_is_not_a_fix() -> 
     ],
 )
 def test_labels_that_hold_an_issue_back_count_however_they_are_spelled(label: str) -> None:
-    # Measured on 24,779 labels from the top repositories of 153 GSoC organizations
-    # (2026-10-21). An App Inventor issue labelled "status: needs discussion" read
+    # Measured on 24,779 labels from the top repositories of 144 GSoC organizations'
+    # GitHub owners (2026-10-21). An App Inventor issue labelled "status: needs discussion" read
     # "available" because only the exact name "needs discussion" counted.
     found = assess_issue(_issue(labels=[{"name": "help wanted"}, {"name": label}]), [], now=NOW)
     assert found.availability == Availability.NOT_OPEN

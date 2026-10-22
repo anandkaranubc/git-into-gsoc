@@ -9,5 +9,5 @@
 ## Checklist
 
 - [ ] The title follows Conventional Commits, for example `fix(cli): explain the --year option`. It becomes the commit message on `main`.
-- [ ] Docs, help text, or the skill are updated if behavior changed.
+- [ ] If behavior changed, the docs page that owns the topic says so (see "Writing docs" in CONTRIBUTING.md), and so do help text or the skill when they describe it.
 - [ ] No tokens, personal data, or unrelated changes in the diff.
