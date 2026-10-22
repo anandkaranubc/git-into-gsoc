@@ -34,6 +34,8 @@ def test_feedback_prints_the_link_without_opening_anything() -> None:
     result = runner.invoke(app, ["feedback", "--no-open"])
     assert result.exit_code == 0, result.output
     assert "Nothing is sent until you read it" in " ".join(result.stdout.split())
+    # A blind launch audit (2026-10-22): nothing said the result is public.
+    assert "creates a public issue under your username" in " ".join(result.stdout.split())
     assert "issues/new?template=feedback.yml" in result.stdout
     bug = runner.invoke(app, ["feedback", "--bug", "--no-open"])
     assert "template=bug_report.yml" in bug.stdout
