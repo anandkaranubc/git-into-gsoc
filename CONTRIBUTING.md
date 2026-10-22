@@ -108,6 +108,16 @@ If `./install.sh` was used earlier, the same `.venv` is reused.
 - Tests never touch the network. Mock HTTP with `respx`, a library that returns prepared responses, and keep sample responses in `tests/fixtures/`.
 - Everything a person reads, including help text, errors, and tool descriptions, follows the writing rules below.
 
+### Comments
+
+Most of the code explains itself through its names. A comment is for what the code cannot say: why a rule exists, the real case that made it necessary, a limit of a data source, or a trade-off chosen on purpose.
+
+- Say why, not what. `# retry once` repeats the code; `# GitHub returns 403 for a secondary limit, so one retry after the wait is enough` earns its place.
+- Name the real case. Many comments here cite the organization, issue, or blind test that showed the problem, with a date. Keep that habit: it tells the next reader what would break.
+- Every module starts with a docstring that says what it is for. A public function or class gets one when its name does not say it all: what it returns, what it leaves out, and what it raises.
+- Do not add comments to tidy an area you are not changing, and do not delete one you do not understand; ask in the pull request.
+- Two kinds of docstring are text for models, not for people: the MCP tool docstrings in `mcp_server.py` and the skill in `skills/git-into-gsoc/`. Change those only with before-and-after assistant runs.
+
 ### Writing docs
 
 The docs should read as if one person wrote them. These rules keep them that way:

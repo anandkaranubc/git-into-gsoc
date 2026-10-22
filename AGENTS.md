@@ -25,6 +25,7 @@ Never invent organizations, issues, mentors, or deadlines. Never encourage bulk,
 - Tests block real network access. Mock HTTP with `respx` and keep sample responses in `tests/fixtures/`.
 - Shared logic goes in `src/git_into_gsoc/service.py` or a focused module. `cli.py` and `mcp_server.py` stay thin layers over it.
 - Every CLI option needs help text. Errors say what happened and what to try next.
+- Comments say why, not what, and name the real case that made a rule necessary. A public function gets a docstring when its name does not say what it returns or raises. The MCP tool docstrings and the skill are text for models; change them only with before-and-after runs.
 - Docs and messages use plain language and short sentences, define a term where it first appears, and never use em dashes. Each fact has one home (CONTRIBUTING, "Writing docs"); link to it instead of repeating it. When behavior changes, update `docs/cli.md` or `docs/mcp.md` in the same change, or a test fails.
 - Edit the skill in `skills/git-into-gsoc/` only. The copies under `.agents/skills/` and `.claude/skills/`, and the project config files next to them, are written by `git-into-gsoc setup` and ignored by Git.
 - Plugin manifests (`.claude-plugin/`, `.codex-plugin/`, `.github/plugin/`, `gemini-extension.json`), the registry entry `server.json`, and the install buttons in `README.md` and `docs/assistants.md` are generated from `src/git_into_gsoc/install/distribution.py`. Edit that file, then run `python scripts/sync_integrations.py`.
