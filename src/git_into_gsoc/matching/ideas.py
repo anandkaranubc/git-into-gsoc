@@ -224,8 +224,9 @@ def fit_idea(
 
     Up to half the score: the share of the idea's skills the person has. A wanted
     subject adds 0.3. A stated difficulty adds up to 0.15, most for the level it
-    suits. A size that fits the person's hours in the longest coding period adds
-    0.05; one that does not costs 0.3 and marks the idea too big.
+    suits. A size (the hours the page states, or the size's usual hours) that fits
+    the person's hours in the longest coding period adds 0.05; one that does not
+    costs 0.3 and marks the idea too big.
     """
     known = known_skills(person)
     wanted = wanted_domains(person)
