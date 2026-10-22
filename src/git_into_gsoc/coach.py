@@ -99,9 +99,14 @@ def hours_note(hours_per_week: Any) -> str | None:
     parts: list[str] = []
     for size in fit["comfortable"]:
         lead = "a small project" if size == "small" else f"a {size} one"
-        parts.append(
-            f"{lead} (about {PROJECT_HOURS[size]} hours) fits in about {weeks[size]} weeks"
-        )
+        clause = f"{lead} (about {PROJECT_HOURS[size]} hours) fits in about {weeks[size]} weeks"
+        if weeks[size] > STANDARD_CODING_WEEKS:
+            # Past the standard period only on a longer timeline the mentor agrees to.
+            clause += (
+                f", longer than the standard {STANDARD_CODING_WEEKS}, so agree a longer "
+                "timeline with your mentor"
+            )
+        parts.append(clause)
     for size in fit["tight"]:
         lead = "a small project" if size == "small" else f"a {size} one"
         parts.append(

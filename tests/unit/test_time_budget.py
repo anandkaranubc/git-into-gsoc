@@ -71,6 +71,13 @@ def test_hours_note_says_which_project_sizes_fit() -> None:
         "allowed, which leaves no room for exams or setbacks" in eight
     )
     assert "Choose a small idea and state your hours in your proposal" in eight
+    # 5 hours: 18 weeks fits, but only on a longer timeline than the standard 12.
+    assert (
+        "a small project (about 90 hours) fits in about 18 weeks, longer than the standard "
+        "12, so agree a longer timeline with your mentor" in (hours_note(5) or "")
+    )
+    # 12 weeks or less needs no such words.
+    assert "agree a longer timeline" not in eight.split(";")[0]
     # 16 hours: 350 hours is 22 weeks, at the limit; 20 hours: 18 weeks, all fit.
     assert "a large one (about 350 hours) would take about 22 weeks" in (hours_note(16) or "")
     assert hours_note(20) is None
