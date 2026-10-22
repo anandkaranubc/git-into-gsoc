@@ -10,7 +10,7 @@ import pytest
 
 from git_into_gsoc.config import Settings
 from git_into_gsoc.diagnose import diagnose_output, failing_step
-from git_into_gsoc.errors import HttpError, NotFoundError
+from git_into_gsoc.errors import HttpError, NotFoundError, RateLimitError
 from git_into_gsoc.http_client import CachedHttpClient
 
 # Shortened from SymPy's "Check Authors" job on a first pull request (2026-10-21), as the
@@ -102,6 +102,22 @@ def test_a_log_is_read_from_its_end_without_sending_the_token_elsewhere(tmp_path
     assert storage.headers["Range"] == "bytes=-1000"
 
 
+def test_a_rate_limit_on_a_log_is_a_rate_limit(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            403,
+            headers={"x-ratelimit-remaining": "0", "x-ratelimit-reset": "9999999999"},
+            json={"message": "API rate limit exceeded"},
+        )
+
+    client = _client(tmp_path, handler)
+    with pytest.raises(RateLimitError):
+        client.get_tail(
+            "https://api.github.com/repos/o/r/actions/jobs/1/logs",
+            headers={"Authorization": "Bearer t"},
+        )
+
+
 def test_an_expired_log_is_a_not_found_error(tmp_path: Path) -> None:
     client = _client(tmp_path, lambda request: httpx.Response(404, json={"message": "Not Found"}))
     with pytest.raises(NotFoundError):
@@ -177,6 +193,12 @@ def test_pr_check_says_why_a_log_was_not_read(monkeypatch: pytest.MonkeyPatch) -
     toolkit = _toolkit(monkeypatch, token="t", log=gone)
     toolkit._explain_failed_checks("zulip", "zulip-terminal", checks, findings)
     assert "(GitHub no longer keeps this log)" in findings[0]["detail"]
+
+    checks, findings = _failing()
+    limited = RateLimitError("GitHub API rate limit exceeded", status_code=403)
+    toolkit = _toolkit(monkeypatch, token="t", log=limited)
+    toolkit._explain_failed_checks("sympy", "sympy", checks, findings)
+    assert "GitHub's rate limit stopped it" in findings[0]["detail"]
 
     checks, findings = _failing()
     toolkit = _toolkit(monkeypatch, token="t", log=HttpError("HTTP 403", status_code=403))

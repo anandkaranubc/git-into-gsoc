@@ -422,10 +422,8 @@ def gsoc_pr_check(ref: str) -> str:
     closes pull requests without one), description length, the template checklist, AI
     disclosure when the template asks, commit sign-off when the repository requires DCO,
     commit style, tests changed alongside code, a changelog entry when one is expected, size,
-    and draft state; plus the branch-rule gates still ahead. With a token, the failing-checks
-    finding's `logs` quote what up to two failed CI jobs printed (often the project's own
-    explanation and link). Coach the author to fix their own branch; never push or comment
-    for them.
+    and draft state; plus the branch-rule gates still ahead. Coach the author to fix their own
+    branch; never push or comment for them.
     """
     return _call(toolkit().pr_check, ref)
 

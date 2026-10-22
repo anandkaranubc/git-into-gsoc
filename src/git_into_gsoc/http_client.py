@@ -151,7 +151,9 @@ class CachedHttpClient:
         of the file only, so a log of tens of megabytes costs a few hundred kilobytes.
         """
         try:
+            self._throttle(url)
             request = self._client.build_request("GET", url, headers=headers or {}, timeout=timeout)
+            self.stats["requests"] += 1
             response = self._client.send(request, stream=True, follow_redirects=False)
             location = response.headers.get("Location")
             if response.is_redirect and location:
@@ -163,11 +165,13 @@ class CachedHttpClient:
                     headers={"Range": f"bytes=-{max_bytes}"},
                     timeout=timeout,
                 )
+                self.stats["requests"] += 1
                 response = self._client.send(follow, stream=True, follow_redirects=False)
-            self.stats["requests"] += 1
             try:
                 if response.status_code >= 400:
                     response.read()
+                    if _is_rate_limited(response):
+                        raise _rate_limit_error(response, url, "Authorization" in (headers or {}))
                     raise _http_error(response, url)
                 tail, seen = b"", 0
                 for chunk in response.iter_bytes():

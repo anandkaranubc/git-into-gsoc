@@ -24,7 +24,7 @@ from git_into_gsoc.config import (
     latest_program_year,
 )
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
-from git_into_gsoc.errors import GigError, InputError, reset_phrase
+from git_into_gsoc.errors import GigError, InputError, RateLimitError, reset_phrase
 from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
@@ -2892,6 +2892,10 @@ class GSoCToolkit:
             name = clean_untrusted(str(check.get("name")), limit=80)
             try:
                 tail = self.github.job_log_tail(owner, repo, int(check["id"]))
+            except RateLimitError:
+                why = "GitHub's rate limit stopped it; run pr-check again after it resets"
+                logs.append({"check": name, "not_read": why})
+                continue
             except GigError as exc:
                 status = getattr(exc, "status_code", None)
                 if isinstance(exc, NotFoundError) or status == 410:
