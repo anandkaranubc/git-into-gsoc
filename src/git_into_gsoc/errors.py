@@ -90,3 +90,11 @@ class RateLimitError(HttpError):
         if self.reset_at is None:
             return None
         return max(0, int((self.reset_at - datetime.now(UTC)).total_seconds()))
+
+
+def reset_phrase(reset_at: datetime | None) -> str:
+    """'resets in 22 minutes (03:56 UTC)': a countdown needs no time zone sum."""
+    if reset_at is None:
+        return ""
+    minutes = max(1, -(-int((reset_at - datetime.now(UTC)).total_seconds()) // 60))
+    return f"resets in {minutes} minute{'' if minutes == 1 else 's'} ({reset_at:%H:%M} UTC)"

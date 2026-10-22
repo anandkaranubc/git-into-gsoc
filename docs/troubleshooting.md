@@ -65,6 +65,10 @@ Check your internet connection and the first error from pip. If a network proxy 
 
 The message says when the limit resets and which limit it was. A **search rate limit** is separate from the hourly allowance: GitHub permits 10 searches a minute without a token and 30 with one, and `issues` and `repos` each use at least one search, so wait a minute or narrow the search with `--repo` or `--org`. Cached results keep working meanwhile. If the hint says to run `gh auth login` or set `GITHUB_TOKEN`, you are unauthenticated and limited to 60 requests per hour; see [configuration](configuration.md). A **secondary rate limit** means too many searches in a short time; a token does not remove it, so wait a few minutes. Narrow searches with `--repo` and a small `-n` to use fewer requests. `doctor` shows the main allowance.
 
+## Issues marked `unknown` in a list
+
+The hourly limit can also run out partway through `issues`. The list still appears, but some issues read `unknown`, which means the tool could not check them for claims and pull requests. The note under the list then starts with how many were not checked, how long until the limit resets, and how to raise it. Without a token, one `issues` search uses 10 to 20 of the 60 hourly requests, so a few searches use it all. Run `gh auth login` once to raise the limit to 5,000, or wait for the reset and run `issue owner/repo#N` on the issue you want before you comment.
+
 ## `error: HTTP 401` or a token that seems ignored
 
 The token is invalid or expired. Run `gh auth login` again, replace the token, or remove it so the tool falls back to the next source:

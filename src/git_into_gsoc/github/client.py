@@ -10,7 +10,7 @@ from typing import Any
 from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
-from git_into_gsoc.errors import InputError
+from git_into_gsoc.errors import InputError, RateLimitError
 from git_into_gsoc.github.announcements import gsoc_posts, search_terms, wiki_post
 from git_into_gsoc.github.availability import MAINTAINER_ROLES, assess_issue, unverified_assessment
 from git_into_gsoc.github.ecosystems import fetch_commit_stats
@@ -135,6 +135,9 @@ class GitHubClient:
         self.settings = settings or get_settings()
         self.http = http or CachedHttpClient(self.settings)
         self.token = self.settings.resolve_github_token()
+        # Set when a timeline read hit the request limit, so a list of issues marked
+        # "unknown" can say why instead of failing quietly.
+        self.rate_limited: RateLimitError | None = None
 
     def _headers(self) -> dict[str, str]:
         headers = {
@@ -318,6 +321,9 @@ class GitHubClient:
                 params={"per_page": 100},
                 ttl=300,
             )
+        except RateLimitError as err:
+            self.rate_limited = err
+            return None
         except HttpError:
             return None
         return data if isinstance(data, list) else []

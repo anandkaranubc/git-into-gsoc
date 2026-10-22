@@ -24,7 +24,7 @@ from git_into_gsoc.config import (
     latest_program_year,
 )
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
-from git_into_gsoc.errors import GigError, InputError
+from git_into_gsoc.errors import GigError, InputError, reset_phrase
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.orientation import (
     active_committers,
@@ -830,6 +830,7 @@ class GSoCToolkit:
     ) -> dict[str, Any]:
         from_profile = False
         asked_org = org  # cleared below when it names a GSoC organization
+        self.github.rate_limited = None
         if not (language or org or repo):
             saved = list(self.progress.profile().get("technologies") or [])
             language, from_profile = (saved[0], True) if saved else (None, False)
@@ -944,6 +945,19 @@ class GSoCToolkit:
         if related and not repo:
             note += (
                 f" Also searching {', '.join(related)} repositories, which often hold this work."
+            )
+        unchecked = sum(i.availability == Availability.UNKNOWN for i in issues)
+        limit = self.github.rate_limited
+        if unchecked and limit is not None:
+            # Otherwise half a list can read "unknown" with no word about why.
+            # First, so it is not lost at the end of the other notes.
+            when = reset_phrase(limit.reset_at)
+            note = (
+                f"GitHub's request limit ran out, so {unchecked} issue(s) marked unknown were "
+                "not checked for claims or pull requests."
+                + (f" It {when}." if when else "")
+                + (f" {limit.hint}" if limit.hint else "")
+                + f" {note}"
             )
         return {
             "scope": "gsoc" if use_gsoc else "custom",

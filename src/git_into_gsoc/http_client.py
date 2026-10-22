@@ -29,7 +29,7 @@ from typing import Any
 import httpx
 
 from git_into_gsoc.config import Settings, cache_dir, cache_location, get_settings
-from git_into_gsoc.errors import HttpError, NotFoundError, RateLimitError
+from git_into_gsoc.errors import HttpError, NotFoundError, RateLimitError, reset_phrase
 
 __all__ = ["CachedHttpClient", "HttpError", "NotFoundError", "RateLimitError"]
 
@@ -487,7 +487,7 @@ def _rate_limit_error(response: httpx.Response, url: str, authenticated: bool) -
     reset = response.headers.get("x-ratelimit-reset")
     if reset and reset.isdigit():
         reset_at = datetime.fromtimestamp(int(reset), tz=UTC)
-    when = f" (resets {reset_at:%H:%M} UTC)" if reset_at else ""
+    when = f"; it {reset_phrase(reset_at)}" if reset_at else ""
     resource = response.headers.get("x-ratelimit-resource") or (
         "search" if "/search/" in url else "core"
     )
