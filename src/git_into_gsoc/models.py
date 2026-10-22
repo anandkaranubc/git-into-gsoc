@@ -160,6 +160,9 @@ class RepoHealth(BaseModel):
     has_issue_template: bool = False
     has_pr_template: bool = False
     has_ci: bool = False
+    # Reads GitHub did not answer (a rate limit, a server error): their signals are left
+    # out of the score instead of counting as missing.
+    unread: list[str] = Field(default_factory=list)
     prs_sampled: int = 0
     merge_rate: float | None = None
     median_pr_hours: float | None = None

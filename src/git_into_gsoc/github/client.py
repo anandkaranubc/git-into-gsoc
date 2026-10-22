@@ -437,36 +437,62 @@ class GitHubClient:
         return path if text and readme_contributing_section(text) else None
 
     def community_profile(self, owner: str, repo: str) -> dict[str, Any]:
-        try:
-            data = self._api(f"repos/{owner}/{repo}/community/profile")
-        except HttpError:
-            return {}
-        return data if isinstance(data, dict) else {}
+        return self._community_profile(owner, repo) or {}
 
     def workflow_count(self, owner: str, repo: str) -> int:
-        try:
-            data = self._api(f"repos/{owner}/{repo}/actions/workflows", params={"per_page": 1})
-        except HttpError:
-            return 0
-        return int(data.get("total_count") or 0) if isinstance(data, dict) else 0
+        return self._workflow_count(owner, repo) or 0
 
     def list_labels(self, owner: str, repo: str) -> list[dict[str, Any]]:
-        try:
-            data = self._api(f"repos/{owner}/{repo}/labels", params={"per_page": 100})
-        except HttpError:
-            return []
-        return data if isinstance(data, list) else []
+        return self._list_labels(owner, repo) or []
 
     def count_open_issues_with_label(self, owner: str, repo: str, label: str) -> tuple[int, int]:
         """Open issues with the label, and how many of them are assigned to someone."""
+        return self._count_open_issues_with_label(owner, repo, label) or (0, 0)
+
+    # The same reads for `repo_health`, which must tell "GitHub did not answer" (None)
+    # from "the repository has none": a rate limit used to read as no CONTRIBUTING guide,
+    # no Code of Conduct, and no CI, and lowered the grade by up to 28 points. A 404 is
+    # an answer.
+    def _community_profile(self, owner: str, repo: str) -> dict[str, Any] | None:
+        try:
+            data = self._api(f"repos/{owner}/{repo}/community/profile")
+        except NotFoundError:
+            return {}
+        except HttpError:
+            return None
+        return data if isinstance(data, dict) else {}
+
+    def _workflow_count(self, owner: str, repo: str) -> int | None:
+        try:
+            data = self._api(f"repos/{owner}/{repo}/actions/workflows", params={"per_page": 1})
+        except NotFoundError:
+            return 0
+        except HttpError:
+            return None
+        return int(data.get("total_count") or 0) if isinstance(data, dict) else 0
+
+    def _list_labels(self, owner: str, repo: str) -> list[dict[str, Any]] | None:
+        try:
+            data = self._api(f"repos/{owner}/{repo}/labels", params={"per_page": 100})
+        except NotFoundError:
+            return []
+        except HttpError:
+            return None
+        return data if isinstance(data, list) else []
+
+    def _count_open_issues_with_label(
+        self, owner: str, repo: str, label: str
+    ) -> tuple[int, int] | None:
         try:
             data = self._api(
                 f"repos/{owner}/{repo}/issues",
                 params={"labels": label, "state": "open", "per_page": 100},
                 ttl=900,
             )
-        except HttpError:
+        except NotFoundError:
             return 0, 0
+        except HttpError:
+            return None
         issues = [i for i in data if "pull_request" not in i] if isinstance(data, list) else []
         assigned = sum(1 for i in issues if i.get("assignee") or i.get("assignees"))
         return len(issues), assigned
@@ -532,10 +558,10 @@ class GitHubClient:
         raw = self.get_repo(owner, repo)
         owner, repo = (raw.get("full_name") or f"{owner}/{repo}").split("/", 1)
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
-            profile_f = pool.submit(self.community_profile, owner, repo)
-            workflows_f = pool.submit(self.workflow_count, owner, repo)
+            profile_f = pool.submit(self._community_profile, owner, repo)
+            workflows_f = pool.submit(self._workflow_count, owner, repo)
             analysis_f = pool.submit(self.pull_analysis, owner, repo)
-            labels_f = pool.submit(self.list_labels, owner, repo)
+            labels_f = pool.submit(self._list_labels, owner, repo)
             commits_f = pool.submit(
                 fetch_commit_stats,
                 self.http,
@@ -544,9 +570,21 @@ class GitHubClient:
                 repo=repo,
                 ttl=self.settings.archive_ttl_seconds,
             )
-            profile, workflows = profile_f.result(), workflows_f.result()
-            analysis, labels = analysis_f.result(), labels_f.result()
+            profile_or_none, workflows_or_none = profile_f.result(), workflows_f.result()
+            analysis, labels_or_none = analysis_f.result(), labels_f.result()
             commits = commits_f.result()
+        unread = [
+            name
+            for name, value in (
+                ("community profile", profile_or_none),
+                ("workflows", workflows_or_none),
+                ("labels", labels_or_none),
+            )
+            if value is None
+        ]
+        profile = profile_or_none or {}
+        workflows = workflows_or_none or 0
+        labels = labels_or_none or []
         if analysis is not None:
             stats = pull_stats(analysis.pulls, insiders=analysis.insiders)
             pr_source = "graphql"
@@ -600,9 +638,10 @@ class GitHubClient:
             else None
         )
         label = pick_beginner_label(labels)
-        open_beginner, assigned_beginner = (
-            self.count_open_issues_with_label(owner, repo, label) if label else (None, None)
-        )
+        counted = self._count_open_issues_with_label(owner, repo, label) if label else None
+        if label and counted is None:
+            unread.append("beginner issues")
+        open_beginner, assigned_beginner = counted or (None, None)
         health = RepoHealth(
             full_name=f"{owner}/{repo}",
             url=raw.get("html_url", f"https://github.com/{owner}/{repo}"),
@@ -624,6 +663,7 @@ class GitHubClient:
             has_issue_template=bool(files.get("issue_template")),
             has_pr_template=bool(files.get("pull_request_template")),
             has_ci=workflows > 0,
+            unread=unread,
             prs_sampled=stats.sampled,
             merge_rate=stats.merge_rate,
             median_pr_hours=stats.median_hours,
