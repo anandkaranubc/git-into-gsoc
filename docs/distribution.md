@@ -70,6 +70,8 @@ Checked on 2026-10-22. Listings change without notice, so re-check before relyin
 | Gemini CLI extension gallery | geminicli.com/extensions | The repository meets all three rules (public, the `gemini-cli-extension` topic, `gemini-extension.json` at the root). The gallery file was last rebuilt on 2026-10-16, before the topic was added. Check https://geminicli.com/extensions.json for `anandkaranubc/git-into-gsoc` |
 | skills.sh | The skills.sh search | Lists a skill after people install it with `npx skills add anandkaranubc/git-into-gsoc`. There is nothing to submit |
 | PulseMCP | pulsemcp.com | Submissions are paused. It says it will copy servers from the official registry when it reopens |
+| github/awesome-copilot | The default plugin marketplace in Copilot CLI and VS Code | Requested on 2026-10-22 in github/awesome-copilot issue 5261, for v0.21.0. Its automatic checks passed, and it waits for a maintainer |
+| mcp.so | Its web catalog | Requested on 2026-10-22 in chatmcp/mcpso issue 5950. Check https://mcp.so/server/git-into-gsoc |
 
 ### Needs the owner
 
@@ -79,11 +81,9 @@ Each needs the repository owner's account or decision, and most are reviewed by 
 |---|---|---|
 | Anthropic plugin directory | Claude Code's built-in marketplace, so `claude plugin install git-into-gsoc` works with no `--marketplace`; also claude.ai and Cowork | Submit at claude.ai/directory/manage. Anthropic's [publishing page](https://claude.com/docs/directory/publish) says this needs a paid plan, a person reviews each new listing, and local servers are accepted only inside a plugin, not as an MCP bundle. `claude plugin validate . --profile directory` passes, and CI runs it. The README lists the network destinations under "Where the results come from" and in [sources](sources.md). Run the portal's Validate first. By Anthropic's [pre-submission checklist](https://claude.com/docs/plugins/pre-submission-checklist), expect a reviewer hold, not a refusal, for two data files over 256 KiB (`src/git_into_gsoc/data/official_orgs.json` and `org_signals.json`), `brand/favicon/favicon.ico`, the `uvx` launcher, and a GitHub token read from the environment. The same checklist blocks an unpinned `uvx` launcher. Whether it counts `uvx --from ${CLAUDE_PLUGIN_ROOT}` as unpinned is unknown: the local validator does not check launchers (tried on 2026-10-22 with pinned and unpinned `npx` and `uvx`, and it reported the same for all). If Validate reports "Unpinned uvx launcher", the plugin needs another way to start the server, such as `uv run --frozen` with a committed `uv.lock` |
 | Glama claim | A "claimed by its maintainer" badge and a tool score, which awesome-mcp-servers asks for | `glama.json` at the root names `anandkaranubc` as maintainer. Sign in to Glama with that GitHub account and select Claim on the listing. The score also needs a Dockerfile set up on Glama's site |
-| github/awesome-copilot | The default plugin marketplace in Copilot CLI and VS Code | The external-plugin issue form, with a release tag and its full commit SHA |
 | Cursor Marketplace and cursor.directory | Cursor's plugin browser | cursor.com/marketplace/publish (reviewed). cursor.directory/plugins/new: sign in and paste the repository URL |
 | Antigravity marketplace | Antigravity | The interest form linked from antigravity.google/docs/plugins |
-| Smithery | smithery.ai | `smithery mcp publish ./git-into-gsoc.mcpb -n <namespace>/git-into-gsoc` with a Smithery account |
-| mcp.so, MCP Market, mcpservers.org | Their web catalogs | A form each (mcp.so also takes a GitHub issue on chatmcp/mcpso). Free reviews take from days to six weeks |
+| MCP Market, mcpservers.org | Their web catalogs | A form each. Free reviews take from days to six weeks |
 | Cline, Kilo Code | Their in-app marketplaces | Cline: an issue on cline/mcp-marketplace with a 400x400 PNG logo. Kilo Code: a pull request adding `mcps/<id>/MCP.yaml` to Kilo-Org/kilo-marketplace |
 | punkpeye/awesome-mcp-servers | A long-running list many people read | A pull request under Education. Its bot asks for a Glama listing that passes Glama's checks, so claim Glama first |
 | Codex plugin directory | Codex and ChatGPT | Not open to this project: local MCP servers are accepted only from approved partners |
@@ -97,6 +97,7 @@ Each needs the repository owner's account or decision, and most are reviewed by 
 | The Agent Plugins 1.0.0 root `plugin.json` | Codex, Cursor, Copilot, VS Code, and Antigravity read it, but every one of them already installs the current manifests, and Cursor expects a different folder variable (`${CURSOR_PLUGIN_ROOT}`). Revisit when an assistant stops reading the current formats; the weekly Agents run would show it |
 | A Dockerfile for Docker's MCP catalog | The server saves progress to a file on the person's computer, which a throwaway container would lose, and an image is one more thing to keep updated |
 | README buttons for Goose, Raycast, LM Studio, and Cherry Studio | Their install links use app schemes such as `goose://`, which GitHub removes from rendered Markdown. Goose and Raycast document local servers in their links, so the [project site](https://anandkaranubc.github.io/git-into-gsoc/) offers them instead, generated by `site_install_links()`. LM Studio's link docs show only remote servers, and Cherry Studio documents its link only in source code, so neither is offered |
+| A Smithery listing | Smithery no longer takes new servers. On 2026-10-22 its CLI's publish was refused with "Updating servers has been removed", and [its notice](https://smithery.ai/future) says its API and CLI stop on 2026-10-31, after which smithery.ai lists a curated set of verified servers |
 
 ### Details most forms ask for
 

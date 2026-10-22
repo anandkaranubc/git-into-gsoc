@@ -42,7 +42,7 @@ def test_other_heading_styles_are_read(readme: str) -> None:
 
 
 def test_comments_in_code_blocks_are_not_headings() -> None:
-    # A shell comment in a fenced block once ended the section early (51's review).
+    # A shell comment in a fenced block once ended the section early (caught in review).
     readme = (
         "## Contributing\n\nSet up first:\n\n```bash\n# install the deps\nnpm ci\n```\n\n"
         f"{RULES}\n\n## License\n\nMIT"
