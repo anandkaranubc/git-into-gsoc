@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.14.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.13.0...v0.14.0) (2026-10-22)
+
+
+### Features
+
+* **matching:** discount broad organizations, suggest narrower words for vague input, and a second blind benchmark ([#188](https://github.com/anandkaranubc/git-into-gsoc/issues/188)) ([1637fb0](https://github.com/anandkaranubc/git-into-gsoc/commit/1637fb08391f65e98930c148a20f4e6d884b0280))
+
+
+### Bug Fixes
+
+* **skill:** put MCP tools first in the ground rules ([#190](https://github.com/anandkaranubc/git-into-gsoc/issues/190)) ([9e23529](https://github.com/anandkaranubc/git-into-gsoc/commit/9e235296b226b4c086722af6d4cda69eab95ddb8))
+
 ## [0.13.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.12.0...v0.13.0) (2026-10-21)
 
 
