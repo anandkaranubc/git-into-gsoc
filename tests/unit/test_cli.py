@@ -252,3 +252,82 @@ def test_an_empty_issue_search_prints_next_steps_not_an_empty_table(monkeypatch)
     assert "No free beginner issues found." in result.output
     assert "git-into-gsoc orgs --tech html" in result.output
     assert "┏" not in result.output
+
+
+def _listed(status: str, **extra: object) -> dict[str, object]:
+    return {
+        "repo": "acme/lib",
+        "number": 7,
+        "title": "Fix the thing",
+        "availability": status,
+        "beginner_score": 70,
+        "signals": [],
+        "assessment": {"claims": []},
+        **extra,
+    }
+
+
+def test_the_issues_table_reads_like_words_and_flags_old_requests(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # From a blind beginner test (2026-10-22): the table printed "likely_taken", showed
+    # "available" for an issue someone asked for months ago, and gave no hint that an
+    # issue had only "help wanted".
+    from git_into_gsoc import cli
+
+    issues = [
+        _listed("likely_taken"),
+        _listed("available", number=8, assessment={"claims": [{"login": "a"}]}),
+        _listed(
+            "available",
+            number=9,
+            signals=["No beginner label: issues marked only 'help wanted' are often harder"],
+        ),
+    ]
+
+    class Fake:
+        def find_issues(self, **k):  # type: ignore[no-untyped-def]
+            return {"issues": issues, "note": "Searching acme", "next_steps": []}
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    result = runner.invoke(app, ["issues", "--repo", "acme/lib"], env={"COLUMNS": "160"})
+    assert result.exit_code == 0, result.output
+    assert "likely taken" in result.output and "likely_taken" not in result.output
+    assert result.output.count("someone asked before: ask first") == 1
+    assert "no beginner label" in result.output
+
+
+def test_tracking_an_issue_says_so(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    from git_into_gsoc import cli
+    from git_into_gsoc.progress.store import ProgressStore
+
+    class Fake:
+        progress = ProgressStore()
+
+        def issue_status(self, ref, number=None):  # type: ignore[no-untyped-def]
+            return {
+                "title": "Fix the thing",
+                "url": "https://github.com/acme/lib/issues/7",
+                "repo": "acme/lib",
+                "number": 7,
+                "availability": "available",
+                "reason": "Open",
+                "assessment": {
+                    "maintainer_engaged": False,
+                    "linked_prs": [],
+                    "claims": [],
+                    "caveats": [],
+                },
+                "before_you_comment": [],
+            }
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    result = runner.invoke(app, ["issue", "acme/lib#7", "--track"])
+    assert result.exit_code == 0, result.output
+    assert "Saved to your progress" in result.output
+
+
+def test_an_empty_repo_search_names_its_owner_in_the_tip() -> None:
+    from git_into_gsoc.service import _when_no_issues
+
+    steps = _when_no_issues("python", org=None, repo="MDAnalysis/mdacli")
+    assert "git-into-gsoc repos MDAnalysis" in steps[-1]
+    assert "ORG NAME" not in " ".join(steps)

@@ -624,7 +624,7 @@ def test_a_merged_pr_linked_as_an_example_is_not_said_to_reference_the_issue() -
     assert found.availability == Availability.AVAILABLE
     assert found.caveats == [
         "A comment links merged PR jpf/core#373; read it first, it may already fix this or "
-        "show how to"
+        "show how to fix it"
     ]
 
 
@@ -831,3 +831,36 @@ def test_forms_from_new_organizations_count(text: str) -> None:
 )
 def test_talking_about_someone_else_is_not_a_claim(text: str) -> None:
     assert not is_claim(text)
+
+
+def test_a_pr_merged_before_the_issue_was_opened_is_not_its_fix() -> None:
+    # An MDAnalysis issue (blind beginner test, 2026-10-22) opens with "Follow-up on PR
+    # #1695", merged 26 minutes earlier; `issue` still said that PR "may already fix this".
+    issue = _issue(
+        number=1721,
+        html_url="https://github.com/acme/lib/issues/1721",
+        created_at=_iso(400),
+    )
+    before = {"number": 1695, "state": "closed", "merged_at": _iso(401), "user": {"login": "a"}}
+    linked = _pr(1700, "closed", merged=True)
+    linked["source"]["issue"]["pull_request"]["merged_at"] = _iso(402)
+    found = assess_issue(
+        issue,
+        [linked, _comment("b", "I've read PR #1695 and its review comments.", 30)],
+        now=NOW,
+        pull_lookup=lambda r, n: before,
+    )
+    assert not any("may already" in c for c in found.caveats)
+    # The same pull request merged after the issue opened still raises the question.
+    after = {**before, "merged_at": _iso(10)}
+    later = assess_issue(
+        issue, [_comment("b", "See PR #1695.", 5)], now=NOW, pull_lookup=lambda r, n: after
+    )
+    assert any("may already fix this or show how to fix it" in c for c in later.caveats)
+
+
+def test_a_second_person_asking_to_work_together_is_a_claim() -> None:
+    # A maintainer told two newcomers to collaborate on an MDAnalysis issue; the second
+    # one's "we could work together" was not seen.
+    assert is_claim("Sure, if possible we could work together @spyke7. Thank you.")
+    assert not is_claim("Could you work together with the docs team on this?")

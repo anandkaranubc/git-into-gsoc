@@ -1227,12 +1227,13 @@ def issues_cmd(
             ref += f"\n[dim]{issue['gsoc_org']}[/dim]"
         if issue.get("filed_by_maintainer"):
             ref += "\n[dim]filed by a maintainer[/dim]"
-        table.add_row(
-            f"{issue['beginner_score']:.0f}",
-            f"[{_STATUS_STYLE.get(status, '')}]{status}[/]",
-            ref,
-            issue["title"],
-        )
+        if any(str(s).startswith("No beginner label") for s in issue.get("signals") or []):
+            ref += "\n[dim]no beginner label[/dim]"
+        shown = f"[{_STATUS_STYLE.get(status, '')}]{status.replace('_', ' ')}[/]"
+        if status == "available" and ((issue.get("assessment") or {}).get("claims")):
+            # Free by the rules, but someone asked months ago: a beginner should know.
+            shown += "\n[dim]someone asked before: ask first[/dim]"
+        table.add_row(f"{issue['beginner_score']:.0f}", shown, ref, issue["title"])
     console.print(table)
     console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
 
@@ -1252,6 +1253,8 @@ def issue_cmd(
     if output == Output.json:
         _emit(data, output)
         return
+    if track:
+        console.print("[green]Saved to your progress.[/green] `next` will check it for changes.")
     data = _markup_safe(data)
     assessment = data["assessment"]
     style = _STATUS_STYLE.get(data["availability"], "")

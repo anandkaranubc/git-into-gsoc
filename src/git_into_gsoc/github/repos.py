@@ -14,6 +14,7 @@ from git_into_gsoc.matching.concepts import find_concepts, find_tag_concepts
 from git_into_gsoc.matching.concepts import label as concept_label
 from git_into_gsoc.matching.ideas import known_skills, wanted_domains
 from git_into_gsoc.matching.profile import ContributorProfile
+from git_into_gsoc.scoring.issues import BEGINNER_WORDS_RE
 from git_into_gsoc.scoring.org_match import canonical
 
 KNOWN_BOTS = {
@@ -374,9 +375,7 @@ def beginner_labels(labels: list[dict[str, Any]], *, limit: int = 3) -> list[str
     return found[:limit]
 
 
-_BEGINNER_WORDS = re.compile(
-    r"good first|beginner|first[ _-]?(?:timer|issue|contrib)|newbie|starter|\beasy\b"
-)
+_BEGINNER_WORDS = BEGINNER_WORDS_RE  # one rule for the search and for scoring
 
 
 # Repositories for an event or its notes ("disc-unconference-2023-projects",

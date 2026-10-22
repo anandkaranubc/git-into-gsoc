@@ -25,6 +25,19 @@ BEGINNER_LABELS = {
     "newcomer",
     "newcomers",
 }
+# Projects name their own beginner labels ("GSOC Starter", "Difficulty-easy"); these
+# words mark one wherever they appear.
+BEGINNER_WORDS_RE = re.compile(
+    r"good first|beginner|first[ _-]?(?:timer|issue|contrib)|newbie|starter|\beasy\b"
+)
+
+
+def is_beginner_label(name: str) -> bool:
+    """True for a label that marks an issue as suitable for a newcomer."""
+    low = name.strip().lower()
+    return low in BEGINNER_LABELS or bool(BEGINNER_WORDS_RE.search(low))
+
+
 # Useful context, but not a sign of an easy task: "help wanted" often marks work
 # the maintainers have no time for, which can be large.
 HELPFUL_LABELS = {"help wanted", "help-wanted", "documentation", "docs", "bug", "gsoc"}
@@ -68,7 +81,9 @@ def score_issue(issue: IssueCandidate) -> IssueCandidate:
     signals: list[str] = []
     labels = {label.lower() for label in issue.labels}
 
-    beginner = labels & BEGINNER_LABELS
+    # Repository-specific names count too ("GSOC Starter", "Difficulty-easy"): the search
+    # uses them, and an exact list called such issues "no beginner label".
+    beginner = {label for label in labels if is_beginner_label(label)}
     helpful = labels & HELPFUL_LABELS
     if beginner:
         score += 20.0

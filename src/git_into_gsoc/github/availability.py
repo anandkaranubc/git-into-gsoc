@@ -198,6 +198,7 @@ _CLAIM_PATTERNS = [
     r"(?<!anyone )(?<!you )\bstill on (?:this|it)\b",
     r"^\s*(?:in progress|pr soon)\b",
     r"\bdo you want me to (?:work on|take|fix)\b",
+    r"\b(?:we|i) (?:could|can) work (?:on (?:this|it) )?together\b",  # a second claimant
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
     r"^\s*/(?:assign(?:-me)?|take|claim|attempt)\s*$",
     r"^\s*\.take(?:-issue)?\s*$",
@@ -372,6 +373,8 @@ def assess_issue(
     claims: dict[str, IssueClaim] = {}
     linked: dict[str, LinkedPullRequest] = {}
     mentioned: list[tuple[str, int]] = []
+    earlier: set[str] = set()  # keys in `linked` of pull requests merged before the issue
+    opened = _dt(issue.get("created_at"))
     repo = _issue_repo(issue)
     maintainer_engaged = False
     last_activity = _dt(issue.get("updated_at"))
@@ -422,9 +425,12 @@ def assess_issue(
         elif kind == "cross-referenced":
             source = (event.get("source") or {}).get("issue") or {}
             if "pull_request" in source:
-                merged = bool((source.get("pull_request") or {}).get("merged_at"))
+                merged_at = _dt((source.get("pull_request") or {}).get("merged_at"))
+                merged = merged_at is not None
                 number = source.get("number")
                 key = str(number or source.get("html_url") or len(linked))
+                if merged_at and opened and merged_at < opened:
+                    earlier.add(key)
                 touched = _dt(source.get("updated_at"))
                 linked[key] = LinkedPullRequest(
                     number=int(number) if number else None,
@@ -447,11 +453,13 @@ def assess_issue(
         pull = pull_lookup(where, number) if pull_lookup else None
         if not pull:
             continue  # not a pull request, or it could not be read
-        merged = bool(pull.get("merged_at"))
-        state = "merged" if merged else str(pull.get("state") or "unknown")
+        merged_at = _dt(pull.get("merged_at"))
+        state = "merged" if merged_at else str(pull.get("state") or "unknown")
         if state == "closed":
             continue
         touched = _dt(pull.get("updated_at"))
+        if merged_at and opened and merged_at < opened:
+            earlier.add(f"comment-{where}-{number}")
         linked[f"comment-{where}-{number}"] = LinkedPullRequest(
             number=number,
             url=pull.get("html_url") or f"https://github.com/{where}/pull/{number}",
@@ -469,14 +477,17 @@ def assess_issue(
     claim_list = sorted(claims.values(), key=lambda c: c.at, reverse=True)
     activity_days = (now - last_activity).days if last_activity else None
 
-    merged_prs = [p for p in prs if p.state == "merged"]
+    # A pull request merged before the issue was opened cannot be its fix: the issue is
+    # often a follow-up to it ("Follow-up on PR #1695", opened 26 minutes after the merge).
+    before = {id(linked[k]) for k in earlier if k in linked}
+    merged_prs = [p for p in prs if p.state == "merged" and id(p) not in before]
     if any(not p.via_comment for p in merged_prs):
         caveats.append("A merged PR references this issue; it may already be partly fixed")
     # A comment can link a merged pull request as the fix or as an example to copy.
     for p in [p for p in merged_prs if p.via_comment][:2]:
         caveats.append(
             f"A comment links merged PR {_pull_ref(p, repo)}; read it first, it may already "
-            "fix this or show how to"
+            "fix this or show how to fix it"
         )
     abandoned = [p for p in prs if p.state == "closed"]
     if abandoned and not any(p.state in {"open", "merged"} for p in prs):

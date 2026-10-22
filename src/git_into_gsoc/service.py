@@ -324,7 +324,7 @@ def _when_no_issues(language: str | None, *, org: str | None, repo: str | None) 
             f"Read {repo}'s open issues yourself: a small bug, a docs gap, or a missing "
             "test is a fine first contribution even without a beginner label.",
             "Ask in the project's public channel which small task would help most.",
-            'Or pick another repository: git-into-gsoc repos "ORG NAME"',
+            f"Or pick another of its repositories: git-into-gsoc repos {repo.split('/')[0]}",
         ]
     where = f'"{org}"' if org else '"ORG NAME"'
     steps = (
