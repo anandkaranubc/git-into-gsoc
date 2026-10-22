@@ -285,6 +285,13 @@ def _pattern(free_text: bool) -> re.Pattern[str]:
     return re.compile(_BOUNDARY_BEFORE + "(" + _alternation(terms) + ")" + _BOUNDARY_AFTER, re.I)
 
 
+# A capitalised word that starts a sentence or a step as plain English: "3. Go to the
+# profile screen" is not the Go language.
+_PLAIN_ENGLISH_AFTER = {
+    "Go": re.compile(r"\s+(?:to|back|ahead|through|into|over|out|up|down|further)\b"),
+}
+
+
 @lru_cache(maxsize=1)
 def _cased_pattern() -> tuple[re.Pattern[str], dict[str, str]] | None:
     cased = {term: c.key for c in CONCEPTS.values() for term in c.cased}
@@ -326,6 +333,9 @@ def find_concepts(text: str, *, free_text: bool = True) -> dict[str, int]:
         if cased is not None:
             pattern, keys = cased
             for match in pattern.finditer(text):
+                plain = _PLAIN_ENGLISH_AFTER.get(match.group(1))
+                if plain and plain.match(text, match.end()):
+                    continue
                 key = keys[match.group(1)]
                 found[key] = found.get(key, 0) + 1
     return found

@@ -445,3 +445,23 @@ def test_issues_others_asked_for_stay_off_the_starter_list() -> None:
     # One ask from someone else 56 days ago, never approved: still a fair first task.
     assert starter_problem(asked({"login": "a", "days_ago": 56}), person) is None
     assert starter_problem(asked(), person) is None
+
+
+def test_go_as_an_english_verb_is_not_the_language() -> None:
+    from git_into_gsoc.matching.concepts import find_concepts
+
+    assert "go" not in find_concepts("3. Go to profile screen. Go back and tap again.")
+    assert "go" in find_concepts("Port the CLI to Go. Go is fast.")
+
+
+def test_an_android_app_issue_suits_someone_who_knows_kotlin() -> None:
+    from git_into_gsoc.matching.issues import starter_problem
+
+    crash = {
+        "title": "App crashes when tapping on a card in landscape mode",
+        "body_excerpt": "Steps: 1. Open the app 2. Go to profile screen. Android Version: 16",
+        "labels": ["bug", "good first issue"],
+        "created_at": "2026-05-01",
+    }
+    assert starter_problem(crash, build_profile(technologies=["kotlin"])) is None
+    assert starter_problem(crash, build_profile(technologies=["haskell"]))

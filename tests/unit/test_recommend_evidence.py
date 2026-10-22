@@ -250,6 +250,8 @@ def test_starter_issues_search_every_language_more_owners_and_beginner_labels(
     assert first["language"] == ["python", "javascript"]
     # Common beginner labels, but not "help wanted", which mostly marks bigger work.
     assert "starter" in first["labels"] and "help wanted" not in first["labels"]
+    # Issues too old for the starter list are left out of the search itself.
+    assert str(first["created_after"]).endswith("-01-01")
 
 
 def test_starter_issues_in_a_repository_written_in_another_language_are_left_out(

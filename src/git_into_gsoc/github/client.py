@@ -585,8 +585,12 @@ class GitHubClient:
         max_results: int = 10,
         per_repo: int = 2,
         org_names: dict[str, str] | None = None,
+        created_after: str | None = None,
     ) -> list[IssueCandidate]:
         """Search open beginner issues, then verify the most promising ones.
+
+        `created_after` (YYYY-MM-DD) leaves older issues out of the search itself, so
+        a caller that would skip them anyway gets its slots filled with ones it keeps.
 
         One search call excludes assigned, PR-linked, and archived-repo issues up
         front; timelines are fetched in parallel only for the top candidates.
@@ -602,6 +606,8 @@ class GitHubClient:
             base.append(f"repo:{owner_name}/{repo_name}")
         since = (datetime.now(UTC) - timedelta(days=365)).date().isoformat()
         base.append(f"updated:>={since}")
+        if created_after:
+            base.append(f"created:>={created_after}")
 
         wanted = max(1, min(max_results, 30))
         labels = list(labels or ([label] if label else ["good first issue", "help wanted"]))

@@ -92,7 +92,12 @@ from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.matching.concepts import SKILL, kind_of
 from git_into_gsoc.matching.concepts import resolve as resolve_concept
 from git_into_gsoc.matching.ideas import ideas_for
-from git_into_gsoc.matching.issues import is_event_repo, personalize, starter_problem
+from git_into_gsoc.matching.issues import (
+    OLD_ISSUE_YEARS,
+    is_event_repo,
+    personalize,
+    starter_problem,
+)
 from git_into_gsoc.matching.path import learning_path
 from git_into_gsoc.matching.profile import (
     EXPERIENCE_HELP,
@@ -1284,7 +1289,9 @@ class GSoCToolkit:
                         # Not "help wanted": it mostly marks work too big for a first task.
                         labels=list(_COMMON_BEGINNER_LABELS),
                         org_names={k.lower(): v for k, v in owners.items()},
-                        max_results=10,
+                        max_results=15,
+                        # Issues the starter screen would call too old never take a slot.
+                        created_after=f"{datetime.now(UTC).year - OLD_ISSUE_YEARS + 1}-01-01",
                     )
                     candidates = [_issue_dict(i) for i in found]
                     issue_scope = "the recommended organizations above"

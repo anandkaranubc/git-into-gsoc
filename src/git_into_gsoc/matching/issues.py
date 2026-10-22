@@ -15,7 +15,14 @@ from datetime import UTC, datetime
 from typing import Any
 
 from git_into_gsoc.github.repos import is_beginner_label
-from git_into_gsoc.matching.concepts import SKILL, find_concepts, find_tag_concepts, kind_of, label
+from git_into_gsoc.matching.concepts import (
+    SKILL,
+    find_concepts,
+    find_tag_concepts,
+    kind_of,
+    label,
+    related_of,
+)
 from git_into_gsoc.matching.ideas import known_skills, wanted_domains
 from git_into_gsoc.matching.profile import ContributorProfile
 
@@ -124,7 +131,9 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
         named.update(find_tag_concepts(str(lab)))
     skills = {c for c in named if kind_of(c) == SKILL and c not in {"git", "github actions"}}
     known = known_skills(person)
-    if skills and known and not skills & known:
+    # Close relatives count: an Android app is fair work for someone who knows Kotlin.
+    near = known | {r for c in known for r in related_of(c)}
+    if skills and known and not skills & near:
         return (
             "needs " + ", ".join(sorted(label(c) for c in skills)[:2]) + ", which you did not list"
         )
