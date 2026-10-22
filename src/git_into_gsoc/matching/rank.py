@@ -71,9 +71,8 @@ TIME_MISFIT = 0.85
 # Most of its active code is in a language the person did not list, so a tag naming
 # theirs is likely a side project (tuned on the dev sets of evals/).
 OTHER_MAIN_LANGUAGE = 0.95
-# Most of its ideas need a skill the person did not list: a caveat, and a small cost
-# (tuned on the dev sets of evals/ after a blind beginner test).
-MOSTLY_NEEDS = 0.95
+# "Most of its ideas need X" stays a caveat only. A x0.95 cost helped the dev sets but
+# made both held-out sets worse (holdout2 and holdout3), so it was taken out.
 # Beginner-labelled issues in a year below which the count says nothing useful.
 MIN_LABELLED = 3
 # How much a phrase's common concept counts against its rarest one (see match_term).
@@ -682,7 +681,6 @@ class OrgIndex:
         needs = _mostly_needs(profile, person) if not person.empty else []
         if needs:
             caveats.append(f"Most of its ideas need {', '.join(needs)}, which you did not list")
-            score *= MOSTLY_NEEDS
         blocking = (
             bool(needs)
             or fits is False

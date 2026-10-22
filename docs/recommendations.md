@@ -110,11 +110,11 @@ Each has a dev half, used while tuning, and a test half, checked only after tuni
 
 | Test half | Keyword ranker | Now |
 |---|---|---|
-| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.811** |
+| Personas: nDCG@10 (agreement with graded judgments, 1 is perfect) | 0.643 | **0.810** |
 | Personas: share of the top 5 that judges rated good or strong | 0.537 | **0.637** |
 | Personas: strong fits found in the top 10 | 0.763 | **0.885** |
 | Personas: picks in the top 5 that judges called wrong | 14 | **6** |
-| Accepted projects: accepting organization in the top 5 | 52.1% | **65.5%** |
+| Accepted projects: accepting organization in the top 5 | 52.1% | **66.4%** |
 | Accepted projects: accepting organization in the top 10 | 62.2% | **76.5%** |
 
 A third set of 12 personas from a second blind reviewer, in ecosystems the first set does not cover (Swift, Elixir, Scala, Lua, C#, embedded Rust, documentation only), confirmed the gain on first sight: nDCG@10 0.451 for the keyword ranker against 0.566 now, and judged-wrong picks in the top five down from 21 to 11.

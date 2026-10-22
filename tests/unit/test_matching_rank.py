@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from git_into_gsoc.matching.orgs import build_org_profile
 from git_into_gsoc.matching.profile import build_profile
 from git_into_gsoc.matching.rank import OrgIndex, match_term
@@ -432,22 +430,12 @@ def test_a_reported_statement_is_a_quoted_caveat_and_leaves_the_score() -> None:
     assert reported.score == plain.score
 
 
-def test_most_ideas_needing_an_unlisted_skill_costs_a_little(monkeypatch: Any) -> None:
-    import git_into_gsoc.matching.rank as rank
-
+def test_most_ideas_needing_an_unlisted_skill_is_a_caveat_not_a_cost() -> None:
     php = _org("Judge Site", tech=["javascript", "php"], topics=["education"])
     ideas = {"count": 6, "skills": {"php": 5, "javascript": 1}}
     signals = {"year": 2026, "organizations": {"judge-site": {"ideas": ideas}}}
-
-    def judge() -> Any:
-        return _rank([php], signals=signals, technologies=["javascript"], interests=["education"])[
-            0
-        ]
-
-    costed = judge()
-    assert any("Most of its ideas need PHP" in c for c in costed.caveats)
-    monkeypatch.setattr(rank, "MOSTLY_NEEDS", 1.0)
-    assert costed.score == pytest.approx(judge().score * 0.95, abs=0.2)
+    judge = _rank([php], signals=signals, technologies=["javascript"], interests=["education"])[0]
+    assert any("Most of its ideas need PHP" in c for c in judge.caveats)
 
 
 def test_one_or_two_beginner_issues_in_a_year_are_not_shown() -> None:
