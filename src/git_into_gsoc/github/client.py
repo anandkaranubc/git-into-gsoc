@@ -21,6 +21,7 @@ from git_into_gsoc.github.availability import (
 from git_into_gsoc.github.ecosystems import fetch_commit_stats
 from git_into_gsoc.github.evidence import summarize_activity
 from git_into_gsoc.github.graphql import PullAnalysis, fetch_pull_analysis
+from git_into_gsoc.github.related import MIN_SHARED, same_work, title_words
 from git_into_gsoc.github.repos import (
     attach_first_replies,
     channels_in,
@@ -734,6 +735,23 @@ class GitHubClient:
                 f"{owner}/{repo} has GitHub issues turned off",
                 hint="Its README or CONTRIBUTING file says where it tracks bugs.",
             )
+
+    def unlinked_pulls(self, owner: str, repo: str, issue: dict[str, Any]) -> list[dict[str, Any]]:
+        """Pull requests opened since the issue that look like the same work but never link it.
+
+        One search; an empty list when it fails, so the issue check still answers.
+        """
+        words = title_words(str(issue.get("title") or ""))
+        if len(words) < MIN_SHARED:
+            return []
+        since = str(issue.get("created_at") or "")[:10]
+        query = f"repo:{owner}/{repo} is:pr " + (f"created:>={since} " if since else "")
+        try:
+            found = self.search_issues(query + " ".join(words[:4]), per_page=10)
+        except HttpError:
+            return []
+        number = int(issue.get("number") or 0)
+        return [p for p in found if "pull_request" in p and same_work(number, words, p)]
 
     def _timeline_with_imports(
         self, owner: str, repo: str, number: int, issue: dict[str, Any]

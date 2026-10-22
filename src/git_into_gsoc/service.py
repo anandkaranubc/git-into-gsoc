@@ -190,6 +190,26 @@ def _retired_repo(raw: dict[str, Any]) -> str | None:
     return f"The repository's description says '{found.group(0)}'" if found else None
 
 
+def _unlinked_caveat(pull: dict[str, Any]) -> str:
+    """What a look-alike pull request that does not link the issue means for a newcomer."""
+    title = clean_untrusted(pull.get("title"), limit=90)
+    ref = f'PR #{pull.get("number")} "{title}"'
+    if (pull.get("pull_request") or {}).get("merged_at"):
+        return (
+            f"Merged {ref} looks like the same work but does not link this issue; it may "
+            "already be fixed, so ask in the thread before you start"
+        )
+    if pull.get("state") == "open":
+        return (
+            f"Open {ref} looks like the same work but does not link this issue; read it "
+            "before you start, someone may already be on it"
+        )
+    return (
+        f"{ref} tried what looks like the same work and was closed without merging; read "
+        "its review comments first"
+    )
+
+
 def _dormant_days(raw: dict[str, Any]) -> int | None:
     """Days since anything was pushed to the repository, when that is over DORMANT_DAYS."""
     pushed = _parse_iso(raw.get("pushed_at"))
@@ -1019,7 +1039,7 @@ class GSoCToolkit:
         issue, assessment = self.github.assess(f"{owner}/{repo}", num)
         # The issue alone cannot show that nobody will review the work: a real check
         # (2026-10-22) called issues "available" in an archived repository and in one
-        # with nothing pushed for 16 months.
+        # with nothing pushed for 28 months.
         try:
             raw_repo = self.github.get_repo(owner, repo)
         except GigError:
@@ -1032,6 +1052,14 @@ class GSoCToolkit:
             assessment.caveats = [c for c in assessment.caveats if "in the thread" not in c]
         elif retired:
             assessment.caveats.append(f"{retired}; ask the project whether it still takes work")
+        # A pull request that names no issue leaves no trace on its timeline.
+        linked = {p.number for p in assessment.linked_prs}
+        try:
+            unlinked = self.github.unlinked_pulls(owner, repo, issue)
+        except GigError:
+            unlinked = []
+        for pull in [p for p in unlinked if p.get("number") not in linked][:2]:
+            assessment.caveats.append(_unlinked_caveat(pull))
         dormant = _dormant_days(raw_repo)
         if dormant and not raw_repo.get("archived"):
             assessment.caveats.append(
