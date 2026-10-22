@@ -10,11 +10,12 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from git_into_gsoc.labels import BEGINNER_LABELS
+from git_into_gsoc.labels import is_beginner_label as is_beginner_label  # matching uses it
 from git_into_gsoc.matching.concepts import find_concepts, find_tag_concepts
 from git_into_gsoc.matching.concepts import label as concept_label
 from git_into_gsoc.matching.ideas import known_skills, wanted_domains
 from git_into_gsoc.matching.profile import ContributorProfile
-from git_into_gsoc.scoring.issues import BEGINNER_WORDS_RE
 from git_into_gsoc.scoring.org_match import canonical
 
 KNOWN_BOTS = {
@@ -29,20 +30,6 @@ KNOWN_BOTS = {
     "greenkeeper",
 }
 OUTSIDER_ROLES = {"CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", "FIRST_TIMER", "NONE"}
-BEGINNER_LABELS = (
-    "good first issue",
-    "good-first-issue",
-    "good first bug",
-    "first-timers-only",
-    "beginner",
-    "beginner friendly",
-    "beginner-friendly",
-    "easy",
-    "starter",
-    "newcomer",
-    "difficulty: easy",
-    "level: easy",
-)
 TOOLCHAIN_FILES: dict[str, str] = {
     "pyproject.toml": "Python project (pyproject.toml)",
     "setup.py": "Python project (setup.py)",
@@ -400,10 +387,7 @@ def pick_beginner_label(labels: list[dict[str, Any]]) -> str | None:
             return names[wanted]
     # Spellings seen once each across GSoC organizations' repositories: "first
     # contrib", "newbie-friendly", "difficulty: starter", "good_for_beginners".
-    for lower, original in names.items():
-        if _BEGINNER_WORDS.search(lower):
-            return original
-    return None
+    return next((original for original in names.values() if is_beginner_label(original)), None)
 
 
 _MIRROR_START = re.compile(r"^\W*(?:read[- ]only\s+)?mirror\s+(?:of|from)\b", re.I)
@@ -444,11 +428,8 @@ def beginner_labels(labels: list[dict[str, Any]], *, limit: int = 3) -> list[str
     """
     names = {str(label.get("name") or "").lower(): str(label.get("name")) for label in labels}
     found = [names[w] for w in BEGINNER_LABELS if w in names]
-    found += [o for low, o in names.items() if _BEGINNER_WORDS.search(low) and o not in found]
+    found += [o for o in names.values() if is_beginner_label(o) and o not in found]
     return found[:limit]
-
-
-_BEGINNER_WORDS = BEGINNER_WORDS_RE  # one rule for the search and for scoring
 
 
 # Repositories for an event or its notes ("disc-unconference-2023-projects",
@@ -516,12 +497,6 @@ def is_main_repo(full_name: str, *, most_starred: bool = False) -> bool:
     scummvm/scummvm), or its owner's most-starred active repository."""
     owner, _, name = str(full_name).rpartition("/")
     return most_starred or (bool(owner) and _flat(name) == _flat(owner))
-
-
-def is_beginner_label(name: str) -> bool:
-    """True for a label that marks an issue as suitable for a newcomer."""
-    low = name.strip().lower()
-    return low in BEGINNER_LABELS or bool(_BEGINNER_WORDS.search(low))
 
 
 def detect_toolchain(

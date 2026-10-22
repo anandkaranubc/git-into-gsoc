@@ -98,6 +98,7 @@ from git_into_gsoc.gsoc.project_ideas import (
 from git_into_gsoc.gsoc.timeline import program_status
 from git_into_gsoc.guidance import journey_overview, proposal_checklist
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
+from git_into_gsoc.labels import no_ai_label
 from git_into_gsoc.matching.concepts import SKILL, kind_of
 from git_into_gsoc.matching.concepts import resolve as resolve_concept
 from git_into_gsoc.matching.ideas import ideas_for
@@ -1218,14 +1219,17 @@ class GSoCToolkit:
                 "pull request may wait a long time for review; ask the project whether it is "
                 "still maintained before you start"
             )
+        labels = [
+            str(lab.get("name")) for lab in issue.get("labels") or [] if isinstance(lab, dict)
+        ]
+        if no_ai := no_ai_label(labels):
+            assessment.caveats.insert(0, _no_ai_caveat(no_ai))
         return {
             "repo": f"{owner}/{repo}",
             "number": num,
             "title": clean_untrusted(issue.get("title"), limit=256),
             "url": issue.get("html_url") or f"https://github.com/{owner}/{repo}/issues/{num}",
-            "labels": [
-                lab.get("name") for lab in issue.get("labels") or [] if isinstance(lab, dict)
-            ],
+            "labels": labels,
             "comments": issue.get("comments"),
             "availability": assessment.availability.value,
             "reason": assessment.reason,
@@ -3036,6 +3040,15 @@ def _open(issue: dict[str, Any]) -> bool:
     return issue.get("availability") in _OPEN_TO_NEWCOMERS
 
 
+def _no_ai_caveat(label: str) -> str:
+    # GDAL labels 97 open issues "not for AI lovers"; OpenStreetMap's "good first issue -
+    # LLM not welcome" says LLM-generated pull requests are not welcome.
+    return (
+        f"The label '{label}' says the project does not want AI-generated work on this issue. "
+        "Write and test the change yourself, and read the project's AI policy first"
+    )
+
+
 def _with_cautions(
     issues: list[dict[str, Any]], person: ContributorProfile
 ) -> list[dict[str, Any]]:
@@ -3047,6 +3060,9 @@ def _with_cautions(
     """
     for issue in issues:
         reason = starter_problem(issue, person)
+        no_ai = no_ai_label(issue.get("labels") or [])
+        if not reason and no_ai:
+            reason = f"the project does not want AI-generated work on it (label '{no_ai}')"
         if reason:
             issue["caution"] = reason
     # Stable: within each group, the order by score and organization stands.

@@ -5,38 +5,8 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime
 
+from git_into_gsoc.labels import is_beginner_label
 from git_into_gsoc.models import Availability, IssueCandidate
-
-# Labels maintainers use to say "a newcomer can do this". One is enough.
-BEGINNER_LABELS = {
-    "good first issue",
-    "good-first-issue",
-    "good first bug",
-    "good first contribution",
-    "beginner",
-    "beginner friendly",
-    "beginner-friendly",
-    "easy",
-    "e-easy",
-    "difficulty: easy",
-    "level: beginner",
-    "starter",
-    "first-timers-only",
-    "newcomer",
-    "newcomers",
-}
-# Projects name their own beginner labels ("GSOC Starter", "Difficulty-easy"); these
-# words mark one wherever they appear.
-BEGINNER_WORDS_RE = re.compile(
-    r"good first|beginner|first[ _-]?(?:timer|issue|contrib)|newbie|starter|\beasy\b"
-)
-
-
-def is_beginner_label(name: str) -> bool:
-    """True for a label that marks an issue as suitable for a newcomer."""
-    low = name.strip().lower()
-    return low in BEGINNER_LABELS or bool(BEGINNER_WORDS_RE.search(low))
-
 
 # Useful context, but not a sign of an easy task: "help wanted" often marks work
 # the maintainers have no time for, which can be large.
