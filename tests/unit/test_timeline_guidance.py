@@ -1,3 +1,5 @@
+"""The program timeline: embedded history, estimates, phases, and the journey overview."""
+
 from __future__ import annotations
 
 from datetime import UTC, datetime

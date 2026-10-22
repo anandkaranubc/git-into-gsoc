@@ -173,6 +173,8 @@ class LinkEvidence:
 
 
 def headings(text: str) -> list[str]:
+    """Headings in the text, lower-cased: markdown headings, bold lines, "Title:"
+    lines, and a short plain line that names a known section."""
     found: list[str] = []
     keys = [k for group in SECTION_KEYWORDS.values() for k in group]
     for line in text.splitlines():

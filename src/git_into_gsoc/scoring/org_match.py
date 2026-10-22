@@ -1,9 +1,14 @@
-"""Organization matching and ranking.
+"""Term helpers for organization matching, and the keyword ranker they came from.
 
-Relevance (technology/topic/query fit) decides *whether* an org matches;
-continuity and capacity signals decide *order* among relevant orgs. Terms are
-canonicalised through an alias table and matched on word boundaries, so `c`
-does not match every description and `go` does not match `google`.
+`canonical`, `expand_terms`, and `mentions` are used across the package: terms go
+through an alias table and match on word boundaries, so `c` does not match every
+description and `go` does not match `google`.
+
+`score_org_match` is the keyword ranker from before the matching package (release
+0.11). It is not what `orgs` and `recommend` run today; that is `matching/rank.py`.
+It stays as the baseline that `scripts/eval_matching.py` compares the current
+ranker against. In it, relevance (technology, topic, and query fit) decides whether
+an organization matches, and continuity and capacity decide the order.
 """
 
 from __future__ import annotations
@@ -45,6 +50,7 @@ _SPLIT = re.compile(r"\s*(?:/|,|\band\b)\s*")
 
 
 def canonical(term: str) -> str:
+    """The term lower-cased, with its alias resolved ("js" is "javascript")."""
     cleaned = re.sub(r"\s+", " ", term.strip().lower())
     return ALIASES.get(cleaned, cleaned)
 

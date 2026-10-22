@@ -1,3 +1,5 @@
+"""Untrusted text: hidden characters, HTML comments, and length caps."""
+
 from __future__ import annotations
 
 from git_into_gsoc.text import clean_untrusted

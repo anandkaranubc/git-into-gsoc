@@ -1,3 +1,5 @@
+"""GitHub search queries: OR groups, owner limits, label values, and language families."""
+
 from __future__ import annotations
 
 from git_into_gsoc.github.search import (

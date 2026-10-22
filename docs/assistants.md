@@ -139,7 +139,7 @@ npx skills add anandkaranubc/git-into-gsoc -g
 npx add-mcp "uvx git-into-gsoc@latest mcp" --name git-into-gsoc -g
 ```
 
-The first copies the skill; the second asks which assistants to add the server to. `-g` makes both work in every folder; without it they set up only the folder you run them in. Both need [Node.js](https://nodejs.org/). Kiro and Visual Studio also have buttons below.
+The first copies the skill; the second asks which assistants to add the server to. `-g` makes both work in every folder; without it they set up only the folder you run them in. Both need [Node.js](https://nodejs.org/). Kiro and Visual Studio also have buttons below, and the [project site](https://anandkaranubc.github.io/git-into-gsoc/) has one-click links for Goose and Raycast. Those two follow each app's documented link format; we have not tested them in the apps.
 
 ## One-click buttons
 
