@@ -100,6 +100,7 @@ Notes on `repos` and `repo`:
 
 - `repos` resolves a GSoC organization to its GitHub organizations and reads its ideas page when it can. When the page is an umbrella index (NumFOCUS, for example), it follows up to eight GitHub links and ranks those projects' repositories too, each marked with the page it came from (`linked_projects` in JSON). An umbrella with no GitHub organization of its own, such as the Python Software Foundation, gets only the projects its ideas page links to. An organization whose code lives on GitLab or its own servers gets an error with a link to the ideas page.
 - `repo` samples recent closed pull requests to compute merge rates without bots, and separately for outside contributors. It needs about six API calls, plus one commit listing when some outside pull requests were closed without merging, to find the ones a maintainer committed another way. [Pick a repository](guide/05-choose-an-issue.md) explains the grade.
+- When GitHub does not answer a read, often because of a rate limit, `repo` leaves the signals that come from it out of the grade and says to run it again later; it does not count them as missing. `draft claim` then says the project's rule for claiming was not read, instead of saying the project has no contributing guide.
 
 Notes on `issues` and `issue`:
 

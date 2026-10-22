@@ -2159,7 +2159,8 @@ class GSoCToolkit:
         if "pull_request" in issue:
             raise InputError(
                 f"{full}#{num} is a pull request, not an issue",
-                hint="Pass the issue number the PR addresses.",
+                hint="Pass the issue number the PR addresses. To check a pull request, run "
+                f"`git-into-gsoc pr-check {full}#{num}`.",
             )
         raw = self.github.get_repo(owner, repo)
         branch = str(raw.get("default_branch") or "HEAD")
@@ -2462,7 +2463,13 @@ class GSoCToolkit:
             guide = self.github.contribution_guide(repo)
             context["channels"] = context.get("channels") or guide.communication_channels
             text = guide.contributing_text or guide.contributing_excerpt
-            context["claim_convention"] = claim_convention(text)
+            context["claim_convention"] = (
+                {"kind": "unread", "text": ", ".join(guide.unread)}
+                if guide.unread and not text
+                else claim_convention(text)
+            )
+            if guide.unread and not text:
+                context["guide_unread"] = ", ".join(guide.unread)
             context["dco"] = bool(
                 re.search(r"Signed-off-by|git commit -s|Developer Certificate", text)
             )
@@ -2481,6 +2488,14 @@ class GSoCToolkit:
             if k in {"org", "channels", "issue", "claim_convention", "contributing_url"}
         }
         warnings: list[str] = []
+        if kind == "pr" and context.get("guide_unread"):
+            # The sign-off and AI-disclosure lines come from the guide; unread, they are
+            # left out without saying so, though the project may require them.
+            warnings.append(
+                f"GitHub did not answer for this project's {context['guide_unread']}, so its "
+                "contributing guide was not read. Check it on GitHub for a sign-off or "
+                "AI-disclosure rule before you open the pull request."
+            )
         if context.get("issue", {}).get("availability") not in (None, "available"):
             issue_info = context["issue"]
             if issue_info["availability"] == "not_open" and kind == "claim":
