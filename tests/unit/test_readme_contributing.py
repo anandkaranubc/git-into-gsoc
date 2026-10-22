@@ -41,6 +41,19 @@ def test_other_heading_styles_are_read(readme: str) -> None:
     assert section is not None and "wait to be assigned" in section and "MIT" not in section
 
 
+def test_comments_in_code_blocks_are_not_headings() -> None:
+    # A shell comment in a fenced block once ended the section early (51's review).
+    readme = (
+        "## Contributing\n\nSet up first:\n\n```bash\n# install the deps\nnpm ci\n```\n\n"
+        f"{RULES}\n\n## License\n\nMIT"
+    )
+    section = readme_contributing_section(readme)
+    assert section is not None and "wait to be assigned" in section and "MIT" not in section
+    # And a comment that names contributing is not taken for the section's heading.
+    fenced_only = f"# Tool\n\n```sh\n# how to contribute\n```\n\n{RULES}"
+    assert readme_contributing_section(fenced_only) is None
+
+
 def test_a_one_line_welcome_is_not_a_guide() -> None:
     assert (
         readme_contributing_section("# Tool\n\n## Contributing\n\nContributions welcome!\n") is None

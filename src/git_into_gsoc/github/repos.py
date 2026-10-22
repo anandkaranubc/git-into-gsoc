@@ -547,6 +547,7 @@ _CONTRIBUTING_HEADING_RE = re.compile(r"\bcontribut(?:e|ing|ions?)\b", re.I)
 _ATX_HEADING_RE = re.compile(r"^(#{1,6})\s+\S")
 _HTML_HEADING_RE = re.compile(r"^\s*<h([1-6])\b", re.I)
 _UNDERLINE_RE = re.compile(r"^\s*([=\-~^*])\1{2,}\s*$")
+_FENCE_RE = re.compile(r"^\s*(```|~~~)")
 # A section this short ("Contributions welcome!") gives a newcomer nothing to follow.
 MIN_README_SECTION_CHARS = 200
 
@@ -564,6 +565,25 @@ def _heading_level(lines: list[str], index: int) -> int:
     return 0
 
 
+def _fenced(lines: list[str]) -> set[int]:
+    """Indexes of lines inside fenced code blocks, fences included.
+
+    A shell comment such as "# install the deps" in a code block is not a heading.
+    """
+    inside: set[int] = set()
+    fence: str | None = None
+    for index, line in enumerate(lines):
+        if m := _FENCE_RE.match(line):
+            if fence is None:
+                fence = m.group(1)
+            elif m.group(1) == fence:
+                fence = None
+            inside.add(index)
+        elif fence is not None:
+            inside.add(index)
+    return inside
+
+
 def readme_contributing_section(text: str) -> str | None:
     """The body of a README's section on contributing, when it says enough to follow.
 
@@ -572,8 +592,9 @@ def readme_contributing_section(text: str) -> str | None:
     to be assigned.
     """
     lines = text.splitlines()
+    fenced = _fenced(lines)
     for index, line in enumerate(lines):
-        level = _heading_level(lines, index)
+        level = 0 if index in fenced else _heading_level(lines, index)
         if not level or not _CONTRIBUTING_HEADING_RE.search(line):
             continue
         start = index + (
@@ -581,7 +602,7 @@ def readme_contributing_section(text: str) -> str | None:
         )
         body: list[str] = []
         for later in range(start, len(lines)):
-            found = _heading_level(lines, later)
+            found = 0 if later in fenced else _heading_level(lines, later)
             if found and found <= level:
                 break
             body.append(lines[later])
