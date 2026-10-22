@@ -61,3 +61,83 @@ jobs:
         run: |
           python -m git_into_gsoc --version
           python scripts/live_journeys.py --summary "$GITHUB_STEP_SUMMARY"
+
+  # The newest release reaches PyPI's index a few minutes after it is announced, and
+  # v0.16.0's documented installer failed in that window. UV_EXCLUDE_NEWER hides
+  # uploads after a time, so setting it just before the newest release's PyPI upload
+  # recreates the window: the installer must fall back to the GitHub release wheel.
+  install-race:
+    name: Install while PyPI lags (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Hide the newest release from PyPI
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python -m pip install --quiet uv==0.11.26
+          version="$(gh release view --repo "${{ github.repository }}" --json tagName --jq .tagName)"
+          version="${version#v}"
+          cutoff="$(python - "$version" <<'PY'
+          import json, sys, urllib.request
+          from datetime import datetime, timedelta
+          url = f"https://pypi.org/pypi/git-into-gsoc/{sys.argv[1]}/json"
+          try:
+              files = json.load(urllib.request.urlopen(url))["urls"]
+          except OSError:
+              files = []  # not on PyPI yet: the real lag is already happening
+          if files:
+              first = min(datetime.fromisoformat(f["upload_time_iso_8601"].replace("Z", "+00:00")) for f in files)
+              print((first - timedelta(minutes=1)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+          PY
+          )"
+          echo "EXPECTED_VERSION=$version" >> "$GITHUB_ENV"
+          if [ -n "$cutoff" ]; then
+            echo "Newest release $version; hiding PyPI uploads after $cutoff"
+            echo "UV_EXCLUDE_NEWER=$cutoff" >> "$GITHUB_ENV"
+          else
+            echo "Newest release $version is not on PyPI yet; testing the real lag"
+          fi
+      - name: Install with install.sh while PyPI lags
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          unset GIG_REPO_URL
+          export HOME="$RUNNER_TEMP/home-race" GIG_DATA_DIR="$RUNNER_TEMP/gig-data"
+          mkdir -p "$HOME"
+          bash < install.sh
+          installed="$("$HOME/.local/bin/git-into-gsoc" --version | tail -1)"
+          echo "Installed $installed"
+          test "$installed" = "$EXPECTED_VERSION"
+          # uv's receipt names the source: the GitHub release wheel, not PyPI.
+          receipt="$(uv tool dir)/git-into-gsoc/uv-receipt.toml"
+          cat "$receipt"
+          grep -q "releases/download/" "$receipt"
+      - name: Install with install.ps1 while PyPI lags
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Remove-Item Env:GIG_REPO_URL -ErrorAction SilentlyContinue
+          $env:GIG_HOME = Join-Path $env:RUNNER_TEMP "home-race"
+          $env:GIG_DATA_DIR = Join-Path $env:RUNNER_TEMP "gig-data"
+          Get-Content -Raw .\install.ps1 | Invoke-Expression
+          # A new terminal reads PATH from the registry, not from this session.
+          $env:Path = [Environment]::GetEnvironmentVariable('Path', 'Machine') + ';' + [Environment]::GetEnvironmentVariable('Path', 'User')
+          $installed = "$(git-into-gsoc --version | Select-Object -Last 1)".Trim()
+          Write-Host "Installed $installed"
+          if ($installed -ne $env:EXPECTED_VERSION) { throw "installed '$installed', expected '$env:EXPECTED_VERSION'" }
+          # uv's receipt names the source: the GitHub release wheel, not PyPI.
+          $receipt = Join-Path "$(uv tool dir)".Trim() "git-into-gsoc\uv-receipt.toml"
+          Get-Content $receipt
+          if (-not (Select-String -Path $receipt -Pattern "releases/download/" -Quiet)) { throw "installed from somewhere other than the release wheel" }
