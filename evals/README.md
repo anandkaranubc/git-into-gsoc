@@ -65,15 +65,20 @@ Round 5 made general fixes it pointed to:
 - **A small penalty when most of an organization's active code is in a language the person did not list.** It was already a caveat; now it is a small score penalty too.
 - **New spellings:** "camera pipelines" and "archiving".
 
-Round 6 came from reading the wrong picks on `dev2` and the two older held-out sets. Someone who types "music notation", "database internals" or "realtime chat" means something narrower than the subject it reads as (music, databases, communication). The words beyond the subject's name ("notation", "internals", "storage engine", "chat") now count: an organization whose listing or ideas never name one of them matches that interest 15% less, and one that does says so in its evidence. A word only counts when at most 15% of organizations name it, so a common word changes nothing. Tuned on `dev` and `dev2`, then `test` was read once:
+Round 6 came from reading the wrong picks on `dev2`, `holdout2` and `holdout3`, so neither held-out set is blind for it; their numbers below are weak evidence. The blind checks are `test`, read once, and the sealed `holdout4`.
+
+- **Words that narrow an interest.** Someone who types "music notation", "database internals" or "realtime chat" means something narrower than the subject it reads as (music, databases, communication). The words beyond the subject's name ("notation", "internals", "storage engine", "chat") now count: an organization whose listing or ideas never name one of them matches that interest 15% less, and one that does says so in its evidence. A word only counts when at most 15% of organizations name it, so a common word changes nothing.
+- **Two readings fixed.** A "quantum chemistry" tag is chemistry, not quantum computing, and "routing protocols" or "packet capture" is networking, not maps.
+
+Tuned on `dev` and `dev2`, then `test` was read once:
 
 | | Before | After |
 |---|---|---|
 | `dev` nDCG@10 | 0.804 | 0.804 |
 | `dev2` nDCG@10 | 0.623 | **0.644** |
 | `test` nDCG@10, P@5, wrong@5 | 0.810, 0.637, 6 | 0.810, 0.637, 6 |
-| `holdout2` nDCG@10, wrong@5 | 0.568, 10 | **0.578, 9** |
-| `holdout3` nDCG@10, strong@10 | 0.493, 0.700 | **0.502, 0.733** |
+| `holdout2` nDCG@10, wrong@5 (not blind) | 0.568, 10 | 0.578, 9 |
+| `holdout3` nDCG@10, wrong@5 (not blind) | 0.493, 6 | 0.529, 5 |
 | Accepted projects MRR, `test` | 0.455 | **0.471** |
 | Accepted projects MRR, all | 0.510 | **0.525** |
 
