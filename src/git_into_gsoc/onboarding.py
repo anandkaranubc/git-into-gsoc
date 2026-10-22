@@ -94,6 +94,8 @@ def home(toolkit: GSoCToolkit) -> dict[str, Any]:
         "version": __version__,
         "new_user": not steps[0]["done"],
         "github": profile.get("github"),
+        # False shows the gh auth login tip; the token itself is never put in this data.
+        "github_token": bool(toolkit.github.token),
         "program": program_now(toolkit),
         "milestones": steps,
         "done": done,

@@ -239,6 +239,11 @@ def _render_home(data: dict[str, Any]) -> None:
             else:
                 _say(f"  [dim]○ {step['label']}[/dim]")
         _say(f"What to do now, with live checks:\n  [cyan]{data['next_command']}[/cyan]")
+    if not data["github_token"]:
+        _say(
+            "\n[dim]Tip: run gh auth login once so issue searches do not hit GitHub's limit "
+            "for anonymous use.[/dim]"
+        )
     _say("\n[bold]Commands to start with[/bold]")
     for name, what in _HOME_COMMANDS:
         _say(f"  [cyan]{name:<8}[/cyan] {what}")
