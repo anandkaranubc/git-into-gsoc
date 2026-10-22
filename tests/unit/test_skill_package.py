@@ -1,3 +1,5 @@
+"""The shipped skill: front matter, size, references, and its check script."""
+
 from __future__ import annotations
 
 from pathlib import Path

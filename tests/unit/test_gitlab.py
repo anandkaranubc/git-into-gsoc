@@ -61,6 +61,13 @@ def test_links_are_recognised() -> None:
     assert parse_gitlab_issue("https://gitlab.com/nsnam/ns-3-dev/-/work_items/7")[2] == 7  # type: ignore[index]
     assert parse_gitlab_issue("https://github.com/a/b/-/issues/1") is None
     assert parse_gitlab_issue("https://github.com/a/b/issues/1") is None
+    # Copied from the address bar without "https://".
+    assert parse_gitlab_issue("gitlab.com/inkscape/inkscape/-/issues/6508") == (
+        "gitlab.com",
+        "inkscape/inkscape",
+        6508,
+    )
+    assert parse_gitlab_issue("github.com/a/b/-/issues/1") is None
 
 
 def test_an_open_merge_request_means_likely_taken() -> None:

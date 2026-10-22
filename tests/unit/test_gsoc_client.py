@@ -1,3 +1,6 @@
+"""The organization client: the official list, the embedded snapshot, the archive fallbacks, and
+past projects."""
+
 from __future__ import annotations
 
 from typing import Any
