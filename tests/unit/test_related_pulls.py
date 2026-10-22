@@ -152,3 +152,44 @@ def test_each_kind_of_look_alike_gets_advice(monkeypatch: Any) -> None:
 def test_already_linked_or_unreadable_adds_nothing(monkeypatch: Any) -> None:
     assert _status(monkeypatch, [_pull(22, "Same work")], linked=(22,)) == []
     assert _status(monkeypatch, GigError("search failed")) == []
+
+
+def test_a_search_cut_short_by_the_limit_says_so(monkeypatch: Any) -> None:
+    # 0.17.0 on 2026-10-22: a busy token hit GitHub's secondary search limit, and `issue`
+    # silently showed no look-alike pull requests, which read as "there are none".
+    from datetime import UTC, datetime, timedelta
+
+    from git_into_gsoc.errors import RateLimitError
+
+    toolkit = GSoCToolkit()
+    found = IssueAssessment(availability=Availability.AVAILABLE, reason="Open")
+    issue = {"title": "x", "html_url": "https://github.com/acme/lib/issues/9", "labels": []}
+    monkeypatch.setattr(toolkit.github, "assess", lambda full, num: (issue, found))
+    monkeypatch.setattr(toolkit.github, "get_repo", lambda owner, name: {})
+    reset = datetime.now(UTC) + timedelta(seconds=50)
+
+    def limited(owner: str, name: str, raw: dict[str, Any]) -> list[dict[str, Any]]:
+        toolkit.github.rate_limited = RateLimitError("limit", reset_at=reset, resource="search")
+        return []
+
+    monkeypatch.setattr(toolkit.github, "unlinked_pulls", limited)
+    caveats = toolkit.issue_status("acme/lib#9")["assessment"]["caveats"]
+    assert caveats == [
+        "GitHub's search limit stopped the check for pull requests that look like the same "
+        f"work; it resets in 1 minute ({reset:%H:%M} UTC), so run this again then"
+    ]
+
+
+@respx.mock
+def test_the_client_remembers_a_limited_search() -> None:
+    issue = {"number": 20, "title": "Rename project from countvote to agora"}
+    respx.get("https://api.github.com/search/issues").mock(
+        return_value=httpx.Response(
+            403,
+            json={"message": "You have exceeded a secondary rate limit."},
+            headers={"x-ratelimit-remaining": "0", "x-ratelimit-resource": "search"},
+        )
+    )
+    client = GitHubClient()
+    assert client.unlinked_pulls("acme", "agora", issue) == []
+    assert client.rate_limited is not None

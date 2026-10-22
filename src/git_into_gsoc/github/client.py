@@ -748,6 +748,9 @@ class GitHubClient:
         query = f"repo:{owner}/{repo} is:pr " + (f"created:>={since} " if since else "")
         try:
             found = self.search_issues(query + " ".join(words[:4]), per_page=10)
+        except RateLimitError as err:
+            self.rate_limited = err  # the caller says the check was skipped
+            return []
         except HttpError:
             return []
         number = int(issue.get("number") or 0)

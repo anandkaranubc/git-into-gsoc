@@ -1054,12 +1054,20 @@ class GSoCToolkit:
             assessment.caveats.append(f"{retired}; ask the project whether it still takes work")
         # A pull request that names no issue leaves no trace on its timeline.
         linked = {p.number for p in assessment.linked_prs}
+        self.github.rate_limited = None
         try:
             unlinked = self.github.unlinked_pulls(owner, repo, issue)
         except GigError:
             unlinked = []
         for pull in [p for p in unlinked if p.get("number") not in linked][:2]:
             assessment.caveats.append(_unlinked_caveat(pull))
+        if (limit := self.github.rate_limited) is not None:
+            # Silence would read as "no look-alike pull requests", which is not known.
+            when = reset_phrase(limit.reset_at)
+            assessment.caveats.append(
+                "GitHub's search limit stopped the check for pull requests that look like "
+                "the same work" + (f"; it {when}, so run this again then" if when else "")
+            )
         dormant = _dormant_days(raw_repo)
         if dormant and not raw_repo.get("archived"):
             assessment.caveats.append(
