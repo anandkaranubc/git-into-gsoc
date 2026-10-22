@@ -55,6 +55,7 @@ from git_into_gsoc.github.pointers import (
     fix_norm,
     rank_similar,
     resolve_paths,
+    title_file_matches,
     title_keywords,
 )
 from git_into_gsoc.github.prcheck import check_pull_request
@@ -1706,6 +1707,9 @@ class GSoCToolkit:
                     }
                 )
 
+        if not resolved:
+            # No file named and no code search result: try title words as a file name.
+            resolved = title_file_matches(str(issue.get("title") or ""), tree_paths)
         fixes, label, similar_note, shared = self._similar_fixes(owner, repo, issue, limit=similar)
         norm = fix_norm(fixes)
         search_links = [
