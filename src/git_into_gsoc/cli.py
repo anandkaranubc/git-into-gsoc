@@ -2502,7 +2502,8 @@ def feedback_cmd(
     _say(
         "This opens a GitHub form with your versions filled in, so you can tell us what "
         "worked and what did not. Nothing is sent until you read it and press Submit. "
-        "Submitting needs a GitHub account."
+        "Submitting needs a GitHub account and creates a public issue under your "
+        "username, so leave out anything private."
     )
     _say(f"[dim]Filled in: {escape(system_summary())}[/dim]")
     console.print(url, markup=False, highlight=False, soft_wrap=True)
