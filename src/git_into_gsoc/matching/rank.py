@@ -71,6 +71,8 @@ TIME_MISFIT = 0.85
 # Most of its active code is in a language the person did not list, so a tag naming
 # theirs is likely a side project (tuned on the dev sets of evals/).
 OTHER_MAIN_LANGUAGE = 0.95
+MAIN_LANGUAGE_SHARE = 0.4
+FAMILY_SKIP = frozenset({"html", "css"})
 # "Most of its ideas need X" stays a caveat only. A x0.95 cost helped the dev sets but
 # made both held-out sets worse (holdout2 and holdout3), so it was taken out.
 
@@ -832,10 +834,23 @@ def _main_language(profile: OrgProfile, person: ContributorProfile) -> str | Non
     languages = github.get("languages") or {}
     if active < 3 or not languages or person.empty or not person.skills:
         return None
-    name, count = max(languages.items(), key=lambda kv: kv[1])
-    if count / active < 0.4:
+    # One family per language a person would learn (TypeScript and Vue count with
+    # JavaScript); HTML and CSS repositories are mostly sites and docs, not the code.
+    families: dict[str, dict[str, int]] = {}
+    for lang, n in languages.items():
+        for concept in language_concepts({lang: int(n)}):
+            if concept in FAMILY_SKIP:
+                continue
+            root = "javascript" if "javascript" in broader_of(concept) else concept
+            families.setdefault(root, {})[lang] = int(n)
+    if not families:
         return None
-    concepts = language_concepts({name: count})
+    root, members = max(families.items(), key=lambda kv: sum(kv[1].values()))
+    count = sum(members.values())
+    if count / active < MAIN_LANGUAGE_SHARE:
+        return None
+    name = " and ".join(sorted(members, key=lambda k: -members[k])[:2])
+    concepts = {root: count, **{c: count for lang in members for c in language_concepts({lang: 1})}}
     known: set[str] = set()
     for want in person.skills:
         for concept in want.concepts:

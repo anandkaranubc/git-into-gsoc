@@ -467,3 +467,24 @@ def test_a_narrowing_word_favours_the_organization_that_names_it() -> None:
 def test_words_that_spell_the_subject_or_say_nothing_do_not_narrow_it() -> None:
     person = build_profile(interests=["front end", "real-time operating systems", "web apps"])
     assert [w.qualifiers for w in person.interests] == [(), ("real-time",), ()]
+
+
+def test_a_language_family_counts_together_and_sites_are_not_the_code() -> None:
+    from git_into_gsoc.matching.rank import _main_language
+
+    org = _org("Contracts", tech=["python"], topics=["natural language processing"])
+    person = build_profile(technologies=["python"], interests=["natural language processing"])
+
+    def caveat(languages: dict[str, int], active: int) -> str | None:
+        signals = {"github": {"active_repos": active, "languages": languages}}
+        return _main_language(build_org_profile(org, signals=signals), person)
+
+    # 3 TypeScript and 2 JavaScript of 9: neither alone is 40%, together they are.
+    said = caveat({"TypeScript": 3, "JavaScript": 2, "Python": 1, "HTML": 3}, 9)
+    assert said and said.startswith("Its code is mostly TypeScript and JavaScript")
+    # Documentation sites in HTML are not what contributors write.
+    assert caveat({"HTML": 5, "Python": 4}, 9) is None
+    # A TypeScript developer knows the family.
+    ts = build_profile(technologies=["typescript"], interests=["natural language processing"])
+    signals = {"github": {"active_repos": 9, "languages": {"TypeScript": 3, "JavaScript": 2}}}
+    assert _main_language(build_org_profile(org, signals=signals), ts) is None
