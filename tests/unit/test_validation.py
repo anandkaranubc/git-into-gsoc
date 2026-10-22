@@ -57,6 +57,19 @@ def test_parse_issue_ref_forms() -> None:
         parse_issue_ref("a/b#zero")
 
 
+def test_an_issue_on_another_site_gets_advice_that_is_true() -> None:
+    # The old hint said "This tool reads GitHub only. For a project on GitLab...",
+    # although `issue` reads GitLab links. BRL-CAD and GNU projects work elsewhere.
+    with pytest.raises(InputError) as info:
+        parse_issue_ref("https://sourceforge.net/p/brlcad/bugs/1/")
+    assert str(info.value).startswith("Not a GitHub issue link")
+    assert "also reads issue links from any GitLab server" in (info.value.hint or "")
+    assert "read the whole thread for claims" in (info.value.hint or "")
+    with pytest.raises(InputError) as repo_info:
+        parse_repo("https://codeberg.org/a/b")
+    assert (repo_info.value.hint or "").startswith("This command reads GitHub only")
+
+
 def test_validate_login() -> None:
     assert validate_login("@octocat") == "octocat"
     with pytest.raises(InputError):

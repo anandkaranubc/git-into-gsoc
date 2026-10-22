@@ -38,8 +38,8 @@ def _split_github_path(value: str) -> list[str]:
         if parsed.netloc.lower() not in _GITHUB_HOSTS:
             raise InputError(
                 f"Not a github.com URL: {value!r}",
-                hint="This tool reads GitHub only. For a project on GitLab or its own server, "
-                "read its contributing guide there.",
+                hint="This command reads GitHub only. For a project on GitLab or its own "
+                "server, read its contributing guide there.",
             )
         return [p for p in parsed.path.split("/") if p]
     return [p for p in raw.split("/") if p]
@@ -80,7 +80,17 @@ def parse_issue_ref(value: str, number: int | None = None) -> tuple[str, str, in
     # URLs first: a pasted comment link (".../issues/12#issuecomment-34") or a URL with a
     # query string must resolve from its path, not from the text after "#".
     if number is None and ("://" in raw or raw.lower().startswith(tuple(_GITHUB_HOSTS))):
-        parts = _split_github_path(raw)
+        try:
+            parts = _split_github_path(raw)
+        except InputError as exc:
+            # "GitHub only" was wrong for `issue`, which reads GitLab links before it gets
+            # here; some GSoC organizations also work on SourceForge or Savannah.
+            raise InputError(
+                f"Not a GitHub issue link: {value!r}",
+                hint="`git-into-gsoc issue` also reads issue links from any GitLab server. "
+                "For an issue on another site, open it there and read the whole thread for "
+                "claims and linked patches before you comment.",
+            ) from exc
         if len(parts) >= 4 and parts[2] in {"issues", "pull"}:
             owner, repo = parse_repo("/".join(parts[:2]))
             return owner, repo, _parse_number(parts[3])
