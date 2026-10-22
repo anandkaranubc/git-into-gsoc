@@ -65,6 +65,20 @@ Round 5 made general fixes it pointed to:
 - **A small penalty when most of an organization's active code is in a language the person did not list.** It was already a caveat; now it is a small score penalty too.
 - **New spellings:** "camera pipelines" and "archiving".
 
+Round 6 came from reading the wrong picks on `dev2` and the two older held-out sets. Someone who types "music notation", "database internals" or "realtime chat" means something narrower than the subject it reads as (music, databases, communication). The words beyond the subject's name ("notation", "internals", "storage engine", "chat") now count: an organization whose listing or ideas never name one of them matches that interest 15% less, and one that does says so in its evidence. A word only counts when at most 15% of organizations name it, so a common word changes nothing. Tuned on `dev` and `dev2`, then `test` was read once:
+
+| | Before | After |
+|---|---|---|
+| `dev` nDCG@10 | 0.804 | 0.804 |
+| `dev2` nDCG@10 | 0.623 | **0.644** |
+| `test` nDCG@10, P@5, wrong@5 | 0.810, 0.637, 6 | 0.810, 0.637, 6 |
+| `holdout2` nDCG@10, wrong@5 | 0.568, 10 | **0.578, 9** |
+| `holdout3` nDCG@10, strong@10 | 0.493, 0.700 | **0.502, 0.733** |
+| Accepted projects MRR, `test` | 0.455 | **0.471** |
+| Accepted projects MRR, all | 0.510 | **0.525** |
+
+No persona on `test` moved, so its gain is in the accepted projects only.
+
 ## `holdout3.json` (no longer blind)
 
 15 personas written and graded by a third reviewer who saw only the official 2026 list and the organizations' own pages: never the code, the earlier sets, or the tool's output. They cover kinds of people the other sets miss: quantum computing, browser engines, networking, cheminformatics, brain imaging, FPGA and open hardware, video codecs, Qt desktop apps, Vue or Angular with six hours a week, React Native, symbolic math, privacy and cryptography, translation and localization, someone who types almost nothing, and a career changer who knows SQL and Excel. Two have a typo on purpose, and two have no strong fit among the 2026 organizations.

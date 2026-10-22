@@ -41,7 +41,7 @@ FLOORS = {
     "holdout3": (0.45, 0.28, 8, None),
     "holdout4": (0.43, 0.16, 14, None),
     # A second development set from a fourth blind reviewer, used for tuning.
-    "dev2": (0.59, 0.32, 10, None),
+    "dev2": (0.61, 0.32, 10, None),
 }
 
 
