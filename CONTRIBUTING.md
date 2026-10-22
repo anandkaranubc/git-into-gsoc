@@ -112,11 +112,12 @@ If `./install.sh` was used earlier, the same `.venv` is reused.
 
 Most of the code explains itself through its names. A comment is for what the code cannot say: why a rule exists, the real case that made it necessary, a limit of a data source, or a trade-off chosen on purpose.
 
-- Say why, not what. `# retry once` repeats the code; `# GitHub returns 403 for a secondary limit, so one retry after the wait is enough` earns its place.
+- Say why, not what. `# check the pull requests` repeats the code; this one from `service.py` earns its place: `# Silence would read as "no look-alike pull requests", which is not known.`
 - Name the real case. Many comments here cite the organization, issue, or blind test that showed the problem, with a date. Keep that habit: it tells the next reader what would break.
 - Every module starts with a docstring that says what it is for. A public function or class gets one when its name does not say it all: what it returns, what it leaves out, and what it raises.
+- The docstring of a command in `cli.py` is its `--help` text, so a change there changes what people see in the terminal. Check `git-into-gsoc COMMAND --help` after editing one.
 - Do not add comments to tidy an area you are not changing, and do not delete one you do not understand; ask in the pull request.
-- Two kinds of docstring are text for models, not for people: the MCP tool docstrings in `mcp_server.py` and the skill in `skills/git-into-gsoc/`. Change those only with before-and-after assistant runs.
+- Two kinds of text are for models, not people: the MCP tool docstrings in `mcp_server.py` and the skill in `skills/git-into-gsoc/`. Change those only with before-and-after assistant runs.
 
 ### Writing docs
 
