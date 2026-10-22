@@ -264,6 +264,9 @@ def test_find_issues_for_one_repo_uses_its_own_beginner_label() -> None:
     search = respx.get("https://api.github.com/search/issues").mock(
         return_value=httpx.Response(200, json={"items": []})
     )
+    respx.get("https://api.github.com/repos/acme/lib").mock(
+        return_value=httpx.Response(200, json={"full_name": "acme/lib", "has_issues": True})
+    )
     data = GSoCToolkit().find_issues(repo="acme/lib", max_results=3)
     query = search.calls[0].request.url.params["q"]
     assert 'label:"Difficulty: Easy"' in query and 'label:"good first issue"' in query

@@ -422,6 +422,23 @@ def mirror_source(raw: dict[str, Any]) -> str | None:
     return str(raw.get("mirror_url") or "") or "the project's own site"
 
 
+def fork_parent(raw: dict[str, Any]) -> str | None:
+    """The repository a fork was copied from, or None when it is not a fork.
+
+    Only the single-repository endpoint returns the parent, so a fork read from a
+    list or a search reads as None.
+    """
+    if not raw.get("fork"):
+        return None
+    parent = raw.get("parent") or raw.get("source") or {}
+    return str(parent.get("full_name") or "") or None
+
+
+def is_personal(raw: dict[str, Any]) -> bool:
+    """Whether a person's account, not an organization, owns the repository."""
+    return (raw.get("owner") or {}).get("type") == "User"
+
+
 def beginner_labels(labels: list[dict[str, Any]], *, limit: int = 3) -> list[str]:
     """Every beginner-like label a repository has, best known names first.
 
