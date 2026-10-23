@@ -183,3 +183,15 @@ def test_misspelled_algorithm_words_reach_algorithms_through_the_fuzzy_path() ->
     ]:
         found = resolve(typed)
         assert found.concepts == ("algorithms",) and found.corrected_from == meant
+
+
+def test_cms_in_running_text_is_not_a_website_system() -> None:
+    # A launch audit (2026-10-23) found five ML4SCI and CERN-HSF ideas, such as "Super
+    # resolution at the CMS detector", tagged as content management. CMS there is CERN's
+    # detector. A tag "cms" (Wagtail's) and a person's own "cms" still mean the CMS kind.
+    from git_into_gsoc.matching.concepts import find_concepts, find_tag_concepts
+
+    assert "content management" not in find_concepts("Super resolution at the CMS detector")
+    assert "content management" in find_tag_concepts("cms")
+    assert "content management" in find_concepts("cms", free_text=False)
+    assert "content management" in find_concepts("a content management system for news sites")
