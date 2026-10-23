@@ -312,8 +312,10 @@ def test_closed_unmerged_pr_is_reported_as_an_earlier_attempt() -> None:
     }
     assessment = assess_issue(issue, [abandoned], now=NOW)
     assert assessment.availability == Availability.AVAILABLE
+    # It does not say it fixes the issue, so it is named as a mention, not an attempt.
     assert any(
-        c.startswith("#12 tried this and was closed without merging") for c in assessment.caveats
+        c.startswith("#12 mentions this issue and was closed without merging")
+        for c in assessment.caveats
     )
     reopened = {
         **abandoned,
@@ -1062,3 +1064,15 @@ def test_a_plan_heading_padded_with_spaces_is_read_quickly() -> None:
     assert not is_claim("## Plan" + " " * 50_000 + ":" + " " * 50_000 + "x")
     assert time.perf_counter() - start < 1.0
     assert is_claim("## Plan:  \n\nShip the fix in one file.")
+
+
+def test_a_closed_pr_that_says_it_fixes_the_issue_tried_it() -> None:
+    # A post-merge audit (2026-10-23): a closed "Fixes #7" PR was listed as "mentions this
+    # issue" and then as "#5 tried this", because only merged PRs could say they fix it.
+    issue = _issue(number=7, html_url="https://github.com/acme/lib/issues/7")
+    event = _pr(5, "closed")
+    event["source"]["issue"]["body"] = "Fixes #7"
+    found = assess_issue(issue, [event], now=NOW)
+    assert found.availability == Availability.AVAILABLE
+    assert [p.fixes for p in found.linked_prs] == [True]
+    assert any(c.startswith("#5 tried this and was closed without merging") for c in found.caveats)

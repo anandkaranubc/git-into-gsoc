@@ -1933,7 +1933,9 @@ def proposal_cmd(
         None, "--github", "-g", help="Your GitHub login, to confirm linked PRs are yours"
     ),
     verify: bool = typer.Option(
-        True, "--verify/--no-verify", help="Look up linked pull requests on GitHub"
+        True,
+        "--verify/--no-verify",
+        help="Look up the pull requests and merge requests your draft links to, on GitHub and GitLab",
     ),
     ideas_file: Path | None = typer.Option(
         None, "--ideas-file", help="The org's ideas page as text, to detect copied passages"

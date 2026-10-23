@@ -420,20 +420,22 @@ def _when_no_issues(
     org: str | None,
     repo: str | None,
     gsoc_org: bool = False,
-    chat: str | None = None,
+    chat: ContactChannel | None = None,
 ) -> list[str]:
     """What to try when a search finds no free beginner issues.
 
-    `chat` is the organization's public channel. A launch audit (2026-10-23) was told to
-    read ML4SCI/DeepLense's issues and ask in its channel, with neither link given.
+    `chat` is the organization's public chat or mailing list. A launch audit (2026-10-23)
+    was told to read ML4SCI/DeepLense's issues and ask in its channel, with neither link
+    given.
     """
+    where_to_ask = "on its mailing list" if chat and chat.kind == "mailingList" else "in its chat"
     if repo:
         return [
             f"Read {repo}'s open issues yourself (https://github.com/{repo}/issues): a "
             "small bug, a docs gap, or a missing test is a fine first contribution even "
             "without a beginner label.",
             "Ask in the project's public channel which small task would help most"
-            + (f": {chat}" if chat else "."),
+            + (f": {chat.value}" if chat else "."),
             f"Or pick another of its repositories: git-into-gsoc repos {repo.split('/')[0]}",
         ]
     where = f'"{org}"' if org else '"ORG NAME"'
@@ -453,7 +455,7 @@ def _when_no_issues(
         steps.append(
             f"Or start from its ideas: git-into-gsoc ideas {where}. At some organizations GSoC "
             "work begins with an idea and its mentors, not with labelled issues; ask the "
-            "mentors in its chat how to start" + (f": {chat}" if chat else ".")
+            f"mentors {where_to_ask} how to start" + (f": {chat.value}" if chat else ".")
         )
     if not org:
         steps.append("Search every repository, not only GSoC organizations: add --scope all")
@@ -699,7 +701,7 @@ class GSoCToolkit:
             out, key=lambda o: (o.get("participation") or {}).get("status") == "not_taking_part"
         )
 
-    def _public_channel(self, owners: list[str]) -> str | None:
+    def _public_channel(self, owners: list[str]) -> ContactChannel | None:
         """The public chat, or else the mailing list, of the GSoC organization these GitHub
         owners belong to, from the embedded snapshot (no request). None for anyone else."""
         wanted = {owner.lower() for owner in owners}
@@ -716,7 +718,7 @@ class GSoCToolkit:
         for kind in ("chat", "mailingList"):
             for channel in org.channels if org else []:
                 if channel.kind == kind and channel.value:
-                    return channel.value
+                    return channel
         return None
 
     def _repo_alternatives(self, repo: str, steps: list[str]) -> list[str]:
@@ -1375,6 +1377,10 @@ class GSoCToolkit:
         organization's name or a GitHub login. The note says what was searched and
         what was left out.
         """
+        if repo:
+            # A pasted link (https://github.com/ML4SCI/DeepLense) reached the advice as is:
+            # "github.com/https://github.com/.../issues" and "repos https:".
+            repo = "/".join(parse_repo(repo))
         from_profile = False
         asked_org = org  # cleared below when it names a GSoC organization
         self.github.rate_limited = None
