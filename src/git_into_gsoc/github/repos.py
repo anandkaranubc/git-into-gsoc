@@ -261,9 +261,11 @@ def outside_merges_points(found: OutsideMerges) -> tuple[float, str]:
             f"{found.sampled} closed)",
         )
     # A merge was counted over the full window, whatever span "none" could claim.
-    if found.authors >= 3:
-        return 6.0, f"{found.authors} people outside the team got a pull request merged {full}"
-    return 2.0, f"{found.authors} outside contributor(s) got a pull request merged {full}"
+    # One wording for every count: `repos` listed "3 people outside the team" beside
+    # "2 outside contributor(s)" (a launch audit, 2026-10-23).
+    who = "1 person" if found.authors == 1 else f"{found.authors} people"
+    points = 6.0 if found.authors >= 3 else 2.0
+    return points, f"{who} outside the team got a pull request merged {full}"
 
 
 def pull_stats(

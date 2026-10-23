@@ -717,6 +717,11 @@ def test_bots_only_no_pulls_and_several_outsiders_each_say_what_they_mean() -> N
     many = outside_merges([_closed(name, "CONTRIBUTOR", 5) for name in ("ana", "ben", "cy")])
     points, reason = outside_merges_points(many)
     assert many.authors == 3 and points > 0 and "3 people outside the team" in reason
+    # One wording for every count (a launch audit saw both in one table).
+    one = outside_merges([_closed("ana", "CONTRIBUTOR", 5)])
+    assert outside_merges_points(one)[1].startswith("1 person outside the team got")
+    two = outside_merges([_closed(name, "CONTRIBUTOR", 5) for name in ("ana", "ben")])
+    assert outside_merges_points(two)[1].startswith("2 people outside the team got")
 
 
 def _quiet_lab(monkeypatch: pytest.MonkeyPatch, count: int, *, failing: set[str] = frozenset()):

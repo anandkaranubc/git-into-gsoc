@@ -3693,9 +3693,29 @@ def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:
     if doc.layout == "issues":
         return "This org lists ideas as GitHub issues; each idea links to its issue."
     if doc.layout == "index" and doc.ideas:
+        # ML4SCI and CERN-HSF list each idea as a link to its own page, so the table has
+        # titles only; say where the rest is.
+        links_only = all(
+            len(i.links) == 1
+            and not (i.description or i.size or i.difficulty or i.mentors or i.skills)
+            for i in doc.ideas
+        )
         return (
-            f"Umbrella page: ideas were read from {len(followed)} linked sub-project page(s). "
-            "Other sub-projects may list ideas elsewhere."
+            " ".join(
+                part
+                for part in (
+                    f"Umbrella page: ideas were read from {len(followed)} linked sub-project "
+                    "page(s). Other sub-projects may list ideas elsewhere."
+                    if followed
+                    else "",
+                    "Each idea is a link to its own page, which gives its size, mentors and "
+                    "skills; open the ones that interest you."
+                    if links_only
+                    else "",
+                )
+                if part
+            )
+            or "Umbrella page: its ideas are listed as links."
         )
     if doc.layout == "index":
         return "This is an index page that links to sub-project pages; open them for ideas."

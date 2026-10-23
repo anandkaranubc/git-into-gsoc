@@ -175,3 +175,51 @@ def test_a_page_of_news_and_reports_reads_its_projects(api: respx.MockRouter) ->
     shown = CliRunner().invoke(app, ["ideas", "PostgreSQL"], env={"COLUMNS": "200"})
     assert shown.exit_code == 0, shown.output
     assert shown.stdout.count("Alpha: Reproducible Data Pipelines") == 1
+
+
+def test_a_proposal_link_keeps_a_title_with_an_aside_in_parentheses(
+    api: respx.MockRouter,
+) -> None:
+    # ML4SCI (2026-10-23): "Physics-Informed Neural Network Diffusion Equation (PINNDE)"
+    # was read as its file name, GENIE5, and the snapshot then left it out of the count.
+    index = (
+        "<html><body><h1>Summary of GSoC 2026 Proposals</h1><h2>Full List of Proposals</h2><ul>"
+        + "".join(
+            f'<li><a href="/gsoc/2026/proposal_{slug}.html"> {title} </a></li>'
+            for slug, title in [
+                ("GENIE5", "Physics-Informed Neural Network Diffusion Equation (PINNDE)"),
+                ("PREDICT1", "Segmentation Strategies for Coronary Artery Calcium (CAC)"),
+                ("CLAD", "Clad: Enable automatic differentiation of OpenMP programs"),
+            ]
+        )
+        + "</ul></body></html>"
+    )
+    api.get(PAGE).mock(return_value=httpx.Response(200, text=index))
+    data = GSoCToolkit().org_ideas("PostgreSQL", limit=50)
+    assert sorted(i["title"] for i in data["ideas"]) == [
+        "Clad: Enable automatic differentiation of OpenMP programs",
+        "Physics-Informed Neural Network Diffusion Equation (PINNDE)",
+        "Segmentation Strategies for Coronary Artery Calcium (CAC)",
+    ]
+    # A linked proposal is an idea, not a heading that may be one.
+    assert {i["confidence"] for i in data["ideas"]} == {"medium"}
+    assert "Each idea is a link to its own page" in data["note"]
+    # The table shows where each idea's details are instead of four empty columns.
+    shown = CliRunner().invoke(app, ["ideas", "PostgreSQL"], env={"COLUMNS": "160"})
+    assert shown.exit_code == 0, shown.output
+    assert "Details on its page" in shown.stdout
+    assert f"{SITE}/gsoc/2026/proposal_GENIE5.html" in shown.stdout
+    assert "? " not in shown.stdout and "Mentors" not in shown.stdout
+
+
+def test_two_links_on_one_line_are_not_read_as_one_title() -> None:
+    from git_into_gsoc.gsoc.project_ideas import _ONLY_LINK_RE
+
+    assert (
+        _ONLY_LINK_RE.fullmatch("see (https://a.example.org) and (https://b.example.org)") is None
+    )
+    assert (
+        _ONLY_LINK_RE.fullmatch("Text (see https://a.example.org) (https://b.example.org)") is None
+    )
+    found = _ONLY_LINK_RE.fullmatch("- Jet tagging (JT) (https://a.example.org/proposal_JT.html)")
+    assert found is not None and found.group(1) == "Jet tagging (JT)"
