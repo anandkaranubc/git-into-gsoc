@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.1...v0.24.2) (2026-10-23)
+
+
+### Bug Fixes
+
+* **ideas:** read UC OSPO's 2026 projects instead of a contributor's blog report ([#363](https://github.com/anandkaranubc/git-into-gsoc/issues/363)) ([ba58033](https://github.com/anandkaranubc/git-into-gsoc/commit/ba58033c855a0bd3116afbf0f8f722b3f50357e2))
+
+
+### Documentation
+
+* define MCP and CI at first use, list the installer's hosts, and an honest test time ([#361](https://github.com/anandkaranubc/git-into-gsoc/issues/361)) ([f554555](https://github.com/anandkaranubc/git-into-gsoc/commit/f554555eb81ce58479297a58bfd6c5991231efe5))
+
 ## [0.24.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.0...v0.24.1) (2026-10-23)
 
 
