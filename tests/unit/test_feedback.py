@@ -39,3 +39,5 @@ def test_feedback_prints_the_link_without_opening_anything() -> None:
     assert "issues/new?template=feedback.yml" in result.stdout
     bug = runner.invoke(app, ["feedback", "--bug", "--no-open"])
     assert "template=bug_report.yml" in bug.stdout
+    # A second launch audit (2026-10-22): --bug reused the general feedback sentence.
+    assert "so you can report what went wrong" in " ".join(bug.stdout.split())

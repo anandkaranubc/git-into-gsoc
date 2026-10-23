@@ -39,7 +39,7 @@ On Windows PowerShell:
 irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
 ```
 
-You only need an internet connection. If something is missing, the installer offers [uv](https://docs.astral.sh/uv/), a free tool that brings its own Python. It tells you exactly what it changed and connects every AI assistant it finds. [Other ways to install](docs/guide/02-install.md).
+You only need an internet connection. If something is missing, the installer offers [uv](https://docs.astral.sh/uv/), a free tool that brings its own Python. It tells you what it installs and connects every AI assistant it finds. If it installs uv, uv adds its folder to your shell's startup file so the command is found in new terminals. [Other ways to install](docs/guide/02-install.md).
 
 Already use uv or pipx? Install the [package from PyPI](https://pypi.org/project/git-into-gsoc/), the Python Package Index, then connect your assistants:
 
@@ -67,7 +67,7 @@ You get the organizations that fit you, a shortlist, and your next steps with th
 
 ## Use it in your AI assistant
 
-The installer already connects the assistants it finds. To add git-into-gsoc as a plugin that updates with your assistant instead, run one line. You need [uv](https://docs.astral.sh/uv/), a free tool that starts the git-into-gsoc server your assistant talks to. For Claude Code:
+The installer already connects the assistants it finds. To add git-into-gsoc as a plugin that updates with your assistant instead, run one line. You need [uv](https://docs.astral.sh/uv/), a free tool that starts the git-into-gsoc server your assistant talks to. That server uses MCP (the Model Context Protocol), the standard way AI assistants use outside tools. For Claude Code:
 
 ```bash
 claude plugin install git-into-gsoc --marketplace anandkaranubc/git-into-gsoc
@@ -93,7 +93,7 @@ Each step names the command that does it. The [beginner guide](docs/README.md) w
 | Look closer | `git-into-gsoc org "NumFOCUS" --shortlist` | Ideas page, chat channels, and past projects, saved to your shortlist |
 | Pick a repository | `git-into-gsoc repos "NumFOCUS"` | Its repositories ranked by mentor activity and open beginner issues |
 | Check it welcomes you | `git-into-gsoc repo OWNER/NAME --track` | Whether outside contributors' pull requests get merged, and how fast |
-| Get your bearings | `git-into-gsoc orient OWNER/NAME` | Where the code lives, the test command CI runs, and the house rules |
+| Get your bearings | `git-into-gsoc orient OWNER/NAME` | Where the code lives, the test command its CI (automatic checks) runs, and the house rules |
 | Find a free issue | `git-into-gsoc issues --repo OWNER/NAME` | Beginner issues with no linked pull request, assignee, or recent claim |
 | Check before you comment | `git-into-gsoc issue OWNER/NAME#123 --track` | Claims, linked pull requests, and what to read first |
 | Open your pull request | `git-into-gsoc pr-check OWNER/NAME#456` | Your pull request checked against the project's own rules |
