@@ -1036,14 +1036,28 @@ def repo_cmd(
     """Check whether a newcomer's pull request can land here: grade, merge history, setup hints."""
     data = _toolkit().evaluate_repo(full_name)
     if track:
-        _toolkit().progress.track_repo((data["health"] or data)["full_name"])
-        data["tracked"] = True
+        # A person's fork has issues off, so `next` would find nothing new in it.
+        saved = data["fork_of"] if data["health"] is None and data.get("fork_of") else None
+        saved = saved or (data["health"] or data)["full_name"]
+        _toolkit().progress.track_repo(saved)
+        data["tracked"] = saved
     if output == Output.json:
         _emit(data, output)
         return
     data = _markup_safe(data)
-    if data.get("mirror_of"):
-        console.print(Panel.fit(data["recommendation"], title=f"{data['full_name']}: a mirror"))
+    if data["health"] is None:
+        kind = (
+            "a mirror"
+            if data.get("mirror_of")
+            else "a fork"
+            if data.get("fork_of")
+            else "takes no pull requests"
+        )
+        console.print(Panel.fit(data["recommendation"], title=f"{data['full_name']}: {kind}"))
+        if data.get("tracked"):
+            console.print(f"\nSaved {data['tracked']} to your progress.")
+        if data.get("next_step"):
+            console.print(f"\nNext: {data['next_step']}", soft_wrap=True)
         return
     health = data["health"]
     guide = data["contribution_guide"]
