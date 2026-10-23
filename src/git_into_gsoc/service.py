@@ -915,12 +915,16 @@ class GSoCToolkit:
                     "website, documentation or similar. Its GSoC work is described on its ideas "
                     f"page: {ideas_step}"
                     if not shown_code
-                    else f"None of the {len(judged_code)} code "
-                    + ("repository" if len(judged_code) == 1 else "repositories")
-                    + " checked had a pull request from outside the team merged among "
-                    + ("its" if len(judged_code) == 1 else "their")
-                    + f" recent closed pull requests. At {name}, GSoC work may start from its "
-                    f"ideas and mentors rather than from GitHub issues: {ideas_step}"
+                    else (
+                        "The one code repository checked had no pull request from outside the "
+                        "team merged among its recent closed pull requests."
+                        if len(judged_code) == 1
+                        else f"None of the {len(judged_code)} code repositories checked had a "
+                        "pull request from outside the team merged among their recent closed "
+                        "pull requests."
+                    )
+                    + f" At {name}, GSoC work may start from its ideas and mentors rather than "
+                    f"from GitHub issues: {ideas_step}"
                 )
                 if no_outside_code
                 else "",

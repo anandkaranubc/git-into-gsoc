@@ -851,7 +851,7 @@ def test_an_umbrella_whose_own_repositories_hold_no_project_code_points_to_its_i
         lambda owner, repo, **k: [welcome] if repo.endswith(".github.io") else [team],
     )
     found = toolkit.discover_repos("UC OSPO")
-    assert "None of the 1 code repository checked" in found["note"]
+    assert "The one code repository checked had no pull request" in found["note"]
     assert 'git-into-gsoc ideas "UC OSPO"' in found["note"]
     assert "github.io" not in found["next_step"]
     assert found["next_step"].startswith("Start from its ideas")
