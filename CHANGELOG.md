@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.0...v0.24.1) (2026-10-23)
+
+
+### Bug Fixes
+
+* **errors:** a refused GitHub token says which variable or file to fix ([#355](https://github.com/anandkaranubc/git-into-gsoc/issues/355)) ([21d0b81](https://github.com/anandkaranubc/git-into-gsoc/commit/21d0b81465e2224adf0c83b90ec4926c36e7d388))
+* **http:** serve a recent cached copy quietly instead of printing a log line to the terminal ([#360](https://github.com/anandkaranubc/git-into-gsoc/issues/360)) ([a062a2d](https://github.com/anandkaranubc/git-into-gsoc/commit/a062a2d7f1ec21f15f92d3a92f9660b393890ede))
+* **issue:** say what to try for a Discussion link, a bare repository, or a bad number ([#353](https://github.com/anandkaranubc/git-into-gsoc/issues/353)) ([1d8babd](https://github.com/anandkaranubc/git-into-gsoc/commit/1d8babde7d991785422768edfb37f10a74aa6e04))
+* **orient:** never call a labeler or a sign-off check what CI runs ([#357](https://github.com/anandkaranubc/git-into-gsoc/issues/357)) ([8d6c345](https://github.com/anandkaranubc/git-into-gsoc/commit/8d6c345a78210b7139863cb46bd25749123065f9))
+* **pr-check:** count failing commit statuses from CI such as Prow ([#358](https://github.com/anandkaranubc/git-into-gsoc/issues/358)) ([cf3e861](https://github.com/anandkaranubc/git-into-gsoc/commit/cf3e861a6708bd6b1b4914c09a267d2a2cdfd504))
+* **repo:** name the project instead of grading a fork or a repository without pull requests ([#351](https://github.com/anandkaranubc/git-into-gsoc/issues/351)) ([f0aac11](https://github.com/anandkaranubc/git-into-gsoc/commit/f0aac1106acc2a8d9a77ae3b810432b99b234a5a))
+* **repos:** a failed count search or a missing owner no longer stops `repos` ([#356](https://github.com/anandkaranubc/git-into-gsoc/issues/356)) ([a286fdb](https://github.com/anandkaranubc/git-into-gsoc/commit/a286fdb7a7cec5fdc945f687eabb54cf3f25417a))
+* **repos:** point to the ideas page when no listed repository is code that takes outside work ([#354](https://github.com/anandkaranubc/git-into-gsoc/issues/354)) ([240dfd9](https://github.com/anandkaranubc/git-into-gsoc/commit/240dfd9cc30496eb60659aebaae071296b74cb4b))
+
+
+### Documentation
+
+* **guide:** explain trailer, bus factor, CODEOWNERS, and sign-off at first use ([#253](https://github.com/anandkaranubc/git-into-gsoc/issues/253)) ([7b60bbc](https://github.com/anandkaranubc/git-into-gsoc/commit/7b60bbcc18639d3d27129aebac6235c5fd515bb7)), closes [#164](https://github.com/anandkaranubc/git-into-gsoc/issues/164)
+
 ## [0.24.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.23.0...v0.24.0) (2026-10-22)
 
 
