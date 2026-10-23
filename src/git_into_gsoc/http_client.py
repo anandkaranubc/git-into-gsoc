@@ -545,7 +545,15 @@ def _note_github_quota(url: str, response: httpx.Response) -> None:
         reset_at = datetime.fromtimestamp(int(headers["x-ratelimit-reset"]), tz=UTC)
     except (KeyError, ValueError):
         return
-    GITHUB_CORE.update(limit=limit, remaining=remaining, reset_at=reset_at)
+    with _QUOTA_LOCK:
+        # Parallel lookups finish in any order; within one window the lowest count is the
+        # latest, so the warning never reads a few high (a post-merge audit, 2026-10-23).
+        if GITHUB_CORE.get("limit") == limit and GITHUB_CORE.get("reset_at") == reset_at:
+            remaining = min(remaining, int(GITHUB_CORE["remaining"]))
+        GITHUB_CORE.update(limit=limit, remaining=remaining, reset_at=reset_at)
+
+
+_QUOTA_LOCK = threading.Lock()
 
 
 def _is_rate_limited(response: httpx.Response) -> bool:
