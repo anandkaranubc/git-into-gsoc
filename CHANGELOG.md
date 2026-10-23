@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.5](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.4...v0.24.5) (2026-10-23)
+
+
+### Bug Fixes
+
+* **cli:** say how many GitHub requests are left before a tokenless beginner runs out ([#380](https://github.com/anandkaranubc/git-into-gsoc/issues/380)) ([4082836](https://github.com/anandkaranubc/git-into-gsoc/commit/4082836a24db3fb3ab5c6edc75f7c7385f39ec8e))
+* **ideas:** keep proposal titles with an aside, and show where link-only ideas live ([#379](https://github.com/anandkaranubc/git-into-gsoc/issues/379)) ([8eb74c3](https://github.com/anandkaranubc/git-into-gsoc/commit/8eb74c3e43f8f28fbcb7d1cc2b2e13f7080e7504))
+* **issues:** the advice after an empty search links the issue list and the organization's chat ([#378](https://github.com/anandkaranubc/git-into-gsoc/issues/378)) ([a0d5407](https://github.com/anandkaranubc/git-into-gsoc/commit/a0d5407fbbe7a38dcea5bb1d0213608cab68a8fd))
+* **matching:** "CMS" in running text is not a content management system ([#381](https://github.com/anandkaranubc/git-into-gsoc/issues/381)) ([89943c5](https://github.com/anandkaranubc/git-into-gsoc/commit/89943c5137e6e0612eb83194357d598f04517b31))
+
+
+### Documentation
+
+* **privacy:** name the proposal check's GitLab lookups and Google Docs ideas pages ([#376](https://github.com/anandkaranubc/git-into-gsoc/issues/376)) ([d4efe8a](https://github.com/anandkaranubc/git-into-gsoc/commit/d4efe8a9b5c4a2bf36c9a0e1a8488a2514d345ac))
+* **readme:** re-render the start demo after the snapshot refresh ([#374](https://github.com/anandkaranubc/git-into-gsoc/issues/374)) ([da955b1](https://github.com/anandkaranubc/git-into-gsoc/commit/da955b17105e3473eb53cc5fff7adc50e0fd4bce))
+* **site:** the blinking cursor rests for reduced motion, a feedback link in the footer, and "slot history" explained ([#377](https://github.com/anandkaranubc/git-into-gsoc/issues/377)) ([2949a14](https://github.com/anandkaranubc/git-into-gsoc/commit/2949a1494348980b094d5b4b25bd376c6528fef5))
+
 ## [0.24.4](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.3...v0.24.4) (2026-10-23)
 
 
