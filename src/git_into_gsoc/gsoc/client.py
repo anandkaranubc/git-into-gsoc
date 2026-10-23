@@ -50,6 +50,14 @@ _GITHUB_RESERVED = {
     "about",
     "collections",
     "explore",
+    # FLARE's listing gives a search as its source code: github.com/search?q=...
+    "search",
+    "trending",
+    "login",
+    "notifications",
+    "enterprise",
+    "pricing",
+    "codespaces",
 }
 _CHANNEL_KINDS = {"chat", "mailingList", "email", "blog", "irc", "forum"}
 

@@ -172,7 +172,7 @@ class CachedHttpClient:
                     response.read()
                     if _is_rate_limited(response):
                         raise _rate_limit_error(response, url, "Authorization" in (headers or {}))
-                    raise _http_error(response, url)
+                    raise _http_error(response, url, self.settings)
                 tail, seen = b"", 0
                 for chunk in response.iter_bytes():
                     seen += len(chunk)
@@ -363,7 +363,7 @@ class CachedHttpClient:
                 self._sleep(min(2**attempt * 0.5, self.settings.http_max_retry_wait_seconds))
                 continue
 
-            raise _http_error(response, url)
+            raise _http_error(response, url, self.settings)
 
         raise HttpError(f"Request failed: {last_error}", url=url)  # pragma: no cover
 
@@ -574,7 +574,33 @@ def _rate_limit_error(response: httpx.Response, url: str, authenticated: bool) -
     )
 
 
-def _http_error(response: httpx.Response, url: str) -> HttpError:
+def _refused_token_hint(url: str, settings: Settings | None) -> str:
+    """How to fix a token a server refused, by where the token came from."""
+    host = _host(url)
+    if host != "github.com" and not host.endswith(".github.com"):
+        return f"{host} asked for a sign-in this tool does not have. Open the page in a browser."
+    source = settings.github_token_source() if settings else None
+    if source == "gh auth token":
+        return (
+            "GitHub refused the token from `gh auth login`; it may have expired or been "
+            "revoked. Run `gh auth login` again."
+        )
+    if source and source.startswith("$"):
+        # `gh auth login` alone does not help here: this variable is read first.
+        return (
+            f"GitHub refused the token in {source[1:]}; it may have expired or been revoked. "
+            "Replace it with a new token, or remove the variable from your environment and "
+            "your shell profile so the tool uses `gh auth login` instead."
+        )
+    if source == ".env file":
+        return (
+            "GitHub refused the token in the .env file in this folder; it may have expired or "
+            "been revoked. Replace it, or delete that line so the tool uses `gh auth login`."
+        )
+    return "Your GitHub token is invalid or expired. Run `gh auth login` or reset GITHUB_TOKEN."
+
+
+def _http_error(response: httpx.Response, url: str, settings: Settings | None = None) -> HttpError:
     detail = ""
     with contextlib.suppress(ValueError):
         body = response.json()
@@ -588,7 +614,7 @@ def _http_error(response: httpx.Response, url: str) -> HttpError:
             message,
             status_code=401,
             url=url,
-            hint="Your GitHub token is invalid or expired. Run `gh auth login` or reset GITHUB_TOKEN.",
+            hint=_refused_token_hint(url, settings),
         )
     if response.status_code == 422:
         reasons = []

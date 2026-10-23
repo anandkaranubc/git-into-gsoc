@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+import httpx
+import respx
+
+from conftest import load_fixture
+from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.github.prcheck import check_pull_request
 
 TEMPLATE = "## Description\n\n## Checklist\n- [ ] Tests added\n- [ ] Docs updated\n"
@@ -194,3 +199,72 @@ def test_a_page_about_testing_is_not_a_test_change() -> None:
     findings = {f["id"]: f for f in report["findings"]}
     assert "tests" not in findings
     assert ".." not in findings["checklist"]["detail"]
+
+
+def test_failing_commit_statuses_are_failing_checks() -> None:
+    # A live check of 0.24.0: KubeVirt's Prow reports as commit statuses, and pr-check
+    # said "Checks are passing" and "No blockers" with two Prow jobs failing.
+    api = "https://api.github.com/repos/kubevirt/kubevirt/commits/abc123"
+    with respx.mock:
+        respx.get(f"{api}/check-runs").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "check_runs": [
+                        {"name": "check-vep", "status": "completed", "conclusion": "success"}
+                    ]
+                },
+            )
+        )
+        respx.get(f"{api}/status").mock(
+            return_value=httpx.Response(200, json=load_fixture("commit_status_prow.json"))
+        )
+        checks = GitHubClient().check_runs("kubevirt", "kubevirt", "abc123")
+    by_name = {c["name"]: c for c in checks}
+    assert len(checks) == 7 and by_name["check-vep"]["conclusion"] == "success"
+    assert by_name["pull-kubevirt-fuzz"]["conclusion"] == "failure"
+    assert by_name["tide"]["status"] == "pending" and by_name["tide"]["conclusion"] is None
+    assert by_name["pull-kubevirt-fuzz"]["url"].startswith("https://prow.ci.kubevirt.io/view/")
+
+    report = check_pull_request(_pull(), [], [], checks, rules=_rules())
+    failing = next(f for f in report["findings"] if f["id"] == "checks")
+    assert failing["status"] == "fail"
+    assert failing["title"] == (
+        "Failing checks: pull-kubevirt-check-unassigned-tests, pull-kubevirt-fuzz"
+    )
+    assert (
+        "Logs: pull-kubevirt-check-unassigned-tests: https://prow.ci.kubevirt.io/"
+        in (failing["detail"])
+    )
+
+
+def test_commit_statuses_are_cleaned_and_do_not_repeat_check_runs() -> None:
+    api = "https://api.github.com/repos/acme/lib/commits/abc123"
+    statuses = [
+        {"context": "ci / test", "state": "failure"},  # also a check run: the run wins
+        {
+            "context": "build<!-- hidden note -->\u200b",
+            "state": "error",
+            "target_url": "https://ci.example/1",
+        },
+        {"context": "", "state": "failure"},
+    ]
+    with respx.mock:
+        respx.get(f"{api}/check-runs").mock(
+            return_value=httpx.Response(
+                200,
+                json={
+                    "check_runs": [
+                        {"name": "ci / test", "status": "completed", "conclusion": "success"}
+                    ]
+                },
+            )
+        )
+        respx.get(f"{api}/status").mock(
+            return_value=httpx.Response(200, json={"statuses": statuses})
+        )
+        checks = GitHubClient().check_runs("acme", "lib", "abc123")
+    assert [(c["name"], c["conclusion"]) for c in checks] == [
+        ("ci / test", "success"),
+        ("build", "failure"),
+    ]

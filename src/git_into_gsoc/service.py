@@ -865,9 +865,15 @@ class GSoCToolkit:
         cutoff = datetime.now(UTC) - timedelta(days=365)
         person = self._saved_person(technologies=[language] if language else None)
         leads: list[RepoLead] = []
+        gone: list[str] = []  # listed GitHub owners that no longer exist (renamed or removed)
+        uncounted: list[str] = []  # owners whose beginner-label search GitHub would not run
         for owner, via in [*((o, None) for o in owners), *linked_owners]:
             try:
                 listed = self.github.list_owner_repos(owner, pages=2)
+            except NotFoundError:
+                if via is None:
+                    gone.append(owner)
+                continue
             except GigError:
                 if via is None:
                     raise
@@ -886,7 +892,12 @@ class GSoCToolkit:
                 key=lambda r: -int(r.get("stargazers_count") or 0),
             )
             top_starred = str(ranked_by_stars[0].get("full_name")) if ranked_by_stars else ""
-            counts = self.github.beginner_issue_counts(owner) if repos else {}
+            try:
+                counts = self.github.beginner_issue_counts(owner) if repos else {}
+            except GigError:
+                # One failed search ("cannot be searched") should not sink the list.
+                counts = {}
+                uncounted.append(owner)
             mentioned = mentioned_repos(ideas, [owner], repos) if ideas else set()
             for repo in repos:
                 full = str(repo.get("full_name"))
@@ -918,6 +929,31 @@ class GSoCToolkit:
                 )
         searched = [*owners, *(o for o, _ in linked_owners)]
         leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
+        alive = [o for o in owners if o not in gone]
+        if gone and gsoc_org is None:
+            # A login typed by hand, not an organization's listing.
+            gone_line = f"GitHub has no user or organization named {gone[0]}."
+        elif gone:
+            gone_line = (
+                f"{gsoc_org.name if gsoc_org else gone[0]} lists "
+                + ", ".join(f"github.com/{o}" for o in gone)
+                + ", which GitHub cannot find (renamed or removed)"
+                + (f"; its other GitHub owners are {', '.join(alive)}." if alive else ".")
+            )
+        else:
+            gone_line = ""
+        # Checked after the repositories its ideas page names are added: a dead owner
+        # with GitHub projects on its ideas page still has something to show.
+        if gone and not leads:
+            raise NotFoundError(
+                gone_line
+                + (" There is nothing on GitHub to read for it here." if gsoc_org else ""),
+                hint=f"Open its ideas page to find its repositories: {ideas_url}"
+                if ideas_url
+                else "Check the organization's page on the official GSoC site for its code."
+                if gsoc_org
+                else "Check the spelling, or give a GSoC organization's name instead.",
+            )
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
         # Until the shown top is all checked (a quiet repository that drops lets another
         # rise), within a request budget. Checked ones stay above unchecked ones, so an
@@ -1025,6 +1061,11 @@ class GSoCToolkit:
                     if main_code
                     else "",
                     quiet_note,
+                    gone_line,
+                    f"Beginner-labelled issue counts are unavailable for {', '.join(uncounted)}: "
+                    "GitHub would not run that search, so they add no points here."
+                    if uncounted
+                    else "",
                 )
                 if part
             ),
