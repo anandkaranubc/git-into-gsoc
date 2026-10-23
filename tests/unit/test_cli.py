@@ -411,3 +411,42 @@ def test_ideas_says_when_it_shows_only_some_and_explains_only_marks_it_uses(
     every = runner.invoke(app, ["ideas", "UC OSPO"], env={"COLUMNS": "200"})
     assert "Showing" not in every.stdout
     assert "? marks a block with no labelled fields" in every.stdout
+
+
+def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # A launch audit (2026-10-23): this repository's own free good first issue listed two
+    # closed PRs for other issues, which only named it, as if they were attempts at it.
+    from git_into_gsoc import cli
+
+    def pr(number: int, state: str, **extra: object) -> dict[str, object]:
+        return {"number": number, "state": state, "author": "dev", "url": None, **extra}
+
+    class Fake:
+        def issue_status(self, ref, number):  # type: ignore[no-untyped-def]
+            return {
+                "repo": "acme/lib",
+                "number": 7,
+                "title": "Spell out a term",
+                "url": "https://github.com/acme/lib/issues/7",
+                "availability": "available",
+                "reason": "Open, unassigned",
+                "assessment": {
+                    "maintainer_engaged": False,
+                    "claims": [],
+                    "caveats": [],
+                    "linked_prs": [
+                        pr(5, "closed"),
+                        pr(6, "merged", fixes=True),
+                        pr(8, "open"),
+                    ],
+                },
+                "before_you_comment": [],
+            }
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    shown = runner.invoke(app, ["issue", "acme/lib#7"], env={"COLUMNS": "200"})
+    assert shown.exit_code == 0, shown.output
+    lines = {line.strip(" │") for line in shown.stdout.splitlines()}
+    assert "PR #5 (closed) by @dev, mentions this issue" in lines
+    assert "PR #6 (merged) by @dev" in lines  # it says it fixes this one
+    assert "PR #8 (open) by @dev" in lines  # an open PR may be the work itself

@@ -1417,6 +1417,9 @@ def issue_cmd(
             else "PR " + pull_ref(pr["number"], pr.get("url"), str(data["repo"]))
         )
         via = ", linked in a comment" if pr.get("via_comment") else ""
+        if not via and not pr.get("fixes") and pr["state"] in {"closed", "merged"}:
+            # Closed PRs for other issues that named this one read as attempts at it.
+            via = ", mentions this issue"
         lines.append(f"{ref} ({pr['state']}) by @{pr['author']}{via}")
     for claim in assessment["claims"][:5]:
         granted = ", approved by a maintainer" if claim["granted"] else ""

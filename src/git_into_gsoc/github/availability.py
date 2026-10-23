@@ -577,8 +577,19 @@ def assess_issue(
     # often a follow-up to it ("Follow-up on PR #1695", opened 26 minutes after the merge).
     before = {id(linked[k]) for k in earlier if k in linked}
     merged_prs = [p for p in prs if p.state == "merged" and id(p) not in before]
-    if any(not p.via_comment and not p.fixes for p in merged_prs):
-        caveats.append("A merged PR references this issue; it may already be partly fixed")
+    mentions = [p for p in merged_prs if not p.via_comment and not p.fixes]
+    if mentions:
+        # Named, and a reason to read it rather than a verdict: this repository's own free
+        # good first issue said "it may already be partly fixed" because a merged PR said
+        # it was left for newcomers (a launch audit, 2026-10-23).
+        named = [_pull_ref(p, repo) for p in mentions[:3] if p.number]
+        if not named:
+            what = "A merged PR mentions"
+        elif len(named) == 1:
+            what = f"Merged PR {named[0]} mentions"
+        else:
+            what = f"Merged PRs {', '.join(named)} mention"
+        caveats.append(f"{what} this issue; read it to see whether it already fixes part of it")
     # A comment can link a merged pull request as the fix or as an example to copy.
     for p in [p for p in merged_prs if p.via_comment][:2]:
         caveats.append(
