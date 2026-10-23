@@ -113,7 +113,9 @@ def test_a_refusal_from_another_host_does_not_blame_the_github_token() -> None:
     from git_into_gsoc.http_client import _refused_token_hint
 
     hint = _refused_token_hint("https://gitlab.gnome.org/api/v4/projects/1", None)
-    assert "GitHub" not in hint and "gitlab.gnome.org" in hint
+    assert hint == (
+        "gitlab.gnome.org asked for a sign-in this tool does not have. Open the page in a browser."
+    )
     assert "GitHub" not in _refused_token_hint("https://notgithub.com/x", None)
 
 
