@@ -3,6 +3,7 @@ templates, index pages, Google Docs, and the sentences that state an AI policy."
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -576,6 +577,47 @@ def test_a_wikis_own_pages_are_never_followed() -> None:
     assert not _other_page({"url": here + "/Nominatim", "title": "Nominatim"}, here)
 
 
+def test_a_page_with_no_year_is_for_the_newest_year_it_links() -> None:
+    # LabLua (2026-10-22): its ideas page is its repository's front page, which links
+    # each year's ideas since 2014. With room for 30 pages, `ideas` read every year's.
+    from git_into_gsoc.service import _newest_year, _other_page
+
+    here = "https://github.com/labluapucrio/gsoc"
+    pages = [
+        {"url": f"{here}/blob/main/{year}/ideas.md", "title": "ideas"}
+        for year in (2018, 2025, 2026)
+    ]
+    game = {"url": "https://example.org/2048-game/", "title": "2048"}
+    assert _newest_year([*pages, game]) == "2026"  # 2048 is no GSoC year
+    newest = _newest_year(pages)
+    kept = [p["url"] for p in pages if not _other_page(p, here, newest)]
+    assert kept == [f"{here}/blob/main/2026/ideas.md"]
+    assert not _other_page({"url": f"{here}/blob/main/apply.md", "title": "x"}, here, newest)
+
+
+def test_next_years_timeline_does_not_make_this_years_ideas_old() -> None:
+    # From November a year-less page may link next year's timeline beside this year's
+    # ideas; only a link to next year's ideas or projects makes them the newest.
+    from git_into_gsoc.service import _newest_year
+
+    year = datetime.now(UTC).year
+    ideas = {"url": f"https://example.org/gsoc/{year}/ideas.md", "title": "Ideas"}
+    timeline = {"url": "https://example.org/timeline", "title": f"GSoC {year + 1} timeline"}
+    assert _newest_year([ideas, timeline]) == str(year)
+    draft = {"url": f"https://example.org/gsoc/{year + 1}/", "title": "Draft project ideas"}
+    assert _newest_year([ideas, timeline, draft]) == str(year + 1)
+
+
+def test_a_news_post_about_the_projects_is_still_a_page_to_open() -> None:
+    lines = html_to_lines(
+        '<h1>Projects</h1><p><a href="https://x.org/news/gsoc-2026-projects/">This year</a></p>'
+        '<p><a href="https://x.org/news/2026-cohort/">Our cohort</a></p>',
+        base_url="https://x.org/",
+    )
+    doc = extract_ideas(lines, source_url="https://x.org/")
+    assert [p["url"] for p in doc.sub_pages] == ["https://x.org/news/gsoc-2026-projects/"]
+
+
 def test_fit_shows_only_with_a_profile(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     from typer.testing import CliRunner
 
@@ -784,6 +826,18 @@ def test_an_ai_rule_that_discourages_is_quoted_first() -> None:
     assert ai_policy_sentences(text) == [
         "We discourage the use of AI tools in communications and contributions.",
         "However, if you do use any AI or LLMs, you must disclose their use in your PRs.",
+    ]
+
+
+def test_a_widely_accepted_saying_about_ai_is_no_rule() -> None:
+    # UC OSPO's AIDRIN page (2026-10-22) was quoted as the AI policy. Ste||ar's rule is one.
+    text = (
+        "Garbage In, Garbage Out (GIGO) is a widely accepted quote in computer science across "
+        "various domains, including Artificial Intelligence (AI). Raw AI output that you "
+        "cannot understand and explain will not be accepted."
+    )
+    assert ai_policy_sentences(text) == [
+        "Raw AI output that you cannot understand and explain will not be accepted."
     ]
 
 
@@ -1026,3 +1080,43 @@ def test_hours_outside_the_three_sizes_are_kept() -> None:
     assert normalize_size("40 hours per week") == (None, None)
     assert normalize_size("2.8 MB") == (None, None)
     assert normalize_size("within 24 hours") == (None, None)
+
+
+def test_posts_and_reports_are_neither_ideas_nor_pages_to_open() -> None:
+    # UC OSPO (2026-10-22) lists news posts and contributors' reports above its projects.
+    prose = "This summer's work, told in detail, with what went well and what did not. " * 4
+    lines = html_to_lines(
+        '<h1>News</h1><h2><a href="https://x.org/post/2026-cohort/">Introducing the Cohort'
+        f'</a></h2><p>{prose}</p><p><a href="https://x.org/blog/2026/gsoc-ideas/">Our ideas'
+        '</a></p><h1>Student pages</h1><h2><a href="https://x.org/report/osre26/alpha/'
+        f'2026-09-04-someone/">Final Report: Alpha</a></h2><p>{prose}</p>'
+        '<h1>2026 Projects</h1><h2><a href="https://x.org/project/osre26/alpha/">Alpha</a></h2>'
+        f'<p>{prose}</p><p><a href="https://x.org/author/mentor-one/">Mentor One</a></p>'
+        '<h2><a href="https://x.org/project/osre26/beta/">Beta</a></h2>'
+        f'<p>{prose}</p><p><a href="https://x.org/project/osre26/beta/">Beta</a></p>'
+        '<h2><a href="https://x.org/project/osre26/gamma/">Gamma</a></h2>'
+        f'<p>{prose}</p><h2><a href="https://x.org/project/osre26/delta/">Delta</a></h2>'
+        f"<p>{prose}</p>",
+        base_url="https://x.org/osre26/",
+    )
+    doc = extract_ideas(lines, source_url="https://x.org/osre26/")
+    assert doc.layout == "index"
+    assert [i.title for i in doc.fallback_ideas] == ["Alpha", "Beta", "Gamma", "Delta"]
+    # A post about the ideas is still a page to open.
+    pages = [p["url"] for p in doc.sub_pages]
+    assert pages == ["https://x.org/blog/2026/gsoc-ideas/", "https://x.org/project/osre26/beta/"]
+
+
+def test_the_parts_of_one_idea_are_not_ideas() -> None:
+    # UC OSPO's MedJEPA page (2026-10-22) puts its fields under another heading, beside
+    # "Project Description", "Project Objectives" and "Project Deliverables".
+    lines = html_to_lines(
+        "<h1>MedJEPA</h1><h3>Project Description</h3><p>Medical images are costly to label."
+        "</p><h3>Project Objectives</h3><p>Learn from unlabelled scans.</p>"
+        "<h3>Project Deliverables</h3><p>A library and its benchmarks.</p>"
+        "<h3>Imaging toolkit</h3><ul><li><strong>Skills</strong>: Python, PyTorch</li>"
+        "<li><strong>Difficulty</strong>: Hard</li><li><strong>Size</strong>: Large (350 hours)"
+        "</li></ul>"
+    )
+    doc = extract_ideas(lines, source_url="https://x")
+    assert [i.title for i in doc.ideas] == ["Imaging toolkit"]

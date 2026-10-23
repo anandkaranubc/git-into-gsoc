@@ -2878,11 +2878,12 @@ class GSoCToolkit:
             # behind links to CERN, arXiv and the GSoC rules.
             here = doc.fetched_url or url or ""
             home = urlparse(here).netloc
+            newest = _newest_year(doc.sub_pages)
             pages = sorted(
                 (
                     p
                     for p in doc.sub_pages
-                    if _looks_like_ideas_page(p) and not _other_page(p, here)
+                    if _looks_like_ideas_page(p) and not _other_page(p, here, newest)
                 ),
                 key=lambda p: urlparse(p["url"]).netloc != home,
             )
@@ -2901,9 +2902,15 @@ class GSoCToolkit:
                         child, page_url=page["url"], section=page["title"]
                     )
                 # A page that lists ideas already read under their own project (an
-                # institution's page on ML4SCI) adds nothing new.
-                known = {i.links[0] for i in doc.ideas if i.links}
-                child.ideas = [i for i in child.ideas if not (i.links and i.links[0] in known)]
+                # institution's page on ML4SCI) adds nothing new. The title counts too:
+                # on UC OSPO every idea's first link is its mentor's page, so a mentor's
+                # second project (HistoMoE after Agent4Target) was dropped.
+                known = {(i.title.lower(), i.links[0]) for i in doc.ideas if i.links}
+                child.ideas = [
+                    i
+                    for i in child.ideas
+                    if not (i.links and (i.title.lower(), i.links[0]) in known)
+                ]
                 if not child.ideas:
                     continue
                 for idea in child.ideas:
@@ -3345,8 +3352,8 @@ def _quote_label(label: str) -> str:
     return f'"{label}"' if " " in label else label
 
 
-# Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18.
-MAX_FOLLOWED_PAGES = 20
+# Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18, UC OSPO 22.
+MAX_FOLLOWED_PAGES = 30
 _YEAR_RE = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
 
 
@@ -3357,13 +3364,37 @@ _WIKI_NAMESPACE_RE = re.compile(
 )
 
 
-def _other_page(page: dict[str, str], here: str) -> bool:
-    """The ideas page itself, one for another year (a site menu links them all), or a
-    wiki's own template, category, or user page."""
+def _newest_year(pages: list[dict[str, str]]) -> str | None:
+    """The newest GSoC year that links name. LabLua's ideas page is its repository's front
+    page: it names no year, and links every year's folder and ideas since 2014.
+
+    Next year counts only from a link to its ideas or projects: from November, a "GSoC
+    2027 timeline" link would otherwise make every 2026 page another year's.
+    """
+    this_year = datetime.now(UTC).year
+    named: list[int] = []
+    for page in pages:
+        text = f"{page.get('url', '')} {page.get('title', '')}"
+        about_ideas = bool(re.search(r"idea|project", text, re.I))
+        for year in map(int, _YEAR_RE.findall(text)):
+            # GSoC began in 2005; "/2048-game/" is no year.
+            if 2005 <= year <= this_year or (year == this_year + 1 and about_ideas):
+                named.append(year)
+    return str(max(named)) if named else None
+
+
+def _other_page(page: dict[str, str], here: str, newest: str | None = None) -> bool:
+    """The ideas page itself (UC OSPO links its own "#projects"), one for another year
+    (a site menu links them all), or a wiki's own template, category, or user page.
+
+    A page whose address names no year is taken to be for `newest`, the newest year
+    its links name.
+    """
     url = page.get("url", "")
-    if url.rstrip("/") == here.rstrip("/") or _WIKI_NAMESPACE_RE.search(url):
+    itself = url.split("#", 1)[0].rstrip("/") == here.split("#", 1)[0].rstrip("/")
+    if itself or _WIKI_NAMESPACE_RE.search(url):
         return True
-    years = set(_YEAR_RE.findall(here))
+    years = set(_YEAR_RE.findall(here)) or ({newest} if newest else set())
     named = set(_YEAR_RE.findall(f"{url} {page.get('title', '')}"))
     return bool(years and named and not named & years)
 

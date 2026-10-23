@@ -13,8 +13,10 @@ from typing import Any
 import httpx
 import pytest
 import respx
+from typer.testing import CliRunner
 
 from conftest import load_fixture
+from git_into_gsoc.cli import app
 from git_into_gsoc.gsoc.project_ideas import html_to_lines
 from git_into_gsoc.service import GSoCToolkit
 
@@ -135,3 +137,41 @@ def test_an_index_that_lists_one_link_per_proposal_uses_the_links(api: respx.Moc
         "Clad: Enable automatic differentiation of OpenMP programs",
     ]
     assert not proposal.called
+
+
+def test_a_page_of_news_and_reports_reads_its_projects(api: respx.MockRouter) -> None:
+    # UC OSPO (2026-10-22): news posts and contributors' reports sit above the projects.
+    # `ideas` followed one report and listed its headings ("Thank You") as ideas, and
+    # dropped a mentor's second project, since both pages first link the mentor's page.
+    page = api.get(PAGE).mock(return_value=httpx.Response(200, text=_read("osre_index.html")))
+    for slug in ("alpha", "beta"):
+        api.get(f"{SITE}/project/osre26/lab/{slug}/").mock(
+            return_value=httpx.Response(200, text=_read(f"osre_project_{slug}.html"))
+        )
+    api.get(url__startswith=f"{SITE}/project/").mock(return_value=httpx.Response(404))
+    posts = api.get(url__regex=rf"{SITE}/(?:post|report|author|category)/.*").mock(
+        return_value=httpx.Response(
+            200, text="<html><body><h2>Thank You</h2><h2>What This Taught Me</h2></body></html>"
+        )
+    )
+
+    data = GSoCToolkit().org_ideas("PostgreSQL", limit=50)
+
+    ideas = {i["title"]: i for i in data["ideas"]}
+    assert sorted(ideas) == [
+        "Alpha: Reproducible Data Pipelines",
+        "Beta: Faster Spatial Statistics",
+    ]
+    assert ideas["Beta: Faster Spatial Statistics"]["size"] == "medium"
+    assert not posts.called
+    assert page.call_count == 1  # its own "#projects" is not another page
+    listed = [p["url"] for p in GSoCToolkit().org_ideas("PostgreSQL", follow=False)["sub_pages"]]
+    assert f"{SITE}/project/osre26/lab/beta/" in listed
+    posts_listed = [
+        u for u in listed for part in ("/post/", "/report/", "/author/", "/category/") if part in u
+    ]
+    assert posts_listed == []
+    # A project page with one idea is named once, not "Alpha: ... / Alpha: ...".
+    shown = CliRunner().invoke(app, ["ideas", "PostgreSQL"], env={"COLUMNS": "200"})
+    assert shown.exit_code == 0, shown.output
+    assert shown.stdout.count("Alpha: Reproducible Data Pipelines") == 1

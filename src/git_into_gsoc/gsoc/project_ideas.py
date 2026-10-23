@@ -180,6 +180,10 @@ _NON_IDEA_HEADINGS = (
     "how do we judge",
     "navigation menu",
     "navigation",
+    # Parts of one idea: UC OSPO's MedJEPA page has them beside its fields' heading.
+    "project description",
+    "project objective",
+    "project deliverable",
 )
 _COMMENT_RE = re.compile(r"^\s*(?:\[//\]:\s*#|#(?!#*\s)|<!--)")
 _BULLET_RE = re.compile(r"^\s*(?:[-*+•]|\d+[.)])\s+")
@@ -187,7 +191,9 @@ _AI_RE = re.compile(r"\b(ai|llm|llms|chatgpt|copilot|gemini|claude|language mode
 _POLICY_RE = re.compile(
     r"\b(propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
-    r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|accept\w*|"
+    r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|"
+    # UC OSPO's AIDRIN page: GIGO "is a widely accepted quote ... including AI".
+    r"(?<!widely )(?<!generally )(?<!commonly )accept\w*|"
     # MetaBrainz: "We discourage the use of AI tools in communications and contributions."
     r"discourag\w*|encourag\w*|avoid\w*|refrain\w*|not (?:use|rely))\b",
     re.I,
@@ -954,6 +960,23 @@ _GENERIC_LINK_TEXT = re.compile(
 _ONLY_LINK_RE = re.compile(r"[-*\s]*([^()\n]{2,160}?)\s*\((https?://[^)\s]+)\)\s*")
 # Pages about the program itself, never one organization's ideas.
 _PROGRAM_SITES = ("summerofcode.withgoogle.com", "developers.google.com/open-source/gsoc")
+# What people wrote about the projects, not the ideas: UC OSPO's 2026 page lists news
+# posts, contributors' reports and their authors' pages above its 22 projects. They took
+# the 40 links kept, and `ideas` read one report's headings ("Thank You") as ideas.
+_POST_PATH_RE = re.compile(r"/(?:posts?|blogs?|news|reports?|authors?|tags?|categor(?:y|ies))/")
+
+
+def _is_post(url: str) -> bool:
+    """A blog post, report, or author, tag or category page. One about ideas or projects
+    ("/news/gsoc-2026-projects/") still counts."""
+    low = url.lower()
+    return bool(_POST_PATH_RE.search(urlparse(low).path)) and not re.search(r"idea|project", low)
+
+
+def _links_to_post(heading: str) -> bool:
+    """A heading that is a link to a post ("Final Report: ... (https://.../report/...)")."""
+    urls = _URL_RE.findall(heading)
+    return bool(urls) and _is_post(urls[0])
 
 
 def _lead_name(line: str) -> str:
@@ -994,6 +1017,8 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
             cleaned = url.rstrip(".,;:)")
             if cleaned in seen or any(site in cleaned for site in _PROGRAM_SITES):
                 continue
+            if _is_post(cleaned):
+                continue
             if re.search(r"github\.com/[^/]+/[^/]+/edit/", cleaned):
                 continue  # "Improve this page" links to the page's own source
             seen.add(cleaned)
@@ -1027,11 +1052,12 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
         # "Mentors", other years' pages), not its projects. A page with no headings
         # at all keeps them: there the links are the content.
         pages = [page for page in pages if page["section"]]
-    # "page.html#contact" is a part of a page, not another page.
+    # "page.html#contact" is a part of a page, not another page, and "formentors/" is
+    # "formentors" (UC OSPO links both).
     kept: list[dict[str, str]] = []
     bases: set[str] = set()
     for page in pages:
-        base = page["url"].split("#", 1)[0]
+        base = page["url"].split("#", 1)[0].rstrip("/")
         if base in bases:
             continue
         bases.add(base)
@@ -1122,7 +1148,7 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         ideas = [
             _parse_block(t, b, section=s, source_url=source_url)
             for t, b, s in blocks
-            if not _is_non_idea(t)
+            if not _is_non_idea(t) and not _links_to_post(t)
         ]
         yield_ = sum(_labelled(i) for i in ideas)
         # When as many blocks carry as many fields, the deeper level wins: LibreOffice's

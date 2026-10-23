@@ -14,7 +14,7 @@ from collections import Counter
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import quote, urlparse
 
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
@@ -174,7 +174,8 @@ def proposal_folders(
                     "repo": full,
                     "path": folder,
                     "files": files,
-                    "url": f"https://github.com/{full}/tree/HEAD/{folder}",
+                    # "UC OSPO" has a space, which ended the link in a terminal.
+                    "url": f"https://github.com/{full}/tree/HEAD/{quote(folder)}",
                 }
             )
     found.sort(key=lambda f: (-f["files"], f["repo"], f["path"]))
