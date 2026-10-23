@@ -20,7 +20,7 @@ Each service sees a normal web request from your computer: your IP address and w
 
 ## Installing and updating
 
-The one-line installer reads the latest release from api.github.com and github.com, and downloads the package from pypi.org, where it also checks who published it. If you agree to install uv, it downloads uv from astral.sh. The plugins and the one-click install buttons start the assistant server through uv, which asks pypi.org for the newest release each time it starts. Some assistant apps also show the server's icon, which they load from the project's website, anandkaranubc.github.io. None of these requests carry your GitHub token or anything about you beyond a normal web request.
+The one-line install command downloads the installer script from raw.githubusercontent.com. The installer reads the latest release from api.github.com and github.com, and downloads the package from pypi.org, where it also checks who published it. If you agree to install uv, it downloads uv from astral.sh. The plugins and the one-click install buttons start the assistant server through uv, which asks pypi.org for the newest release each time it starts. Some assistant apps also show the server's icon, which they load from the project's website, anandkaranubc.github.io. None of these requests carry your GitHub token or anything about you beyond a normal web request.
 
 ## Your GitHub token
 
