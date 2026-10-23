@@ -957,7 +957,11 @@ _GENERIC_LINK_TEXT = re.compile(
     r"(?:google summer of code|gsoc)(?: 20\d\d)?(?: (?:project )?ideas?(?: page| list)?)?)$",
     re.I,
 )
-_ONLY_LINK_RE = re.compile(r"[-*\s]*([^()\n]{2,160}?)\s*\((https?://[^)\s]+)\)\s*")
+# The text may hold a short aside in parentheses: ML4SCI's "Physics-Informed Neural Network
+# Diffusion Equation (PINNDE)" was read as its file name, GENIE5.
+_ONLY_LINK_RE = re.compile(
+    r"[-*\s]*((?:[^()\n]|\((?!https?://)[^()\n]{1,40}\)){2,160}?)\s*\((https?://[^)\s]+)\)\s*"
+)
 # Pages about the program itself, never one organization's ideas.
 _PROGRAM_SITES = ("summerofcode.withgoogle.com", "developers.google.com/open-source/gsoc")
 # What people wrote about the projects, not the ideas: UC OSPO's 2026 page lists news
@@ -1089,8 +1093,18 @@ def ideas_from_link_list(doc: IdeasDocument, *, page_url: str, section: str) -> 
             title = _slug_name(page["url"])  # the page's own name, such as "BOA"
         if not title:
             continue
+        # A proposal the page links to is an idea, not a heading that may be one, so it
+        # is not marked "?" (every row of ML4SCI's table was). Liquid Galaxy's one link,
+        # "gsoc 2026 project ideas", is still a maybe.
+        named = len(title.split()) >= 3 and not _GENERIC_LINK_TEXT.match(title)
         ideas.append(
-            ProjectIdea(title=title, section=section, links=[page["url"]], source_url=page_url)
+            ProjectIdea(
+                title=title,
+                section=section,
+                links=[page["url"]],
+                source_url=page_url,
+                confidence="medium" if named else "low",
+            )
         )
     return ideas
 

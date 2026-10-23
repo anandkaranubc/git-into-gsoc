@@ -889,13 +889,20 @@ def ideas_cmd(
                 "closer. It orders the list and is not a chance of being picked."
             )
         table = Table(title="Project ideas", caption=". ".join(notes) or None)
+        # ML4SCI lists each idea as a link to its own page: four empty columns told a
+        # newcomer nothing, and the page that has the details was not shown.
+        fields = ("hours", "size", "size_raw", "difficulty", "mentors", "skills")
+        links_only = not any(idea.get(key) for idea in data["ideas"] for key in fields)
         if show_fit:
             table.add_column("Fit", justify="right")
         table.add_column("Idea", overflow="fold")
-        table.add_column("Size", justify="right")
-        table.add_column("Level")
-        table.add_column("Mentors", overflow="fold", max_width=22)
-        table.add_column("Skills", overflow="fold", max_width=26)
+        if links_only:
+            table.add_column("Details on its page", overflow="fold")
+        else:
+            table.add_column("Size", justify="right")
+            table.add_column("Level")
+            table.add_column("Mentors", overflow="fold", max_width=22)
+            table.add_column("Skills", overflow="fold", max_width=26)
         for idea in data["ideas"]:
             title = escape(idea["title"])
             # A project page with one idea is named after it ("CauST / CauST" on UC OSPO).
@@ -913,6 +920,9 @@ def ideas_cmd(
             if idea.get("too_big_for_your_hours"):
                 hours = f"[yellow]{hours} too big[/yellow]"
             fit = [f"{idea['match_score']:.0f}"] if show_fit else []
+            if links_only:
+                table.add_row(*fit, title, escape((idea.get("links") or [""])[0]))
+                continue
             table.add_row(
                 *fit,
                 title,
