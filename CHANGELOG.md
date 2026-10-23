@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.6](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.5...v0.24.6) (2026-10-23)
+
+
+### Bug Fixes
+
+* **cli:** the requests-left count never reads high when lookups finish out of order ([#387](https://github.com/anandkaranubc/git-into-gsoc/issues/387)) ([e101dd7](https://github.com/anandkaranubc/git-into-gsoc/commit/e101dd7a036278da68e0341a5c49e8d3530ecf78))
+* **issue:** a closed PR that says it fixes the issue is an attempt, not a mention ([#384](https://github.com/anandkaranubc/git-into-gsoc/issues/384)) ([9478bd1](https://github.com/anandkaranubc/git-into-gsoc/commit/9478bd175651701ef6aecd3eeac18495a40be5f6))
+* **matching:** "cms" typed in a phrase still means content management ([#385](https://github.com/anandkaranubc/git-into-gsoc/issues/385)) ([21cd378](https://github.com/anandkaranubc/git-into-gsoc/commit/21cd3788b6c6a59ce7ab0e442f853380cc7a9681))
+* **repos:** GitHub's own pages are not projects, and project-page owners say so ([#388](https://github.com/anandkaranubc/git-into-gsoc/issues/388)) ([32f8819](https://github.com/anandkaranubc/git-into-gsoc/commit/32f8819fae5f4b9b0c30edc83af2907761bb4372))
+
 ## [0.24.5](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.4...v0.24.5) (2026-10-23)
 
 
