@@ -1,0 +1,54 @@
+name: CodeQL
+
+# CodeQL ran through GitHub's default setup until 2026-10-22. Default setup produced no
+# analysis for pull requests from forks here, and the main branch ruleset requires a
+# CodeQL analysis before a pull request can merge, so the first outside contribution
+# (#257) could only be merged with a one-time bypass. This workflow runs like CI: a
+# first pull request from a fork waits for a maintainer's approval, then it runs and
+# uploads its results to the pull request.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly, as default setup did, so main is rescanned when the queries change. Half an
+    # hour after the snapshot refresh, so the two do not compete for a runner.
+    - cron: "47 6 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codeql-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    # The same job names default setup used, so the checks look the same on a pull request.
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: python
+            build-mode: none
+          - language: actions
+            build-mode: none
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: "/language:${{ matrix.language }}"
