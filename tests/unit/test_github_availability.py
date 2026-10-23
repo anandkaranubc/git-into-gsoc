@@ -258,6 +258,9 @@ def test_find_issues_for_one_repo_uses_its_own_beginner_label() -> None:
     respx.get(url__startswith="https://api.gsocorganizations.dev/").mock(
         return_value=httpx.Response(503)
     )
+    respx.get("https://api.github.com/orgs/acme/repos").mock(
+        return_value=httpx.Response(200, json=[])
+    )
     respx.get("https://api.github.com/repos/acme/lib/labels").mock(
         return_value=httpx.Response(200, json=[{"name": "Difficulty: Easy"}, {"name": "bug"}])
     )

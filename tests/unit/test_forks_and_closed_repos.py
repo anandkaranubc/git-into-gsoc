@@ -9,6 +9,7 @@ said "read its open issues yourself" while the fork has issues off.
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 import httpx
@@ -141,6 +142,12 @@ def _no_issues_found(repo: str, raw: dict[str, Any]) -> list[str]:
     )
     respx.get(f"https://api.github.com/repos/{owner}/{name}").mock(
         return_value=httpx.Response(200, json=raw)
+    )
+    # The owner has another active repository, so "pick another" stays a fair step.
+    recent = datetime.now(UTC).isoformat()
+    other = {"name": "other", "pushed_at": recent, "fork": False, "archived": False}
+    respx.get(f"https://api.github.com/orgs/{owner}/repos").mock(
+        return_value=httpx.Response(200, json=[other])
     )
     data = GSoCToolkit().find_issues(repo=repo, max_results=3)
     assert data["count"] == 0

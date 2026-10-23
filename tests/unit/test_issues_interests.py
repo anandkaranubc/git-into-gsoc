@@ -79,6 +79,7 @@ def test_a_repository_search_says_what_it_leaves_out(monkeypatch: Any) -> None:
     monkeypatch.setattr(toolkit.github, "list_labels", lambda o, r: [])
     monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: [])
     monkeypatch.setattr(toolkit.github, "get_repo", lambda o, r: {"has_issues": True})
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, **k: [])
     data = toolkit.find_issues(repo="ArduPilot/ardupilot", max_results=3)
     assert "Left out: issues with an assignee or a linked pull request" in data["note"]
 
@@ -153,6 +154,7 @@ def test_a_pull_request_linked_on_an_ideas_page_is_not_a_project(monkeypatch: An
         return {"full_name": f"{owner}/{name}", "owner": {"type": "Organization"}}
 
     monkeypatch.setattr(toolkit.github, "get_repo", get_repo)
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, **k: [])
     page = (
         "Like https://github.com/flutter/flutter/pull/129802 did, see "
         "https://github.com/flutter/devtools/commit/abc123 and the theme at "
@@ -220,6 +222,7 @@ def test_a_repository_search_uses_every_beginner_label_it_has(monkeypatch: Any) 
     seen: dict[str, Any] = {}
     monkeypatch.setattr(toolkit.github, "find_beginner_issues", lambda **k: seen.update(k) or [])
     monkeypatch.setattr(toolkit.github, "get_repo", lambda o, r: {"has_issues": True})
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, **k: [])
     data = toolkit.find_issues(repo="learning-unlimited/ESP-Website", max_results=5)
     assert seen["labels"][:2] == ["Easy", "Starter"]
     assert "'Easy', 'Starter'" in data["note"]
