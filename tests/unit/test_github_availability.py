@@ -962,6 +962,13 @@ def test_a_merged_pr_that_says_it_fixes_the_issue_makes_it_likely_taken() -> Non
         "Merged PR #673 mentions this issue; read it to see whether it already fixes part of it"
         in mention.caveats
     )
+    both = assess_issue(
+        issue, [_merged_pr(673, "Related to #671."), _merged_pr(674, "See #671.")], now=NOW
+    )
+    assert (
+        "Merged PRs #673, #674 mention this issue; read them to see whether they already fix "
+        "part of it" in both.caveats
+    )
 
 
 def test_which_words_say_a_pr_fixes_an_issue() -> None:
