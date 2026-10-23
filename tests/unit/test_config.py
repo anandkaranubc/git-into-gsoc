@@ -15,7 +15,7 @@ def test_explicit_env_token_wins(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("GITHUB_TOKEN", "from-env")
     token, source = resolve_token(Settings())
     assert token == "from-env"
-    assert source == "environment"
+    assert source == "$GITHUB_TOKEN"
 
 
 def test_gh_token_alias(monkeypatch: pytest.MonkeyPatch) -> None:

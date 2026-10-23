@@ -1166,7 +1166,8 @@ class GitHubClient:
         return data if isinstance(data, list) else []
 
     def check_runs(self, owner: str, repo: str, ref: str) -> list[dict[str, Any]]:
-        """Check runs on a commit with their status and conclusion (short cache)."""
+        """Checks on a commit with their status and conclusion (short cache): check runs,
+        then commit statuses, which CI such as Prow and Jenkins report instead."""
         try:
             data = self._api(
                 f"repos/{owner}/{repo}/commits/{quote(ref, safe='')}/check-runs",
@@ -1174,9 +1175,9 @@ class GitHubClient:
                 ttl=300,
             )
         except HttpError:
-            return []
+            data = None
         runs = data.get("check_runs") if isinstance(data, dict) else None
-        return [
+        checks = [
             {
                 "name": r.get("name"),
                 "status": r.get("status"),
@@ -1190,6 +1191,49 @@ class GitHubClient:
             for r in runs or []
             if isinstance(r, dict)
         ]
+        return checks + self._commit_statuses(owner, repo, ref, skip={c["name"] for c in checks})
+
+    def _commit_statuses(
+        self, owner: str, repo: str, ref: str, *, skip: set[Any]
+    ) -> list[dict[str, Any]]:
+        """The latest commit status of each context, shaped like a check run.
+
+        KubeVirt's Prow reports only here: `pr-check` said "Checks are passing" and
+        "No blockers" on a pull request with two failing Prow jobs.
+        """
+        try:
+            data = self._api(
+                f"repos/{owner}/{repo}/commits/{quote(ref, safe='')}/status",
+                params={"per_page": 100},
+                ttl=300,
+            )
+        except HttpError:
+            return []
+        found: list[dict[str, Any]] = []
+        for status in (data.get("statuses") if isinstance(data, dict) else None) or []:
+            if not isinstance(status, dict):
+                continue
+            # The project's CI writes these names and links.
+            name = clean_untrusted(status.get("context"), limit=100)
+            if not name or name in skip:
+                continue
+            state = str(status.get("state") or "")
+            found.append(
+                {
+                    "name": name,
+                    "status": "completed" if state in {"success", "failure", "error"} else state,
+                    # A status "error" is a job that could not run: a failure to fix too.
+                    "conclusion": {
+                        "success": "success",
+                        "failure": "failure",
+                        "error": "failure",
+                    }.get(state),
+                    "id": None,
+                    "app": "",
+                    "url": clean_untrusted(status.get("target_url"), limit=300) or None,
+                }
+            )
+        return found
 
     def job_log_tail(self, owner: str, repo: str, job_id: int) -> str:
         """The end of a GitHub Actions job's log, where the failure is.

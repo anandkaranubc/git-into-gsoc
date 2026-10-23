@@ -865,9 +865,15 @@ class GSoCToolkit:
         cutoff = datetime.now(UTC) - timedelta(days=365)
         person = self._saved_person(technologies=[language] if language else None)
         leads: list[RepoLead] = []
+        gone: list[str] = []  # listed GitHub owners that no longer exist (renamed or removed)
+        uncounted: list[str] = []  # owners whose beginner-label search GitHub would not run
         for owner, via in [*((o, None) for o in owners), *linked_owners]:
             try:
                 listed = self.github.list_owner_repos(owner, pages=2)
+            except NotFoundError:
+                if via is None:
+                    gone.append(owner)
+                continue
             except GigError:
                 if via is None:
                     raise
@@ -886,7 +892,12 @@ class GSoCToolkit:
                 key=lambda r: -int(r.get("stargazers_count") or 0),
             )
             top_starred = str(ranked_by_stars[0].get("full_name")) if ranked_by_stars else ""
-            counts = self.github.beginner_issue_counts(owner) if repos else {}
+            try:
+                counts = self.github.beginner_issue_counts(owner) if repos else {}
+            except GigError:
+                # One failed search ("cannot be searched") should not sink the list.
+                counts = {}
+                uncounted.append(owner)
             mentioned = mentioned_repos(ideas, [owner], repos) if ideas else set()
             for repo in repos:
                 full = str(repo.get("full_name"))
@@ -918,12 +929,38 @@ class GSoCToolkit:
                 )
         searched = [*owners, *(o for o, _ in linked_owners)]
         leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
+        alive = [o for o in owners if o not in gone]
+        if gone and gsoc_org is None:
+            # A login typed by hand, not an organization's listing.
+            gone_line = f"GitHub has no user or organization named {gone[0]}."
+        elif gone:
+            gone_line = (
+                f"{gsoc_org.name if gsoc_org else gone[0]} lists "
+                + ", ".join(f"github.com/{o}" for o in gone)
+                + ", which GitHub cannot find (renamed or removed)"
+                + (f"; its other GitHub owners are {', '.join(alive)}." if alive else ".")
+            )
+        else:
+            gone_line = ""
+        # Checked after the repositories its ideas page names are added: a dead owner
+        # with GitHub projects on its ideas page still has something to show.
+        if gone and not leads:
+            raise NotFoundError(
+                gone_line
+                + (" There is nothing on GitHub to read for it here." if gsoc_org else ""),
+                hint=f"Open its ideas page to find its repositories: {ideas_url}"
+                if ideas_url
+                else "Check the organization's page on the official GSoC site for its code."
+                if gsoc_org
+                else "Check the spelling, or give a GSoC organization's name instead.",
+            )
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
         # Until the shown top is all checked (a quiet repository that drops lets another
         # rise), within a request budget. Checked ones stay above unchecked ones, so an
         # unread or failed repository never outranks one that was read.
         status: dict[str, str] = {}
         found: list[OutsideMerges] = []
+        merges: dict[str, OutsideMerges] = {}
         budget = OUTSIDE_BUDGET
         while budget > 0:
             # Which to read next goes by score alone, so one that would rise is read.
@@ -937,6 +974,7 @@ class GSoCToolkit:
                 status[lead.full_name] = "failed" if result is None else "checked"
                 if result is not None:
                     found.append(result)
+                    merges[lead.full_name] = result
         leads.sort(key=lambda lead: (_unread(status, lead), -lead.score, -lead.stars))
         # Say why a higher score can sit below a lower one: unread repositories follow.
         shown_unread = [lead for lead in leads[:limit] if lead.full_name not in status]
@@ -952,8 +990,20 @@ class GSoCToolkit:
             else ""
         )
         name = gsoc_org.name if gsoc_org else owners[0]
-        judged = [f for f in found if f.humans]
         failed = sum(1 for v in status.values() if v == "failed")
+        # Does any listed repository hold project code that takes outside work? Websites,
+        # docs and governance repositories do not count (UC OSPO lists its website first);
+        # a code repository not read, or with no human pull requests in its sample, is
+        # unknown, and then nothing is claimed.
+        shown_code = [lead for lead in leads[:limit] if repo_kind(lead.full_name) is None]
+        judged_code = [
+            merges[lead.full_name]
+            for lead in shown_code
+            if lead.full_name in merges and merges[lead.full_name].humans
+        ]
+        # Enough to say "none": every listed code repository was read, or at least three.
+        enough = len(judged_code) == len(shown_code) or len(judged_code) >= 3
+        no_outside_code = bool(leads) and enough and not any(m.authors for m in judged_code)
         ideas_step = (
             f'run `git-into-gsoc ideas "{name}"`, pick the idea that fits you, and ask its '
             "mentors in the organization's chat how to start."
@@ -963,11 +1013,23 @@ class GSoCToolkit:
         quiet_note = " ".join(
             part
             for part in (
-                f"None of the {len(judged)} repositories checked had a pull request from "
-                "outside the team merged among their recent closed pull requests. At "
-                f"{name}, GSoC work may start from its ideas and mentors rather than from "
-                f"GitHub issues: {ideas_step}"
-                if len(judged) >= 3 and not any(f.authors for f in judged)
+                (
+                    f"None of the repositories listed holds {name}'s project code: they are its "
+                    "website, documentation or similar. Its GSoC work is described on its ideas "
+                    f"page: {ideas_step}"
+                    if not shown_code
+                    else (
+                        "The one code repository checked had no pull request from outside the "
+                        "team merged among its recent closed pull requests."
+                        if len(judged_code) == 1
+                        else f"None of the {len(judged_code)} code repositories checked had a "
+                        "pull request from outside the team merged among their recent closed "
+                        "pull requests."
+                    )
+                    + f" At {name}, GSoC work may start from its ideas and mentors rather than "
+                    f"from GitHub issues: {ideas_step}"
+                )
+                if no_outside_code
                 else "",
                 (
                     f"{failed} {'repository' if failed == 1 else 'repositories'} could not be "
@@ -999,13 +1061,15 @@ class GSoCToolkit:
                     if main_code
                     else "",
                     quiet_note,
+                    gone_line,
+                    f"Beginner-labelled issue counts are unavailable for {', '.join(uncounted)}: "
+                    "GitHub would not run that search, so they add no points here."
+                    if uncounted
+                    else "",
                 )
                 if part
             ),
-            "next_step": (
-                "Run `git-into-gsoc repo owner/name --track` on your top pick (so `next` "
-                "remembers it), then `git-into-gsoc issues --repo owner/name`."
-            ),
+            "next_step": _repos_next_step(shown_code, no_outside_code, ideas_step),
             # Points add up the reasons listed; they only order this list.
             "score_meaning": (
                 "Score: points from its stars and recent activity plus the reasons listed, to "
@@ -3316,6 +3380,18 @@ _NOT_OWNERS = {"orgs", "topics", "search", "features", "apps", "settings", "mark
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
 _DISCUSSIONS_RE = re.compile(r"github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/discussions\b")
 _CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
+
+
+def _repos_next_step(shown_code: list[RepoLead], no_outside_code: bool, ideas_step: str) -> str:
+    """What to do after `repos`: never a website or docs repository as the pick."""
+    if no_outside_code or not shown_code:
+        return f"Start from its ideas rather than these repositories: {ideas_step}"
+    first = shown_code[0].full_name
+    return (
+        f"Pick a repository that holds project code, such as {first}: run "
+        f"`git-into-gsoc repo {first} --track` (so `next` remembers it), then "
+        f"`git-into-gsoc issues --repo {first}`."
+    )
 
 
 def _github_links(text: str) -> list[dict[str, str]]:

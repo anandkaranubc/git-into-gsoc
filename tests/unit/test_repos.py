@@ -660,7 +660,7 @@ def test_repos_says_where_to_start_when_no_repository_takes_outside_work(
     monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
     monkeypatch.setattr(toolkit.github, "list_pulls", lambda owner, repo, **k: [by_team])
     note = toolkit.discover_repos("lab")["note"]
-    assert "None of the 4 repositories checked" in note
+    assert "None of the 4 code repositories checked" in note
     assert "mentors" in note
     # "lab" is a GitHub login, not a GSoC organization `ideas` could look up.
     assert "git-into-gsoc ideas" not in note
@@ -758,7 +758,7 @@ def test_in_an_all_quiet_organization_no_unchecked_repository_rises_above_a_chec
     assert len(calls) == 15  # the request budget
     read = [r for r in found["repos"] if any("outside the team" in x for x in r["reasons"])]
     assert found["repos"][: len(read)] == read  # every read one before every unread one
-    assert "None of the 15 repositories checked" in found["note"]
+    assert "None of the 15 code repositories checked" in found["note"]
 
 
 def test_a_failed_read_keeps_its_place_and_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -816,3 +816,221 @@ def test_a_higher_score_below_a_lower_one_is_explained(monkeypatch: pytest.Monke
     assert "The first 15 were checked" in found["score_meaning"]
     assert all(r["score"] > found["repos"][0]["score"] for r in unread)  # higher, yet below
     assert found["repos"][-5:] == unread
+
+
+def test_an_umbrella_whose_own_repositories_hold_no_project_code_points_to_its_ideas(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A launch audit: the README demo's top organization, UC OSPO, lists its website and
+    # one quiet repository, and `repos` told people to track their "top pick", the website.
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    org = OrgSummary(name="UC OSPO", slug="uc-ospo", github_orgs=["ucsc-ospo"], official=True)
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: org)
+    listed = [
+        {
+            "full_name": f"ucsc-ospo/{name}",
+            "html_url": f"https://github.com/ucsc-ospo/{name}",
+            "stargazers_count": stars,
+            "pushed_at": _iso(2),
+            "fork": False,
+            "has_issues": True,
+        }
+        for name, stars in (("ucsc-ospo.github.io", 40), ("skyhookdm-pythonclient", 5))
+    ]
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, pages=1: listed)
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
+    welcome = _closed("ana", "CONTRIBUTOR", 3)
+    team = _closed("core", "MEMBER", 3)
+    # Outsiders get merged on the website only; the one code repository is quiet.
+    monkeypatch.setattr(
+        toolkit.github,
+        "list_pulls",
+        lambda owner, repo, **k: [welcome] if repo.endswith(".github.io") else [team],
+    )
+    found = toolkit.discover_repos("UC OSPO")
+    assert "The one code repository checked had no pull request" in found["note"]
+    assert 'git-into-gsoc ideas "UC OSPO"' in found["note"]
+    assert "github.io" not in found["next_step"]
+    assert found["next_step"].startswith("Start from its ideas")
+    # Only website-like repositories: say there is no project code here at all.
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, pages=1: listed[:1])
+    only_site = toolkit.discover_repos("UC OSPO")
+    assert "holds UC OSPO's project code" in only_site["note"]
+    assert "github.io" not in only_site["next_step"]
+
+
+def test_the_next_step_names_a_code_repository_rather_than_a_website(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: None)
+    listed = [
+        {
+            "full_name": f"lab/{name}",
+            "html_url": f"https://github.com/lab/{name}",
+            "stargazers_count": stars,
+            "pushed_at": _iso(1),
+            "fork": False,
+            "has_issues": True,
+        }
+        for name, stars in (("lab.github.io", 90), ("engine", 10))
+    ]
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", lambda owner, pages=1: listed)
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
+    welcome = _closed("ana", "CONTRIBUTOR", 3)
+    monkeypatch.setattr(toolkit.github, "list_pulls", lambda owner, repo, **k: [welcome])
+    found = toolkit.discover_repos("lab")
+    assert found["note"] == ""
+    assert "git-into-gsoc repo lab/engine --track" in found["next_step"]
+
+
+def _listing(owner: str, names: list[str]) -> list[dict[str, Any]]:
+    return [
+        {
+            "full_name": f"{owner}/{name}",
+            "html_url": f"https://github.com/{owner}/{name}",
+            "stargazers_count": 10,
+            "pushed_at": _iso(1),
+            "fork": False,
+            "has_issues": True,
+        }
+        for name in names
+    ]
+
+
+def test_a_failed_beginner_count_search_still_lists_the_repositories(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A launch audit: `repos BRL-CAD` and `repos Debian` stopped on "cannot be searched".
+    from git_into_gsoc.errors import HttpError
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: None)
+    monkeypatch.setattr(
+        toolkit.github, "list_owner_repos", lambda owner, pages=1: _listing("lab", ["engine"])
+    )
+
+    def refused(owner: str) -> dict[str, int]:
+        raise HttpError("GitHub could not run the search", status_code=422)
+
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", refused)
+    monkeypatch.setattr(
+        toolkit.github, "list_pulls", lambda owner, repo, **k: [_closed("ana", "CONTRIBUTOR", 3)]
+    )
+    found = toolkit.discover_repos("lab")
+    assert [r["full_name"] for r in found["repos"]] == ["lab/engine"]
+    assert "counts are unavailable for lab" in found["note"]
+
+
+def test_a_listed_owner_that_no_longer_exists_is_named_and_the_others_are_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A launch audit: FLARE, MoganLab, OpenELIS Global and Project Mesa stopped on a 404.
+    from git_into_gsoc.errors import NotFoundError
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    org = OrgSummary(name="Lab", slug="lab", github_orgs=["old-lab", "lab"], official=True)
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: org)
+
+    def listing(owner: str, pages: int = 1) -> list[dict[str, Any]]:
+        if owner == "old-lab":
+            raise NotFoundError("HTTP 404 from api.github.com: Not Found", status_code=404)
+        return _listing(owner, ["engine"])
+
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", listing)
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
+    monkeypatch.setattr(
+        toolkit.github, "list_pulls", lambda owner, repo, **k: [_closed("ana", "CONTRIBUTOR", 3)]
+    )
+    found = toolkit.discover_repos("Lab")
+    assert [r["full_name"] for r in found["repos"]] == ["lab/engine"]
+    assert (
+        "Lab lists github.com/old-lab, which GitHub cannot find (renamed or removed); its other "
+        "GitHub owners are lab." in found["note"]
+    )
+    # With every listed owner gone, say so plainly instead of a raw 404.
+    org_gone = OrgSummary(name="Lab", slug="lab", github_orgs=["old-lab"], official=True)
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: org_gone)
+    with pytest.raises(NotFoundError) as raised:
+        toolkit.discover_repos("Lab")
+    assert "Lab lists github.com/old-lab, which GitHub cannot find" in str(raised.value)
+    assert "nothing on GitHub to read" in str(raised.value)
+
+
+def test_a_github_search_link_is_not_an_owner() -> None:
+    # FLARE's listing gives github.com/search?q=... as its source code.
+    from git_into_gsoc.gsoc.client import github_refs
+
+    orgs, repos = github_refs(
+        "https://github.com/search?q=topic%3Agsoc-2026+org%3Amandiant&type=Repositories",
+        "https://github.com/mandiant/flare-gsoc/blob/2026/doc/project-ideas.md",
+    )
+    assert orgs == ["mandiant"] and repos == []
+
+
+def test_a_dead_owner_still_shows_the_repositories_its_ideas_page_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Review of this fix: the "nothing to read" check must come after the ideas page.
+    from git_into_gsoc import service
+    from git_into_gsoc.errors import NotFoundError
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    org = OrgSummary(
+        name="Lab",
+        slug="lab",
+        github_orgs=["old-lab"],
+        ideas_url="https://example.org/ideas",
+        official=True,
+    )
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: org)
+    monkeypatch.setattr(
+        service, "fetch_ideas_text", lambda *a, **k: "Work on https://github.com/partner/engine"
+    )
+    monkeypatch.setattr(service, "fetch_ideas_document", lambda *a, **k: None)
+
+    def listing(owner: str, pages: int = 1) -> list[dict[str, Any]]:
+        raise NotFoundError("HTTP 404 from api.github.com: Not Found", status_code=404)
+
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", listing)
+    monkeypatch.setattr(
+        toolkit.github,
+        "get_repo",
+        lambda owner, repo: {
+            **_listing("partner", ["engine"])[0],
+            "owner": {"login": "partner", "type": "Organization"},
+        },
+    )
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
+    monkeypatch.setattr(
+        toolkit.github, "list_pulls", lambda owner, repo, **k: [_closed("ana", "CONTRIBUTOR", 3)]
+    )
+    found = toolkit.discover_repos("Lab")
+    assert [r["full_name"] for r in found["repos"]] == ["partner/engine"]
+    assert "Lab lists github.com/old-lab, which GitHub cannot find" in found["note"]
+
+
+def test_a_mistyped_login_reads_as_no_such_user(monkeypatch: pytest.MonkeyPatch) -> None:
+    from git_into_gsoc.errors import NotFoundError
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: None)
+
+    def listing(owner: str, pages: int = 1) -> list[dict[str, Any]]:
+        raise NotFoundError("HTTP 404 from api.github.com: Not Found", status_code=404)
+
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", listing)
+    with pytest.raises(NotFoundError) as raised:
+        toolkit.discover_repos("sympyy")
+    assert str(raised.value) == "GitHub has no user or organization named sympyy."

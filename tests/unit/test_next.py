@@ -160,6 +160,9 @@ def test_next_rechecks_tracked_issues_and_reports_changes(api: respx.MockRouter)
             },
         )
     )
+    api.get(url__regex=rf"{GH}/repos/sympy/sympy/commits/abc123/status.*").mock(
+        return_value=httpx.Response(200, json={"statuses": []})
+    )
 
     data = GSoCToolkit().next_steps(now=NOW)
     prs = data["open_pull_requests"]
