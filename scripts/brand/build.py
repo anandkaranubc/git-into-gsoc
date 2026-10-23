@@ -119,9 +119,13 @@ def path(
     return f'<path d="{to_path(cells, scale, ox, oy)}" fill="{fill}"{attrs}/>'
 
 
-BLINK = (
-    '<animate attributeName="opacity" values="1;1;0;0" keyTimes="0;0.5;0.5;1" '
-    'dur="1.1s" repeatCount="indefinite" calcMode="discrete"/>'
+# A CSS animation rather than SVG's <animate>, so the cursor holds still for people
+# whose system asks for reduced motion: the README banner blinked forever (a launch
+# audit, 2026-10-23). The site already turns its own blink off the same way.
+BLINK_STYLE = (
+    "<style>@keyframes gig-blink{50%{opacity:0}}"
+    ".gig-blink{animation:gig-blink 1.1s step-end infinite}"
+    "@media (prefers-reduced-motion: reduce){.gig-blink{animation:none}}</style>"
 )
 
 
@@ -130,7 +134,10 @@ def mark_body(
 ) -> str:
     g = path(G_CELLS, gcol, scale, ox, oy)
     if blink:
-        c = f'<path d="{to_path(CURSOR, scale, ox, oy)}" fill="{ccol}">{BLINK}</path>'
+        c = (
+            BLINK_STYLE
+            + f'<path d="{to_path(CURSOR, scale, ox, oy)}" fill="{ccol}" class="gig-blink"/>'
+        )
     else:
         c = path(CURSOR, ccol, scale, ox, oy)
     return g + c
@@ -471,7 +478,7 @@ def build_stickers(out: Path) -> None:
     )
     (d / "sticker-merged.svg").write_text(svg(120, 120, body, "merged."))
     # 6. cursor sticker: just the cursor, blinking (die-cut rectangle)
-    body = f'<rect width="36" height="48" fill="{OPEN}">{BLINK}</rect>'
+    body = BLINK_STYLE + f'<rect width="36" height="48" fill="{OPEN}" class="gig-blink"/>'
     (d / "sticker-cursor.svg").write_text(svg(36, 48, body, "cursor"))
 
 
