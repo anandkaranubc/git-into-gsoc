@@ -6,6 +6,7 @@ import contextlib
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
+from itertools import zip_longest
 from typing import Any
 from urllib.parse import quote, urlparse
 
@@ -880,8 +881,10 @@ class GSoCToolkit:
         # live under their own GitHub owners; follow those links too.
         linked_owners: list[tuple[str, str]] = []
         linked_repos: set[str] = set()
+        index_page = False
         if gsoc_org and ideas_url:
             doc = fetch_ideas_document(self.http, ideas_url, self.settings.archive_ttl_seconds)
+            index_page = doc is not None and doc.layout == "index"
             if doc is not None and (doc.layout == "index" or not owners):
                 linked_owners, linked_repos = _linked_github_projects(
                     doc.sub_pages or _github_links(ideas or ""),
@@ -970,6 +973,15 @@ class GSoCToolkit:
                 )
         searched = [*owners, *(o for o, _ in linked_owners)]
         leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
+        if index_page and not linked_owners:
+            # An index of the organization's own project pages (UC OSPO): the code is
+            # linked one level down, from each project's page.
+            have = {lead.full_name.lower() for lead in leads}
+            leads.extend(
+                lead
+                for lead in self._sub_page_repos(ideas_url, searched, language=language)
+                if lead.full_name.lower() not in have
+            )
         alive = [o for o in owners if o not in gone]
         if gone and gsoc_org is None:
             # A login typed by hand, not an organization's listing.
@@ -1170,10 +1182,18 @@ class GSoCToolkit:
             owner = lead.full_name.split("/", 1)[0]
             if owner.lower() not in {o.lower() for o in [*owners, *linked]}:
                 linked.append(owner)
+        linked, where = linked[:4], "named on its ideas page"
+        if not linked:
+            # UC OSPO's ideas page links only to its project pages, which link the code.
+            for lead in self._sub_page_repos(gsoc_org.ideas_url, owners, language=language):
+                owner = lead.full_name.split("/", 1)[0]
+                if owner.lower() not in {o.lower() for o in [*owners, *linked]}:
+                    linked.append(owner)
+            linked, where = linked[:8], "linked from its project pages"
         note = f"Searching {gsoc_org.name}: {', '.join(owners)}"
         if linked:
-            note += f", and {', '.join(linked[:4])} (named on its ideas page)"
-        return owners, linked[:4], note + "."
+            note += f", and {', '.join(linked)} ({where})"
+        return owners, linked, note + "."
 
     def _owners_off_github(
         self, gsoc_org: OrgSummary, *, language: str | None
@@ -1230,33 +1250,79 @@ class GSoCToolkit:
                 named.append(full)
         found: list[RepoLead] = []
         for full in named[:limit]:
-            try:
-                raw = self.github.get_repo(*full.split("/", 1))
-            except GigError:
-                continue
-            if (raw.get("owner") or {}).get("type") != "Organization":
-                continue
-            if raw.get("archived") or raw.get("fork") or mirror_source(raw):
-                continue  # a mirror's issues and pull requests live elsewhere
-            score, reasons = repo_lead_score(
-                raw, beginner_issues=0, ideas_mention=True, language=language
+            lead = self._named_repo_lead(
+                full,
+                language=language,
+                reason="Under another GitHub owner that the ideas page links to",
             )
-            reasons.append("Under another GitHub owner that the ideas page links to")
-            found.append(
-                RepoLead(
-                    full_name=str(raw.get("full_name") or full),
-                    url=str(raw.get("html_url") or f"https://github.com/{full}"),
-                    description=clean_untrusted(raw.get("description"), limit=300) or None,
-                    language=raw.get("language"),
-                    stars=int(raw.get("stargazers_count") or 0),
-                    pushed_at=_parse_iso(raw.get("pushed_at")),
-                    open_beginner_issues=0,
-                    ideas_mention=True,
-                    score=score,
-                    reasons=reasons,
-                )
-            )
+            if lead is not None:
+                found.append(lead)
         return found
+
+    def _sub_page_repos(
+        self, ideas_url: str | None, searched: list[str], *, language: str | None, limit: int = 10
+    ) -> list[RepoLead]:
+        """Repositories linked from the project pages an ideas index leads to.
+
+        UC OSPO's ideas page links only to its 22 project pages on its own site; the
+        code (edulinq/lms-toolkit, BerkeleyLearnVerify/Scenic) is linked from those.
+        Each project gets one place before any gets a second, so one project with many
+        links cannot fill the list.
+        """
+        if not ideas_url or issues_page_target(ideas_url):
+            return []
+        doc, followed = self.read_ideas_page(ideas_url)
+        if doc is None or not followed:
+            return []
+        if not self.github.token:
+            # One read per repository: without a token GitHub allows 60 an hour, and a
+            # fresh beginner journey used about 51 of them (a launch audit, 2026-10-23).
+            limit = min(limit, 5)
+        found: list[RepoLead] = []
+        # Twice the places, so a few links to people's repositories cannot leave it short.
+        for full, page in _sub_page_github_repos(doc.ideas, searched)[: 2 * limit]:
+            if len(found) >= limit:
+                break
+            lead = self._named_repo_lead(
+                full,
+                language=language,
+                # "Scenic: A Language for Design and ..." reads as "Scenic".
+                reason=f"Linked from its {re.split(r':| • ', page)[0].strip()} project page",
+            )
+            if lead is not None:
+                found.append(lead)
+        return found
+
+    def _named_repo_lead(self, full: str, *, language: str | None, reason: str) -> RepoLead | None:
+        """A repository an ideas page names, as a lead, or None when it is not one.
+
+        A link to a person's repository is usually a reference or a mentor's profile,
+        so only organizations' repositories count.
+        """
+        try:
+            raw = self.github.get_repo(*full.split("/", 1))
+        except GigError:
+            return None
+        if (raw.get("owner") or {}).get("type") != "Organization":
+            return None
+        if raw.get("archived") or raw.get("fork") or mirror_source(raw):
+            return None  # a mirror's issues and pull requests live elsewhere
+        score, reasons = repo_lead_score(
+            raw, beginner_issues=0, ideas_mention=True, language=language
+        )
+        reasons.append(reason)
+        return RepoLead(
+            full_name=str(raw.get("full_name") or full),
+            url=str(raw.get("html_url") or f"https://github.com/{full}"),
+            description=clean_untrusted(raw.get("description"), limit=300) or None,
+            language=raw.get("language"),
+            stars=int(raw.get("stargazers_count") or 0),
+            pushed_at=_parse_iso(raw.get("pushed_at")),
+            open_beginner_issues=0,
+            ideas_mention=True,
+            score=score,
+            reasons=reasons,
+        )
 
     def find_issues(
         self,
@@ -2851,8 +2917,12 @@ class GSoCToolkit:
             experience=effective_experience(saved)[0],
             hours_per_week=_int_or_none(saved.get("hours_per_week")),
         )
-        idea_dicts = [i.model_dump(mode="json") for i in ranked]
+        idea_dicts = [i.model_dump(mode="json") | {"repo": _idea_repo(i.links)} for i in ranked]
         hours_note = _mark_ideas_too_big(idea_dicts, self.progress.profile().get("hours_per_week"))
+        shown = idea_dicts[: max(1, limit)]
+        # UC OSPO's ideas sit in a dozen projects' repositories; `repos` and `next` lead
+        # here, so say where an idea's code is (a launch audit, 2026-10-23).
+        several_repos = len({str(i["repo"]).lower() for i in shown if i["repo"]}) > 1
         proposals = proposal_folders(
             lambda owner, repo: list(self.github.git_tree(owner, repo, "HEAD").get("tree") or []),
             org.name,
@@ -2870,7 +2940,7 @@ class GSoCToolkit:
             "fetched_url": doc.fetched_url,
             "layout": doc.layout,
             "count": len(ranked),
-            "ideas": idea_dicts[: max(1, limit)],
+            "ideas": shown,
             "hours_note": hours_note,
             "skills_matched_on": wanted,
             "ai_policy": doc.ai_policy,
@@ -2881,7 +2951,15 @@ class GSoCToolkit:
             "next_step": (
                 "Read the full idea on the page before contacting a mentor. Never copy its text "
                 "into a proposal; reviewers compare proposals with the ideas page."
+                + (
+                    " An idea that links to a repository has its code there: run "
+                    "`git-into-gsoc repo owner/name --track` on it, then "
+                    "`git-into-gsoc issues --repo owner/name`."
+                    if several_repos
+                    else ""
+                )
             ),
+            "repos_linked": several_repos,
         }
 
     def read_ideas_page(
@@ -3495,6 +3573,82 @@ def _linked_github_projects(
             seen.add(owner.lower())
             owners.append((owner, str(page.get("title") or owner)))
     return owners, repos
+
+
+def _linked_repo(link: str) -> tuple[str, bool] | None:
+    """The owner/name a GitHub link points into, and whether it links one of its issues.
+
+    None for a pull request, commit or comparison (an example to follow, not a project)
+    and for GitHub's own pages.
+    """
+    match = _GITHUB_PROJECT_RE.match(link)
+    if not match or not match.group(2) or _CHANGE_LINK_RE.match(link, match.end()):
+        return None
+    owner, repo = match.group(1), match.group(2).removesuffix(".git")
+    if owner.lower() in _NOT_OWNERS or repo.lower() in _NOT_REPOS:
+        return None
+    return f"{owner}/{repo}", link[match.end() :].startswith("/issues/")
+
+
+def _sub_page_github_repos(ideas: list[ProjectIdea], searched: list[str]) -> list[tuple[str, str]]:
+    """GitHub repositories the ideas of each followed page link to, with the page's title.
+
+    Within a page, the repository its ideas link most comes first (Scenic's issues over
+    the AWSIM simulator one idea mentions). Then the first of every page, then the
+    second, and so on. Owners already searched in full are left out.
+
+    Nothing is kept when most of the repositories linked are the organization's own:
+    MetaBrainz's pages link six metabrainz repositories, and their other links
+    (tesseract-ocr/tesseract, async-graphql/async-graphql) are tools an idea uses.
+    """
+    skip = {o.lower() for o in searched}
+    own: set[str] = set()
+    per_page: dict[str, dict[str, list[Any]]] = {}  # page -> repo key -> [name, links]
+    for idea in ideas:
+        page = per_page.setdefault(idea.section or "", {})
+        for link in idea.links:
+            found = _linked_repo(link)
+            if found is None:
+                continue
+            if found[0].split("/", 1)[0].lower() in skip:
+                own.add(found[0].lower())
+                continue
+            entry = page.setdefault(found[0].lower(), [found[0], 0])
+            entry[1] += 1
+    others = {key for repos in per_page.values() for key in repos}
+    if len(own) >= len(others):
+        return []
+    tiers = [
+        [(name, title) for name, _ in sorted(repos.values(), key=lambda e: -e[1])]
+        for title, repos in per_page.items()
+        if title
+    ]
+    seen: set[str] = set()
+    ordered: list[tuple[str, str]] = []
+    for tier in zip_longest(*tiers):
+        for pair in tier:
+            if pair and pair[0].lower() not in seen:
+                seen.add(pair[0].lower())
+                ordered.append(pair)
+    return ordered
+
+
+def _idea_repo(links: list[str]) -> str | None:
+    """The repository an idea's links point to most, one whose issue it links first.
+
+    UC OSPO's "Implement P2P Extension Store" links a person's helper repository, then
+    an issue in p2plabsxyz/peersky-browser, where the work is.
+    """
+    counts: dict[str, list[Any]] = {}  # repo key -> [name, issue linked, links]
+    for link in links:
+        found = _linked_repo(link)
+        if found is None:
+            continue
+        entry = counts.setdefault(found[0].lower(), [found[0], False, 0])
+        entry[1] = entry[1] or found[1]
+        entry[2] += 1
+    ranked = sorted(counts.values(), key=lambda e: (not e[1], -e[2]))
+    return str(ranked[0][0]) if ranked else None
 
 
 def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:
