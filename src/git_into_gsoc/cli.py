@@ -903,6 +903,8 @@ def ideas_cmd(
                 title = f"[dim]{escape(idea['section'])} /[/dim] {title}"
             if idea["confidence"] == "low":
                 title = f"? {title}"
+            if data.get("repos_linked") and idea.get("repo"):
+                title += f"\n[dim]links to {escape(idea['repo'])}[/dim]"
             hours = (
                 f"{idea['hours']}h"
                 if idea.get("hours")
