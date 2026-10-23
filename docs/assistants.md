@@ -7,7 +7,7 @@ git-into-gsoc gives an assistant two things:
 
 Neither the plugins nor setup pre-approve anything: your assistant still asks before running a tool, as its own settings say. Each tool declares whether it only reads or also saves to your local progress file, and assistants use that to decide when to ask.
 
-Pick your assistant below. Each route installs both parts, and each one says how to update and remove it. If you also want the `git-into-gsoc` command in your terminal, use the [one-line installer](guide/02-install.md) and then `git-into-gsoc setup`. Setup configures every assistant it finds at once.
+Pick your assistant below. Each route installs both parts, and each one says how to update and remove it. If you also want the `git-into-gsoc` command in your terminal, use the [one-line installer](guide/02-install.md). It also runs `git-into-gsoc setup`, which connects every assistant it finds. Use one route per assistant: one that has the plugin does not need setup as well.
 
 ## Before you start: install uv
 
@@ -91,7 +91,7 @@ Visual Studio 2026, or Visual Studio 2022 version 17.14 or newer, adds the serve
 
 ## Cursor
 
-Run `git-into-gsoc setup` after the [one-line installer](guide/02-install.md). This is the route we test, and it gives Cursor both the skill and the server. Or use the Cursor button below for the server alone. Cursor asks you to confirm, then adds it to `~/.cursor/mcp.json`. To add the skill too, run `npx skills add anandkaranubc/git-into-gsoc -g -a cursor`.
+The [one-line installer](guide/02-install.md) runs `git-into-gsoc setup` for you; if you install Cursor later, run `git-into-gsoc setup` once more. This is the route we test, and it gives Cursor both the skill and the server. Or use the Cursor button below for the server alone. Cursor asks you to confirm, then adds it to `~/.cursor/mcp.json`. To add the skill too, run `npx skills add anandkaranubc/git-into-gsoc -g -a cursor`.
 
 - **Update:** a server added with the button checks PyPI and runs the newest release each time it starts. For setup, re-run the installer.
 - **Remove:** delete the `git-into-gsoc` entry from `~/.cursor/mcp.json`, or run `git-into-gsoc setup --remove --assistant cursor`.
@@ -121,7 +121,7 @@ Antigravity converts the extension into a plugin with the skill and the server.
 
 ## Windsurf (Devin Desktop)
 
-Run `git-into-gsoc setup` after the [one-line installer](guide/02-install.md). It writes Devin Desktop's `~/.config/devin/mcp_config.json`, or `~/.codeium/windsurf/mcp_config.json` for Windsurf before it was renamed. It puts the skill in `~/.agents/skills`, which Devin Desktop reads.
+The [one-line installer](guide/02-install.md) runs `git-into-gsoc setup` for you; if you install the app later, run `git-into-gsoc setup` once more. Setup writes Devin Desktop's `~/.config/devin/mcp_config.json`, or `~/.codeium/windsurf/mcp_config.json` for Windsurf before it was renamed. It puts the skill in `~/.agents/skills`, which Devin Desktop reads.
 
 ## Claude Desktop (without the plugin)
 
