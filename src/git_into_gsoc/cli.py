@@ -914,8 +914,7 @@ def ideas_cmd(
         table = Table(title="Project ideas", caption=". ".join(notes) or None)
         # ML4SCI lists each idea as a link to its own page: four empty columns told a
         # newcomer nothing, and the page that has the details was not shown.
-        fields = ("hours", "size", "size_raw", "difficulty", "mentors", "skills")
-        links_only = not any(idea.get(key) for idea in data["ideas"] for key in fields)
+        links_only = bool(data.get("links_only"))
         if show_fit:
             table.add_column("Fit", justify="right")
         table.add_column("Idea", overflow="fold")
@@ -1933,7 +1932,9 @@ def proposal_cmd(
         None, "--github", "-g", help="Your GitHub login, to confirm linked PRs are yours"
     ),
     verify: bool = typer.Option(
-        True, "--verify/--no-verify", help="Look up linked pull requests on GitHub"
+        True,
+        "--verify/--no-verify",
+        help="Look up the pull requests and merge requests your draft links to, on GitHub and GitLab",
     ),
     ideas_file: Path | None = typer.Option(
         None, "--ideas-file", help="The org's ideas page as text, to detect copied passages"
