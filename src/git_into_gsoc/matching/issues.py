@@ -38,6 +38,25 @@ _GENTLE_WORDS = ("documentation", "docs", "typo", "readme", "test", "tests")
 # An unticked box in an issue template ("- [ ] Accessibility") names an area the issue
 # is not about, so it must not count as a subject. Items are a few words at most.
 _UNTICKED = re.compile(r"[-*]?\s*\[ \]\s*[^\s\[\]]+(?:[ \t]+[^\s\[\]*-]+){0,2}")
+# Where something runs, not what a task needs. This repository's README issue #341 was
+# marked "needs Linux/Unix" for "On macOS, Linux, or Windows with WSL" and "WSL (Windows
+# Subsystem for Linux)". Linux named with Windows means many systems; a list of Unix-like
+# systems alone ("setup.sh for macOS and Linux") still needs a Unix shell.
+_WSL_RE = re.compile(r"\bwindows subsystem for linux\b", re.I)
+_OS = r"(?:macos|mac\s?os|os\s?x|linux|windows|wsl\s?2?)"
+_OS_LIST_RE = re.compile(
+    rf"\b{_OS}(?:\s*(?:,|/|&|\bor\b|\band\b)\s*(?:(?:or|and)\s+)?{_OS}\b)+", re.I
+)
+
+
+def _named_in(text: str) -> set[str]:
+    """Concepts an issue names, leaving out lists of the systems it runs on."""
+
+    def many_systems(match: re.Match[str]) -> str:
+        words = match.group(0).lower()
+        return " " if "linux" in words and "windows" in words else match.group(0)
+
+    return set(find_concepts(_OS_LIST_RE.sub(many_systems, _WSL_RE.sub(" ", text))))
 
 
 # Titles and labels of things that are not a first task: announcements, roadmaps,
@@ -101,7 +120,7 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     created = str(issue.get("created_at") or "")[:4]
     if created.isdigit() and int(created) <= datetime.now(UTC).year - OLD_ISSUE_YEARS:
         return f"open since {created}"
-    named = set(find_concepts(" ".join([title, str(issue.get("body_excerpt") or "")])))
+    named = _named_in(" ".join([title, str(issue.get("body_excerpt") or "")]))
     for lab in issue.get("labels") or []:
         named.update(find_tag_concepts(str(lab)))
     skills = {c for c in named if kind_of(c) == SKILL and c not in {"git", "github actions"}}
@@ -132,7 +151,7 @@ def issue_fit(issue: dict[str, Any], person: ContributorProfile) -> tuple[float,
     labels = [str(lab) for lab in issue.get("labels") or []]
     body = _UNTICKED.sub(" ", str(issue.get("body_excerpt") or ""))
     text = " ".join([str(issue.get("title") or ""), body])
-    named = set(find_concepts(text))
+    named = _named_in(text)
     for lab in labels:
         named.update(find_tag_concepts(lab))
     reasons: list[str] = []
