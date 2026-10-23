@@ -1,0 +1,43 @@
+{
+  "_note": "KubeVirt PR 19595's combined commit status on 2026-10-23, trimmed: Prow reports here, not as check runs. Author handle replaced.",
+  "state": "failure",
+  "total_count": 6,
+  "statuses": [
+    {
+      "context": "dco",
+      "state": "success",
+      "target_url": "https://github.com/kubevirt/kubevirt/blob/master/CONTRIBUTING.md",
+      "description": "All commits have Signed-off-by"
+    },
+    {
+      "context": "tide",
+      "state": "pending",
+      "target_url": "https://prow.ci.kubevirt.io/pr?query=is%3Apr+repo%3Akubevirt%2Fkubevirt+author%3Aexample-contributor+head%3Abazeldnf-zstd-metadata",
+      "description": "Not mergeable. Needs approved, approved-vep, lgtm labels."
+    },
+    {
+      "context": "pull-kubevirt-check-unassigned-tests",
+      "state": "failure",
+      "target_url": "https://prow.ci.kubevirt.io/view/gs/kubevirt-prow/pr-logs/pull/kubevirt_kubevirt/19595/pull-kubevirt-check-unassigned-tests/2113316382073425920",
+      "description": "Job failed. BaseSHA:969a9f7ada5f93181d42bb223a3947bb74470b49"
+    },
+    {
+      "context": "pull-kubevirt-unit-test",
+      "state": "success",
+      "target_url": "https://prow.ci.kubevirt.io/view/gs/kubevirt-prow/pr-logs/pull/kubevirt_kubevirt/19595/pull-kubevirt-unit-test/2113316375123464192",
+      "description": "Job succeeded. BaseSHA:969a9f7ada5f93181d42bb223a3947bb74470b49"
+    },
+    {
+      "context": "pull-kubevirt-fuzz",
+      "state": "failure",
+      "target_url": "https://prow.ci.kubevirt.io/view/gs/kubevirt-prow/pr-logs/pull/kubevirt_kubevirt/19595/pull-kubevirt-fuzz/2113316375463202816",
+      "description": "Job failed. BaseSHA:969a9f7ada5f93181d42bb223a3947bb74470b49"
+    },
+    {
+      "context": "coverage/coveralls",
+      "state": "success",
+      "target_url": "https://coveralls.io/builds/82538057",
+      "description": "Coverage remained the same at 73.681%"
+    }
+  ]
+}
