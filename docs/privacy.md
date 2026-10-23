@@ -12,9 +12,9 @@ Only public data, from these places:
 | api.gsocorganizations.dev | Past years' organizations and project titles |
 | api.github.com | Public repositories, issues, pull requests, and labels you ask about, and the public profile of a GitHub username you give it |
 | commits.ecosyste.ms | Public commit counts for a repository |
-| Each organization's own ideas page | The page the organization published for GSoC |
+| Each organization's own ideas page | The page the organization published for GSoC. A page kept as a Google Doc is read through its export link on docs.google.com |
 | raw.githubusercontent.com | Ideas and wiki pages that an organization keeps in a GitHub repository |
-| A GitLab server, such as gitlab.com, gitlab.gnome.org, or invent.kde.org | Only when you check a GitLab issue link: that issue, its labels, assignees, and merge requests |
+| A GitLab server, such as gitlab.com, gitlab.gnome.org, or invent.kde.org | When you check a GitLab issue link: that issue, its labels, assignees, and merge requests. When `proposal` checks your draft: up to five merge requests your draft links to, to see whether they were merged (`--no-verify` skips this). Your draft itself is never sent |
 
 Each service sees a normal web request from your computer: your IP address and what was asked for, such as an organization or repository name. The tool never posts, comments, opens pull requests, or changes anything on any of them.
 

@@ -77,3 +77,38 @@ def test_an_unread_listing_keeps_the_usual_steps_and_a_non_gsoc_owner_gets_no_id
     repo = "acme/site"
     usual = _when_no_issues(None, org=None, repo=repo)
     assert toolkit._repo_alternatives(repo, usual) == usual
+
+
+def test_the_advice_links_the_issues_and_the_organizations_chat(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A launch audit (2026-10-23) was told to read ML4SCI/DeepLense's issues and to ask
+    # in the project's channel, with neither link, though ML4SCI lists its Gitter room.
+    from git_into_gsoc.models import ContactChannel
+
+    chat = "https://app.gitter.im/#/room/#ML4SCI_general:gitter.im"
+    org = OrgSummary(
+        name="Machine Learning for Science (ML4SCI)",
+        slug="ml4sci",
+        github_orgs=["ML4SCI"],
+        channels=[
+            ContactChannel(kind="mailingList", value="ml4-sci@cern.ch"),
+            ContactChannel(kind="chat", value=chat),
+        ],
+    )
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "snapshot_organizations", lambda: [org])
+    assert toolkit._public_channel(["ml4sci"]) == chat  # its chat before its mailing list
+    assert toolkit._public_channel(["someone-else"]) is None
+    assert toolkit._public_channel([]) is None
+
+    steps = _when_no_issues(None, org=None, repo="ML4SCI/DeepLense", chat=chat)
+    assert "(https://github.com/ML4SCI/DeepLense/issues)" in steps[0]
+    assert (
+        steps[1] == f"Ask in the project's public channel which small task would help most: {chat}"
+    )
+    assert _when_no_issues(None, org=None, repo="acme/lib")[1].endswith("would help most.")
+    org_steps = _when_no_issues(None, org="ML4SCI", repo=None, gsoc_org=True, chat=chat)
+    assert any(
+        step.endswith(f"ask the mentors in its chat how to start: {chat}") for step in org_steps
+    )
