@@ -438,6 +438,7 @@ def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # ty
                         pr(5, "closed"),
                         pr(6, "merged", fixes=True),
                         pr(8, "open"),
+                        pr(9, "closed", fixes=True),
                     ],
                 },
                 "before_you_comment": [],
@@ -450,3 +451,4 @@ def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # ty
     assert "PR #5 (closed) by @dev, mentions this issue" in lines
     assert "PR #6 (merged) by @dev" in lines  # it says it fixes this one
     assert "PR #8 (open) by @dev" in lines  # an open PR may be the work itself
+    assert "PR #9 (closed) by @dev" in lines  # a closed one that said it fixes this tried it
