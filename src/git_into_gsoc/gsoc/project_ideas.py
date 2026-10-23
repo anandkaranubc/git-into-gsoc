@@ -960,7 +960,7 @@ _GENERIC_LINK_TEXT = re.compile(
 # The text may hold a short aside in parentheses: ML4SCI's "Physics-Informed Neural Network
 # Diffusion Equation (PINNDE)" was read as its file name, GENIE5.
 _ONLY_LINK_RE = re.compile(
-    r"[-*\s]*((?:[^()\n]|\((?!https?://)[^()\n]{1,40}\)){2,160}?)\s*\((https?://[^)\s]+)\)\s*"
+    r"[-*\s]*((?:[^()\n]|\((?![^()\n]*https?://)[^()\n]{1,40}\)){2,160}?)\s*\((https?://[^)\s]+)\)\s*"
 )
 # Pages about the program itself, never one organization's ideas.
 _PROGRAM_SITES = ("summerofcode.withgoogle.com", "developers.google.com/open-source/gsoc")

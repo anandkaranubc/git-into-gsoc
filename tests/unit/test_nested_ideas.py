@@ -218,5 +218,8 @@ def test_two_links_on_one_line_are_not_read_as_one_title() -> None:
     assert (
         _ONLY_LINK_RE.fullmatch("see (https://a.example.org) and (https://b.example.org)") is None
     )
+    assert (
+        _ONLY_LINK_RE.fullmatch("Text (see https://a.example.org) (https://b.example.org)") is None
+    )
     found = _ONLY_LINK_RE.fullmatch("- Jet tagging (JT) (https://a.example.org/proposal_JT.html)")
     assert found is not None and found.group(1) == "Jet tagging (JT)"
