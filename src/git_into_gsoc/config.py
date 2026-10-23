@@ -171,10 +171,19 @@ def _usable(value: str | None) -> str | None:
     return value if value and not _PLACEHOLDER.match(value) else None
 
 
+_TOKEN_VARIABLES = ("GIG_GITHUB_TOKEN", "GITHUB_TOKEN", "GH_TOKEN")
+
+
 def resolve_token(settings: Settings) -> tuple[str | None, str | None]:
-    """Return (token, source): explicit setting, env vars, then `gh auth token`."""
+    """Return (token, source): explicit setting, env vars, then `gh auth token`.
+
+    The source names the variable, or the .env file, that held the token: an old
+    GITHUB_TOKEN in a shell profile keeps winning over `gh auth login`, so advice to
+    fix a refused token has to say which one to replace.
+    """
     if token := _usable(settings.github_token):
-        return token, "environment"
+        named = next((k for k in _TOKEN_VARIABLES if _usable(os.environ.get(k)) == token), None)
+        return token, f"${named}" if named else ".env file"
     for key in ("GITHUB_TOKEN", "GH_TOKEN"):
         if value := _usable(os.environ.get(key)):
             return value, f"${key}"

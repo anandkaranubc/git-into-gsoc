@@ -883,15 +883,16 @@ def ci_test_dirs_first(test_dirs: list[str], workflow_texts: dict[str, str]) -> 
 
 
 def rank_workflows(paths: list[str], *, limit: int = 2) -> list[str]:
-    """Workflow files most likely to run the test suite, best first."""
+    """Workflow files most likely to run the test suite, best first. Bots, labelers,
+    and sign-off checks are left out unless their name says they test something."""
 
     # Best first. Checks on branch names, sizes, or style run on every pull request but
     # test nothing; quality gates and pull-request workflows run the tests more often
     # than builds do.
     tiers = (
         r"assign|triage|greet|welcome|first[-_]?interaction|dependabot|codeql|lock|"
-        r"\bbots?\b|[-_]bot\b|issue",
-        r"convention|ratchet|size|lint|format|spell|label|stale|comment",
+        r"\bbots?\b|[-_]bot\b|issue|label|stale|comment|(?:^|[-_.])(?:cla|dco)(?:[-_.]|$)",
+        r"convention|ratchet|size|lint|format|spell",
         r"unit",
         r"test|pytest|tox|nox",
         r"^ci\b|[._-]ci\b|\bci[._-]|check|quality|gate|verify|validate|pull[_-]?request|^pr[._-]",
@@ -907,7 +908,10 @@ def rank_workflows(paths: list[str], *, limit: int = 2) -> list[str]:
                 return (rank, name)
         return (4, name)
 
-    return sorted(paths, key=priority)[:limit]
+    # KubeVirt's only workflow labels design proposals, and orient called it "what CI
+    # runs on your pull request" with "CI uses Python 3.x"; its tests run elsewhere.
+    kept = [p for p in paths if priority(p)[0] < 8 or "test" in p.rsplit("/", 1)[-1].lower()]
+    return sorted(kept, key=priority)[:limit]
 
 
 def active_committers(commits: list[dict[str, Any]], *, limit: int = 8) -> list[dict[str, Any]]:

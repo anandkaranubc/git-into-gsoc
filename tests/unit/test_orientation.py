@@ -636,7 +636,23 @@ def test_automation_workflows_are_not_read_as_the_test_setup() -> None:
     # issue-assign-to-contributor.yml, a bot that assigns issues.
     paths = [f".github/workflows/{n}.yml" for n in ("deploy", "issue-assign-to-contributor")]
     paths += [".github/workflows/language.yml"]
-    assert rank_workflows(paths, limit=3)[-1].endswith("issue-assign-to-contributor.yml")
+    assert not any(p.endswith("assign-to-contributor.yml") for p in rank_workflows(paths, limit=3))
+
+
+def test_labelers_and_sign_off_checks_are_not_what_ci_runs() -> None:
+    # A live check of 0.24.0: KubeVirt's only workflow labels design proposals, and
+    # orient said "CI uses Python 3.x" from it; for Mifos Mobile the reading plan named
+    # cla-check.yml, a sign-off check, while pr-check.yml runs the build and tests.
+    assert rank_workflows([".github/workflows/label_approved_veps.yaml"]) == []
+    mifos = ["cla-check", "pr-check", "multi-platform-build-and-publish", "sync-dirs"]
+    ranked = rank_workflows([f".github/workflows/{n}.yml" for n in mifos])
+    assert ranked[0].endswith("pr-check.yml") and not any("cla-check" in p for p in ranked)
+    assert rank_workflows(["w/dco.yml", "w/stale.yml", "w/pr-comment.yml"]) == []
+    # A name that says it tests something is kept, and "classify" is not "cla".
+    assert rank_workflows(["w/test-labels.yml", "w/classify-tests.yml"], limit=3) == [
+        "w/classify-tests.yml",
+        "w/test-labels.yml",
+    ]
 
 
 def test_installing_npm_itself_is_not_the_project_install() -> None:
