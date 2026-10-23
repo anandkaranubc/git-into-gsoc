@@ -60,6 +60,21 @@ def test_parse_issue_ref_forms() -> None:
         parse_issue_ref("a/b#zero")
 
 
+def test_issue_reference_errors_say_what_to_try() -> None:
+    # A live check of 0.24.0 read a Discussion link as "Missing issue number", and
+    # `owner/repo#abc` as an error with no hint.
+    with pytest.raises(InputError) as info:
+        parse_issue_ref("https://github.com/sympy/sympy/discussions/27000")
+    assert str(info.value).startswith("That link is a GitHub Discussion, not an issue")
+    assert "read it in your browser" in (info.value.hint or "")
+    with pytest.raises(InputError) as info:
+        parse_issue_ref("https://github.com/sympy/sympy")
+    assert "git-into-gsoc issues --repo sympy/sympy" in (info.value.hint or "")
+    with pytest.raises(InputError) as info:
+        parse_issue_ref("sympy/sympy#abc")
+    assert "after # in owner/repo#123" in (info.value.hint or "")
+
+
 def test_an_issue_on_another_site_gets_advice_that_is_true() -> None:
     # The old hint said "This tool reads GitHub only. For a project on GitLab...",
     # although `issue` reads GitLab links. BRL-CAD and GNU projects work elsewhere.

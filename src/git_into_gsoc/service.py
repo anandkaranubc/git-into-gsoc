@@ -69,9 +69,11 @@ from git_into_gsoc.github.repos import (
     OutsideMerges,
     beginner_labels,
     channels_in,
+    fork_parent,
     is_bot,
     is_event_repo,
     is_main_repo,
+    is_personal,
     mentioned_repos,
     mirror_source,
     outside_merges,
@@ -364,6 +366,33 @@ def _unread(status: dict[str, str], lead: Any) -> int:
     so, so a passing network error cannot push a project's main repository off the list.
     """
     return 0 if lead.full_name in status else 1
+
+
+def _issues_kept_elsewhere(raw: dict[str, Any], repo: str) -> list[str] | None:
+    """What to try when a repository's issues are not on it, or None when they are.
+
+    On a contributor's fork of sympy/sympy and on torvalds/linux, both with issues
+    off, the advice was "read its open issues yourself".
+    """
+    source = mirror_source(raw)
+    if source:
+        return [f"{repo} is a read-only mirror of {source}. Look for its issues there."]
+    parent = fork_parent(raw)
+    if parent and is_personal(raw):
+        return [
+            f"{repo} is a fork, a copy of {parent}; the project's issues are there: "
+            f"git-into-gsoc issues --repo {parent}"
+        ]
+    if raw.get("has_issues") is not False:
+        return None
+    steps = [
+        f"{repo} has issues turned off on GitHub, so its tasks are tracked somewhere else. "
+        "Its README or website says where, and how it takes changes."
+    ]
+    if parent:
+        steps.append(f"It is a fork of {parent}: git-into-gsoc issues --repo {parent}")
+    steps.append("Ask in the project's public channel which small task would help most.")
+    return steps
 
 
 def _when_no_issues(
@@ -685,10 +714,12 @@ class GSoCToolkit:
 
     def evaluate_repo(self, full_name: str) -> dict[str, Any]:
         """A repository's health score and contribution guide, with advice read from
-        the grade. A read-only mirror is not graded: its GitHub history says nothing
-        about the project."""
+        the grade. A read-only mirror, a person's fork, and a repository that takes no
+        pull requests are not graded: their GitHub history says nothing about the
+        project."""
         owner, name = parse_repo(full_name)
-        source = mirror_source(self.github.get_repo(owner, name))
+        raw = self.github.get_repo(owner, name)
+        source = mirror_source(raw)
         if source:
             # The mirror's pull requests and issues say nothing about the project.
             return {
@@ -701,13 +732,49 @@ class GSoCToolkit:
                     "the project, and contribute, where its code really lives."
                 ),
             }
+        parent = fork_parent(raw)
+        if parent and is_personal(raw):
+            # A SymPy contributor's own fork read "grade F, choose a healthier
+            # repository": a fork has issues off and few pull requests of its own.
+            return {
+                "full_name": f"{owner}/{name}",
+                "fork_of": parent,
+                "health": None,
+                "recommendation": (
+                    f"Not graded: {owner}/{name} is a fork, a copy of {parent} in one "
+                    f"person's account. Pull requests for the project go to {parent}, so "
+                    "judge that repository instead."
+                ),
+                "next_step": f"git-into-gsoc repo {parent}",
+            }
+        if raw.get("has_pull_requests") is False:
+            # torvalds/linux takes patches by email; its GitHub copy refuses pull requests.
+            return {
+                "full_name": f"{owner}/{name}",
+                "pull_requests_off": True,
+                "health": None,
+                "recommendation": (
+                    f"Not graded: {owner}/{name} has pull requests turned off on GitHub, "
+                    "so changes reach the project another way, such as patches sent by "
+                    "email. Its README or website says how it takes contributions."
+                ),
+            }
         health = self.github.repo_health(full_name)
         guide = self.github.contribution_guide(full_name)
+        recommendation = _repo_recommendation(health.grade, health.warnings)
+        if parent:
+            # Organizations do work in forks (sugarlabs/sugarizer, openSUSE/cobbler), so
+            # these are graded, with the original named.
+            recommendation = (
+                f"This is {owner}'s fork of {parent}. Check that the organization works "
+                f"here and not in {parent} (git-into-gsoc repo {parent}). {recommendation}"
+            )
         return {
             "health": health.model_dump(mode="json"),
             "contribution_guide": guide.model_dump(),
-            "recommendation": _repo_recommendation(health.grade, health.warnings),
+            "recommendation": recommendation,
             "next_step": _repo_next_step(health.full_name, health.grade),
+            **({"fork_of": parent} if parent else {}),
         }
 
     def gsoc_github_orgs(
@@ -857,6 +924,7 @@ class GSoCToolkit:
         # unread or failed repository never outranks one that was read.
         status: dict[str, str] = {}
         found: list[OutsideMerges] = []
+        merges: dict[str, OutsideMerges] = {}
         budget = OUTSIDE_BUDGET
         while budget > 0:
             # Which to read next goes by score alone, so one that would rise is read.
@@ -870,6 +938,7 @@ class GSoCToolkit:
                 status[lead.full_name] = "failed" if result is None else "checked"
                 if result is not None:
                     found.append(result)
+                    merges[lead.full_name] = result
         leads.sort(key=lambda lead: (_unread(status, lead), -lead.score, -lead.stars))
         # Say why a higher score can sit below a lower one: unread repositories follow.
         shown_unread = [lead for lead in leads[:limit] if lead.full_name not in status]
@@ -885,8 +954,20 @@ class GSoCToolkit:
             else ""
         )
         name = gsoc_org.name if gsoc_org else owners[0]
-        judged = [f for f in found if f.humans]
         failed = sum(1 for v in status.values() if v == "failed")
+        # Does any listed repository hold project code that takes outside work? Websites,
+        # docs and governance repositories do not count (UC OSPO lists its website first);
+        # a code repository not read, or with no human pull requests in its sample, is
+        # unknown, and then nothing is claimed.
+        shown_code = [lead for lead in leads[:limit] if repo_kind(lead.full_name) is None]
+        judged_code = [
+            merges[lead.full_name]
+            for lead in shown_code
+            if lead.full_name in merges and merges[lead.full_name].humans
+        ]
+        # Enough to say "none": every listed code repository was read, or at least three.
+        enough = len(judged_code) == len(shown_code) or len(judged_code) >= 3
+        no_outside_code = bool(leads) and enough and not any(m.authors for m in judged_code)
         ideas_step = (
             f'run `git-into-gsoc ideas "{name}"`, pick the idea that fits you, and ask its '
             "mentors in the organization's chat how to start."
@@ -896,11 +977,23 @@ class GSoCToolkit:
         quiet_note = " ".join(
             part
             for part in (
-                f"None of the {len(judged)} repositories checked had a pull request from "
-                "outside the team merged among their recent closed pull requests. At "
-                f"{name}, GSoC work may start from its ideas and mentors rather than from "
-                f"GitHub issues: {ideas_step}"
-                if len(judged) >= 3 and not any(f.authors for f in judged)
+                (
+                    f"None of the repositories listed holds {name}'s project code: they are its "
+                    "website, documentation or similar. Its GSoC work is described on its ideas "
+                    f"page: {ideas_step}"
+                    if not shown_code
+                    else (
+                        "The one code repository checked had no pull request from outside the "
+                        "team merged among its recent closed pull requests."
+                        if len(judged_code) == 1
+                        else f"None of the {len(judged_code)} code repositories checked had a "
+                        "pull request from outside the team merged among their recent closed "
+                        "pull requests."
+                    )
+                    + f" At {name}, GSoC work may start from its ideas and mentors rather than "
+                    f"from GitHub issues: {ideas_step}"
+                )
+                if no_outside_code
                 else "",
                 (
                     f"{failed} {'repository' if failed == 1 else 'repositories'} could not be "
@@ -935,10 +1028,7 @@ class GSoCToolkit:
                 )
                 if part
             ),
-            "next_step": (
-                "Run `git-into-gsoc repo owner/name --track` on your top pick (so `next` "
-                "remembers it), then `git-into-gsoc issues --repo owner/name`."
-            ),
+            "next_step": _repos_next_step(shown_code, no_outside_code, ideas_step),
             # Points add up the reasons listed; they only order this list.
             "score_meaning": (
                 "Score: points from its stars and recent activity plus the reasons listed, to "
@@ -1259,6 +1349,17 @@ class GSoCToolkit:
                 if unlabelled == 1
                 else f" {unlabelled} of these have no beginner label and are marked."
             )
+        steps = (
+            []
+            if issues
+            else _when_no_issues(language, org=asked_org, repo=repo, gsoc_org=bool(gsoc_owners))
+        )
+        if repo and not issues:
+            try:
+                raw = self.github.get_repo(*parse_repo(repo))
+            except HttpError:
+                raw = {}
+            steps = _issues_kept_elsewhere(raw, repo) or steps
         return {
             "scope": "gsoc" if use_gsoc else "custom",
             "language_used": language,
@@ -1267,9 +1368,7 @@ class GSoCToolkit:
             "count": len(issues),
             "issues": listed,
             "before_you_comment": BEFORE_YOU_COMMENT,
-            "next_steps": []
-            if issues
-            else _when_no_issues(language, org=asked_org, repo=repo, gsoc_org=bool(gsoc_owners)),
+            "next_steps": steps,
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
@@ -3240,6 +3339,18 @@ _NOT_OWNERS = {"orgs", "topics", "search", "features", "apps", "settings", "mark
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
 _DISCUSSIONS_RE = re.compile(r"github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/discussions\b")
 _CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
+
+
+def _repos_next_step(shown_code: list[RepoLead], no_outside_code: bool, ideas_step: str) -> str:
+    """What to do after `repos`: never a website or docs repository as the pick."""
+    if no_outside_code or not shown_code:
+        return f"Start from its ideas rather than these repositories: {ideas_step}"
+    first = shown_code[0].full_name
+    return (
+        f"Pick a repository that holds project code, such as {first}: run "
+        f"`git-into-gsoc repo {first} --track` (so `next` remembers it), then "
+        f"`git-into-gsoc issues --repo {first}`."
+    )
 
 
 def _github_links(text: str) -> list[dict[str, str]]:
