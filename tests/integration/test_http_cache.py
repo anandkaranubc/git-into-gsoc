@@ -148,10 +148,12 @@ def test_network_error_after_retries(tmp_path: Path) -> None:
 
 @respx.mock
 def test_unauthorized_has_actionable_hint(tmp_path: Path) -> None:
-    respx.get(URL).mock(return_value=httpx.Response(401, json={"message": "Bad credentials"}))
+    # Only GitHub's refusal is about the GitHub token; other hosts get their own hint.
+    github = "https://api.github.com/repos/a/b"
+    respx.get(github).mock(return_value=httpx.Response(401, json={"message": "Bad credentials"}))
     client, _ = make_client(tmp_path)
     with pytest.raises(HttpError) as info:
-        client.get_json(URL, use_cache=False)
+        client.get_json(github, use_cache=False)
     assert info.value.status_code == 401
     assert "gh auth login" in (info.value.hint or "")
 

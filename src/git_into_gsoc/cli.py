@@ -2419,6 +2419,8 @@ def doctor_cmd() -> None:
         console.print(f"GitHub rate: {rl.get('remaining')}/{rl.get('limit')} remaining")
     except GigError as exc:
         console.print(f"[red]GitHub check failed:[/red] {exc}")
+        if exc.hint:
+            console.print(f"  {exc.hint}", soft_wrap=True)
     for label, url in (
         ("official GSoC site", f"{settings.gsoc_official_api_url.rstrip('/')}/program/2026/"),
         ("organization archive", f"{settings.gsoc_orgs_api_url.rstrip('/')}/2026.json"),
