@@ -67,7 +67,7 @@ The message says when the limit resets and which limit it was. A **search rate l
 
 ## Issues marked `unknown` in a list
 
-The hourly limit can also run out partway through `issues`. The list still appears, but some issues read `unknown`, which means the tool could not check them for claims and pull requests. The note under the list then starts with how many were not checked, how long until the limit resets, and how to raise it. Without a token, one `issues` search uses 10 to 20 of the 60 hourly requests, so a few searches use it all. Run `gh auth login` once to raise the limit to 5,000, or wait for the reset and run `issue owner/repo#N` on the issue you want before you comment.
+The hourly limit can also run out partway through `issues`. The list still appears, but some issues read `unknown`, which means the tool could not check them for claims and pull requests. The note under the list then starts with how many were not checked, how long until the limit resets, and how to raise it. Without a token, one `issues` search uses 10 to 20 of the 60 hourly requests, so a few searches use it all. To warn you first, any command that leaves 15 or fewer of the 60 says how many are left and when the count resets, on a line of its own after the result. Run `gh auth login` once to raise the limit to 5,000, or wait for the reset and run `issue owner/repo#N` on the issue you want before you comment.
 
 ## `error: HTTP 401` or a token that seems ignored
 
