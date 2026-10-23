@@ -1321,6 +1321,8 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         raw = body
     except HttpError:
         return None
+    if _GITHUB_REPO_PAGE_RE.match(target) and not _has_github_readme(raw):
+        return None
     doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
     if _looks_like_html(raw):
@@ -1347,6 +1349,20 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
 
 
 _GITHUB_WIKI_RE = re.compile(r"https?://(?:www\.)?github\.com/[^/]+/[^/]+/wiki/", re.I)
+# A repository's front page or one of its folders, as GitHub renders it.
+_GITHUB_REPO_PAGE_RE = re.compile(
+    r"https?://(?:www\.)?github\.com/[^/?#]+/[^/?#]+(?:/tree/[^?#]*)?/?(?:[?#].*)?$", re.I
+)
+
+
+def _has_github_readme(html: str) -> bool:
+    """Whether a GitHub repository or folder page shows a README.
+
+    Without one, only GitHub's own labels are left: LabLua's 2026 folder gave
+    "Directory actions", "Latest commit" and "History" as ideas. The page around a
+    README stays: reading the README alone split cvxpy's one idea into its parts.
+    """
+    return '<article class="markdown-body' in html
 
 
 def _github_wiki_body(html: str, url: str) -> str | None:
