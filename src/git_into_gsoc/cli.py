@@ -914,8 +914,7 @@ def ideas_cmd(
         table = Table(title="Project ideas", caption=". ".join(notes) or None)
         # ML4SCI lists each idea as a link to its own page: four empty columns told a
         # newcomer nothing, and the page that has the details was not shown.
-        fields = ("hours", "size", "size_raw", "difficulty", "mentors", "skills")
-        links_only = not any(idea.get(key) for idea in data["ideas"] for key in fields)
+        links_only = bool(data.get("links_only"))
         if show_fit:
             table.add_column("Fit", justify="right")
         table.add_column("Idea", overflow="fold")

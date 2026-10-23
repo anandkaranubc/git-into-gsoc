@@ -1408,11 +1408,17 @@ class GSoCToolkit:
             if gsoc_owners:
                 shortlist, org = gsoc_owners, None
                 gsoc_name = owners_note.removeprefix("Searching ").split(":", 1)[0]
-                # A linked project is not the organization's own: say where it came from.
+                # A linked project is not the organization's own: say where it came from,
+                # in the note's words (UC OSPO's come from its project pages).
+                where = (
+                    f"linked from the {gsoc_name} project pages"
+                    if owners_note.endswith("(linked from its project pages).")
+                    else f"named on the {gsoc_name} ideas page"
+                )
                 owner_names = {
                     **owner_names,
                     **{o.lower(): gsoc_name for o in own_owners},
-                    **{o.lower(): f"named on the {gsoc_name} ideas page" for o in linked},
+                    **{o.lower(): where for o in linked},
                 }
         use_gsoc = scope == "gsoc" and not org and not repo and bool(shortlist)
         if gsoc_owners:
@@ -3004,6 +3010,8 @@ class GSoCToolkit:
                 )
             ),
             "repos_linked": several_repos,
+            # The table shows each idea's page then, not four empty columns.
+            "links_only": _links_only(doc),
         }
 
     def read_ideas_page(
@@ -3570,7 +3578,25 @@ def _looks_like_ideas_page(page: dict[str, str]) -> bool:
 _GITHUB_PROJECT_RE = re.compile(
     r"https?://github\.com/([A-Za-z0-9_.-]+)(?:/([A-Za-z0-9_.-]+))?", re.I
 )
-_NOT_OWNERS = {"orgs", "topics", "search", "features", "apps", "settings", "marketplace"}
+# GitHub's own pages, never a project's owner. A pasted image (user-attachments/assets)
+# made a one-project ideas page look like several (a post-merge audit, 2026-10-23).
+_NOT_OWNERS = {
+    "orgs",
+    "topics",
+    "search",
+    "features",
+    "apps",
+    "settings",
+    "marketplace",
+    "user-attachments",
+    "sponsors",
+    "users",
+    "collections",
+    "codespaces",
+    "readme",
+    "explore",
+    "notifications",
+}
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
 _DISCUSSIONS_RE = re.compile(r"github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/discussions\b")
 _CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
@@ -3695,17 +3721,26 @@ def _idea_repo(links: list[str]) -> str | None:
     return str(ranked[0][0]) if ranked else None
 
 
+def _links_only(doc: IdeasDocument) -> bool:
+    """True for an index whose every idea is a bare link to its own page (ML4SCI)."""
+    return (
+        doc.layout == "index"
+        and bool(doc.ideas)
+        and all(
+            len(i.links) == 1
+            and not (i.description or i.size or i.difficulty or i.mentors or i.skills)
+            for i in doc.ideas
+        )
+    )
+
+
 def _ideas_note(doc: IdeasDocument, followed: list[dict[str, str]]) -> str:
     if doc.layout == "issues":
         return "This org lists ideas as GitHub issues; each idea links to its issue."
     if doc.layout == "index" and doc.ideas:
         # ML4SCI and CERN-HSF list each idea as a link to its own page, so the table has
         # titles only; say where the rest is.
-        links_only = all(
-            len(i.links) == 1
-            and not (i.description or i.size or i.difficulty or i.mentors or i.skills)
-            for i in doc.ideas
-        )
+        links_only = _links_only(doc)
         return (
             " ".join(
                 part
