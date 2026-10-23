@@ -16,6 +16,13 @@ Pass a year to pin which official list is embedded, for example `python -m git_i
 
 A scheduled workflow (`snapshot-refresh.yml`, Mondays) runs the same refresher and opens a pull request when the data changed, so a release rarely needs a manual refresh; close and reopen that pull request to run CI, then squash-merge it.
 
+Once a month the workflow also refreshes the evidence used to rank organizations: ideas pages, repository languages, how many beginner-labelled issues each organization opened, and what organizations said about taking part. The last two come from GitHub searches with an OR group, which the built-in Actions token answers wrongly. A check before those searches (the canary) compares one label alone with that label OR another. When the answer cannot be right, it keeps last month's counts and statements instead of writing zeros, and the log says so. To let those searches run, give the workflow a read-only token of its own, the `SNAPSHOT_READ_TOKEN` secret:
+
+1. Create a fine-grained personal access token at https://github.com/settings/personal-access-tokens/new. Under **Repository access** choose **Public repositories (read-only)**, and add no permissions: it can read public data and write nothing. Pick an expiration date and put a reminder in your calendar a week before it.
+2. Store it: run `gh secret set SNAPSHOT_READ_TOKEN --repo anandkaranubc/git-into-gsoc` and paste the token when asked. It is not shown on screen.
+
+The evidence step then uses it, and the step that opens the pull request keeps the built-in token. Without the secret, or once it expires, the step falls back to the built-in token, and the canary keeps last month's counts again: nothing breaks, the counts just stop moving. When a refresh runs, its log says whether the canary passed.
+
 ## 2. Merge the release pull request
 
 Release Please keeps a pull request titled `chore(main): release X.Y.Z` open whenever `main` has unreleased commits. This repository gives Release Please a token of its own, the `RELEASE_PLEASE_TOKEN` secret, so CI and CodeQL start on that pull request by themselves. Release Please does not refresh its pull request for `chore:` or `ci:` commits, so when the last merge was one of those, update the branch from the pull request page before you merge.

@@ -69,9 +69,11 @@ from git_into_gsoc.github.repos import (
     OutsideMerges,
     beginner_labels,
     channels_in,
+    fork_parent,
     is_bot,
     is_event_repo,
     is_main_repo,
+    is_personal,
     mentioned_repos,
     mirror_source,
     outside_merges,
@@ -364,6 +366,33 @@ def _unread(status: dict[str, str], lead: Any) -> int:
     so, so a passing network error cannot push a project's main repository off the list.
     """
     return 0 if lead.full_name in status else 1
+
+
+def _issues_kept_elsewhere(raw: dict[str, Any], repo: str) -> list[str] | None:
+    """What to try when a repository's issues are not on it, or None when they are.
+
+    On a contributor's fork of sympy/sympy and on torvalds/linux, both with issues
+    off, the advice was "read its open issues yourself".
+    """
+    source = mirror_source(raw)
+    if source:
+        return [f"{repo} is a read-only mirror of {source}. Look for its issues there."]
+    parent = fork_parent(raw)
+    if parent and is_personal(raw):
+        return [
+            f"{repo} is a fork, a copy of {parent}; the project's issues are there: "
+            f"git-into-gsoc issues --repo {parent}"
+        ]
+    if raw.get("has_issues") is not False:
+        return None
+    steps = [
+        f"{repo} has issues turned off on GitHub, so its tasks are tracked somewhere else. "
+        "Its README or website says where, and how it takes changes."
+    ]
+    if parent:
+        steps.append(f"It is a fork of {parent}: git-into-gsoc issues --repo {parent}")
+    steps.append("Ask in the project's public channel which small task would help most.")
+    return steps
 
 
 def _when_no_issues(
@@ -685,10 +714,12 @@ class GSoCToolkit:
 
     def evaluate_repo(self, full_name: str) -> dict[str, Any]:
         """A repository's health score and contribution guide, with advice read from
-        the grade. A read-only mirror is not graded: its GitHub history says nothing
-        about the project."""
+        the grade. A read-only mirror, a person's fork, and a repository that takes no
+        pull requests are not graded: their GitHub history says nothing about the
+        project."""
         owner, name = parse_repo(full_name)
-        source = mirror_source(self.github.get_repo(owner, name))
+        raw = self.github.get_repo(owner, name)
+        source = mirror_source(raw)
         if source:
             # The mirror's pull requests and issues say nothing about the project.
             return {
@@ -701,13 +732,49 @@ class GSoCToolkit:
                     "the project, and contribute, where its code really lives."
                 ),
             }
+        parent = fork_parent(raw)
+        if parent and is_personal(raw):
+            # A SymPy contributor's own fork read "grade F, choose a healthier
+            # repository": a fork has issues off and few pull requests of its own.
+            return {
+                "full_name": f"{owner}/{name}",
+                "fork_of": parent,
+                "health": None,
+                "recommendation": (
+                    f"Not graded: {owner}/{name} is a fork, a copy of {parent} in one "
+                    f"person's account. Pull requests for the project go to {parent}, so "
+                    "judge that repository instead."
+                ),
+                "next_step": f"git-into-gsoc repo {parent}",
+            }
+        if raw.get("has_pull_requests") is False:
+            # torvalds/linux takes patches by email; its GitHub copy refuses pull requests.
+            return {
+                "full_name": f"{owner}/{name}",
+                "pull_requests_off": True,
+                "health": None,
+                "recommendation": (
+                    f"Not graded: {owner}/{name} has pull requests turned off on GitHub, "
+                    "so changes reach the project another way, such as patches sent by "
+                    "email. Its README or website says how it takes contributions."
+                ),
+            }
         health = self.github.repo_health(full_name)
         guide = self.github.contribution_guide(full_name)
+        recommendation = _repo_recommendation(health.grade, health.warnings)
+        if parent:
+            # Organizations do work in forks (sugarlabs/sugarizer, openSUSE/cobbler), so
+            # these are graded, with the original named.
+            recommendation = (
+                f"This is {owner}'s fork of {parent}. Check that the organization works "
+                f"here and not in {parent} (git-into-gsoc repo {parent}). {recommendation}"
+            )
         return {
             "health": health.model_dump(mode="json"),
             "contribution_guide": guide.model_dump(),
-            "recommendation": _repo_recommendation(health.grade, health.warnings),
+            "recommendation": recommendation,
             "next_step": _repo_next_step(health.full_name, health.grade),
+            **({"fork_of": parent} if parent else {}),
         }
 
     def gsoc_github_orgs(
@@ -1259,6 +1326,17 @@ class GSoCToolkit:
                 if unlabelled == 1
                 else f" {unlabelled} of these have no beginner label and are marked."
             )
+        steps = (
+            []
+            if issues
+            else _when_no_issues(language, org=asked_org, repo=repo, gsoc_org=bool(gsoc_owners))
+        )
+        if repo and not issues:
+            try:
+                raw = self.github.get_repo(*parse_repo(repo))
+            except HttpError:
+                raw = {}
+            steps = _issues_kept_elsewhere(raw, repo) or steps
         return {
             "scope": "gsoc" if use_gsoc else "custom",
             "language_used": language,
@@ -1267,9 +1345,7 @@ class GSoCToolkit:
             "count": len(issues),
             "issues": listed,
             "before_you_comment": BEFORE_YOU_COMMENT,
-            "next_steps": []
-            if issues
-            else _when_no_issues(language, org=asked_org, repo=repo, gsoc_org=bool(gsoc_owners)),
+            "next_steps": steps,
         }
 
     def issue_status(self, ref: str, number: int | None = None) -> dict[str, Any]:
