@@ -388,6 +388,10 @@ def resolve(term: str) -> Resolved:
         # then "cms development" was corrected to "game development" and "web cms" lost
         # it (a post-merge audit, 2026-10-23).
         typed = [key for key in whole if key not in specific and _typed_word(key, cleaned)]
+        if specific:
+            # Only beside words of its own subject: "web cms" and "django cms" are
+            # websites, but in "cms open data" and "cms physics" CMS is CERN's detector.
+            typed = [key for key in typed if _subjects(key) & set().union(*map(_lineage, specific))]
         if specific or typed or " " not in cleaned:
             found = tuple(dict.fromkeys([*specific, *typed]))
             return Resolved(raw=term, concepts=found or tuple(whole))
@@ -402,6 +406,23 @@ def resolve(term: str) -> Resolved:
         if close and len(close[0]) >= 4:
             return Resolved(raw=term, concepts=index[close[0]], corrected_from=close[0])
     return Resolved(raw=term, concepts=())
+
+
+def _lineage(key: str) -> set[str]:
+    """The concept and every broader one above it (django, backend, web)."""
+    seen: set[str] = set()
+    todo = [key]
+    while todo:
+        current = todo.pop()
+        if current not in seen:
+            seen.add(current)
+            todo.extend(broader_of(current))
+    return seen
+
+
+def _subjects(key: str) -> set[str]:
+    """What a concept is part of: its broader ones, or itself when it has none."""
+    return set(broader_of(key)) or {key}
 
 
 def _typed_word(key: str, text: str) -> bool:

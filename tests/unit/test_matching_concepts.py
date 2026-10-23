@@ -207,5 +207,8 @@ def test_cms_typed_in_a_phrase_still_means_content_management() -> None:
     assert set(resolve("web cms").concepts) == {"web", "content management"}
     assert set(resolve("django cms").concepts) == {"django", "content management"}
     assert resolve("game development").concepts == ("games",)
+    # Beside another subject, CMS is CERN's detector: CMS Open Data is CERN's portal.
+    assert "content management" not in resolve("cms open data").concepts
+    assert "content management" not in resolve("cms physics").concepts
     # Other tag-only words keep their rule: "data" alone in a phrase is still generic.
     assert resolve("data vizualisation").concepts == ("data visualization",)
