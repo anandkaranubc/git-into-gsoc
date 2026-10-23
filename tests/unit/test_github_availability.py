@@ -81,7 +81,7 @@ def test_open_linked_pr_marks_likely_taken() -> None:
 def test_closed_pr_does_not_block_but_merged_pr_is_a_caveat() -> None:
     result = assess_issue(_issue(), [_pr(7, "closed"), _pr(8, "closed", merged=True)], now=NOW)
     assert result.availability == Availability.AVAILABLE
-    assert any("merged PR" in c for c in result.caveats)
+    assert any("Merged PR" in c and "mentions this issue" in c for c in result.caveats)
 
 
 def test_recent_claim_in_comments() -> None:
@@ -560,7 +560,7 @@ def test_a_pr_in_an_unrelated_project_that_mentions_the_issue_is_not_a_fix() -> 
     found = assess_issue(issue, [mention], now=NOW)
     assert found.availability == Availability.AVAILABLE
     assert found.linked_prs == []
-    assert not any("may already be partly fixed" in c for c in found.caveats)
+    assert not any("already fixes part of it" in c for c in found.caveats)
     assert any("anandkaranubc/git-into-gsoc#154" in c for c in found.caveats)
 
 
@@ -952,11 +952,23 @@ def test_a_merged_pr_that_says_it_fixes_the_issue_makes_it_likely_taken() -> Non
     found = assess_issue(issue, [_merged_pr(672, "Summary\n- Fixes issue #671\n")], now=NOW)
     assert found.availability == Availability.LIKELY_TAKEN
     assert found.reason.startswith("Merged PR #672 says it fixes this, though the issue is still")
-    assert not any("partly fixed" in c for c in found.caveats)
-    # A merged PR that only mentions the issue is still a caveat, as before.
+    assert not any("mentions this issue" in c for c in found.caveats)
+    # A merged PR that only mentions the issue is still a caveat, as before, and names it:
+    # this repository's own free good first issue read "it may already be partly fixed"
+    # because a merged PR said it was left for newcomers (a launch audit, 2026-10-23).
     mention = assess_issue(issue, [_merged_pr(673, "Related to #671.")], now=NOW)
     assert mention.availability == Availability.AVAILABLE
-    assert any("partly fixed" in c for c in mention.caveats)
+    assert (
+        "Merged PR #673 mentions this issue; read it to see whether it already fixes part of it"
+        in mention.caveats
+    )
+    both = assess_issue(
+        issue, [_merged_pr(673, "Related to #671."), _merged_pr(674, "See #671.")], now=NOW
+    )
+    assert (
+        "Merged PRs #673, #674 mention this issue; read them to see whether they already fix "
+        "part of it" in both.caveats
+    )
 
 
 def test_which_words_say_a_pr_fixes_an_issue() -> None:

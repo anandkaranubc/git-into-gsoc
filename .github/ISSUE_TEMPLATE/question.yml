@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Check the [troubleshooting guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/troubleshooting.md) first. For GSoC rules and dates, the [official site](https://summerofcode.withgoogle.com) is the source of truth.
+        Check the [troubleshooting guide](https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/troubleshooting.md) first. For GSoC rules and dates, the [official site](https://summerofcode.withgoogle.com) is the source of truth. Submitting creates a public GitHub issue under your username, so leave out anything private.
   - type: textarea
     id: question
     attributes:

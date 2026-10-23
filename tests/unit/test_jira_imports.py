@@ -80,7 +80,10 @@ def test_a_merged_pr_naming_the_key_is_a_caveat() -> None:
     _mock_issue(httpx.Response(200, json={"items": [_pr(44, "Fixes JENKINS-43785", merged=True)]}))
     _, found = GitHubClient().assess("acme/tap", 164)
     assert found.availability == Availability.AVAILABLE
-    assert "A merged PR references this issue; it may already be partly fixed" in found.caveats
+    assert (
+        "Merged PR #44 mentions this issue; read it to see whether it already fixes part of it"
+        in found.caveats
+    )
 
 
 @respx.mock
