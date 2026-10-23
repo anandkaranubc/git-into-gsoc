@@ -46,7 +46,7 @@ What each line does, in case the words are new:
 - `python3 -m venv .venv` creates a **virtual environment**, a folder that keeps this project's Python packages apart from everything else on your computer. `source .venv/bin/activate` turns it on for the current terminal. Run that line again in every new terminal; installing in one terminal does not activate another. On Windows, use `py -3 -m venv .venv` if `python3` opens the Microsoft Store.
 - `pip install -e ".[dev]"` installs the tool in **editable** mode, so your edits take effect at once, together with the test and lint tools.
 - `pre-commit install` adds a Git hook that formats and checks each commit. Commit from a terminal where `.venv` is active, so the hook uses the project's own versions of the tools.
-- `pytest` runs the tests. It takes about half a minute and ends with a line that counts the passed tests and reports no failures. Then you are ready to change something.
+- `pytest` runs the tests. It takes one to two minutes and ends with a line that counts the passed tests and reports no failures. Then you are ready to change something.
 
 If `./install.sh` was used earlier, the same `.venv` is reused.
 
