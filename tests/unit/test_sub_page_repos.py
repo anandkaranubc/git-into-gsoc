@@ -199,6 +199,24 @@ def test_issues_org_searches_the_projects_linked_from_project_pages() -> None:
     )
 
 
+def test_issues_labels_project_page_owners_as_the_note_does(monkeypatch: Any) -> None:
+    # The note said "linked from its project pages" and every issue said "named on the
+    # SymPy ideas page" (a post-merge audit, 2026-10-23).
+    seen: dict[str, Any] = {}
+
+    def search(**kwargs: Any) -> list[Any]:
+        seen.update(kwargs)
+        return []
+
+    with respx.mock(assert_all_called=False) as api:
+        _mock(api)
+        toolkit = GSoCToolkit()
+        monkeypatch.setattr(toolkit.github, "find_beginner_issues", search)
+        toolkit.find_issues(org="SymPy")
+    assert seen["org_names"]["alpha-lab"] == "linked from the SymPy project pages"
+    assert seen["org_names"]["sympy"] == "SymPy"
+
+
 def test_ideas_says_which_repository_each_idea_links_to() -> None:
     with respx.mock(assert_all_called=False) as api:
         _mock(api)
@@ -265,3 +283,15 @@ def test_without_a_token_it_reads_fewer_repositories(monkeypatch: Any) -> None:
     assert found(GSoCToolkit()) == 5
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     assert found(GSoCToolkit()) == 7
+
+
+def test_githubs_own_pages_are_not_a_projects_repository() -> None:
+    # A post-merge audit (2026-10-23): one pasted image made a one-project page look like
+    # several, and the next step could name "user-attachments/assets".
+    links = [
+        "https://github.com/user-attachments/assets/1a2b",
+        "https://github.com/sponsors/someone",
+        "https://github.com/sympy/sympy",
+    ]
+    assert _idea_repo(links) == "sympy/sympy"
+    assert _idea_repo(links[:2]) is None

@@ -223,3 +223,19 @@ def test_two_links_on_one_line_are_not_read_as_one_title() -> None:
     )
     found = _ONLY_LINK_RE.fullmatch("- Jet tagging (JT) (https://a.example.org/proposal_JT.html)")
     assert found is not None and found.group(1) == "Jet tagging (JT)"
+
+
+def test_ideas_with_prose_or_no_link_are_not_shown_as_links_only() -> None:
+    # A post-merge audit (2026-10-23): the table's check missed descriptions, so prose-only
+    # ideas got an empty "Details on its page" column. One check serves note and table.
+    from git_into_gsoc.models import IdeasDocument, ProjectIdea
+    from git_into_gsoc.service import _links_only
+
+    def doc(*ideas: ProjectIdea) -> IdeasDocument:
+        return IdeasDocument(source_url=PAGE, fetched_url=PAGE, layout="index", ideas=list(ideas))
+
+    linked = ProjectIdea(title="Faster parser for logs", links=[f"{SITE}/proposal_A.html"])
+    prose = ProjectIdea(title="Better errors for users", description="Clearer messages.")
+    assert _links_only(doc(linked))
+    assert not _links_only(doc(linked, prose))
+    assert not _links_only(doc(ProjectIdea(title="No link at all here")))
