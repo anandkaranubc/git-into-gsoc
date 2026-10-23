@@ -242,3 +242,26 @@ def test_pages_that_mostly_link_the_organizations_own_code_add_nothing() -> None
         ),
     ]
     assert _sub_page_github_repos(ideas, ["metabrainz"]) == []
+
+
+def test_without_a_token_it_reads_fewer_repositories(monkeypatch: Any) -> None:
+    # One read per repository; without a token GitHub allows 60 an hour.
+    from git_into_gsoc.models import IdeasDocument
+
+    ideas = [
+        ProjectIdea(title=f"Idea {n}", section=f"Project {n}", links=[f"https://github.com/o{n}/r"])
+        for n in range(7)
+    ]
+    doc = IdeasDocument(source_url=SYMPY_RAW, fetched_url=SYMPY_RAW, layout="index", ideas=ideas)
+
+    def found(toolkit: GSoCToolkit) -> int:
+        toolkit.read_ideas_page = lambda url, **_: (doc, [{"title": "x", "url": SITE}])  # type: ignore[method-assign]
+        with respx.mock(assert_all_called=False) as api:
+            api.get(url__regex=r"https://api\.github\.com/repos/[\w.-]+/[\w.-]+$").mock(
+                side_effect=_repo
+            )
+            return len(toolkit._sub_page_repos(SYMPY_RAW, ["sympy"], language=None))
+
+    assert found(GSoCToolkit()) == 5
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    assert found(GSoCToolkit()) == 7

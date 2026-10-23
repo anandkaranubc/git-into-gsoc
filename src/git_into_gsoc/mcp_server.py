@@ -350,7 +350,7 @@ def gsoc_find_issues(
     """Find beginner issues that are genuinely free to pick up.
 
     org: a GSoC organization's name (its GitHub owners plus organizations whose repositories
-    its ideas page, or the project pages it lists, name) or a GitHub login.
+    its ideas page names) or a GitHub login.
     scope="gsoc" (default) searches only repos owned by GSoC mentoring orgs that use `language`;
     scope="all" searches all of GitHub. Excludes assigned, PR-linked, and archived-repo issues,
     then checks the top candidates' timelines for claims ("can I work on this?"), contested

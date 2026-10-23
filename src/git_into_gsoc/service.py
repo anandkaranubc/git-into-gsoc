@@ -1274,6 +1274,10 @@ class GSoCToolkit:
         doc, followed = self.read_ideas_page(ideas_url)
         if doc is None or not followed:
             return []
+        if not self.github.token:
+            # One read per repository: without a token GitHub allows 60 an hour, and a
+            # fresh beginner journey used about 51 of them (a launch audit, 2026-10-23).
+            limit = min(limit, 5)
         found: list[RepoLead] = []
         # Twice the places, so a few links to people's repositories cannot leave it short.
         for full, page in _sub_page_github_repos(doc.ideas, searched)[: 2 * limit]:
