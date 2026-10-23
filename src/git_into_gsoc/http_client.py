@@ -291,7 +291,10 @@ class CachedHttpClient:
                 raise
             if time.time() - entry.get("ts", 0) > STALE_IF_ERROR_SECONDS:
                 raise
-            log.warning("Serving stale cache for %s after error: %s", url, exc)
+            # A recent cached copy stands in quietly: printed at WARNING, this line
+            # reached a beginner's terminal three times, URL included, whenever
+            # GitHub's search limit was hit (seen while recording the README demo).
+            log.debug("Serving stale cache for %s after error: %s", url, exc)
             self.stats["stale_served"] += 1
             return entry["data"]
 
