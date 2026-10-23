@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.4](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.3...v0.24.4) (2026-10-23)
+
+
+### Bug Fixes
+
+* **ideas:** say when the table shows only some ideas, and explain only the marks it uses ([#368](https://github.com/anandkaranubc/git-into-gsoc/issues/368)) ([360fcdc](https://github.com/anandkaranubc/git-into-gsoc/commit/360fcdcc8a0bedae7a068be3f39ca99c5de773e2))
+* **issue:** a pull request that only mentions an issue is named as a mention, not a possible fix ([#369](https://github.com/anandkaranubc/git-into-gsoc/issues/369)) ([0f5a3ca](https://github.com/anandkaranubc/git-into-gsoc/commit/0f5a3cad6a82d98aa8608f70e402a415ed25a508))
+* **repos:** look one level down when an ideas page only lists project pages ([#373](https://github.com/anandkaranubc/git-into-gsoc/issues/373)) ([44b41e4](https://github.com/anandkaranubc/git-into-gsoc/commit/44b41e45c67e1f20926293533b01a16180036b58))
+
+
+### Documentation
+
+* the installer already runs setup, every issue form says it is public, and "skill" is defined ([#370](https://github.com/anandkaranubc/git-into-gsoc/issues/370)) ([2fc8cde](https://github.com/anandkaranubc/git-into-gsoc/commit/2fc8cdea40d16dd2ba9a1bc862c53bfa4f20f9a9))
+
 ## [0.24.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.2...v0.24.3) (2026-10-23)
 
 
