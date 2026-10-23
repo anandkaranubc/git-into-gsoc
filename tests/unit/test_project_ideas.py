@@ -564,6 +564,35 @@ def test_a_mediawiki_page_is_read_from_its_wikitext() -> None:
     assert doc.fetched_url == page + "?action=raw" and doc.sub_pages == []
 
 
+@respx.mock
+def test_a_github_folder_page_without_a_readme_is_not_read() -> None:
+    # LabLua (2026-10-22): its 2026 folder page has no README, and GitHub's own labels
+    # ("Directory actions", "Latest commit", "History") were read as ideas.
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    folder = "https://github.com/lab/gsoc/tree/main/2026"
+    front = "https://github.com/lab/gsoc"
+    labels = "<h2>Directory actions</h2><p>x</p><h2>Latest commit</h2><p>y</p><h2>History</h2>"
+    readme = (
+        '<article class="markdown-body"><h2>Faster parser</h2><p>Mentors: Ana Lima</p>'
+        "<p>Size: 350 hours</p><h2>Better errors</h2><p>Mentors: Bo Chen</p>"
+        "<p>Size: 175 hours</p></article>"
+    )
+    respx.get(folder).mock(
+        return_value=httpx.Response(200, text=f"<html><body>{labels}</body></html>")
+    )
+    respx.get(front).mock(
+        return_value=httpx.Response(200, text=f"<html><body>{labels}{readme}</body></html>")
+    )
+    http = CachedHttpClient(get_settings())
+    assert fetch_ideas_document(http, folder, ttl=10) is None
+    doc = fetch_ideas_document(http, front, ttl=10)
+    assert doc is not None
+    assert {"Faster parser", "Better errors"} <= {i.title for i in doc.ideas}
+
+
 def test_a_wikis_own_pages_are_never_followed() -> None:
     from git_into_gsoc.service import _other_page
 
