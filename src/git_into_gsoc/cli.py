@@ -2521,9 +2521,10 @@ def feedback_cmd(
     from git_into_gsoc.feedback import form_url, system_summary
 
     url = form_url("bug" if bug else "feedback")
+    purpose = "report what went wrong" if bug else "tell us what worked and what did not"
     _say(
-        "This opens a GitHub form with your versions filled in, so you can tell us what "
-        "worked and what did not. Nothing is sent until you read it and press Submit. "
+        f"This opens a GitHub form with your versions filled in, so you can {purpose}. "
+        "Nothing is sent until you read it and press Submit. "
         "Submitting needs a GitHub account and creates a public issue under your "
         "username, so leave out anything private."
     )
