@@ -226,6 +226,14 @@ class GSoCClient:
 
     # ----------------------------------------------------------------- catalog
 
+    def snapshot_organizations(self) -> list[OrgSummary]:
+        """The embedded snapshot's organizations, read without any request."""
+        snapshot = load_official()
+        if not (snapshot.get("organizations") and snapshot.get("year")):
+            return []
+        ref = int(snapshot["year"])
+        return [self._from_official(raw, ref) for raw in snapshot["organizations"]]
+
     def catalog(self, year: int | None = None) -> tuple[OrgCatalog, list[OrgSummary]]:
         """Accepted orgs for `year`, or the most recent year that has data."""
         year = validate_year(year, latest=latest_program_year(self.settings))

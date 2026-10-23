@@ -395,6 +395,24 @@ def _issues_kept_elsewhere(raw: dict[str, Any], repo: str) -> list[str] | None:
     return steps
 
 
+def _other_active_repos(repos: list[dict[str, Any]], repo: str) -> int:
+    """How many of an owner's repositories besides `repo` are worth opening: not forks,
+    not archived, and pushed within DORMANT_DAYS."""
+    name = repo.split("/", 1)[-1].lower()
+    cutoff = datetime.now(UTC) - timedelta(days=DORMANT_DAYS)
+    count = 0
+    for item in repos:
+        if str(item.get("name") or "").lower() == name or item.get("fork") or item.get("archived"):
+            continue
+        try:
+            pushed = datetime.fromisoformat(str(item.get("pushed_at") or "").replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if pushed >= cutoff:
+            count += 1
+    return count
+
+
 def _when_no_issues(
     language: str | None, *, org: str | None, repo: str | None, gsoc_org: bool = False
 ) -> list[str]:
@@ -668,6 +686,29 @@ class GSoCToolkit:
         return sorted(
             out, key=lambda o: (o.get("participation") or {}).get("status") == "not_taking_part"
         )
+
+    def _repo_alternatives(self, repo: str, steps: list[str]) -> list[str]:
+        """The steps after an empty `issues --repo`, without one that leads back to it.
+
+        "Pick another of its repositories" sent people in a loop when the owner had no
+        other active one: `repos ucsc-ospo` listed only the same website (a launch audit,
+        2026-10-23). A GSoC organization's ideas are the step to offer then.
+        """
+        owner = repo.split("/", 1)[0]
+        try:
+            others: int | None = _other_active_repos(self.github.list_owner_repos(owner), repo)
+        except GigError:
+            others = None  # unknown: keep the usual steps
+        # The embedded snapshot is enough to name the organization, with no request.
+        orgs = self.gsoc.snapshot_organizations()
+        org_name = next(
+            (org.name for org in orgs for gh in org.github_orgs if gh.lower() == owner.lower()),
+            None,
+        )
+        out = [s for s in steps if not (others == 0 and "git-into-gsoc repos " in s)]
+        if org_name:
+            out.append(f'Or start from its GSoC project ideas: git-into-gsoc ideas "{org_name}"')
+        return out
 
     def _org_not_found(self, name: str, *, year: int | None = None) -> dict[str, Any]:
         similar, mentioned_by = self.gsoc.suggest_organizations(name, year=year)
@@ -1400,7 +1441,7 @@ class GSoCToolkit:
                 raw = self.github.get_repo(*parse_repo(repo))
             except HttpError:
                 raw = {}
-            steps = _issues_kept_elsewhere(raw, repo) or steps
+            steps = _issues_kept_elsewhere(raw, repo) or self._repo_alternatives(repo, steps)
         return {
             "scope": "gsoc" if use_gsoc else "custom",
             "language_used": language,
