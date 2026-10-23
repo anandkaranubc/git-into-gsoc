@@ -27,9 +27,10 @@ from rich.text import Text
 from typer.core import TyperGroup
 
 from git_into_gsoc import __version__, onboarding
-from git_into_gsoc.errors import GigError, InputError
+from git_into_gsoc.errors import GigError, InputError, reset_phrase
 from git_into_gsoc.github.availability import pull_ref
 from git_into_gsoc.guidance import journey_overview
+from git_into_gsoc.http_client import GITHUB_CORE
 from git_into_gsoc.models import LogEntry
 from git_into_gsoc.service import GSoCToolkit
 from git_into_gsoc.text import strip_hidden, strip_hidden_all
@@ -76,14 +77,36 @@ class _FriendlyErrors(TyperGroup):
         return super().main(*args, **kwargs)
 
     def invoke(self, ctx: Any) -> Any:
+        GITHUB_CORE.clear()
         try:
-            return super().invoke(ctx)
+            result = super().invoke(ctx)
         except GigError as exc:
             # Messages quote what was typed ("a/b#[/bold]"), so they print literally.
             err_console.print(f"[bold red]error:[/bold red] {escape(str(exc))}")
             if exc.hint:
                 err_console.print(f"[dim]hint:[/dim] {escape(exc.hint)}")
             raise typer.Exit(code=1) from exc
+        _warn_low_github_quota()
+        return result
+
+
+# Without a token GitHub allows 60 requests an hour, and the README journey can use 50 of
+# them: say so while some are left, once, on stderr so JSON output stays clean.
+LOW_GITHUB_QUOTA = 15
+
+
+def _warn_low_github_quota() -> None:
+    seen = GITHUB_CORE
+    if (
+        seen.get("limit") != 60
+        or int(seen.get("remaining", LOW_GITHUB_QUOTA + 1)) > LOW_GITHUB_QUOTA
+    ):
+        return
+    err_console.print(
+        f"[dim]GitHub requests left this hour: {seen['remaining']} of 60; it "
+        f"{reset_phrase(seen.get('reset_at'))}. Run `gh auth login` once to raise the "
+        "limit to 5,000.[/dim]"
+    )
 
 
 OUTPUT_HELP = "rich for readable tables and panels, json for scripts and assistants"

@@ -298,6 +298,7 @@ class CachedHttpClient:
             self.stats["stale_served"] += 1
             return entry["data"]
 
+        _note_github_quota(url, response)
         if response.status_code == 304 and entry is not None:
             self.stats["revalidated"] += 1
             entry["ts"] = time.time()
@@ -523,6 +524,28 @@ def _etag_candidates(etag: str) -> list[str]:
         if etag.endswith(suffix):
             candidates.append(etag[: -len(suffix)] + '"')
     return candidates
+
+
+# GitHub's core request quota as the latest api.github.com response in this process
+# reported it, so the CLI can warn before a beginner without a token runs out. A launch
+# audit (2026-10-23) used 52 of the 60 an hour on the README journey and heard about the
+# limit only once a command failed.
+GITHUB_CORE: dict[str, Any] = {}
+
+
+def _note_github_quota(url: str, response: httpx.Response) -> None:
+    if not url.startswith("https://api.github.com/"):
+        return
+    headers = response.headers
+    if headers.get("x-ratelimit-resource", "core") != "core":
+        return  # the search quota is separate and refills every minute
+    try:
+        limit = int(headers["x-ratelimit-limit"])
+        remaining = int(headers["x-ratelimit-remaining"])
+        reset_at = datetime.fromtimestamp(int(headers["x-ratelimit-reset"]), tz=UTC)
+    except (KeyError, ValueError):
+        return
+    GITHUB_CORE.update(limit=limit, remaining=remaining, reset_at=reset_at)
 
 
 def _is_rate_limited(response: httpx.Response) -> bool:
