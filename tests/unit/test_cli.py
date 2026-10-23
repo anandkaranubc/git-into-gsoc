@@ -369,3 +369,45 @@ def test_a_long_issue_reference_stays_on_one_line(monkeypatch) -> None:  # type:
             assert "learning-unlimited/ESP-Website#2455" in result.output, width
             words = set(re.findall(r"[\w']+", result.output))
             assert set(row["title"].split()) <= words, width  # no word cut off
+
+
+def test_ideas_says_when_it_shows_only_some_and_explains_only_marks_it_uses(
+    monkeypatch,  # type: ignore[no-untyped-def]
+) -> None:
+    # A launch audit (2026-10-23): UC OSPO's table showed 20 of 41 ideas with nothing
+    # saying so, under a "?" legend that no row used.
+    from typing import ClassVar
+
+    from git_into_gsoc import cli
+
+    def idea(title: str, confidence: str = "high") -> dict[str, object]:
+        return {"title": title, "confidence": confidence, "hours": 175, "difficulty": "medium"}
+
+    def data(ideas: list[dict[str, object]], count: int) -> dict[str, object]:
+        return {
+            "found": True,
+            "org": "UC OSPO",
+            "ideas_url": "https://example.org/ideas",
+            "layout": "index",
+            "note": "Umbrella page.",
+            "ideas": ideas,
+            "count": count,
+            "next_step": "Read the full idea on the page.",
+        }
+
+    class Fake:
+        result: ClassVar[dict[str, object]] = {}
+
+        def org_ideas(self, org, **kw):  # type: ignore[no-untyped-def]
+            return self.result
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    Fake.result = data([idea("Canvas Import"), idea("Web GUI")], count=41)
+    some = runner.invoke(app, ["ideas", "UC OSPO"], env={"COLUMNS": "200"})
+    assert some.exit_code == 0, some.output
+    assert "Showing 2 of 41 ideas. Add --limit 41 to see them all." in some.stdout
+    assert "? marks" not in some.stdout
+    Fake.result = data([idea("Canvas Import"), idea("Overview", "low")], count=2)
+    every = runner.invoke(app, ["ideas", "UC OSPO"], env={"COLUMNS": "200"})
+    assert "Showing" not in every.stdout
+    assert "? marks a block with no labelled fields" in every.stdout

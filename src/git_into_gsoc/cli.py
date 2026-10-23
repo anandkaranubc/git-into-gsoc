@@ -879,13 +879,16 @@ def ideas_cmd(
     if data["ideas"]:
         # Fit orders ideas against a saved profile; without one every idea scores alike.
         show_fit = any(idea.get("match_reasons") for idea in data["ideas"])
-        caption = "? marks a block with no labelled fields"
+        notes = []
+        # A launch audit (2026-10-23) saw this legend under a table with no "?" in it.
+        if any(idea["confidence"] == "low" for idea in data["ideas"]):
+            notes.append("? marks a block with no labelled fields")
         if show_fit:
-            caption += (
-                ". Fit: how close the idea is to your saved skills and interests; higher is "
+            notes.append(
+                "Fit: how close the idea is to your saved skills and interests; higher is "
                 "closer. It orders the list and is not a chance of being picked."
             )
-        table = Table(title="Project ideas", caption=caption)
+        table = Table(title="Project ideas", caption=". ".join(notes) or None)
         if show_fit:
             table.add_column("Fit", justify="right")
         table.add_column("Idea", overflow="fold")
@@ -917,6 +920,10 @@ def ideas_cmd(
                 ", ".join(idea.get("skills") or [])[:60],
             )
         console.print(table)
+        # UC OSPO has 41 ideas; the table showed 20 and nothing said there were more.
+        shown, total = len(data["ideas"]), int(data.get("count") or 0)
+        if total > shown:
+            console.print(f"Showing {shown} of {total} ideas. Add --limit {total} to see them all.")
         console.print(f"[dim]{escape(data['next_step'])}[/dim]")
     if data.get("past_proposals"):
         console.print("[bold]Shared past proposals (read to calibrate; never copy)[/bold]")
