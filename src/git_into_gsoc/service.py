@@ -927,27 +927,33 @@ class GSoCToolkit:
                         reasons=reasons,
                     )
                 )
-        org_label = (
-            gsoc_org.name if gsoc_org else (gone[0] if gone else owners[0] if owners else "")
-        )
-        alive = [o for o in owners if o not in gone]
-        gone_line = (
-            f"{org_label} lists "
-            + ", ".join(f"github.com/{o}" for o in gone)
-            + ", which GitHub cannot find (renamed or removed)"
-            + (f"; its other GitHub owners are {', '.join(alive)}." if alive else ".")
-            if gone
-            else ""
-        )
-        if gone and not leads:
-            raise NotFoundError(
-                f"{gone_line} There is nothing on GitHub to read for it here.",
-                hint=f"Open its ideas page to find its repositories: {ideas_url}"
-                if ideas_url
-                else "Check the organization's page on the official GSoC site for its code.",
-            )
         searched = [*owners, *(o for o, _ in linked_owners)]
         leads.extend(self._repos_named_on_page(ideas or "", searched, language=language))
+        alive = [o for o in owners if o not in gone]
+        if gone and gsoc_org is None:
+            # A login typed by hand, not an organization's listing.
+            gone_line = f"GitHub has no user or organization named {gone[0]}."
+        elif gone:
+            gone_line = (
+                f"{gsoc_org.name if gsoc_org else gone[0]} lists "
+                + ", ".join(f"github.com/{o}" for o in gone)
+                + ", which GitHub cannot find (renamed or removed)"
+                + (f"; its other GitHub owners are {', '.join(alive)}." if alive else ".")
+            )
+        else:
+            gone_line = ""
+        # Checked after the repositories its ideas page names are added: a dead owner
+        # with GitHub projects on its ideas page still has something to show.
+        if gone and not leads:
+            raise NotFoundError(
+                gone_line
+                + (" There is nothing on GitHub to read for it here." if gsoc_org else ""),
+                hint=f"Open its ideas page to find its repositories: {ideas_url}"
+                if ideas_url
+                else "Check the organization's page on the official GSoC site for its code."
+                if gsoc_org
+                else "Check the spelling, or give a GSoC organization's name instead.",
+            )
         leads.sort(key=lambda lead: (-lead.score, -lead.stars))
         # Until the shown top is all checked (a quiet repository that drops lets another
         # rise), within a request budget. Checked ones stay above unchecked ones, so an

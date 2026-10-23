@@ -974,3 +974,63 @@ def test_a_github_search_link_is_not_an_owner() -> None:
         "https://github.com/mandiant/flare-gsoc/blob/2026/doc/project-ideas.md",
     )
     assert orgs == ["mandiant"] and repos == []
+
+
+def test_a_dead_owner_still_shows_the_repositories_its_ideas_page_names(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Review of this fix: the "nothing to read" check must come after the ideas page.
+    from git_into_gsoc import service
+    from git_into_gsoc.errors import NotFoundError
+    from git_into_gsoc.models import OrgSummary
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    org = OrgSummary(
+        name="Lab",
+        slug="lab",
+        github_orgs=["old-lab"],
+        ideas_url="https://example.org/ideas",
+        official=True,
+    )
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: org)
+    monkeypatch.setattr(
+        service, "fetch_ideas_text", lambda *a, **k: "Work on https://github.com/partner/engine"
+    )
+    monkeypatch.setattr(service, "fetch_ideas_document", lambda *a, **k: None)
+
+    def listing(owner: str, pages: int = 1) -> list[dict[str, Any]]:
+        raise NotFoundError("HTTP 404 from api.github.com: Not Found", status_code=404)
+
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", listing)
+    monkeypatch.setattr(
+        toolkit.github,
+        "get_repo",
+        lambda owner, repo: {
+            **_listing("partner", ["engine"])[0],
+            "owner": {"login": "partner", "type": "Organization"},
+        },
+    )
+    monkeypatch.setattr(toolkit.github, "beginner_issue_counts", lambda owner: {})
+    monkeypatch.setattr(
+        toolkit.github, "list_pulls", lambda owner, repo, **k: [_closed("ana", "CONTRIBUTOR", 3)]
+    )
+    found = toolkit.discover_repos("Lab")
+    assert [r["full_name"] for r in found["repos"]] == ["partner/engine"]
+    assert "Lab lists github.com/old-lab, which GitHub cannot find" in found["note"]
+
+
+def test_a_mistyped_login_reads_as_no_such_user(monkeypatch: pytest.MonkeyPatch) -> None:
+    from git_into_gsoc.errors import NotFoundError
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name, year=None: None)
+
+    def listing(owner: str, pages: int = 1) -> list[dict[str, Any]]:
+        raise NotFoundError("HTTP 404 from api.github.com: Not Found", status_code=404)
+
+    monkeypatch.setattr(toolkit.github, "list_owner_repos", listing)
+    with pytest.raises(NotFoundError) as raised:
+        toolkit.discover_repos("sympyy")
+    assert str(raised.value) == "GitHub has no user or organization named sympyy."
