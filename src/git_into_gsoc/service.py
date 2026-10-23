@@ -415,14 +415,25 @@ def _other_active_repos(repos: list[dict[str, Any]], repo: str) -> int:
 
 
 def _when_no_issues(
-    language: str | None, *, org: str | None, repo: str | None, gsoc_org: bool = False
+    language: str | None,
+    *,
+    org: str | None,
+    repo: str | None,
+    gsoc_org: bool = False,
+    chat: str | None = None,
 ) -> list[str]:
-    """What to try when a search finds no free beginner issues."""
+    """What to try when a search finds no free beginner issues.
+
+    `chat` is the organization's public channel. A launch audit (2026-10-23) was told to
+    read ML4SCI/DeepLense's issues and ask in its channel, with neither link given.
+    """
     if repo:
         return [
-            f"Read {repo}'s open issues yourself: a small bug, a docs gap, or a missing "
-            "test is a fine first contribution even without a beginner label.",
-            "Ask in the project's public channel which small task would help most.",
+            f"Read {repo}'s open issues yourself (https://github.com/{repo}/issues): a "
+            "small bug, a docs gap, or a missing test is a fine first contribution even "
+            "without a beginner label.",
+            "Ask in the project's public channel which small task would help most"
+            + (f": {chat}" if chat else "."),
             f"Or pick another of its repositories: git-into-gsoc repos {repo.split('/')[0]}",
         ]
     where = f'"{org}"' if org else '"ORG NAME"'
@@ -442,7 +453,7 @@ def _when_no_issues(
         steps.append(
             f"Or start from its ideas: git-into-gsoc ideas {where}. At some organizations GSoC "
             "work begins with an idea and its mentors, not with labelled issues; ask the "
-            "mentors in its chat how to start."
+            "mentors in its chat how to start" + (f": {chat}" if chat else ".")
         )
     if not org:
         steps.append("Search every repository, not only GSoC organizations: add --scope all")
@@ -687,6 +698,26 @@ class GSoCToolkit:
         return sorted(
             out, key=lambda o: (o.get("participation") or {}).get("status") == "not_taking_part"
         )
+
+    def _public_channel(self, owners: list[str]) -> str | None:
+        """The public chat, or else the mailing list, of the GSoC organization these GitHub
+        owners belong to, from the embedded snapshot (no request). None for anyone else."""
+        wanted = {owner.lower() for owner in owners}
+        if not wanted:
+            return None
+        org = next(
+            (
+                org
+                for org in self.gsoc.snapshot_organizations()
+                if wanted & {gh.lower() for gh in org.github_orgs}
+            ),
+            None,
+        )
+        for kind in ("chat", "mailingList"):
+            for channel in org.channels if org else []:
+                if channel.kind == kind and channel.value:
+                    return channel.value
+        return None
 
     def _repo_alternatives(self, repo: str, steps: list[str]) -> list[str]:
         """The steps after an empty `issues --repo`, without one that leads back to it.
@@ -1363,6 +1394,7 @@ class GSoCToolkit:
         # organizations whose repositories its ideas page names (Open Robotics lists
         # only openrobotics and osrf; its ROS work is under ros2 and open-rmf).
         gsoc_owners: list[str] = []
+        own_owners: list[str] = []
         linked: list[str] = []
         if org and not repo:
             own_owners, linked, owners_note = self._gsoc_owners(org, language=language)
@@ -1500,7 +1532,13 @@ class GSoCToolkit:
         steps = (
             []
             if issues
-            else _when_no_issues(language, org=asked_org, repo=repo, gsoc_org=bool(gsoc_owners))
+            else _when_no_issues(
+                language,
+                org=asked_org,
+                repo=repo,
+                gsoc_org=bool(gsoc_owners),
+                chat=self._public_channel([repo.split("/", 1)[0]] if repo else own_owners),
+            )
         )
         if repo and not issues:
             try:
