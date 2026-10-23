@@ -186,6 +186,9 @@ def test_past_proposal_folders_match_org_names() -> None:
     ]
     assert found[0]["url"].endswith("/tree/HEAD/SymPy")
     assert proposal_folders(lambda o, r: [], "SymPy") == []
+    # A space ended the link in a terminal ("UC OSPO", 2026-10-22).
+    spaced = proposal_folders(lambda owner, repo: trees.get(f"{owner}/{repo}", []), "Sugar Labs")
+    assert spaced[0]["url"].endswith("/tree/HEAD/Sugar%20Labs")
 
 
 def test_org_ideas_links_past_proposals(api: respx.MockRouter) -> None:

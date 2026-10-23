@@ -895,7 +895,8 @@ def ideas_cmd(
         table.add_column("Skills", overflow="fold", max_width=26)
         for idea in data["ideas"]:
             title = escape(idea["title"])
-            if idea.get("section"):
+            # A project page with one idea is named after it ("CauST / CauST" on UC OSPO).
+            if idea.get("section") and idea["section"] != idea["title"]:
                 title = f"[dim]{escape(idea['section'])} /[/dim] {title}"
             if idea["confidence"] == "low":
                 title = f"? {title}"
