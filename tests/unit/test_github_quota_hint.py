@@ -55,6 +55,24 @@ def test_the_client_keeps_githubs_core_quota_and_nothing_else(tmp_path: Path) ->
     assert GITHUB_CORE["remaining"] == 12
 
 
+def test_an_older_response_arriving_last_does_not_raise_the_count() -> None:
+    # Parallel lookups finish in any order (a post-merge audit, 2026-10-23): within one
+    # window the lowest count is the latest; a new window starts over.
+    from git_into_gsoc.http_client import _note_github_quota
+
+    def seen(remaining: int, reset: int) -> None:
+        headers = {**_quota(60, remaining), "x-ratelimit-reset": str(reset)}
+        _note_github_quota("https://api.github.com/repos/o/r", httpx.Response(200, headers=headers))
+
+    window = int(time.time()) + 1800
+    GITHUB_CORE.clear()
+    seen(10, window)
+    seen(14, window)  # sent earlier, answered later
+    assert GITHUB_CORE["remaining"] == 10
+    seen(59, window + 3600)  # the next hour
+    assert GITHUB_CORE["remaining"] == 59
+
+
 @pytest.mark.parametrize(
     ("limit", "remaining", "warned"),
     [(60, 12, True), (60, 15, True), (60, 16, False), (5000, 3, False)],
