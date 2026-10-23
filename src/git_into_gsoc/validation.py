@@ -102,6 +102,14 @@ def parse_issue_ref(value: str, number: int | None = None) -> tuple[str, str, in
         if len(parts) >= 4 and parts[2] in {"issues", "pull"}:
             owner, repo = parse_repo("/".join(parts[:2]))
             return owner, repo, _parse_number(parts[3])
+        if len(parts) >= 4 and parts[2] == "discussions":
+            # Organizations post GSoC plans as Discussions; a pasted one read "Missing
+            # issue number" although its link ends in a number.
+            raise InputError(
+                f"That link is a GitHub Discussion, not an issue: {value!r}",
+                hint="A Discussion has no assignee or linked pull requests to check, so "
+                "read it in your browser. If it points to an issue, pass that issue's link.",
+            )
     if number is None and "#" in raw:
         repo_part, _, num = raw.partition("#")
         owner, repo = parse_repo(repo_part)
@@ -114,7 +122,8 @@ def parse_issue_ref(value: str, number: int | None = None) -> tuple[str, str, in
     if number is None:
         raise InputError(
             f"Missing issue number for {value!r}",
-            hint="Use owner/repo#123, an issue URL, or pass the number separately.",
+            hint="Use owner/repo#123, an issue URL, or pass the number separately. To "
+            f"list its beginner issues instead: git-into-gsoc issues --repo {owner}/{repo}",
         )
     return owner, repo, _parse_number(str(number))
 
@@ -123,7 +132,11 @@ def _parse_number(value: str) -> int:
     try:
         num = int(value.strip())
     except ValueError as exc:
-        raise InputError(f"Invalid issue number: {value!r}") from exc
+        raise InputError(
+            f"Invalid issue number: {value!r}",
+            hint="An issue number is the digits after # in owner/repo#123, or after "
+            "/issues/ in its link.",
+        ) from exc
     if num <= 0:
         raise InputError(f"Issue number must be positive, got {num}")
     return num
