@@ -597,3 +597,29 @@ def test_an_interest_widens_to_narrower_subjects_but_not_to_skills() -> None:
     assert "data science" in wanted
     assert "jupyter" not in wanted and "pandas" not in wanted
     assert "computer vision" in wanted_domains(build_profile(interests=["machine learning"]))
+
+
+def test_where_something_runs_is_not_a_skill_the_task_needs() -> None:
+    # This repository's README issue about spelling out WSL was marked "needs Linux/Unix"
+    # (2026-10-22) for "On macOS, Linux, or Windows with WSL" and "Windows Subsystem for
+    # Linux". Across 243 open good first issues that name Linux, this changed 8.
+    from git_into_gsoc.matching.issues import starter_problem
+
+    person = build_profile(technologies=["python"])
+
+    def issue(title: str, body: str) -> dict[str, object]:
+        return {"title": title, "labels": ["good first issue"], "body_excerpt": body}
+
+    wsl = issue(
+        "docs: spell out WSL the first time the README mentions it",
+        'A newcomer reads "On macOS, Linux, or Windows with WSL". The guide says later: '
+        '"WSL (Windows Subsystem for Linux) gives you one inside Windows".',
+    )
+    assert starter_problem(wsl, person) is None
+    assert issue_fit(wsl, build_profile(technologies=["linux"]))[1] == []
+    assert (
+        starter_problem(issue("Check that cleanup works on Windows and Linux", ""), person) is None
+    )
+    # Unix-like systems alone still need a Unix shell, and so does Linux on its own.
+    for unix in ("Add setup.sh for macOS and Linux", "Document the Linux/Unix install paths"):
+        assert "Linux/Unix" in str(starter_problem(issue(unix, ""), person)), unix

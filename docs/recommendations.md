@@ -91,7 +91,7 @@ Google announces each year's organizations around February. Until then, `orgs` a
   - issues open three years or more;
   - issues labelled intermediate, medium, advanced, "can't reproduce", "needs triage", "needs discussion", duplicate, or similar;
   - issues in repositories marked deprecated or legacy, in governance, test, or sandbox repositories, or in repositories mostly written in a language you did not list;
-  - issues that need only skills you did not list;
+  - issues that need only skills you did not list (Linux named with Windows, as in "macOS, Linux, or Windows", or in "Windows Subsystem for Linux", says where something runs, not a skill);
   - issues someone else is likely working on: three or more people asked for it, its own author said they are working on it, or a maintainer approved someone in the last 180 days. `issue` calls older claims stale, which is fair when you check one issue yourself, but a first-task list should not send you to someone else's work.
 
   Issues from the wider language search must come from organizations near the top of your ranking. When nothing is left, it says what to do instead.
