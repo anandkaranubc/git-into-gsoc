@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.2...v0.24.3) (2026-10-23)
+
+
+### Bug Fixes
+
+* **ideas:** a GitHub folder page with no README is not read as ideas ([#366](https://github.com/anandkaranubc/git-into-gsoc/issues/366)) ([e472bdd](https://github.com/anandkaranubc/git-into-gsoc/commit/e472bdde9359a630241ff2aef66acf2a1574260d))
+* **issues:** an empty repository search no longer points back to the same repository ([#367](https://github.com/anandkaranubc/git-into-gsoc/issues/367)) ([2b7c138](https://github.com/anandkaranubc/git-into-gsoc/commit/2b7c1386208fdc61f422812c64fb30f11fa37a22))
+* **issues:** where something runs is not a skill the task needs ([#364](https://github.com/anandkaranubc/git-into-gsoc/issues/364)) ([47be4dd](https://github.com/anandkaranubc/git-into-gsoc/commit/47be4dd2fdee3236015738aab77f1a85505bdb3b))
+
 ## [0.24.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.1...v0.24.2) (2026-10-23)
 
 
