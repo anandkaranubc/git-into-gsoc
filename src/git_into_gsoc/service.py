@@ -3366,14 +3366,20 @@ _WIKI_NAMESPACE_RE = re.compile(
 
 def _newest_year(pages: list[dict[str, str]]) -> str | None:
     """The newest GSoC year that links name. LabLua's ideas page is its repository's front
-    page: it names no year, and links every year's folder and ideas since 2014."""
-    last = datetime.now(UTC).year + 1
-    named = [
-        int(year)
-        for page in pages
-        for year in _YEAR_RE.findall(f"{page.get('url', '')} {page.get('title', '')}")
-        if 2005 <= int(year) <= last  # GSoC began in 2005; "/2048-game/" is no year
-    ]
+    page: it names no year, and links every year's folder and ideas since 2014.
+
+    Next year counts only from a link to its ideas or projects: from November, a "GSoC
+    2027 timeline" link would otherwise make every 2026 page another year's.
+    """
+    this_year = datetime.now(UTC).year
+    named: list[int] = []
+    for page in pages:
+        text = f"{page.get('url', '')} {page.get('title', '')}"
+        about_ideas = bool(re.search(r"idea|project", text, re.I))
+        for year in map(int, _YEAR_RE.findall(text)):
+            # GSoC began in 2005; "/2048-game/" is no year.
+            if 2005 <= year <= this_year or (year == this_year + 1 and about_ideas):
+                named.append(year)
     return str(max(named)) if named else None
 
 

@@ -3,6 +3,7 @@ templates, index pages, Google Docs, and the sentences that state an AI policy."
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -592,6 +593,29 @@ def test_a_page_with_no_year_is_for_the_newest_year_it_links() -> None:
     kept = [p["url"] for p in pages if not _other_page(p, here, newest)]
     assert kept == [f"{here}/blob/main/2026/ideas.md"]
     assert not _other_page({"url": f"{here}/blob/main/apply.md", "title": "x"}, here, newest)
+
+
+def test_next_years_timeline_does_not_make_this_years_ideas_old() -> None:
+    # From November a year-less page may link next year's timeline beside this year's
+    # ideas; only a link to next year's ideas or projects makes them the newest.
+    from git_into_gsoc.service import _newest_year
+
+    year = datetime.now(UTC).year
+    ideas = {"url": f"https://example.org/gsoc/{year}/ideas.md", "title": "Ideas"}
+    timeline = {"url": "https://example.org/timeline", "title": f"GSoC {year + 1} timeline"}
+    assert _newest_year([ideas, timeline]) == str(year)
+    draft = {"url": f"https://example.org/gsoc/{year + 1}/", "title": "Draft project ideas"}
+    assert _newest_year([ideas, timeline, draft]) == str(year + 1)
+
+
+def test_a_news_post_about_the_projects_is_still_a_page_to_open() -> None:
+    lines = html_to_lines(
+        '<h1>Projects</h1><p><a href="https://x.org/news/gsoc-2026-projects/">This year</a></p>'
+        '<p><a href="https://x.org/news/2026-cohort/">Our cohort</a></p>',
+        base_url="https://x.org/",
+    )
+    doc = extract_ideas(lines, source_url="https://x.org/")
+    assert [p["url"] for p in doc.sub_pages] == ["https://x.org/news/gsoc-2026-projects/"]
 
 
 def test_fit_shows_only_with_a_profile(monkeypatch) -> None:  # type: ignore[no-untyped-def]

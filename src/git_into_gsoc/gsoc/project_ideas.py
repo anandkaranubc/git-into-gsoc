@@ -967,8 +967,10 @@ _POST_PATH_RE = re.compile(r"/(?:posts?|blogs?|news|reports?|authors?|tags?|cate
 
 
 def _is_post(url: str) -> bool:
-    """A blog post, report, or author, tag or category page; one about ideas still counts."""
-    return bool(_POST_PATH_RE.search(urlparse(url).path.lower())) and "idea" not in url.lower()
+    """A blog post, report, or author, tag or category page. One about ideas or projects
+    ("/news/gsoc-2026-projects/") still counts."""
+    low = url.lower()
+    return bool(_POST_PATH_RE.search(urlparse(low).path)) and not re.search(r"idea|project", low)
 
 
 def _links_to_post(heading: str) -> bool:
