@@ -147,12 +147,21 @@ def check_pull_request(
         }
     )
     if failing:
+        # Commit statuses (Prow, Jenkins) link their own log pages; GitHub Actions logs
+        # are read separately.
+        links = {
+            str(c.get("name")): str(c["url"])
+            for c in checks
+            if c.get("url") and str(c.get("name")) in failing
+        }
+        logs = "; ".join(f"{name}: {url}" for name, url in list(links.items())[:4])
         findings.append(
             Finding(
                 "checks",
                 "fail",
                 "Failing checks: " + ", ".join(failing[:4]),
-                f"Read each log, and check whether the same job also fails on {base} before changing code.",
+                f"Read each log, and check whether the same job also fails on {base} before changing code."
+                + (f" Logs: {logs}." if logs else ""),
             )
         )
     elif checks:
