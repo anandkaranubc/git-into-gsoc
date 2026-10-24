@@ -10,12 +10,12 @@ The summary is a short checklist: the ten phases, with a check mark on the ones 
 
 ## Save something you want to revisit
 
-These commands write to a file on your computer. Replace the example organization and repository with your own choices when appropriate:
+These commands use `OWNER`, `REPO` and `NUMBER` as placeholders. Replace them with the appropriate organization, repository, and issue number you chose.
 
 ```bash
 git-into-gsoc progress shortlist_org --value "SymPy"
-git-into-gsoc progress track_repo --value sympy/sympy
-git-into-gsoc progress track_issue --value https://github.com/sympy/sympy/issues/12345
+git-into-gsoc progress track_repo --value OWNER/REPO
+git-into-gsoc progress track_issue --value https://github.com/OWNER/REPO/issues/NUMBER
 git-into-gsoc progress note --value "Read the setup guide. Next: run the project locally."
 git-into-gsoc progress complete_phase --phase track
 ```
@@ -27,8 +27,8 @@ The ten phase names are `learn`, `discover`, `evaluate`, `orient`, `community`, 
 ## Keep a weekly note
 
 ```bash
-git-into-gsoc log --goal "Reproduce #12345" --done "Built sympy, found the failing test" \
-  --links https://github.com/sympy/sympy/issues/12345 --stuck "Fixture missing" --next "Ask in the channel"
+git-into-gsoc log --goal "Reproduce #NUMBER" --done "Built sympy, found the failing test" \
+  --links https://github.com/OWNER/REPO/issues/NUMBER --stuck "Fixture missing" --next "Ask in the channel"
 git-into-gsoc log            # shows your recent notes
 ```
 
