@@ -369,3 +369,86 @@ def test_a_long_issue_reference_stays_on_one_line(monkeypatch) -> None:  # type:
             assert "learning-unlimited/ESP-Website#2455" in result.output, width
             words = set(re.findall(r"[\w']+", result.output))
             assert set(row["title"].split()) <= words, width  # no word cut off
+
+
+def test_ideas_says_when_it_shows_only_some_and_explains_only_marks_it_uses(
+    monkeypatch,  # type: ignore[no-untyped-def]
+) -> None:
+    # A launch audit (2026-10-23): UC OSPO's table showed 20 of 41 ideas with nothing
+    # saying so, under a "?" legend that no row used.
+    from typing import ClassVar
+
+    from git_into_gsoc import cli
+
+    def idea(title: str, confidence: str = "high") -> dict[str, object]:
+        return {"title": title, "confidence": confidence, "hours": 175, "difficulty": "medium"}
+
+    def data(ideas: list[dict[str, object]], count: int) -> dict[str, object]:
+        return {
+            "found": True,
+            "org": "UC OSPO",
+            "ideas_url": "https://example.org/ideas",
+            "layout": "index",
+            "note": "Umbrella page.",
+            "ideas": ideas,
+            "count": count,
+            "next_step": "Read the full idea on the page.",
+        }
+
+    class Fake:
+        result: ClassVar[dict[str, object]] = {}
+
+        def org_ideas(self, org, **kw):  # type: ignore[no-untyped-def]
+            return self.result
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    Fake.result = data([idea("Canvas Import"), idea("Web GUI")], count=41)
+    some = runner.invoke(app, ["ideas", "UC OSPO"], env={"COLUMNS": "200"})
+    assert some.exit_code == 0, some.output
+    assert "Showing 2 of 41 ideas. Add --limit 41 to see them all." in some.stdout
+    assert "? marks" not in some.stdout
+    Fake.result = data([idea("Canvas Import"), idea("Overview", "low")], count=2)
+    every = runner.invoke(app, ["ideas", "UC OSPO"], env={"COLUMNS": "200"})
+    assert "Showing" not in every.stdout
+    assert "? marks a block with no labelled fields" in every.stdout
+
+
+def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # A launch audit (2026-10-23): this repository's own free good first issue listed two
+    # closed PRs for other issues, which only named it, as if they were attempts at it.
+    from git_into_gsoc import cli
+
+    def pr(number: int, state: str, **extra: object) -> dict[str, object]:
+        return {"number": number, "state": state, "author": "dev", "url": None, **extra}
+
+    class Fake:
+        def issue_status(self, ref, number):  # type: ignore[no-untyped-def]
+            return {
+                "repo": "acme/lib",
+                "number": 7,
+                "title": "Spell out a term",
+                "url": "https://github.com/acme/lib/issues/7",
+                "availability": "available",
+                "reason": "Open, unassigned",
+                "assessment": {
+                    "maintainer_engaged": False,
+                    "claims": [],
+                    "caveats": [],
+                    "linked_prs": [
+                        pr(5, "closed"),
+                        pr(6, "merged", fixes=True),
+                        pr(8, "open"),
+                        pr(9, "closed", fixes=True),
+                    ],
+                },
+                "before_you_comment": [],
+            }
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    shown = runner.invoke(app, ["issue", "acme/lib#7"], env={"COLUMNS": "200"})
+    assert shown.exit_code == 0, shown.output
+    lines = {line.strip(" │") for line in shown.stdout.splitlines()}
+    assert "PR #5 (closed) by @dev, mentions this issue" in lines
+    assert "PR #6 (merged) by @dev" in lines  # it says it fixes this one
+    assert "PR #8 (open) by @dev" in lines  # an open PR may be the work itself
+    assert "PR #9 (closed) by @dev" in lines  # a closed one that said it fixes this tried it

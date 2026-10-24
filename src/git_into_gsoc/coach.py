@@ -287,7 +287,11 @@ def plan_actions(
     elif not repos:
         first = orgs[0]
         elsewhere = (code_elsewhere or {}).get(first)
-        why = "Mentors work in a few repos; the ideas page and beginner issues show which."
+        why = (
+            "Mentors work in a few repos; the ideas page and beginner issues show which. If "
+            f'repos says to start from its ideas, run git-into-gsoc ideas "{first}", pick an '
+            "idea, and track the repository it links to (or ask its mentors which one)."
+        )
         if elsewhere:
             why = (
                 f"{first} lists no GitHub organization. If repos says its code is elsewhere "

@@ -364,3 +364,15 @@ def test_next_shows_merged_pull_requests_in_the_terminal(api: respx.MockRouter) 
     # The one moment worth asking: point to feedback and a friend, once.
     assert "tell a friend" in words
     assert "git-into-gsoc feedback" in words
+
+
+def test_the_repository_step_says_what_to_do_when_repos_points_to_ideas() -> None:
+    from git_into_gsoc.coach import plan_actions
+    from git_into_gsoc.models import ProgressState
+
+    # A launch audit (2026-10-23): `repos "UC OSPO"` said to start from its ideas, and
+    # `next` kept saying to run `repos` again.
+    state = ProgressState(profile={"technologies": ["python"]}, shortlisted_orgs=["UC OSPO"])
+    actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
+    pick = next(a for a in actions if a["title"].startswith("Pick the repository"))
+    assert 'git-into-gsoc ideas "UC OSPO"' in pick["why"]

@@ -27,9 +27,10 @@ from rich.text import Text
 from typer.core import TyperGroup
 
 from git_into_gsoc import __version__, onboarding
-from git_into_gsoc.errors import GigError, InputError
+from git_into_gsoc.errors import GigError, InputError, reset_phrase
 from git_into_gsoc.github.availability import pull_ref
 from git_into_gsoc.guidance import journey_overview
+from git_into_gsoc.http_client import GITHUB_CORE
 from git_into_gsoc.models import LogEntry
 from git_into_gsoc.service import GSoCToolkit
 from git_into_gsoc.text import strip_hidden, strip_hidden_all
@@ -76,14 +77,36 @@ class _FriendlyErrors(TyperGroup):
         return super().main(*args, **kwargs)
 
     def invoke(self, ctx: Any) -> Any:
+        GITHUB_CORE.clear()
         try:
-            return super().invoke(ctx)
+            result = super().invoke(ctx)
         except GigError as exc:
             # Messages quote what was typed ("a/b#[/bold]"), so they print literally.
             err_console.print(f"[bold red]error:[/bold red] {escape(str(exc))}")
             if exc.hint:
                 err_console.print(f"[dim]hint:[/dim] {escape(exc.hint)}")
             raise typer.Exit(code=1) from exc
+        _warn_low_github_quota()
+        return result
+
+
+# Without a token GitHub allows 60 requests an hour, and the README journey can use 50 of
+# them: say so while some are left, once, on stderr so JSON output stays clean.
+LOW_GITHUB_QUOTA = 15
+
+
+def _warn_low_github_quota() -> None:
+    seen = GITHUB_CORE
+    if (
+        seen.get("limit") != 60
+        or int(seen.get("remaining", LOW_GITHUB_QUOTA + 1)) > LOW_GITHUB_QUOTA
+    ):
+        return
+    err_console.print(
+        f"[dim]GitHub requests left this hour: {seen['remaining']} of 60; it "
+        f"{reset_phrase(seen.get('reset_at'))}. Run `gh auth login` once to raise the "
+        "limit to 5,000.[/dim]"
+    )
 
 
 OUTPUT_HELP = "rich for readable tables and panels, json for scripts and assistants"
@@ -879,20 +902,29 @@ def ideas_cmd(
     if data["ideas"]:
         # Fit orders ideas against a saved profile; without one every idea scores alike.
         show_fit = any(idea.get("match_reasons") for idea in data["ideas"])
-        caption = "? marks a block with no labelled fields"
+        notes = []
+        # A launch audit (2026-10-23) saw this legend under a table with no "?" in it.
+        if any(idea["confidence"] == "low" for idea in data["ideas"]):
+            notes.append("? marks a block with no labelled fields")
         if show_fit:
-            caption += (
-                ". Fit: how close the idea is to your saved skills and interests; higher is "
+            notes.append(
+                "Fit: how close the idea is to your saved skills and interests; higher is "
                 "closer. It orders the list and is not a chance of being picked."
             )
-        table = Table(title="Project ideas", caption=caption)
+        table = Table(title="Project ideas", caption=". ".join(notes) or None)
+        # ML4SCI lists each idea as a link to its own page: four empty columns told a
+        # newcomer nothing, and the page that has the details was not shown.
+        links_only = bool(data.get("links_only"))
         if show_fit:
             table.add_column("Fit", justify="right")
         table.add_column("Idea", overflow="fold")
-        table.add_column("Size", justify="right")
-        table.add_column("Level")
-        table.add_column("Mentors", overflow="fold", max_width=22)
-        table.add_column("Skills", overflow="fold", max_width=26)
+        if links_only:
+            table.add_column("Details on its page", overflow="fold")
+        else:
+            table.add_column("Size", justify="right")
+            table.add_column("Level")
+            table.add_column("Mentors", overflow="fold", max_width=22)
+            table.add_column("Skills", overflow="fold", max_width=26)
         for idea in data["ideas"]:
             title = escape(idea["title"])
             # A project page with one idea is named after it ("CauST / CauST" on UC OSPO).
@@ -900,6 +932,8 @@ def ideas_cmd(
                 title = f"[dim]{escape(idea['section'])} /[/dim] {title}"
             if idea["confidence"] == "low":
                 title = f"? {title}"
+            if data.get("repos_linked") and idea.get("repo"):
+                title += f"\n[dim]links to {escape(idea['repo'])}[/dim]"
             hours = (
                 f"{idea['hours']}h"
                 if idea.get("hours")
@@ -908,6 +942,9 @@ def ideas_cmd(
             if idea.get("too_big_for_your_hours"):
                 hours = f"[yellow]{hours} too big[/yellow]"
             fit = [f"{idea['match_score']:.0f}"] if show_fit else []
+            if links_only:
+                table.add_row(*fit, title, escape((idea.get("links") or [""])[0]))
+                continue
             table.add_row(
                 *fit,
                 title,
@@ -917,6 +954,10 @@ def ideas_cmd(
                 ", ".join(idea.get("skills") or [])[:60],
             )
         console.print(table)
+        # UC OSPO has 41 ideas; the table showed 20 and nothing said there were more.
+        shown, total = len(data["ideas"]), int(data.get("count") or 0)
+        if total > shown:
+            console.print(f"Showing {shown} of {total} ideas. Add --limit {total} to see them all.")
         console.print(f"[dim]{escape(data['next_step'])}[/dim]")
     if data.get("past_proposals"):
         console.print("[bold]Shared past proposals (read to calibrate; never copy)[/bold]")
@@ -1410,6 +1451,9 @@ def issue_cmd(
             else "PR " + pull_ref(pr["number"], pr.get("url"), str(data["repo"]))
         )
         via = ", linked in a comment" if pr.get("via_comment") else ""
+        if not via and not pr.get("fixes") and pr["state"] in {"closed", "merged"}:
+            # Closed PRs for other issues that named this one read as attempts at it.
+            via = ", mentions this issue"
         lines.append(f"{ref} ({pr['state']}) by @{pr['author']}{via}")
     for claim in assessment["claims"][:5]:
         granted = ", approved by a maintainer" if claim["granted"] else ""
@@ -1888,7 +1932,9 @@ def proposal_cmd(
         None, "--github", "-g", help="Your GitHub login, to confirm linked PRs are yours"
     ),
     verify: bool = typer.Option(
-        True, "--verify/--no-verify", help="Look up linked pull requests on GitHub"
+        True,
+        "--verify/--no-verify",
+        help="Look up the pull requests and merge requests your draft links to, on GitHub and GitLab",
     ),
     ideas_file: Path | None = typer.Option(
         None, "--ideas-file", help="The org's ideas page as text, to detect copied passages"

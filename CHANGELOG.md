@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.6](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.5...v0.24.6) (2026-10-23)
+
+
+### Bug Fixes
+
+* **cli:** the requests-left count never reads high when lookups finish out of order ([#387](https://github.com/anandkaranubc/git-into-gsoc/issues/387)) ([e101dd7](https://github.com/anandkaranubc/git-into-gsoc/commit/e101dd7a036278da68e0341a5c49e8d3530ecf78))
+* **issue:** a closed PR that says it fixes the issue is an attempt, not a mention ([#384](https://github.com/anandkaranubc/git-into-gsoc/issues/384)) ([9478bd1](https://github.com/anandkaranubc/git-into-gsoc/commit/9478bd175651701ef6aecd3eeac18495a40be5f6))
+* **matching:** "cms" typed in a phrase still means content management ([#385](https://github.com/anandkaranubc/git-into-gsoc/issues/385)) ([21cd378](https://github.com/anandkaranubc/git-into-gsoc/commit/21cd3788b6c6a59ce7ab0e442f853380cc7a9681))
+* **repos:** GitHub's own pages are not projects, and project-page owners say so ([#388](https://github.com/anandkaranubc/git-into-gsoc/issues/388)) ([32f8819](https://github.com/anandkaranubc/git-into-gsoc/commit/32f8819fae5f4b9b0c30edc83af2907761bb4372))
+
+## [0.24.5](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.4...v0.24.5) (2026-10-23)
+
+
+### Bug Fixes
+
+* **cli:** say how many GitHub requests are left before a tokenless beginner runs out ([#380](https://github.com/anandkaranubc/git-into-gsoc/issues/380)) ([4082836](https://github.com/anandkaranubc/git-into-gsoc/commit/4082836a24db3fb3ab5c6edc75f7c7385f39ec8e))
+* **ideas:** keep proposal titles with an aside, and show where link-only ideas live ([#379](https://github.com/anandkaranubc/git-into-gsoc/issues/379)) ([8eb74c3](https://github.com/anandkaranubc/git-into-gsoc/commit/8eb74c3e43f8f28fbcb7d1cc2b2e13f7080e7504))
+* **issues:** the advice after an empty search links the issue list and the organization's chat ([#378](https://github.com/anandkaranubc/git-into-gsoc/issues/378)) ([a0d5407](https://github.com/anandkaranubc/git-into-gsoc/commit/a0d5407fbbe7a38dcea5bb1d0213608cab68a8fd))
+* **matching:** "CMS" in running text is not a content management system ([#381](https://github.com/anandkaranubc/git-into-gsoc/issues/381)) ([89943c5](https://github.com/anandkaranubc/git-into-gsoc/commit/89943c5137e6e0612eb83194357d598f04517b31))
+
+
+### Documentation
+
+* **privacy:** name the proposal check's GitLab lookups and Google Docs ideas pages ([#376](https://github.com/anandkaranubc/git-into-gsoc/issues/376)) ([d4efe8a](https://github.com/anandkaranubc/git-into-gsoc/commit/d4efe8a9b5c4a2bf36c9a0e1a8488a2514d345ac))
+* **readme:** re-render the start demo after the snapshot refresh ([#374](https://github.com/anandkaranubc/git-into-gsoc/issues/374)) ([da955b1](https://github.com/anandkaranubc/git-into-gsoc/commit/da955b17105e3473eb53cc5fff7adc50e0fd4bce))
+* **site:** the blinking cursor rests for reduced motion, a feedback link in the footer, and "slot history" explained ([#377](https://github.com/anandkaranubc/git-into-gsoc/issues/377)) ([2949a14](https://github.com/anandkaranubc/git-into-gsoc/commit/2949a1494348980b094d5b4b25bd376c6528fef5))
+
+## [0.24.4](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.3...v0.24.4) (2026-10-23)
+
+
+### Bug Fixes
+
+* **ideas:** say when the table shows only some ideas, and explain only the marks it uses ([#368](https://github.com/anandkaranubc/git-into-gsoc/issues/368)) ([360fcdc](https://github.com/anandkaranubc/git-into-gsoc/commit/360fcdcc8a0bedae7a068be3f39ca99c5de773e2))
+* **issue:** a pull request that only mentions an issue is named as a mention, not a possible fix ([#369](https://github.com/anandkaranubc/git-into-gsoc/issues/369)) ([0f5a3ca](https://github.com/anandkaranubc/git-into-gsoc/commit/0f5a3cad6a82d98aa8608f70e402a415ed25a508))
+* **repos:** look one level down when an ideas page only lists project pages ([#373](https://github.com/anandkaranubc/git-into-gsoc/issues/373)) ([44b41e4](https://github.com/anandkaranubc/git-into-gsoc/commit/44b41e45c67e1f20926293533b01a16180036b58))
+
+
+### Documentation
+
+* the installer already runs setup, every issue form says it is public, and "skill" is defined ([#370](https://github.com/anandkaranubc/git-into-gsoc/issues/370)) ([2fc8cde](https://github.com/anandkaranubc/git-into-gsoc/commit/2fc8cdea40d16dd2ba9a1bc862c53bfa4f20f9a9))
+
 ## [0.24.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.2...v0.24.3) (2026-10-23)
 
 

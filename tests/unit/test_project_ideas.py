@@ -684,7 +684,10 @@ def test_fit_shows_only_with_a_profile(monkeypatch) -> None:  # type: ignore[no-
     without = run([])
     assert "Fit" not in without and "Cronjob Optimization" in without
     with_profile = run(["Skills match: Python"])
-    assert "Fit" in with_profile and "not a chance of being picked" in with_profile
+    # The caption wraps to the table's width.
+    assert "Fit" in with_profile and "not a chance of being picked" in " ".join(
+        with_profile.split()
+    )
 
 
 R_TABLE = """<div id="wiki-body"><p>Contributors, please look for a project in the table below.</p>

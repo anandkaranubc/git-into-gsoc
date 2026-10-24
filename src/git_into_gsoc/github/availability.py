@@ -527,9 +527,11 @@ def assess_issue(
                     author=_login(source.get("user")),
                     draft=bool(source.get("draft")),
                     idle_days=(now - touched).days if touched else None,
-                    # Merged after the issue opened, like the decision below requires.
-                    fixes=merged
-                    and not (merged_at and opened and merged_at < opened)
+                    # Any state: the verdict below reads it only for merged PRs, and
+                    # `issue` marks a closed PR that does not say it as a mention (a
+                    # closed "Fixes #7" PR read "mentions this issue", then "tried
+                    # this"). One merged before the issue opened fixed something else.
+                    fixes=not (merged_at and opened and merged_at < opened)
                     and says_it_fixes(text, repo, issue.get("number"), pr_repo=where),
                 )
         elif kind == "connected":
@@ -561,8 +563,7 @@ def assess_issue(
             draft=bool(pull.get("draft")),
             idle_days=(now - touched).days if touched else None,
             via_comment=True,
-            fixes=state == "merged"
-            and not (merged_at and opened and merged_at < opened)
+            fixes=not (merged_at and opened and merged_at < opened)
             and says_it_fixes(text, repo, issue.get("number"), pr_repo=where),
         )
 
@@ -577,8 +578,22 @@ def assess_issue(
     # often a follow-up to it ("Follow-up on PR #1695", opened 26 minutes after the merge).
     before = {id(linked[k]) for k in earlier if k in linked}
     merged_prs = [p for p in prs if p.state == "merged" and id(p) not in before]
-    if any(not p.via_comment and not p.fixes for p in merged_prs):
-        caveats.append("A merged PR references this issue; it may already be partly fixed")
+    mentions = [p for p in merged_prs if not p.via_comment and not p.fixes]
+    if mentions:
+        # Named, and a reason to read it rather than a verdict: this repository's own free
+        # good first issue said "it may already be partly fixed" because a merged PR said
+        # it was left for newcomers (a launch audit, 2026-10-23).
+        named = [_pull_ref(p, repo) for p in mentions[:3] if p.number]
+        if len(named) > 1:
+            caveats.append(
+                f"Merged PRs {', '.join(named)} mention this issue; read them to see whether "
+                "they already fix part of it"
+            )
+        else:
+            who = f"Merged PR {named[0]}" if named else "A merged PR"
+            caveats.append(
+                f"{who} mentions this issue; read it to see whether it already fixes part of it"
+            )
     # A comment can link a merged pull request as the fix or as an example to copy.
     for p in [p for p in merged_prs if p.via_comment][:2]:
         caveats.append(
@@ -587,10 +602,17 @@ def assess_issue(
         )
     abandoned = [p for p in prs if p.state == "closed"]
     if abandoned and not any(p.state in {"open", "merged"} for p in prs):
-        refs = ", ".join(_pull_ref(p, repo) for p in abandoned[:3] if p.number) or "an earlier PR"
+        # Only a PR that says it fixes the issue tried it; `issue` marks the others as
+        # mentions, and "tried this" beside that mark contradicted it.
+        tried = [p for p in abandoned if p.fixes]
+        refs = ", ".join(_pull_ref(p, repo) for p in (tried or abandoned)[:3] if p.number)
+        refs = refs or "an earlier PR"
         caveats.append(
             f"{refs} tried this and was closed without merging; read its review comments "
             "first, they show what the maintainers expect"
+            if tried
+            else f"{refs} mentions this issue and was closed without merging; if it tried "
+            "this, its review comments show what the maintainers expect"
         )
 
     def result(status: Availability, reason: str) -> IssueAssessment:

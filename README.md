@@ -125,9 +125,9 @@ git-into-gsoc is made for people taking their first steps in open source, and it
 
 - Start with [CONTRIBUTING.md](CONTRIBUTING.md). Setup takes a few minutes, and no previous open-source experience is needed.
 - Pick an issue labelled [good first issue](https://github.com/anandkaranubc/git-into-gsoc/labels/good%20first%20issue).
-- Read the [architecture](docs/architecture.md) to see how the terminal tool, the assistant server, and the skill share one core.
+- Read the [architecture](docs/architecture.md) to see how the terminal tool, the assistant server, and the skill (written guidance that teaches your assistant how to use the tool) share one core.
 
-If git-into-gsoc helped you, the most useful thing you can do is [tell us](https://github.com/anandkaranubc/git-into-gsoc/issues/new/choose) what worked and what did not. Then tell a friend who is starting out.
+If git-into-gsoc helped you, the most useful thing you can do is [tell us](https://github.com/anandkaranubc/git-into-gsoc/issues/new?template=feedback.yml) what worked and what did not. It opens a public GitHub issue, so leave out anything private. Then tell a friend who is starting out.
 
 ## License and disclaimer
 
