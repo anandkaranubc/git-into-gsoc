@@ -40,7 +40,9 @@ Read every changed line. Leave out temporary files, credentials, unrelated forma
 
 ## Ask for review
 
-`git-into-gsoc draft pr --repo sympy/sympy --issue sympy/sympy#12345` prints a skeleton that follows the repository's pull request rules (template, sign-off, commit style). A useful pull request description answers:
+In the commands below, `OWNER`, `REPO` and `NUMBER` are placeholders; replace them with the appropriate organization, repository and issue you chose.
+
+`git-into-gsoc draft pr --repo OWNER/REPO --issue OWNER/REPO#NUMBER` prints a skeleton that follows the repository's pull request rules (template, sign-off, commit style). A useful pull request description answers:
 
 ```text
 Problem: What was confusing or broken? Link the issue if there is one.
@@ -61,7 +63,7 @@ git-into-gsoc progress complete_phase --phase contribute
 
 ## See it through review
 
-Reviews often ask for changes. That is a normal part of collaboration, and how you respond matters as much as the code. Reply to every review comment within a day, even if only to say when you will get to it. Make the requested updates, push them as new commits to the same branch, and say what changed. If you disagree, explain your reasoning with an example. If you are stuck, ask one focused question instead of going quiet; a pull request that falls silent is usually closed. `git-into-gsoc draft review-reply --repo sympy/sympy --issue sympy/sympy#12345` gives you a respectful structure for answering a review. If the project declines the change, thank them, note what you learned, and choose the next thing.
+Reviews often ask for changes. That is a normal part of collaboration, and how you respond matters as much as the code. Reply to every review comment within a day, even if only to say when you will get to it. Make the requested updates, push them as new commits to the same branch, and say what changed. If you disagree, explain your reasoning with an example. If you are stuck, ask one focused question instead of going quiet; a pull request that falls silent is usually closed. `git-into-gsoc draft review-reply --repo OWNER/REPO --issue OWNER/REPO#NUMBER` gives you a respectful structure for answering a review. If the project declines the change, thank them, note what you learned, and choose the next thing.
 
 Once your profile has your GitHub username, `git-into-gsoc next` also checks your open pull requests: it says which ones have a merge conflict, a failing check, requested changes, or a comment you have not answered, and which are simply waiting. When reviewers know you finish what you start, mark the step done:
 

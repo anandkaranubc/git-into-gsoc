@@ -79,10 +79,10 @@ Search organizations with `gsoc_search_orgs` (needs the network):
 {"technologies": "python", "topics": "science", "limit": 3}
 ```
 
-Check one issue before commenting, with `gsoc_issue_status`:
+Check one issue before commenting, with `gsoc_issue_status`. In the example below, `OWNER/REPO#NUMBER` is a placeholder; replace it with the repository and issue number you choose:
 
 ```json
-{"ref": "sympy/sympy#23161"}
+{"ref": "OWNER/REPO#NUMBER"}
 ```
 
 ## How the server is installed
