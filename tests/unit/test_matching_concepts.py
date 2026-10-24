@@ -183,3 +183,32 @@ def test_misspelled_algorithm_words_reach_algorithms_through_the_fuzzy_path() ->
     ]:
         found = resolve(typed)
         assert found.concepts == ("algorithms",) and found.corrected_from == meant
+
+
+def test_cms_in_running_text_is_not_a_website_system() -> None:
+    # A launch audit (2026-10-23) found five ML4SCI and CERN-HSF ideas, such as "Super
+    # resolution at the CMS detector", tagged as content management. CMS there is CERN's
+    # detector. A tag "cms" (Wagtail's) and a person's own "cms" still mean the CMS kind.
+    from git_into_gsoc.matching.concepts import find_concepts, find_tag_concepts
+
+    assert "content management" not in find_concepts("Super resolution at the CMS detector")
+    assert "content management" in find_tag_concepts("cms")
+    assert "content management" in find_concepts("cms", free_text=False)
+    assert "content management" in find_concepts("a content management system for news sites")
+
+
+def test_cms_typed_in_a_phrase_still_means_content_management() -> None:
+    # A post-merge audit (2026-10-23): after "cms" left running text, "cms development"
+    # was corrected to "game development", and "web cms" and "django cms" lost it.
+    from git_into_gsoc.matching.concepts import resolve
+
+    assert resolve("cms development").concepts == ("content management",)
+    assert resolve("cms development").corrected_from is None
+    assert set(resolve("web cms").concepts) == {"web", "content management"}
+    assert set(resolve("django cms").concepts) == {"django", "content management"}
+    assert resolve("game development").concepts == ("games",)
+    # Beside another subject, CMS is CERN's detector: CMS Open Data is CERN's portal.
+    assert "content management" not in resolve("cms open data").concepts
+    assert "content management" not in resolve("cms physics").concepts
+    # Other tag-only words keep their rule: "data" alone in a phrase is still generic.
+    assert resolve("data vizualisation").concepts == ("data visualization",)

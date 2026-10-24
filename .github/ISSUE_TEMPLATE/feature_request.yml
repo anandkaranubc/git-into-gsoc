@@ -2,6 +2,10 @@ name: Feature request
 description: Suggest an improvement to the CLI, MCP server, skill, or docs
 labels: ["enhancement"]
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Submitting creates a public GitHub issue under your username, so leave out anything private.
   - type: textarea
     id: problem
     attributes:

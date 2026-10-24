@@ -34,6 +34,9 @@ class Concept:
     related: tuple[str, ...] = ()
     # Terms that are trusted only in tags and in what a person types.
     tag_only: tuple[str, ...] = ()
+    # Tag-only terms that also count inside a phrase a person types ("cms" in "django
+    # cms"); the others do so only typed alone.
+    typed: tuple[str, ...] = ()
     # Terms trusted in free text only with this exact capitalisation.
     cased: tuple[str, ...] = field(default=())
 
@@ -47,6 +50,7 @@ def _c(
     broader: str = "",
     related: str = "",
     tag_only: str = "",
+    typed: str = "",
     cased: str = "",
 ) -> Concept:
     def split(value: str) -> tuple[str, ...]:
@@ -60,6 +64,7 @@ def _c(
         broader=split(broader),
         related=split(related),
         tag_only=split(tag_only),
+        typed=split(typed),
         cased=split(cased),
     )
 
@@ -206,7 +211,7 @@ _DOMAINS = [
     _c("frontend", DOMAIN, "frontends|front-end|front end|frontend development|user interface|user interfaces|ui|ui development|ux|user experience|ui/ux|web design|interaction design|design systems|responsive design", label="Frontend and user interfaces", broader="web", related="design"),
     _c("supply chain security", DOMAIN, "software supply chain|software supply chain security|supplychain|sbom|sboms|software bill of materials|software composition analysis|slsa|sigstore|code signing|artifact signing|build provenance|provenance|attestations|reproducible builds|dependency scanning", label="Software supply chain security", broader="security", related="devops|compliance", tag_only="supply chain|provenance"),
     _c("backend", DOMAIN, "backends|web backends|back-end|back end|server-side|server side|apis|api|rest|web apis|api design|api development|servers|server", label="Backend and APIs", broader="web", related="databases|cloud native", tag_only="api|rest|server|servers"),
-    _c("content management", DOMAIN, "cms|content management systems|content management system|wordpress|drupal|joomla|blogging|publishing|website builder|static site generators", label="Content management and publishing", broader="web", tag_only="publishing"),
+    _c("content management", DOMAIN, "cms|content management systems|content management system|wordpress|drupal|joomla|blogging|publishing|website builder|static site generators", label="Content management and publishing", broader="web", tag_only="publishing|cms", typed="cms"),
     _c("accessibility", DOMAIN, "a11y|screen reader|screen readers|assistive technology|assistive technologies|inclusive design|wcag|aria|disabilities|disability", label="Accessibility", related="frontend", tag_only="aria"),
     _c("design", DOMAIN, "ui design|ux design|visual design|graphic design|usability|usability research|user research|human-computer interaction|hci|prototyping|figma", label="Design and usability", related="frontend", tag_only="design"),
     _c("mobile", DOMAIN, "mobile apps|mobile app|mobile development|mobile applications|smartphones|apps|app development|cross-platform", label="Mobile apps", tag_only="apps|cross-platform"),
@@ -379,8 +384,17 @@ def resolve(term: str) -> Resolved:
     whole = find_concepts(cleaned, free_text=False)
     if whole:
         specific = find_concepts(cleaned) if " " in cleaned else {}
-        if specific or " " not in cleaned:
-            return Resolved(raw=term, concepts=tuple(specific or whole))
+        # "cms" left running text so CERN's CMS detector is not a website system, and
+        # then "cms development" was corrected to "game development" and "web cms" lost
+        # it (a post-merge audit, 2026-10-23).
+        typed = [key for key in whole if key not in specific and _typed_word(key, cleaned)]
+        if specific:
+            # Only beside words of its own subject: "web cms" and "django cms" are
+            # websites, but in "cms open data" and "cms physics" CMS is CERN's detector.
+            typed = [key for key in typed if _subjects(key) & set().union(*map(_lineage, specific))]
+        if specific or typed or " " not in cleaned:
+            found = tuple(dict.fromkeys([*specific, *typed]))
+            return Resolved(raw=term, concepts=found or tuple(whole))
         # Only a generic word matched ("data" in "data vizualisation"): a close spelling
         # of the whole phrase says more.
         close = difflib.get_close_matches(cleaned, list(index), n=1, cutoff=0.8)
@@ -392,6 +406,31 @@ def resolve(term: str) -> Resolved:
         if close and len(close[0]) >= 4:
             return Resolved(raw=term, concepts=index[close[0]], corrected_from=close[0])
     return Resolved(raw=term, concepts=())
+
+
+def _lineage(key: str) -> set[str]:
+    """The concept and every broader one above it (django, backend, web)."""
+    seen: set[str] = set()
+    todo = [key]
+    while todo:
+        current = todo.pop()
+        if current not in seen:
+            seen.add(current)
+            todo.extend(broader_of(current))
+    return seen
+
+
+def _subjects(key: str) -> set[str]:
+    """What a concept is part of: its broader ones, or itself when it has none."""
+    return set(broader_of(key)) or {key}
+
+
+def _typed_word(key: str, text: str) -> bool:
+    """True when one of the concept's `typed` terms is a whole word of `text`."""
+    concept = CONCEPTS.get(key)
+    if concept is None:
+        return False
+    return any(re.search(rf"(?<![\w-]){re.escape(word)}(?![\w-])", text) for word in concept.typed)
 
 
 def label(key: str) -> str:
