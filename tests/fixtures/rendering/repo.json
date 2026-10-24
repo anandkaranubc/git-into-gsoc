@@ -46,7 +46,7 @@
       "Has a CONTRIBUTING guide",
       "Has a Code of Conduct",
       "Issue/PR templates guide contributions",
-      "CI runs on pull requests",
+      "CI (automatic checks) runs on pull requests",
       "3 open 'good first issue' issue(s)",
       "Healthy merge rate (62% of human PRs)",
       "Merges outside contributors' PRs (55% of 40)",

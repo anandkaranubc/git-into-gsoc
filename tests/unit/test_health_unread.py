@@ -68,7 +68,7 @@ def test_unread_workflows_and_beginner_issues_are_left_out() -> None:
     )
     assert scored.health_score == 100
     left_out = {p.signal for p in scored.points if p.most == 0}
-    assert left_out == {"CI on pull requests", "Open beginner issues"}
+    assert left_out == {"CI (automatic checks) on pull requests", "Open beginner issues"}
 
 
 def test_a_real_answer_still_counts_as_missing() -> None:
@@ -172,7 +172,10 @@ def test_repo_health_with_every_read_answered_has_nothing_unread() -> None:
     health = _repo_health()
     assert health.unread == []
     assert health.contributing_source == "readme"
-    assert (health.open_beginner_issues, _most(health, "CI on pull requests")) == (2, 8)
+    assert (
+        health.open_beginner_issues,
+        _most(health, "CI (automatic checks) on pull requests"),
+    ) == (2, 8)
 
 
 @respx.mock
@@ -212,7 +215,7 @@ def test_labels_read_but_the_count_unread_leaves_out_beginner_issues() -> None:
     health = _repo_health(issues=httpx.Response(502, json={}), **{"actions/workflows": _limited()})
     assert health.unread == ["workflows", "beginner issues"]
     assert _most(health, "Open beginner issues") == 0
-    assert _most(health, "CI on pull requests") == 0
+    assert _most(health, "CI (automatic checks) on pull requests") == 0
 
 
 @respx.mock
