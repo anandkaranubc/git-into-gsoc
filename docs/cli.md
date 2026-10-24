@@ -14,7 +14,7 @@ How to read the commands:
 - Options come after the command, except the top-level `--version`.
 - Data commands accept `--output rich` (the default, tables and panels) or `--output json` (for scripts and assistants). `doctor`, `cache`, `mcp`, and `--version` do not take `--output`.
 - A repository can be written as `owner/name`, as any GitHub URL, or as the `git@github.com:owner/name.git` form that `git remote -v` prints. An issue can be written as `owner/name#123`, `owner/name 123`, or any issue or pull request URL, including a link copied from a single comment.
-- Uppercase words such as `OWNER/REPO` and `YOUR_USERNAME` are placeholders for your own values.
+- Uppercase words such as `OWNER/REPO`, `YOUR_USERNAME` and `NUMBER` are placeholders for your own values.
 - Nothing here posts to GitHub or submits anything to GSoC. Commands that save do so in a file on your computer, and say so.
 
 ## Get started
@@ -79,12 +79,14 @@ Notes:
 
 ## Explore repositories and issues
 
+The repository lookup examples below use SymPy. Replace `OWNER/REPO#NUMBER` in the last command with the issue you choose.
+
 ```bash
 git-into-gsoc repos "SymPy" --language python
 git-into-gsoc repo sympy/sympy
 git-into-gsoc issues --language python -n 10
 git-into-gsoc issues --repo sympy/sympy
-git-into-gsoc issue sympy/sympy#12345
+git-into-gsoc issue OWNER/REPO#NUMBER
 ```
 
 | Command | Arguments and options | Result |
@@ -142,16 +144,16 @@ Notes:
 ## Write and keep evidence
 
 ```bash
-git-into-gsoc contributions --github YOUR_USERNAME --org "SymPy"
-git-into-gsoc draft claim --issue sympy/sympy#12345
-git-into-gsoc log --goal "Reproduce #12345" --done "Reproduced on main" --stuck "Flaky test" --next "Ask in Zulip"
+git-into-gsoc contributions --github YOUR_USERNAME --org "OWNER"
+git-into-gsoc draft claim --issue OWNER/REPO#NUMBER
+git-into-gsoc log --goal "Reproduce #NUMBER" --done "Reproduced on main" --stuck "Flaky test" --next "Ask in Zulip"
 ```
 
 | Command | Arguments and options | Result |
 |---|---|---|
 | `contributions` | `--github` / `-g` (default: the username saved with `profile`); `--org` (GSoC organization name or GitHub organization) or `--repo OWNER/REPO` | Your merged, open, and closed pull requests, issues opened, threads joined, and reviews given in that scope; paste-ready lines for a proposal; a standing from `none` to `strong`; honest gaps to close |
 | `diagnose FILE` | A file with the failing output, or `-` for standard input; `--repo OWNER/REPO` | The likely cause of a failed setup or test run, quoting the line it matched, and what to try. With `--repo`, what the project's CI sets up: runtime versions, services, install and test commands |
-| `pr-check OWNER/REPO#N` | A pull request reference or URL | Your pull request checked against the repository's own rules before a reviewer sees it, each finding with its source, then the branch rules still ahead |
+| `pr-check OWNER/REPO#NUMBER` | A pull request reference or URL | Your pull request checked against the repository's own rules before a reviewer sees it, each finding with its source, then the branch rules still ahead |
 | `draft KIND` | `intro`, `question`, `claim`, `pr`, `review-reply`, `status`, or `final`; `--org`, `--repo`, `--issue`; `--check FILE` checks a message you wrote instead | A skeleton with placeholders, the fields that must hold your own observations, and the rules maintainers and the official guide state, each with its source |
 | `log` | `--goal`, `--done`, `--links` (comma-separated), `--learned`, `--stuck`, `--next`; `--limit` / `-n` when listing | Saves a weekly note, or lists recent notes when you give no fields |
 

@@ -10,7 +10,8 @@ Many organizations own dozens of repositories, and only a few are where mentors 
 git-into-gsoc repos "SymPy" --language python
 ```
 
-The examples on this page use SymPy only to show what the commands print. Run them on your own shortlist, and see the note on SymPy in [step 4](04-find-organizations.md).
+The examples on this page use SymPy only to show what the commands print. Run them on your own shortlist, and see the note on SymPy in [step 4](04-find-organizations.md). Issue references such as `OWNER/REPO#NUMBER` are placeholders. `OWNER` is for organization, `REPO` is for repository and `NUMBER` is for the issue number. Please replace them with an exact issue you choose.
+
 
 The table ranks the organization's active repositories. The strongest signal is whether the organization's GSoC ideas page names the repository. After that come open, unassigned beginner issues, recent pushes, stars, and whether the repository is written in your language. The caption tells you whether the ideas page could be read; some wikis block automated readers, in which case the ranking uses activity and beginner issues only. You can also pass a GitHub organization login directly, such as `repos sympy`.
 
@@ -99,7 +100,7 @@ Each result has a status:
 To see where to start reading for an issue, ask for pointers:
 
 ```bash
-git-into-gsoc pointers sympy/sympy#12345
+git-into-gsoc pointers OWNER/REPO#NUMBER
 ```
 
 It lists the files the issue names, past fixes of similar issues and the files they touched, and how big a typical fix is. It never proposes a fix; it tells you where to look.
@@ -107,8 +108,8 @@ It lists the files the issue names, past fixes of similar issues and the files t
 Before you comment, check one issue in depth:
 
 ```bash
-git-into-gsoc issue sympy/sympy#12345
-git-into-gsoc issue https://github.com/sympy/sympy/issues/12345
+git-into-gsoc issue OWNER/REPO#NUMBER
+git-into-gsoc issue https://github.com/OWNER/REPO/issues/NUMBER
 ```
 
 It lists linked PRs with their state and author, every claim with its age and whether a maintainer approved it, whether maintainers have engaged at all, and caveats such as "a merged PR references this issue; it may already be partly fixed". Below that is a short checklist to complete before you write anything in the thread. If an open pull request already references the issue but has been quiet for ninety days or more, it says so and suggests asking its author in the thread before you start. If an earlier pull request for the issue was closed without merging, it says so: read that pull request's review comments before you start, because they show what the maintainers expect.
@@ -127,10 +128,10 @@ I reproduced this using [version and steps]. I think the relevant code is
 approach fit, or is there a direction you would prefer?
 ```
 
-Replace the brackets with real observations. Do not post the template unchanged, and never post a bare "can I work on this?". `git-into-gsoc draft claim --issue sympy/sympy#12345` prints a skeleton that already respects the repository's claim rules; fill it with what you found. If someone is already working on it, find another issue or ask whether they welcome help.
+Replace the brackets with real observations. Do not post the template unchanged, and never post a bare "can I work on this?". `git-into-gsoc draft claim --issue OWNER/REPO#NUMBER` prints a skeleton that already respects the repository's claim rules; fill it with what you found. If someone is already working on it, find another issue or ask whether they welcome help.
 
 ```bash
-git-into-gsoc issue sympy/sympy#12345 --track   # same check, and saves the issue to your progress
+git-into-gsoc issue OWNER/REPO#NUMBER --track   # same check, and saves the issue to your progress
 ```
 
 When you have one issue you can reproduce and explain, mark the step done:
