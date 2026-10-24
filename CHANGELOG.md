@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.7](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.6...v0.24.7) (2026-10-24)
+
+
+### Bug Fixes
+
+* expand CI in repo health messages ([#383](https://github.com/anandkaranubc/git-into-gsoc/issues/383)) ([3cb6cc6](https://github.com/anandkaranubc/git-into-gsoc/commit/3cb6cc67979b32dc669def97108272393f03c606))
+
+
+### Documentation
+
+* replace real issue numbers with placeholders ([#389](https://github.com/anandkaranubc/git-into-gsoc/issues/389)) ([76bbdae](https://github.com/anandkaranubc/git-into-gsoc/commit/76bbdaee24e9cb632372ee8680b3b7193efde647))
+
 ## [0.24.6](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.5...v0.24.6) (2026-10-23)
 
 
