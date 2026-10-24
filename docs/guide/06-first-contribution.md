@@ -44,8 +44,6 @@ In the commands below, `OWNER`, `REPO` and `NUMBER` are placeholders; replace th
 
 `git-into-gsoc draft pr --repo OWNER/REPO --issue OWNER/REPO#NUMBER` prints a skeleton that follows the repository's pull request rules (template, sign-off, commit style). A useful pull request description answers:
 
-
-
 ```text
 Problem: What was confusing or broken? Link the issue if there is one.
 Change: What did you change, and why?

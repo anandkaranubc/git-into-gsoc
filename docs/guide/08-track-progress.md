@@ -13,7 +13,7 @@ The summary is a short checklist: the ten phases, with a check mark on the ones 
 These commands use `OWNER`, `REPO` and `NUMBER` as placeholders. Replace them with the appropriate organization, repository, and issue number you chose.
 
 ```bash
-git-into-gsoc progress shortlist_org --value "OWNER"
+git-into-gsoc progress shortlist_org --value "SymPy"
 git-into-gsoc progress track_repo --value OWNER/REPO
 git-into-gsoc progress track_issue --value https://github.com/OWNER/REPO/issues/NUMBER
 git-into-gsoc progress note --value "Read the setup guide. Next: run the project locally."

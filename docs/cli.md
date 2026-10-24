@@ -144,7 +144,7 @@ Notes:
 ## Write and keep evidence
 
 ```bash
-git-into-gsoc contributions --github YOUR_USERNAME --org "OWNER"
+git-into-gsoc contributions --github YOUR_USERNAME --org "SymPy"
 git-into-gsoc draft claim --issue OWNER/REPO#NUMBER
 git-into-gsoc log --goal "Reproduce #NUMBER" --done "Reproduced on main" --stuck "Flaky test" --next "Ask in Zulip"
 ```

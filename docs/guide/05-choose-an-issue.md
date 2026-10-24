@@ -12,7 +12,6 @@ git-into-gsoc repos "SymPy" --language python
 
 The examples on this page use SymPy only to show what the commands print. Run them on your own shortlist, and see the note on SymPy in [step 4](04-find-organizations.md). Issue references such as `OWNER/REPO#NUMBER` are placeholders. `OWNER` is for organization, `REPO` is for repository and `NUMBER` is for the issue number. Please replace them with an exact issue you choose.
 
-
 The table ranks the organization's active repositories. The strongest signal is whether the organization's GSoC ideas page names the repository. After that come open, unassigned beginner issues, recent pushes, stars, and whether the repository is written in your language. The caption tells you whether the ideas page could be read; some wikis block automated readers, in which case the ranking uses activity and beginner issues only. You can also pass a GitHub organization login directly, such as `repos sympy`.
 
 ## Will a newcomer's PR land here?

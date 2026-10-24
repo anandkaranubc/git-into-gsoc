@@ -31,8 +31,10 @@ git-into-gsoc repo sympy/sympy
 step "Find open beginner issues in that repository"
 git-into-gsoc issues --repo sympy/sympy -n 5
 
-step "Check one issue before commenting (replace the placeholders of 'NUMBER' with your chosen issue)"
-git-into-gsoc issue sympy/sympy#NUMBER
+step "Check one issue before commenting.
+Choose an issue from the list above and run:
+  git-into-gsoc issue OWNER/REPO#NUMBER
+Replace OWNER/REPO and NUMBER with your own values."
 
 step "What a proposal needs"
 git-into-gsoc proposal
