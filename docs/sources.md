@@ -43,7 +43,7 @@ Each signal adds points, and the points add up to exactly 100. A repository with
 | Open beginner issues | 10 | 10 when one is free, 4 when the label has no open issues, 2 when every one is assigned |
 | Time to a first human reply | 10 | 10 within a day, 6 within three days. With too few replies measured, time to merge: 10 within three days, 5 within ten |
 | Merge rate of all human PRs | 8 | 8 at 50% or more, 4 at 25% or more |
-| CI on pull requests | 8 | At least one workflow |
+| CI (automatic checks) on pull requests | 8 | At least one workflow |
 | Different outside authors merged | 6 | 2 for each, up to three |
 | People who landed a single commit last year | 6 | 6 for ten or more, 3 for three or more |
 | Code of Conduct | 4 | Found in the repository |

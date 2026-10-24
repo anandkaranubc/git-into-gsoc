@@ -142,11 +142,11 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
             signals.append("Issue/PR templates guide contributions")
         award("Issue or PR templates", 4 if templates else 0, 4)
     if "workflows" in unread:
-        award("Continuous Integration (CI) on pull requests", 0, 0, UNREAD_WHY)
+        award("CI (automatic checks) on pull requests", 0, 0, UNREAD_WHY)
     else:
         if health.has_ci:
-            signals.append("Continuous Integration (CI) runs on pull requests")
-        award("Continuous Integration (CI) on pull requests", 8 if health.has_ci else 0, 8)
+            signals.append("CI (automatic checks) runs on pull requests")
+        award("CI (automatic checks) on pull requests", 8 if health.has_ci else 0, 8)
 
     if unread & {"labels", "beginner issues"}:
         award("Open beginner issues", 0, 0, UNREAD_WHY)
