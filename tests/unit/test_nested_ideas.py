@@ -7,6 +7,7 @@ from Google's "how it works" page instead.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -172,9 +173,18 @@ def test_a_page_of_news_and_reports_reads_its_projects(api: respx.MockRouter) ->
     ]
     assert posts_listed == []
     # A project page with one idea is named once, not "Alpha: ... / Alpha: ...".
+    # Rich folds long cells across rows, so the full title is not one contiguous
+    # string in the table; the first line of the cell is enough to catch a duplicate.
     shown = CliRunner().invoke(app, ["ideas", "PostgreSQL"], env={"COLUMNS": "200"})
     assert shown.exit_code == 0, shown.output
-    assert shown.stdout.count("Alpha: Reproducible Data Pipelines") == 1
+    assert shown.stdout.count("Alpha: Reproducible Data") == 1
+    assert "Pipelines" in shown.stdout
+    as_json = CliRunner().invoke(
+        app, ["ideas", "PostgreSQL", "--output", "json"], env={"COLUMNS": "200"}
+    )
+    assert as_json.exit_code == 0, as_json.output
+    titles = [i["title"] for i in json.loads(as_json.stdout)["ideas"]]
+    assert titles.count("Alpha: Reproducible Data Pipelines") == 1
 
 
 def test_a_proposal_link_keeps_a_title_with_an_aside_in_parentheses(
@@ -208,7 +218,16 @@ def test_a_proposal_link_keeps_a_title_with_an_aside_in_parentheses(
     shown = CliRunner().invoke(app, ["ideas", "PostgreSQL"], env={"COLUMNS": "160"})
     assert shown.exit_code == 0, shown.output
     assert "Details on its page" in shown.stdout
-    assert f"{SITE}/gsoc/2026/proposal_GENIE5.html" in shown.stdout
+    # The URL may fold across cell rows; the filename is what must stay visible.
+    assert "proposal_GENIE5.html" in shown.stdout
+    as_json = CliRunner().invoke(
+        app, ["ideas", "PostgreSQL", "--output", "json"], env={"COLUMNS": "160"}
+    )
+    assert as_json.exit_code == 0, as_json.output
+    links = [
+        link for idea in json.loads(as_json.stdout)["ideas"] for link in idea.get("links") or []
+    ]
+    assert f"{SITE}/gsoc/2026/proposal_GENIE5.html" in links
     assert "? " not in shown.stdout and "Mentors" not in shown.stdout
 
 
