@@ -253,12 +253,15 @@ def test_org_says_when_it_could_not_search_for_posts(monkeypatch) -> None:  # ty
     monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
     result = CliRunner().invoke(cli.app, ["org", "LU"], env={"COLUMNS": "200"})
     assert result.exit_code == 0, result.output
-    output = result.output
-    assert "Could not search its issues for posts about GSoC 2027" in output
-    assert "says it will not take part" in output
+    # Rich wraps long lines; collapse whitespace so a mid-phrase wrap still matches.
+    words = " ".join(result.output.split())
+    assert "Could not search its issues for posts about GSoC 2027" in words
+    assert "says it will not take part" in words
     details["gsoc_posts"] = {"year": 2027, "posts": [], "error": found["error"]}
-    output = CliRunner().invoke(cli.app, ["org", "LU"], env={"COLUMNS": "200"}).output
-    assert "Could not search its issues" in output and "secondary rate limit" in output
+    words = " ".join(
+        CliRunner().invoke(cli.app, ["org", "LU"], env={"COLUMNS": "200"}).output.split()
+    )
+    assert "Could not search its issues" in words and "secondary rate limit" in words
 
 
 def test_org_shows_the_statement_the_monthly_check_found(monkeypatch) -> None:  # type: ignore[no-untyped-def]
