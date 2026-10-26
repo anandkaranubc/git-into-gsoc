@@ -63,7 +63,7 @@ git-into-gsoc picks up the login by itself. `doctor` should report the token as 
 
 You only need this if you have no uv or pipx and the one-line installer did not work for you. If you want to change the tool, follow [CONTRIBUTING.md](../../CONTRIBUTING.md) instead. You need [Git](https://git-scm.com/downloads) and [Python 3.11 or newer](https://www.python.org/downloads/). Check both with `git --version` and `python3 --version` (`py -3 --version` on Windows, where `python3` can open the Microsoft Store instead).
 
-macOS, Linux, or [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for linux):
+macOS, Linux, or [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux):
 
 ```bash
 git clone https://github.com/anandkaranubc/git-into-gsoc.git
