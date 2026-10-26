@@ -27,7 +27,7 @@ It works in your terminal and inside AI assistants such as Claude Code, Codex, C
 
 ## Start in two minutes
 
-**1. Install.** On macOS, Linux, or Windows with WSL, open a terminal and run:
+**1. Install.** On macOS, Linux, or Windows with [WSL](https://learn.microsoft.com/en-us/windows/wsl/install) (Windows Subsystem for Linux), open a terminal and run:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
