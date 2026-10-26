@@ -204,7 +204,8 @@ def test_the_repos_table_says_what_its_score_means(
     monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit("discover_repos", load("repos")))
     result = CliRunner().invoke(cli.app, ["repos", "SymPy"])
     assert result.exit_code == 0, result.output[-800:]
-    assert "Not a grade or a chance of acceptance" in result.output
+    # Caption wraps to the table width; collapse whitespace so the phrase still matches.
+    assert "Not a grade or a chance of acceptance" in " ".join(result.output.split())
 
 
 def test_recommend_marks_a_starter_issue_someone_asked_for_before(
@@ -228,4 +229,9 @@ def test_recommend_marks_a_starter_issue_someone_asked_for_before(
     result = CliRunner().invoke(cli.app, ["recommend", "--tech", "rust"])
     assert result.exit_code == 0, result.output
     assert "asked before" in result.output
-    assert "! Needs design context first" in result.output
+    # The caution sits in a folded table cell, so the full phrase may wrap mid-line.
+    assert "Needs design context" in result.output
+    as_json = CliRunner().invoke(cli.app, ["recommend", "--tech", "rust", "--output", "json"])
+    assert as_json.exit_code == 0, as_json.output
+    starters = json.loads(as_json.stdout)["starter_issues"]
+    assert starters[0]["caution"] == "Needs design context first"
