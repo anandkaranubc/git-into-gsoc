@@ -20,7 +20,7 @@ from pydantic import ValidationError
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, _private_dir, data_location
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
-from git_into_gsoc.validation import parse_issue_ref, parse_repo
+from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_limit
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
 LOCK_TIMEOUT_SECONDS = 10.0
@@ -35,6 +35,9 @@ MAX_TEXT_CHARS = 2000
 MAX_NAME_CHARS = 200
 MAX_LINKS = 20
 MAX_LINK_CHARS = 500
+# The summary is part of `next` and the assistant's progress resource, so it carries
+# only the newest few notes.
+RECENT_NOTES = 5
 _LOG_TEXT_FIELDS = {
     "goal": "goal",
     "done": "done",
@@ -293,10 +296,15 @@ class ProgressStore:
         return self.save(state)
 
     @_mutating
-    def mark_checked(self, statuses: dict[str, str], at: datetime) -> ProgressState:
+    def mark_checked(self, statuses: dict[str, str], at: datetime | None) -> ProgressState:
+        """Save the statuses a check could tell, and `at` as the check time unless None.
+
+        "unknown" (offline, rate limited) never replaces what an earlier check saw.
+        """
         state = self.load()
-        state.issue_status.update(statuses)
-        state.last_checked_at = at
+        state.issue_status.update({k: v for k, v in statuses.items() if v != "unknown"})
+        if at is not None:
+            state.last_checked_at = at
         return self.save(state)
 
     @_mutating
@@ -314,11 +322,12 @@ class ProgressStore:
         return self.save(state)
 
     def recent_logs(self, limit: int = 5) -> list[LogEntry]:
+        validate_limit(limit)
         # Newest first; entries saved within the same clock tick keep insertion order,
         # so the index breaks ties (Windows timestamps are coarse).
         indexed = list(enumerate(self.load().weekly_log))
         indexed.sort(key=lambda pair: (pair[1].at, pair[0]), reverse=True)
-        return [entry for _, entry in indexed][: max(1, limit)]
+        return [entry for _, entry in indexed][:limit]
 
     @_mutating
     def shortlist_org(self, name: str) -> ProgressState:
@@ -395,6 +404,8 @@ class ProgressStore:
             "tracked_repos": state.tracked_repos,
             "tracked_issues": state.tracked_issues,
             "contributions": len(state.contributions),
+            "notes": len(state.notes),
+            "recent_notes": state.notes[::-1][:RECENT_NOTES],
             "profile": state.profile,
             "phases": state.phases,
             "updated_at": state.updated_at.isoformat() if state.updated_at else None,

@@ -30,7 +30,7 @@ Put these in `.env` or export them in the process environment. Environment varia
 | `GIG_ARCHIVE_TTL_SECONDS` | `86400` | Same for organization lists, archives, and ideas pages |
 | `GIG_CACHE_MAX_AGE_DAYS` | `30` | Cached responses not refreshed for this many days are deleted; `0` keeps them |
 | `GIG_CACHE_MAX_MB` | `500` | Above this size the oldest cached responses are deleted first; `0` turns the cap off |
-| `GIG_HTTP_TIMEOUT_SECONDS` | `30` | Maximum wait for one HTTP request |
+| `GIG_HTTP_TIMEOUT_SECONDS` | `30` | Maximum wait for a server to answer or send more of its answer; a whole answer must arrive within ten times this |
 | `GIG_HTTP_MAX_RETRIES` | `2` | Retries for network errors and 5xx responses |
 | `GIG_HTTP_MAX_RETRY_WAIT_SECONDS` | `20` | Longest pause accepted when GitHub asks the tool to retry later |
 | `GIG_MAX_CONCURRENCY` | `6` | Parallel GitHub requests when verifying issues or grading a repository |
@@ -48,7 +48,7 @@ Put these in `.env` or export them in the process environment. Environment varia
 
 Nothing in these folders is uploaded, and progress does not sync to another computer. [Privacy](privacy.md) lists every service the tool reads from and what your AI assistant sees. Avoid storing secrets in progress notes.
 
-To back up progress, copy `progress.json` somewhere you control. To correct entries, stop any assistant connection using the tool, back up the file, and edit the JSON carefully. To start over, rename the file; the next save creates a new one.
+To back up progress, copy `progress.json` somewhere you control. To correct entries, stop any assistant connection using the tool, back up the file, and edit the JSON carefully. A time without a timezone is read as UTC, and fields the tool does not know are kept. To start over, rename the file; the next save creates a new one.
 
 Most GitHub responses stay fresh for an hour, but issue checks refresh after 5 minutes and official program dates after 6 hours. `GIG_CACHE_TTL_SECONDS` changes only the one-hour default, so for a guaranteed fresh look run `git-into-gsoc cache --clear` first.
 

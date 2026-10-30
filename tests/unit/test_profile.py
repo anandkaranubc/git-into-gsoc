@@ -90,6 +90,14 @@ def test_cli_profile_set_and_show() -> None:
     assert '"timezone": "UTC"' in shown.stdout
 
 
+@pytest.mark.parametrize("hours", ["-5", "0", "81"])
+def test_cli_profile_hours_use_the_range_start_uses(hours: str) -> None:
+    # `profile --hours -5` was saved, and `next` then planned with negative hours.
+    result = runner.invoke(app, ["profile", "--hours", hours])
+    assert result.exit_code == 2
+    assert "hours_per_week" not in ProgressStore().profile()
+
+
 def test_cli_profile_empty_hint() -> None:
     result = runner.invoke(app, ["profile"])
     assert result.exit_code == 0

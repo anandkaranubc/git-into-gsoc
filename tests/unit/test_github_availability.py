@@ -201,6 +201,27 @@ def test_assess_reports_unknown_when_the_timeline_cannot_be_read() -> None:
     assert "timeline" in assessment.reason
 
 
+@respx.mock
+def test_assess_reads_the_timeline_past_its_first_page() -> None:
+    respx.get("https://api.github.com/repos/acme/lib/issues/7").mock(
+        return_value=httpx.Response(
+            200,
+            json={**_issue(), "number": 7, "html_url": "https://github.com/acme/lib/issues/7"},
+        )
+    )
+    old = [{"event": "labeled", "created_at": _iso(300)} for _ in range(100)]
+    timeline = respx.get(
+        url__regex=r"https://api\.github\.com/repos/acme/lib/issues/7/timeline.*"
+    ).mock(side_effect=[httpx.Response(200, json=old), httpx.Response(200, json=[_pr(9, "open")])])
+    respx.get("https://api.github.com/repos/acme/lib/pulls/9").mock(
+        return_value=httpx.Response(200, json={"number": 9, "state": "open"})
+    )
+    _, assessment = GitHubClient().assess("acme/lib", 7)
+    assert assessment.availability == Availability.LIKELY_TAKEN
+    assert timeline.call_count == 2
+    assert timeline.calls[1].request.url.params["page"] == "2"
+
+
 def test_bot_command_claims_count_as_claims() -> None:
     for body in ("/assign", "/assign-me", ".take", "@zulipbot claim", "@rustbot claim", "/take"):
         timeline = [_comment("gina", body, 2)]

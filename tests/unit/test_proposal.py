@@ -263,3 +263,28 @@ def test_links_verified_is_true_only_when_a_link_was_checked(monkeypatch: Any) -
     toolkit = GSoCToolkit()
     report = toolkit.check_proposal("No links here.", verify=True)
     assert report["links"] == [] and report["links_verified"] is False
+
+
+def test_one_bad_link_is_reported_without_stopping_the_check() -> None:
+    import httpx
+    import respx
+
+    from git_into_gsoc.service import GSoCToolkit
+
+    # ".../pull/1e" reached int() and raised ValueError, and ".../o/../pull/1" stopped the
+    # whole check with "Invalid repository name".
+    text = (
+        "My PRs: https://github.com/o/r/pull/1e and https://github.com/o/../pull/1 and "
+        "https://github.com/o/r/pull/2 and https://github.com/o/r/commit/0a1b2c"
+    )
+    with respx.mock(assert_all_called=False) as api:
+        api.get("https://api.github.com/repos/o/r/pulls/2").mock(
+            return_value=httpx.Response(200, json={"user": {"login": "me"}, "state": "open"})
+        )
+        report = GSoCToolkit().check_proposal(text, github="me")
+    links = {link["url"]: link for link in report["links"]}
+    assert "https://github.com/o/r/pull/1e" not in links
+    assert links["https://github.com/o/r/pull/2"]["verified"] is True
+    assert links["https://github.com/o/r/commit/0a1b2c"]["number"] == "0a1b2c"
+    bad = links["https://github.com/o/../pull/1"]
+    assert bad["verified"] is False and "not a GitHub repository" in bad["note"]

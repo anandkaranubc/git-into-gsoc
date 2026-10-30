@@ -139,6 +139,7 @@ from git_into_gsoc.validation import (
     parse_issue_ref,
     parse_repo,
     plain_skill,
+    validate_limit,
     validate_login,
     validate_year,
 )
@@ -178,6 +179,9 @@ _COMMON_BEGINNER_LABELS = (
 # An organization counts as matching someone's interests from this interest fit up; a
 # passing mention in its description (LLVM mentions "embedded") stays below it.
 INTEREST_MATCH = 0.5
+# `next` re-checks this many of the newest tracked issues and repositories, which keeps
+# one run to about a dozen API calls.
+RECHECK_LIMIT = 10
 HOW_RANKED = (
     "Fit compares your skills and interests with each organization's official listing, its "
     "ideas page, and its GitHub repositories; every reason names its source. It says how well "
@@ -527,6 +531,7 @@ class GSoCToolkit:
         """Organizations ranked for the person. With `check_posts`, the top three are
         checked for posts about the coming year, and one that says it sits out moves last
         (one search each)."""
+        validate_limit(limit)
         from_profile = False
         saved = self.progress.profile()
         if not (query or technologies or topics or category):
@@ -771,6 +776,7 @@ class GSoCToolkit:
         since: int | None = None,
         limit: int = 15,
     ) -> dict[str, Any]:
+        validate_limit(limit)
         if org:
             resolved = self.gsoc.resolve_org_name(org)
             if resolved is None:
@@ -901,6 +907,7 @@ class GSoCToolkit:
         `org` may be a GSoC org name (resolved to its GitHub orgs and ideas page)
         or a GitHub login.
         """
+        validate_limit(limit)
         gsoc_org = self.gsoc.get_organization(org, year=year)
         if gsoc_org is None:
             owners = [validate_login(org, kind="GitHub org/user or GSoC org name")]
@@ -1377,6 +1384,7 @@ class GSoCToolkit:
         organization's name or a GitHub login. The note says what was searched and
         what was left out.
         """
+        validate_limit(max_results, name="max_results")
         if repo:
             # A pasted link (https://github.com/ML4SCI/DeepLense) reached the advice as is:
             # "github.com/https://github.com/.../issues" and "repos https:".
@@ -2148,6 +2156,7 @@ class GSoCToolkit:
     ) -> dict[str, Any]:
         """What to do right now: phase, deadlines, tracked-issue changes, new issues, actions."""
         now = now or datetime.now(UTC)
+        year = validate_year(year, latest=latest_program_year(self.settings))
         year = year or self.settings.target_year
         offline = False
         try:
@@ -2162,7 +2171,7 @@ class GSoCToolkit:
         statuses: dict[str, str] = {}
         if recheck and state.tracked_issues:
             refs: list[tuple[str, str, str, int]] = []
-            for raw in state.tracked_issues[:10]:
+            for raw in state.tracked_issues[-RECHECK_LIMIT:]:
                 try:
                     owner, repo, num = parse_issue_ref(raw)
                 except GigError:
@@ -2189,13 +2198,15 @@ class GSoCToolkit:
                         "availability": status,
                         "reason": reason,
                         "previous": previous,
-                        "changed": bool(previous and previous != status),
+                        # "unknown" means the check could not tell (offline, rate limited).
+                        "changed": bool(previous and status != "unknown" and previous != status),
                     }
                     tracked.append(entry)
                     if entry["changed"]:
                         changes.append(f"{key} went from {previous} to {status}: {reason}")
 
-        new_issues = self._new_beginner_issues(state, now=now) if recheck else []
+        found_issues = self._new_beginner_issues(state, now=now) if recheck else []
+        new_issues = found_issues or []
         org_posts = self._shortlist_posts(state, year) if recheck else []
         github_login = str((state.profile or {}).get("github") or "").strip()
         open_prs = (
@@ -2216,8 +2227,9 @@ class GSoCToolkit:
         if recheck:
             # Where the progress folder cannot be written (a sandboxed assistant), the
             # results still count; the next run just reports the same changes again.
+            # A failed search keeps the old check time, so its window is searched next run.
             with contextlib.suppress(InputError):
-                self.progress.mark_checked(statuses, now)
+                self.progress.mark_checked(statuses, now if found_issues is not None else None)
 
         # Plan around orgs that are taking part; one that says it is sitting out goes last.
         sitting_out = {p["org"] for p in org_posts if p["status"] == "not_taking_part"}
@@ -2268,6 +2280,7 @@ class GSoCToolkit:
             "hours_note": hours_note((state.profile or {}).get("hours_per_week")),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
+            "not_checked": _not_checked(state) if recheck else None,
             "open_pull_requests": open_prs,
             "merged_pull_requests": merged_news,
             "first_merge": first_merge and bool(merged_news),
@@ -2895,6 +2908,7 @@ class GSoCToolkit:
 
     def org_mentors(self, name: str, *, years: int = 3, limit: int = 25) -> dict[str, Any]:
         """Who mentored this org's completed projects in recent years, from the archive."""
+        validate_limit(limit)
         org = self.gsoc.get_organization(name)
         if org is None:
             return self._org_not_found(name)
@@ -2925,6 +2939,7 @@ class GSoCToolkit:
         follow: bool = True,
     ) -> dict[str, Any]:
         """Structured project ideas from an org's ideas page, ranked for the contributor."""
+        validate_limit(limit)
         org = self.gsoc.get_organization(name, year=year)
         if org is None:
             return self._org_not_found(name, year=year)
@@ -2969,7 +2984,7 @@ class GSoCToolkit:
         )
         idea_dicts = [i.model_dump(mode="json") | {"repo": _idea_repo(i.links)} for i in ranked]
         hours_note = _mark_ideas_too_big(idea_dicts, self.progress.profile().get("hours_per_week"))
-        shown = idea_dicts[: max(1, limit)]
+        shown = idea_dicts[:limit]
         # UC OSPO's ideas sit in a dozen projects' repositories; `repos` and `next` lead
         # here, so say where an idea's code is (a launch audit, 2026-10-23).
         several_repos = len({str(i["repo"]).lower() for i in shown if i["repo"]}) > 1
@@ -3448,11 +3463,14 @@ class GSoCToolkit:
             post["org"] = owners.get(post["repo"].split("/")[0].lower(), post["repo"])
         return posts[:5]
 
-    def _new_beginner_issues(self, state: ProgressState, *, now: datetime) -> list[dict[str, Any]]:
-        """Beginner issues created in tracked repos / shortlisted orgs since the last check."""
+    def _new_beginner_issues(
+        self, state: ProgressState, *, now: datetime
+    ) -> list[dict[str, Any]] | None:
+        """Beginner issues created in tracked repos / shortlisted orgs since the last check,
+        or None when the search failed."""
         since = state.last_checked_at or (now - timedelta(days=14))
         scope: list[str] = []
-        for raw in state.tracked_repos[:10]:
+        for raw in state.tracked_repos[-RECHECK_LIMIT:]:
             try:
                 owner, repo = parse_repo(raw)
             except GigError:
@@ -3486,7 +3504,7 @@ class GSoCToolkit:
         try:
             items = self.github.search_issues(query, per_page=20, sort="created")
         except HttpError:
-            return []
+            return None
         out = []
         for item in items:
             if "pull_request" in item:
@@ -3508,6 +3526,22 @@ class GSoCToolkit:
                 }
             )
         return out[:10]
+
+
+def _not_checked(state: ProgressState) -> str | None:
+    """Which tracked items `next` left out, and where to see them, or None."""
+    left_out = [
+        f"{len(items) - RECHECK_LIMIT} of your {len(items)} tracked {what}"
+        for what, items in (("issues", state.tracked_issues), ("repositories", state.tracked_repos))
+        if len(items) > RECHECK_LIMIT
+    ]
+    if not left_out:
+        return None
+    return (
+        f"Only the newest {RECHECK_LIMIT} tracked issues and repositories are re-checked. "
+        f"Left out: {', '.join(left_out)}. See them all with git-into-gsoc progress, and "
+        "check one issue with git-into-gsoc issue OWNER/REPO#NUMBER."
+    )
 
 
 def _license_label(license_obj: Any) -> str | None:

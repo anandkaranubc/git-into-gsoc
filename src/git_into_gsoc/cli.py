@@ -179,7 +179,8 @@ def _emit_or_fail(data: dict[str, Any], output: Output) -> None:
 def _emit(data: object, output: Output) -> None:
     data = strip_hidden_all(data)
     if output == Output.json:
-        console.print_json(json.dumps(data, default=str))
+        # ASCII, so a Windows code page with errors="replace" cannot turn "é" into "?".
+        console.print_json(json.dumps(data, default=str), ensure_ascii=True)
     else:
         console.print(data, markup=False)
 
@@ -1192,10 +1193,23 @@ def orient_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Get your bearings in a repository: code map, entry points, test command, who writes the code, rules."""
+    # Checked before the 20 or so API calls; a folder failed only after them, and an
+    # existing file was replaced without a word.
+    if codetour is not None and codetour.exists():
+        raise InputError(
+            f"{codetour} already exists",
+            hint="Give the name of a new file, such as reading-plan.tour.",
+        )
     data = _toolkit().orient_repo(full_name, codetour=codetour is not None)
     if codetour is not None:
-        codetour.parent.mkdir(parents=True, exist_ok=True)
-        codetour.write_text(json.dumps(data["codetour"], indent=2) + "\n", encoding="utf-8")
+        try:
+            codetour.parent.mkdir(parents=True, exist_ok=True)
+            codetour.write_text(json.dumps(data["codetour"], indent=2) + "\n", encoding="utf-8")
+        except OSError as exc:
+            raise InputError(
+                f"Cannot write {codetour}: {exc.strerror or exc}",
+                hint="Choose a file in a folder you can write to.",
+            ) from exc
     if output == Output.json:
         _emit(data, output)
         return
@@ -1477,7 +1491,9 @@ def profile_cmd(
     interests: str | None = typer.Option(
         None, "--interests", "-i", help="Topics you care about, comma-separated"
     ),
-    hours: int | None = typer.Option(None, "--hours", help="Hours per week you can give"),
+    hours: int | None = typer.Option(
+        None, "--hours", min=1, max=80, help="Hours per week you can give"
+    ),
     tz: str | None = typer.Option(None, "--tz", help="Your timezone, for example Asia/Kolkata"),
     experience: str | None = typer.Option(
         None,
@@ -2060,6 +2076,10 @@ def _render_progress(data: dict[str, Any]) -> None:
         days, f", the last one {days} days ago"
     )
     console.print(f"\nWeekly notes: {data['log_entries']}{when}")
+    if data["recent_notes"]:
+        console.print(f"\n[bold]Notes[/bold] ({data['notes']}, newest first)")
+        for note in data["recent_notes"]:
+            console.print(f"  {note}")
     if data["next_phase"]:
         console.print(
             f"[dim]When {data['next_phase']} is done: git-into-gsoc progress complete_phase "
@@ -2140,6 +2160,8 @@ def next_cmd(
             console.print(
                 f"  [{style}]{item['availability']:<12}[/] {item['ref']}  [dim]{escape(item['reason'])}[/dim]"
             )
+    if data.get("not_checked"):
+        console.print(f"  [dim]{escape(data['not_checked'])}[/dim]")
     if data.get("open_pull_requests"):
         console.print("\n[bold]Your open pull requests[/bold]")
         for pr in data["open_pull_requests"]:

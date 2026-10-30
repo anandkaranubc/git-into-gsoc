@@ -47,7 +47,7 @@ git-into-gsoc proposal draft.md --github YOUR_USERNAME --ideas-file ideas.txt
 Notes:
 
 - `program` reads the year's milestones from the official site. When Google has not published that year, it projects the previous official year forward and marks every date as an estimate with an uncertainty window. When the site is unreachable or does not return a year, it uses an embedded snapshot of the official dates for the years the snapshot holds.
-- `next` combines the program phase and its deadlines, a time budget when your profile has hours per week (hours until the next milestone, split by what the phase needs), your tracked issues re-checked live with any status changes, pull requests of yours merged since your last check (recorded in your progress, with a word for the first one), new beginner issues in the places you follow, and posts about the coming GSoC in your shortlisted organizations' repositories (an organization whose maintainers say it will not take part becomes the first action). When your profile has a GitHub username, it also sorts your open pull requests in other people's repositories into "needs you" (a merge conflict, a failing check, requested changes with no commit since, a comment with no reply, a draft) and "waiting" (with a nudge to follow up once after five quiet days). `--no-check` skips the live re-checks.
+- `next` combines the program phase and its deadlines, a time budget when your profile has hours per week (hours until the next milestone, split by what the phase needs), your newest 10 tracked issues re-checked live with any status changes (it says how many older ones it left out), pull requests of yours merged since your last check (recorded in your progress, with a word for the first one), new beginner issues in the places you follow, and posts about the coming GSoC in your shortlisted organizations' repositories (an organization whose maintainers say it will not take part becomes the first action). When your profile has a GitHub username, it also sorts your open pull requests in other people's repositories into "needs you" (a merge conflict, a failing check, requested changes with no commit since, a comment with no reply, a draft) and "waiting" (with a nudge to follow up once after five quiet days). `--no-check` skips the live re-checks. When a check cannot reach GitHub, `next` keeps the statuses and the check time it saved before, so the next run looks at the same days again.
 - `proposal FILE` never rewrites your draft. It checks for the required sections, counts week-by-week timeline entries and buffer time, looks for concrete references to files, functions, and issues, and lists the generic phrases and leftover placeholders that [Google's spam guidance](https://developers.google.com/open-source/gsoc/resources/spam_proposals) warns about. Linked GitHub pull requests and GitLab merge requests (on gitlab.com or a project's own GitLab) are looked up, so one written by someone else is flagged with `--github`, and one the draft calls merged but that is open or was closed without merging is flagged too. `--ideas-file` measures how much of the text is copied from the organization's ideas page. `--no-verify` skips the lookups.
 
 ## Discover organizations
@@ -95,7 +95,7 @@ git-into-gsoc issue OWNER/REPO#NUMBER
 | `repo OWNER/REPO` | Repository or URL; `--track` saves it to your progress | A grade from A to F with the evidence, warnings, plain notes, where it lost points, setup hints, and the command to run next. A read-only mirror, a fork in a person's account, and a repository with pull requests turned off are not graded; it says where the project really takes changes. A fork owned by an organization is graded and names the original. `--track` on a person's fork saves the original |
 | `issues` | `--language` / `-l`, `--org`, `--repo`, `--label`, `--scope gsoc\|all`, `--limit` / `-n` | Beginner issues with a verified availability status and, where one applies, a caution |
 | `issue REF [NUMBER]` | `owner/repo#123`, a URL, or `owner/repo` plus a number; `--track` saves it to your progress | One issue: linked pull requests, claims with dates, maintainer approvals, caveats, the caution a search would give it, and a before-you-comment checklist |
-| `orient OWNER/REPO` | Repository or URL; `--codetour FILE` also writes a CodeTour file (a VS Code extension that walks you through files step by step) pinned to the inspected commit | A code map with purpose guesses, entry points, the test command CI runs and the environment it sets up, docs to read first, the most active commit authors and CODEOWNERS, the rules before a pull request with their sources, policy sentences, channels, an example merged outsider pull request, and a reading plan |
+| `orient OWNER/REPO` | Repository or URL; `--codetour FILE` also writes a CodeTour file (a VS Code extension that walks you through files step by step) pinned to the inspected commit; it never replaces a file that already exists | A code map with purpose guesses, entry points, the test command CI runs and the environment it sets up, docs to read first, the most active commit authors and CODEOWNERS, the rules before a pull request with their sources, policy sentences, channels, an example merged outsider pull request, and a reading plan |
 | `pointers REF [NUMBER]` | Issue reference as for `issue`; `--similar N` (default 5), `--no-search` | Files the issue names, resolved against the tree with a confidence label; code-search hits or ready-made search links for identifiers; closed issues with the same beginner label and the pull requests that fixed them; how big a typical fix is |
 
 Notes on `repos` and `repo`:
@@ -133,7 +133,7 @@ git-into-gsoc recommend --tech html,css --interests accessibility --experience n
 
 | Command | Options | Result |
 |---|---|---|
-| `profile` | `--github` / `-g`, `--tech` / `-t`, `--interests` / `-i`, `--hours`, `--experience` / `-e` (`new`, `some`, or `experienced`), `--tz` | Saves the facts recommendations are built from, or shows what is saved when you give no options |
+| `profile` | `--github` / `-g`, `--tech` / `-t`, `--interests` / `-i`, `--hours` (1 to 80), `--experience` / `-e` (`new`, `some`, or `experienced`), `--tz` | Saves the facts recommendations are built from, or shows what is saved when you give no options |
 | `recommend` | `--tech`, `--interests`, `--experience`, `--hours`, `--github` | Organizations that fit, with evidence; ideas that fit you; starter issues; and a short path with a command for each step |
 
 Notes:
@@ -177,7 +177,7 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 
 | Action after `progress` | Required value | Effect |
 |---|---|---|
-| `summary` (default) | none | The phases as a checklist with the next one marked, your shortlist, tracked repositories and issues, and how recent your weekly notes are |
+| `summary` (default) | none | The phases as a checklist with the next one marked, your shortlist, tracked repositories and issues, how recent your weekly notes are, and your five newest notes |
 | `complete_phase` | `--phase NAME` | Mark a phase complete. Names: `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, `track` |
 | `shortlist_org` | `--value "NAME"` | Save an organization name |
 | `track_repo` | `--value OWNER/REPO` | Save a repository as `owner/repo`, once whatever the spelling. A project link on GitLab or another host is saved as it is |
@@ -206,12 +206,12 @@ git-into-gsoc setup --scope project --assistant claude-code --assistant cursor
 |---|---|
 | `--assistant` / `-a NAME` | `claude-code`, `cursor`, `codex`, `gemini`, `antigravity`, `windsurf` (Devin Desktop), `vscode` (VS Code and Copilot CLI), or `all`. Default: every assistant with a config folder or executable on this machine |
 | `--scope user` (default) | One shared skill copy in `~/.agents/skills`, which Codex, Cursor, Gemini CLI, Devin Desktop, VS Code, and Copilot CLI all read, plus `~/.claude/skills` for Claude Code and `~/.gemini/config/skills` for Antigravity. The MCP server goes into each assistant's user config (Claude Code via `claude mcp add` when available). Copies that older versions left in `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, or `~/.codeium/windsurf/skills` are removed, so the skill is listed once. An assistant that already has the git-into-gsoc plugin or extension is left to it |
-| `--scope project` | The same inside the current repository (`.agents/skills`, `.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `.codex/config.toml`, and so on); `--project-dir` picks another folder |
+| `--scope project` | The same inside the current repository (`.agents/skills`, `.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `.codex/config.toml`, and so on); `--project-dir` picks another folder, which must already exist |
 | `--no-skill`, `--no-mcp` | Do only one of the two jobs |
 | `--dry-run` | Print the plan without writing |
-| `--remove` | Undo: delete the skill copies and remove the MCP registrations for the same scope and assistants, keeping every other entry in those files |
+| `--remove` | Undo: delete the skill copies and remove the MCP registrations for the same scope and assistants, keeping every other entry in those files. The shared `.agents/skills` copy stays while another assistant found on this machine still reads it |
 
-Setup merges into existing JSON and TOML files rather than replacing them, writes a `.bak` copy first, refuses to touch a file it cannot parse, and reports `unchanged` on re-runs. An assistant it cannot configure gets a printed manual command. [Use it in your AI assistant](assistants.md) covers each assistant; [configuration](configuration.md) covers tokens and settings.
+Setup merges into existing JSON and TOML files rather than replacing them. In its own `git-into-gsoc` entry it changes only the command and the settings it needs, so settings you added there, such as `env` or `disabled`, stay. It writes a `.bak` copy first, refuses to touch a file it cannot parse, and reports `unchanged` on re-runs. With `--scope project`, it never follows a symbolic link (a file that points somewhere else) inside the project, so a cloned repository cannot steer it into other folders; that file or folder is reported as `skipped`. An assistant it cannot configure gets a printed manual command. [Use it in your AI assistant](assistants.md) covers each assistant; [configuration](configuration.md) covers tokens and settings.
 
 ## Use output in a script
 
@@ -220,6 +220,6 @@ git-into-gsoc issues --language rust -n 5 --output json > issues.json
 git-into-gsoc repo sympy/sympy --output json | python3 -c "import json,sys; print(json.load(sys.stdin)['health']['grade'])"
 ```
 
-Successful JSON goes to standard output. Expected failures print `error: ...` and usually a `hint: ...` line to standard error and exit with code 1. Invalid command syntax exits with code 2. Errors are not JSON. A successful command can still return data such as `found: false` or availability `unknown`, so inspect the result as well as the exit code.
+Successful JSON goes to standard output. Expected failures print `error: ...` and usually a `hint: ...` line to standard error and exit with code 1; these errors are not JSON. Invalid command syntax exits with code 2. One exception: when `org`, `ideas`, `mentors`, or `projects --org` cannot find the organization, `--output json` prints the result with `found: false`, `error`, and `hint` to standard output, and still exits with code 1. A successful command can still return data such as availability `unknown`, so inspect the result as well as the exit code.
 
 [Configuration](configuration.md) · [Troubleshooting](troubleshooting.md) · [Guide contents](README.md)

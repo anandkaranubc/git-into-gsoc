@@ -161,6 +161,17 @@ def split_csv(value: str | list[str] | None) -> list[str]:
 FIRST_GSOC_YEAR = 2005
 
 
+def validate_limit(limit: int, *, name: str = "limit") -> int:
+    """`limit` when it is 1 or more. The CLI refuses less itself; MCP clients send any
+    number, and -1 quietly dropped the last result."""
+    if limit < 1:
+        raise InputError(
+            f"{name} must be 1 or more, got {limit}",
+            hint="Leave it out to use the default.",
+        )
+    return limit
+
+
 def validate_year(year: int | None, *, latest: int) -> int | None:
     """A program year GSoC has had or is about to have; None or 0 means "not given"."""
     if not year:
