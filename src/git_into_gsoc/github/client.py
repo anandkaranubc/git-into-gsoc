@@ -187,7 +187,10 @@ class GitHubClient:
         use_cache: bool = True,
         accept: str | None = None,
     ) -> Any:
-        url = f"{self.settings.github_api_url.rstrip('/')}/{quote(path.lstrip('/'), safe='/')}"
+        # Callers quote a branch name so its slash becomes %2F; quoting that again sent
+        # release%252F1.x, and the tree and branch rules came back empty (an audit,
+        # 2026-10-29). A literal % in a path must be quoted by the caller.
+        url = f"{self.settings.github_api_url.rstrip('/')}/{quote(path.lstrip('/'), safe='/%')}"
         headers = self._headers()
         if accept:
             headers["Accept"] = accept
@@ -432,7 +435,7 @@ class GitHubClient:
     def contents_exists(self, owner: str, repo: str, path: str) -> bool:
         owner, repo = parse_repo(f"{owner}/{repo}")
         try:
-            self._api(f"repos/{owner}/{repo}/contents/{path}")
+            self._api(f"repos/{owner}/{repo}/contents/{quote(path)}")
             return True
         except NotFoundError:
             return False
