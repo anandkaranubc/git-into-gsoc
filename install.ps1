@@ -204,20 +204,36 @@ function Request-Uv {
 
 $GigBin = $null
 
+# A native command that fails does not stop PowerShell, so a failed `pip install -e` or
+# setup still ended with "All set" (setup audit, 2026-10-29).
+function Assert-ExitCode([string]$What) {
+  if ($LASTEXITCODE) {
+    throw "$What failed with exit code $LASTEXITCODE. Read the error above, then run this installer again."
+  }
+}
+
 # New terminals read the user PATH from the registry, so a folder added here is found by
-# every terminal opened afterwards. The current one is updated too.
+# every terminal opened afterwards. The current one is updated too. The value is read and
+# written unexpanded, as uv's installer does: reading it expanded and writing it back as
+# plain text froze entries such as %JAVA_HOME%\bin (setup audit, 2026-10-29).
 function Add-ToUserPath([string]$Dir) {
-  $current = [Environment]::GetEnvironmentVariable("Path", "User")
-  $parts = @("$current".Split(";") | Where-Object { $_ })
+  $reg = "registry::HKEY_CURRENT_USER\Environment"
+  $parts = @((Get-Item -LiteralPath $reg).GetValue("Path", "", "DoNotExpandEnvironmentNames") -split ";" -ne "")
+  $expanded = @($parts | ForEach-Object { [Environment]::ExpandEnvironmentVariables($_) })
   $machine = @("$([Environment]::GetEnvironmentVariable("Path", "Machine"))".Split(";"))
-  if ($parts -notcontains $Dir -and $machine -notcontains $Dir) {
-    [Environment]::SetEnvironmentVariable("Path", (@($parts) + $Dir) -join ";", "User")
+  if ($expanded -notcontains $Dir -and $machine -notcontains $Dir) {
+    Set-ItemProperty -LiteralPath $reg -Name Path -Value ((@($parts) + $Dir) -join ";") -Type ExpandString
+    # Setting and removing a throwaway variable tells open programs to reload the
+    # environment, as uv's installer does; Set-ItemProperty alone does not.
+    $dummy = "git-into-gsoc-" + [guid]::NewGuid().ToString()
+    [Environment]::SetEnvironmentVariable($dummy, "1", "User")
+    [Environment]::SetEnvironmentVariable($dummy, [NullString]::Value, "User")
     Log "Added $Dir to your PATH, so new terminals find git-into-gsoc"
   }
   if (@($env:Path.Split(";")) -notcontains $Dir) { $env:Path = "$env:Path;$Dir" }
 }
 
-if (-not $SkillOnly) {
+if (-not ($SkillOnly -or $DryRun)) {
   if ($Mode -ne "checkout") { Request-Uv }
   if ($Mode -eq "checkout") {
     Log "Installing git-into-gsoc into $Root\.venv"
@@ -226,7 +242,9 @@ if (-not $SkillOnly) {
     if (-not (Test-Path $venv)) { & $py[0] @($py[1..($py.Length)] | Where-Object { $_ }) -m venv $venv }
     $venvPy = Join-Path $venv "Scripts\python.exe"
     & $venvPy -m pip install -q -U pip
+    Assert-ExitCode "Updating pip in $venv"
     & $venvPy -m pip install -q -e $Root
+    Assert-ExitCode "Installing git-into-gsoc into $venv"
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
   } elseif (Get-Command uv -ErrorAction SilentlyContinue) {
     Log "Installing git-into-gsoc with uv"
@@ -250,6 +268,7 @@ if (-not $SkillOnly) {
     if (-not (Test-Path $venv)) { & $py[0] @($py[1..($py.Length)] | Where-Object { $_ }) -m venv $venv }
     $venvPy = Join-Path $venv "Scripts\python.exe"
     & $venvPy -m pip install -q -U pip
+    Assert-ExitCode "Updating pip in $venv"
     Install-FirstWorking { param($spec) & $venvPy -m pip install -q $spec }
     $GigBin = Join-Path $venv "Scripts\git-into-gsoc.exe"
     Add-ToUserPath (Join-Path $venv "Scripts")
@@ -258,13 +277,17 @@ if (-not $SkillOnly) {
     throw "The install finished, but $GigBin is missing. Run this installer again; if it fails the same way, open an issue at $RepoUrl/issues with this message."
   }
   & $GigBin --version | Out-Null
+  Assert-ExitCode "'$GigBin --version'"
 } else {
+  # A dry run installed the package and wrote the user PATH (setup audit, 2026-10-29),
+  # so it now previews setup with what is already installed.
+  if ($DryRun -and -not $SkillOnly) { Log "Dry run: git-into-gsoc is not installed or updated, and PATH is not changed" }
   if ($Mode -eq "checkout" -and (Test-Path (Join-Path $Root ".venv\Scripts\git-into-gsoc.exe"))) {
     $GigBin = Join-Path $Root ".venv\Scripts\git-into-gsoc.exe"
   } elseif (Get-Command git-into-gsoc -ErrorAction SilentlyContinue) {
     $GigBin = "git-into-gsoc"
   } else {
-    throw "git-into-gsoc is not installed yet; run install.ps1 without -SkillOnly first."
+    throw "git-into-gsoc is not installed yet; run install.ps1 without -SkillOnly or -DryRun first."
   }
 }
 
@@ -276,6 +299,7 @@ if ($DryRun) { $setupArgs += "--dry-run" }
 foreach ($a in $Assistant) { $setupArgs += @("--assistant", $a) }
 Log "Running: git-into-gsoc $($setupArgs -join ' ')"
 & $GigBin @setupArgs
+Assert-ExitCode "git-into-gsoc setup"
 
 if (-not $DryRun) {
   Write-Host ""

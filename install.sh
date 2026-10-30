@@ -34,7 +34,7 @@ Usage: ./install.sh [options]
                      gemini, windsurf, vscode, all. Default: every assistant detected.
   --skill-only       Copy the Agent Skill only (skip package install and MCP registration)
   --mcp-only         Install the package and register the MCP server, skip the skill copy
-  --dry-run          Show what setup would change without writing anything
+  --dry-run          Install nothing; show what setup would change without writing anything
   --install-uv       If there is no uv, pipx, or Python 3.11+, install uv without asking
   -h, --help         Show this help
 
@@ -337,9 +337,20 @@ install_remote() {
     "${base}/venv/bin/python" -m pip install -q -U pip
     install_first "${base}/venv/bin/python" -m pip install -q
     ln -sf "${base}/venv/bin/git-into-gsoc" "${HOME}/.local/bin/git-into-gsoc"
-    ln -sf "${base}/venv/bin/gsoc" "${HOME}/.local/bin/gsoc"
+    link_gsoc "${base}/venv/bin/gsoc"
     GIG_BIN="${HOME}/.local/bin/git-into-gsoc"
   fi
+}
+
+# Links the short name `gsoc` to ours. `ln -sf` alone replaced whatever had that name,
+# which can be another program (setup audit, 2026-10-29).
+link_gsoc() {
+  local target="$1" link="${HOME}/.local/bin/gsoc"
+  if [[ -e "$link" || -L "$link" ]] && [[ "$(readlink "$link")" != "$target" ]]; then
+    log "Left ${link} alone: another program has that name. Use the full name, git-into-gsoc."
+    return 0
+  fi
+  ln -sf "$target" "$link"
 }
 
 locate_existing() {
@@ -348,7 +359,7 @@ locate_existing() {
   elif command -v git-into-gsoc >/dev/null 2>&1; then
     GIG_BIN="$(command -v git-into-gsoc)"
   else
-    die "git-into-gsoc is not installed yet; run ./install.sh without --skill-only first."
+    die "git-into-gsoc is not installed yet; run ./install.sh without --skill-only or --dry-run first."
   fi
 }
 
@@ -430,7 +441,12 @@ NEXT
 
 main() {
   log "git-into-gsoc installer (${MODE} mode, ${SCOPE} scope)"
-  if [[ "$DO_PACKAGE" -eq 1 ]]; then
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    # A dry run ran `uv tool install --force`, replacing the installed version (setup
+    # audit, 2026-10-29), so it now previews setup with what is already installed.
+    [[ "$DO_PACKAGE" -eq 0 ]] || log "Dry run: git-into-gsoc is not installed or updated"
+    locate_existing
+  elif [[ "$DO_PACKAGE" -eq 1 ]]; then
     if [[ "$MODE" == "checkout" ]]; then install_checkout; else install_remote; fi
     "$GIG_BIN" --version >/dev/null || die "Installed, but '${GIG_BIN} --version' failed."
   else
