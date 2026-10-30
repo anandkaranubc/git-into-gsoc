@@ -48,7 +48,7 @@ Put these in `.env` or export them in the process environment. Environment varia
 
 Nothing in these folders is uploaded, and progress does not sync to another computer. [Privacy](privacy.md) lists every service the tool reads from and what your AI assistant sees. Avoid storing secrets in progress notes.
 
-To back up progress, copy `progress.json` somewhere you control. To correct entries, stop any assistant connection using the tool, back up the file, and edit the JSON carefully. To start over, rename the file; the next save creates a new one.
+To back up progress, copy `progress.json` somewhere you control. To correct entries, stop any assistant connection using the tool, back up the file, and edit the JSON carefully. A time without a timezone is read as UTC, and fields the tool does not know are kept. To start over, rename the file; the next save creates a new one.
 
 Most GitHub responses stay fresh for an hour, but issue checks refresh after 5 minutes and official program dates after 6 hours. `GIG_CACHE_TTL_SECONDS` changes only the one-hour default, so for a guaranteed fresh look run `git-into-gsoc cache --clear` first.
 

@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from enum import StrEnum
-from typing import Any
+from typing import Annotated, Any
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, HttpUrl
 
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR
 
@@ -338,10 +338,23 @@ class ProposalChecklistItem(BaseModel):
     done: bool = False
 
 
+def _assume_utc(value: datetime) -> datetime:
+    # docs/configuration.md invites hand edits, and "2026-10-01T10:00:00" has no timezone;
+    # compared with the tool's own times it crashed `log`, `progress`, and `next`.
+    return value if value.tzinfo else value.replace(tzinfo=UTC)
+
+
+UtcDatetime = Annotated[datetime, AfterValidator(_assume_utc)]
+
+
 class LogEntry(BaseModel):
     """One weekly note: the structure mentors expect in progress updates."""
 
-    at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    # Plugins run their own copy of the tool, so an older MCP server and a newer CLI can
+    # share one progress.json; fields this version does not know are kept, not dropped.
+    model_config = ConfigDict(extra="allow")
+
+    at: UtcDatetime = Field(default_factory=lambda: datetime.now(UTC))
     goal: str = ""
     done: str = ""
     links: list[str] = Field(default_factory=list)
@@ -357,6 +370,8 @@ class ProgressState(BaseModel):
     """Everything progress.json holds: the profile, the phases done, the shortlist,
     tracked repositories and issues, and the weekly log."""
 
+    model_config = ConfigDict(extra="allow")  # see LogEntry
+
     version: int = 1
     target_year: int = DEFAULT_TARGET_YEAR
     profile: dict[str, Any] = Field(default_factory=dict)
@@ -367,9 +382,9 @@ class ProgressState(BaseModel):
     contributions: list[dict[str, Any]] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
     issue_status: dict[str, str] = Field(default_factory=dict)
-    last_checked_at: datetime | None = None
+    last_checked_at: UtcDatetime | None = None
     weekly_log: list[LogEntry] = Field(default_factory=list)
-    updated_at: datetime | None = None
+    updated_at: UtcDatetime | None = None
 
 
 class Milestone(BaseModel):

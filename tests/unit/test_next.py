@@ -11,6 +11,7 @@ import pytest
 import respx
 
 from conftest import load_fixture
+from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.service import GSoCToolkit
@@ -184,6 +185,51 @@ def test_next_rechecks_tracked_issues_and_reports_changes(api: respx.MockRouter)
     assert ProgressStore().load().last_checked_at is not None
     commands = " ".join(a["command"] for a in data["actions"])
     assert "issues" in commands
+
+
+def test_next_offline_keeps_the_last_check_and_what_it_knew(api: respx.MockRouter) -> None:
+    # An offline run said "went from available to unknown" and moved the check time to
+    # now, so beginner issues opened since the last real check were never shown.
+    store = ProgressStore()
+    store.track_repo("sympy/sympy")
+    store.track_issue("sympy/sympy#5")
+    before = NOW - timedelta(days=3)
+    store.mark_checked({"sympy/sympy#5": "available"}, before)
+    api.get(url__regex=rf"{GH}/(repos|search)/.*").mock(side_effect=httpx.ConnectError("offline"))
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert data["tracked_issues"][0]["availability"] == "unknown"
+    assert data["changes"] == []
+    saved = ProgressStore().load()
+    assert saved.issue_status["sympy/sympy#5"] == "available"
+    assert saved.last_checked_at == before
+
+
+def test_next_rechecks_the_newest_tracked_items_and_says_what_it_left_out(
+    api: respx.MockRouter,
+) -> None:
+    # Only the oldest ten were re-checked, so an issue tracked eleventh was never checked.
+    store = ProgressStore()
+    for number in range(1, 13):
+        store.track_issue(f"sympy/sympy#{number}")
+        store.track_repo(f"sympy/r{number:02d}")
+    api.get(url__regex=rf"{GH}/repos/.*").mock(return_value=httpx.Response(404))
+    search = api.get(f"{GH}/search/issues").mock(
+        return_value=httpx.Response(200, json={"items": []})
+    )
+    data = GSoCToolkit().next_steps(now=NOW)
+    refs = [t["ref"] for t in data["tracked_issues"]]
+    assert refs[0] == "sympy/sympy#3" and refs[-1] == "sympy/sympy#12" and len(refs) == 10
+    query = search.calls[0].request.url.params["q"]
+    assert "sympy/r12" in query and "sympy/r02" not in query
+    assert "2 of your 12 tracked issues" in data["not_checked"]
+    assert "2 of your 12 tracked repositories" in data["not_checked"]
+    assert "git-into-gsoc progress" in data["not_checked"]
+
+
+def test_next_refuses_a_year_program_refuses(api: respx.MockRouter) -> None:
+    # `next --year 99999` crashed with OverflowError while `program` explained the range.
+    with pytest.raises(InputError, match="GSoC years run"):
+        GSoCToolkit().next_steps(year=99999, now=NOW)
 
 
 def test_next_suggests_contribution_check_when_proposals_near(api: respx.MockRouter) -> None:

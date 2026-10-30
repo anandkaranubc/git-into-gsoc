@@ -344,3 +344,59 @@ def test_off_windows_a_permission_error_fails_at_once(tmp_path: Path) -> None:
     with pytest.raises(PermissionError):
         store_module._retry_busy(denied)
     assert calls == [1]
+
+
+def test_hand_edited_times_without_a_timezone_are_read_as_utc(tmp_path: Path) -> None:
+    import json
+
+    from typer.testing import CliRunner
+
+    from git_into_gsoc.cli import app
+    from git_into_gsoc.models import LogEntry
+
+    # docs/configuration.md invites hand edits, and a log entry dated "2026-10-01T10:00:00"
+    # crashed `log`, `progress`, the home screen, and `next` with a naive/aware TypeError.
+    path = tmp_path / "data" / "progress.json"
+    store = ProgressStore(path)
+    store.add_log(LogEntry(goal="first"))
+    raw = json.loads(path.read_text())
+    raw["weekly_log"].append({"at": "2026-10-01T10:00:00", "goal": "hand-added"})
+    raw["last_checked_at"] = "2026-10-02T10:00:00"
+    raw["updated_at"] = "2026-10-03T10:00:00"
+    path.write_text(json.dumps(raw))
+    state = store.load()
+    assert all(t and t.tzinfo for t in (state.last_checked_at, state.updated_at))
+    assert [e.goal for e in store.recent_logs()] == ["first", "hand-added"]
+    assert store.summary()["log_entries"] == 2
+    for command in (["log"], ["progress"]):
+        result = CliRunner().invoke(app, command)
+        assert result.exit_code == 0, (command, result.output, result.exception)
+
+
+def test_fields_from_a_newer_version_survive_a_save(tmp_path: Path) -> None:
+    import json
+
+    # Plugins run their own copy, so an older MCP server and a newer CLI can share one
+    # progress.json; the older one dropped every field it did not know on each save.
+    path = tmp_path / "progress.json"
+    store = ProgressStore(path)
+    store.add_note("first")
+    raw = json.loads(path.read_text())
+    raw["streak"] = {"weeks": 3}
+    raw["weekly_log"] = [{"at": "2026-10-01T10:00:00Z", "goal": "g", "mood": "good"}]
+    path.write_text(json.dumps(raw))
+    store.add_note("second")
+    saved = json.loads(path.read_text())
+    assert saved["streak"] == {"weeks": 3}
+    assert saved["weekly_log"][0]["mood"] == "good"
+    assert saved["notes"] == ["first", "second"]
+
+
+def test_the_summary_shows_the_newest_notes(tmp_path: Path) -> None:
+    # `progress note` saved notes that neither `progress` nor gsoc_progress could show.
+    store = ProgressStore(tmp_path / "progress.json")
+    for number in range(1, 8):
+        store.add_note(f"note {number}")
+    summary = store.summary()
+    assert summary["notes"] == 7
+    assert summary["recent_notes"] == ["note 7", "note 6", "note 5", "note 4", "note 3"]
