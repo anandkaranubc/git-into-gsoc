@@ -41,6 +41,10 @@ PRUNE_INTERVAL_SECONDS = 86400
 # strangers can edit are linked from ideas pages, so a body (after decompression)
 # larger than this is refused instead of filling memory.
 MAX_RESPONSE_BYTES = 64 * 1024 * 1024
+# httpx's timeout restarts with every byte, so a server sending one byte at a time held a
+# call open for good (an audit, 2026-10-29). Ten timeouts (five minutes by default) still
+# let the 15 MB organization list arrive over a 1 Mbit/s connection.
+RESPONSE_DEADLINE_TIMEOUTS = 10
 # Left by a write that was interrupted; a live write finishes in well under this.
 STALE_TMP_SECONDS = 3600
 _PRUNE_MARKER = ".last-pruned"
@@ -57,6 +61,7 @@ class CachedHttpClient:
         cache_root: Path | None = None,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.settings = settings or get_settings()
         try:
@@ -68,6 +73,7 @@ class CachedHttpClient:
             log.warning("Running without a response cache: %s", exc)
             self._cache_root = cache_root or (cache_location(self.settings) / "http")
         self._sleep = sleep
+        self._clock = clock
         self._prune_if_due()
         # Service addresses the user configured may be local (a mirror, a test server).
         self._trusted_origins = {
@@ -401,6 +407,8 @@ class CachedHttpClient:
             method, url, headers=headers, params=params, json=json_body
         )
         undecodable = f"The response from {_host(url)} could not be decompressed."
+        seconds = RESPONSE_DEADLINE_TIMEOUTS * self.settings.http_timeout_seconds
+        deadline = self._clock() + seconds
         try:
             response = self._client.send(request, stream=True)
         except httpx.DecodingError as exc:
@@ -416,6 +424,13 @@ class CachedHttpClient:
                         f"{MAX_RESPONSE_BYTES // 1_048_576} MB, so it was not read.",
                         url=url,
                         hint="Open the page in a browser instead.",
+                    )
+                if self._clock() > deadline:
+                    raise HttpError(
+                        f"{_host(url)} took longer than {seconds:.0f} seconds to answer, "
+                        "so the request was stopped.",
+                        url=url,
+                        hint="Try again later; cached data is used when available.",
                     )
                 chunks.append(chunk)
         except httpx.DecodingError as exc:
@@ -488,13 +503,16 @@ def _origin(url: httpx.URL) -> tuple[str, str, int | None]:
 
 
 _LOCAL_SUFFIXES = (".localhost", ".local", ".internal", ".home.arpa", ".lan")
+# IPv4-compatible (::/96) and NAT64 (64:ff9b::/96) addresses carry an IPv4 address in
+# their last 32 bits, so [64:ff9b::a9fe:a9fe] reaches 169.254.169.254 on a NAT64 network.
+_EMBEDDED_IPV4 = (ipaddress.IPv6Network("::/96"), ipaddress.IPv6Network("64:ff9b::/96"))
 
 
 def is_private_host(host: str) -> bool:
     """True when a host names this computer or a private network.
 
-    Covers local names and every way of writing an address directly
-    (127.1, 2130706433, 0x7f.0.0.1, [::1], ::ffff:127.0.0.1). Public names that
+    Covers local names, names without a dot, and every way of writing an address
+    directly (127.1, 2130706433, 0x7f.0.0.1, [::1], ::ffff:127.0.0.1). Public names that
     resolve to private addresses are not caught here; that would need a DNS lookup
     per request.
     """
@@ -506,6 +524,8 @@ def is_private_host(host: str) -> bool:
     try:
         address: ipaddress.IPv4Address | ipaddress.IPv6Address = ipaddress.ip_address(name)
     except ValueError:
+        if "." not in name:
+            return True  # resolved on the local network: instance-data on AWS, a router's nas
         if not all(part.isalnum() for part in name.split(".")):
             return False  # a hostname with hyphens or underscores, never an address
         try:
@@ -513,6 +533,8 @@ def is_private_host(host: str) -> bool:
         except OSError:
             return False
     mapped = getattr(address, "ipv4_mapped", None)
+    if mapped is None and any(address in network for network in _EMBEDDED_IPV4):
+        mapped = ipaddress.IPv4Address(int(address) & 0xFFFFFFFF)
     return not (mapped or address).is_global
 
 

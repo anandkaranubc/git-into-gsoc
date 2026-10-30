@@ -176,9 +176,12 @@ def gitlab_issue_status(
     read_comments = False
     if notes and token and _same_host(host, token_host):
         try:
+            # Not GitLab's PRIVATE-TOKEN header: httpx drops only Authorization when a
+            # redirect leaves the host, so a redirect sent PRIVATE-TOKEN to another site
+            # (an audit, 2026-10-29).
             found = http.get_json(
                 f"{api}/notes",
-                headers={"PRIVATE-TOKEN": token},
+                headers={"Authorization": f"Bearer {token}"},
                 params={"per_page": 100, "sort": "asc"},
                 ttl=300,
             )

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 import httpx
@@ -305,3 +306,22 @@ def test_compressed_responses_still_decode(tmp_path: Path) -> None:
         )
         with pytest.raises(HttpError, match="decompressed"):
             client.get_text(URL, use_cache=False)
+
+
+def test_a_server_that_drips_its_answer_is_cut_off(tmp_path: Path) -> None:
+    now = [0.0]
+
+    def drip() -> Iterator[bytes]:
+        for _ in range(1000):
+            now[0] += 1  # each byte arrives well inside the 30-second read timeout
+            yield b" "
+
+    client = CachedHttpClient(
+        Settings(http_max_retries=0, http_timeout_seconds=30),
+        cache_root=tmp_path / "http",
+        transport=httpx.MockTransport(lambda request: httpx.Response(200, content=drip())),
+        clock=lambda: now[0],
+    )
+    with pytest.raises(HttpError, match="took longer than"):
+        client.get_text(URL, use_cache=False)
+    assert now[0] < 1000

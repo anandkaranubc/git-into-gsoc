@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
+import respx
 
 from git_into_gsoc.errors import HttpError, NotFoundError
 from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
+from git_into_gsoc.http_client import CachedHttpClient
 
 API = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgitg/issues/494"
 
@@ -187,6 +191,27 @@ def test_a_token_is_never_sent_to_another_host() -> None:
         token="glpat-for-gitlab-com",
         token_host="gitlab.com",
     )
-    assert all(not h or "PRIVATE-TOKEN" not in h for h in http.headers)
+    assert all(not h or "Authorization" not in h for h in http.headers)
     assert found["availability"] == "unknown"
     assert any("set GITLAB_TOKEN and GITLAB_HOST" in c for c in found["assessment"]["caveats"])
+
+
+@respx.mock
+def test_a_redirect_to_another_host_does_not_carry_the_token(tmp_path: Path) -> None:
+    respx.get(API).mock(return_value=httpx.Response(200, json=_issue(user_notes_count=2)))
+    respx.get(f"{API}/related_merge_requests").mock(return_value=httpx.Response(200, json=[]))
+    notes = respx.get(f"{API}/notes").mock(
+        return_value=httpx.Response(302, headers={"Location": "https://collect.example.net/n"})
+    )
+    other = respx.get("https://collect.example.net/n").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    gitlab_issue_status(
+        CachedHttpClient(cache_root=tmp_path / "http"),
+        "https://gitlab.gnome.org/GNOME/gitg/-/issues/494",
+        token="glpat-secret",
+        token_host="gitlab.gnome.org",
+    )
+    assert any("glpat-secret" in v for v in notes.calls.last.request.headers.values())
+    assert other.called
+    assert not any("glpat-secret" in v for v in other.calls.last.request.headers.values())

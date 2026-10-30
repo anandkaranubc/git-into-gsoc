@@ -29,6 +29,10 @@ from git_into_gsoc.http_client import CachedHttpClient, is_private_host
         "printer.local",
         "db.internal",
         "fd00::1",
+        "instance-data",
+        "nas",
+        "::127.0.0.1",
+        "64:ff9b::a9fe:a9fe",
     ],
 )
 def test_local_and_private_hosts_are_recognised(host: str) -> None:
@@ -36,7 +40,17 @@ def test_local_and_private_hosts_are_recognised(host: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "host", ["github.com", "api.github.com", "8.8.8.8", "example.test", "cafe", "my-host", ""]
+    "host",
+    [
+        "github.com",
+        "api.github.com",
+        "8.8.8.8",
+        "example.test",
+        "cafe.example",
+        "my-host.example.org",
+        "64:ff9b::808:808",
+        "",
+    ],
 )
 def test_public_hosts_are_not_refused(host: str) -> None:
     assert not is_private_host(host)
