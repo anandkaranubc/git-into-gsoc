@@ -10,15 +10,18 @@ from git_into_gsoc.install.clients import (
     ASSISTANTS,
     PLUGIN_REMOVAL,
     SERVER_NAME,
+    SHARED_SKILLS,
     Assistant,
     Change,
     Scope,
+    backup_path,
     detect_assistants,
     installed_plugin,
     is_our_skill,
     register_codex_toml,
     register_json,
     register_via_cli,
+    registered_entry,
     server_command,
     server_entry,
     skill_locations,
@@ -62,6 +65,12 @@ def plan_setup(
     """Resolve which assistants to configure. ``assistants`` of None means auto-detect."""
     if scope == "project" and project is None:
         raise InstallError("Project scope needs a project directory.", hint="Pass --project-dir.")
+    if project is not None and not project.is_dir():
+        # A typo in --project-dir created a new folder and wrote the setup into it.
+        raise InstallError(
+            f"No folder found at {project}.",
+            hint="Check --project-dir for a typo, or create the folder first.",
+        )
     if assistants:
         unknown = [a for a in assistants if a not in ASSISTANTS and a != "all"]
         if unknown:
@@ -88,6 +97,30 @@ def plan_setup(
     )
 
 
+def _project_link(plan: SetupPlan, *paths: Path) -> Path | None:
+    """The first symbolic link between the project folder and any of ``paths``.
+
+    A cloned repository can commit links next to the files setup writes. Followed,
+    ``.mcp.json.bak -> .git/hooks/pre-commit`` turned the backup into a git hook that
+    ran on the next commit, and ``.claude/skills`` linked to the data folder had setup
+    delete progress.json. User scope still follows links: dotfiles managers link
+    ~/.claude.json on purpose.
+    """
+    if plan.scope != "project":
+        return None
+    for path in paths:
+        current = plan.root
+        for part in path.relative_to(plan.root).parts:
+            current = current / part
+            if current.is_symlink():
+                return current
+    return None
+
+
+def _link_note(link: Path, plan: SetupPlan) -> str:
+    return f"{_rel(link, plan)} is a symbolic link; setup does not follow links in a project"
+
+
 def _plugin_for(plan: SetupPlan, assistant: Assistant) -> str | None:
     # Plugins are installed per person, so they only matter for the home-folder setup.
     return installed_plugin(assistant, plan.home) if plan.scope == "user" else None
@@ -109,6 +142,8 @@ def run_setup(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
             )
             dest, legacy = skill_locations(assistant, plan.scope, plan.root)
             for old in legacy:
+                if _project_link(plan, old):
+                    continue
                 if old != dest and old.is_dir() and is_our_skill(old):
                     action = remove_skill(old, dry_run=dry_run)
                     note = f"old location; {assistant.label} reads {_rel(dest, plan)}"
@@ -128,8 +163,12 @@ def run_setup(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
                 continue
             if dest in written:
                 continue  # one shared copy serves every assistant that reads this folder
-            action = copy_skill(source, dest, dry_run=dry_run)
             written[dest] = len(plan.changes)
+            if link := _project_link(plan, dest):
+                note = _link_note(link, plan)
+                plan.changes.append(Change(assistant.label, "skill", dest, "skipped", note))
+                continue
+            action = copy_skill(source, dest, dry_run=dry_run)
             plan.changes.append(Change(assistant.label, "skill", dest, action))
     if plan.install_mcp:
         for assistant in plan.assistants:
@@ -152,18 +191,43 @@ def _rel(path: Path, plan: SetupPlan) -> str:
     return str(path)
 
 
+def _shared_readers(plan: SetupPlan) -> list[str]:
+    """Assistants found on this machine, other than the ones being removed, that read
+    the shared skill copy.
+
+    `setup --remove -a claude-code` used to delete ~/.agents/skills, which Cursor and
+    Codex still read (setup audit, 2026-10-29).
+    """
+    removing = {a.key for a in plan.assistants}
+    return [
+        a.label
+        for a in detect_assistants(plan.home)
+        if a.key not in removing and a.skill_dir_for(plan.scope) == SHARED_SKILLS
+    ]
+
+
 def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
     """Undo what run_setup did for the same scope and assistants."""
     plan.changes = []
     plan.manual = []
     if plan.install_skill:
         removed: set[Path] = set()
+        shared = skill_locations(ASSISTANTS["agents"], plan.scope, plan.root)[0]
+        readers = _shared_readers(plan)
         for assistant in [ASSISTANTS["agents"], *plan.assistants]:
             dest, legacy = skill_locations(assistant, plan.scope, plan.root)
             for path in (dest, *legacy):
                 if path in removed or (path != dest and not path.exists()):
                     continue
                 removed.add(path)
+                if link := _project_link(plan, path):
+                    note = _link_note(link, plan)
+                    plan.changes.append(Change(assistant.label, "skill", path, "skipped", note))
+                    continue
+                if path == shared and readers and path.exists():
+                    note = f"still used by {', '.join(readers)}"
+                    plan.changes.append(Change(assistant.label, "skill", path, "skipped", note))
+                    continue
                 plan.changes.append(
                     Change(assistant.label, "skill", path, remove_skill(path, dry_run=dry_run))
                 )
@@ -207,12 +271,16 @@ def _unregister(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Chan
                 )
         plan.manual.append(f"{assistant.label}: remove the server named {SERVER_NAME} by hand")
         return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
+    if link := _project_link(plan, path, backup_path(path)):
+        return Change(assistant.label, "mcp", path, "skipped", _link_note(link, plan))
     fmt = target.fmt_for(plan.scope)
     if fmt == "toml-codex":
         action, note = unregister_codex_toml(path, dry_run=dry_run)
     else:
         key = "servers" if fmt == "json-servers" else "mcpServers"
         action, note = unregister_json(path, key, dry_run=dry_run)
+    if action == "skipped":
+        plan.manual.append(f"{assistant.label}: remove the {SERVER_NAME} entry from {path} by hand")
     return Change(assistant.label, "mcp", path, action, note)
 
 
@@ -230,6 +298,8 @@ def _register(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change
         if hint:
             plan.manual.append(f"{assistant.label}: {hint}")
         return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
+    if link := _project_link(plan, path, backup_path(path)):
+        return Change(assistant.label, "mcp", path, "skipped", _link_note(link, plan))
     fmt = target.fmt_for(plan.scope)
     if fmt == "toml-codex":
         action, note = register_codex_toml(path, plan.command, dry_run=dry_run)
@@ -267,11 +337,23 @@ def _register_via_cli(
     if not executable or plan.home.resolve() != Path.home().resolve():
         return None
     where = Path(executable)
+    target = assistant.mcp
+    action = "created"
     if check and register_via_cli(executable, check[1])[0]:
-        return Change(assistant.label, "mcp", where, "unchanged", "already registered")
+        # `claude mcp get` exits 0 even when the registered command no longer exists
+        # (after a move from pipx to uv), so check what it points at as well.
+        old = None
+        if target and target.user_read_path:
+            old = registered_entry(plan.home / target.user_read_path, target.fmt)
+        ours = (plan.command[0], plan.command[1:])
+        if old is None or (old.get("command"), old.get("args")) == ours:
+            return Change(assistant.label, "mcp", where, "unchanged", "already registered")
+        action = "updated"
     if dry_run:
-        return Change(assistant.label, "mcp", where, "created", f"via {cli[0]} {cli[1][0]} add")
+        return Change(assistant.label, "mcp", where, action, f"via {cli[0]} {cli[1][0]} add")
+    if action == "updated" and target and target.cli_remove:
+        register_via_cli(executable, target.cli_remove[1])
     ok, output = register_via_cli(executable, [*cli[1], *plan.command])
     if ok:
-        return Change(assistant.label, "mcp", where, "created", f"via {cli[0]} mcp add")
+        return Change(assistant.label, "mcp", where, action, f"via {cli[0]} mcp add")
     return Change(assistant.label, "mcp", where, "skipped", f"{cli[0]} mcp add failed: {output}")

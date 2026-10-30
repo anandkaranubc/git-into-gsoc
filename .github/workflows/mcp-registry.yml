@@ -82,8 +82,18 @@ jobs:
         id: registry
         run: |
           NAME="$(jq -r .name server.json)"
-          RECORD="$(curl -fsS "https://registry.modelcontextprotocol.io/v0/servers/${NAME//\//%2F}/versions/${VERSION}" || true)"
-          RECORDED_SHA="$(jq -r '.server.packages[0].fileSha256 // empty' <<<"$RECORD" 2>/dev/null || true)"
+          # Only a 404 means "not published". Read as one, an outage or a timeout during
+          # a re-run for a published tag would replace the release's bundle with a new
+          # build that no longer matches the checksum the registry recorded.
+          STATUS="$(curl -sS --retry 3 -o record.json -w '%{http_code}' "https://registry.modelcontextprotocol.io/v0/servers/${NAME//\//%2F}/versions/${VERSION}" || true)"
+          case "$STATUS" in
+            200) RECORDED_SHA="$(jq -r '.server.packages[0].fileSha256 // empty' record.json 2>/dev/null || true)" ;;
+            404) RECORDED_SHA="" ;;
+            *)
+              echo "::error::The MCP registry answered HTTP ${STATUS:-000} for ${NAME} ${VERSION}. Re-run this workflow when the registry is back."
+              exit 1
+              ;;
+          esac
           if [ -n "$RECORDED_SHA" ]; then
             echo "Version $VERSION is already in the registry with bundle checksum $RECORDED_SHA."
             echo "publish=false" >> "$GITHUB_OUTPUT"
