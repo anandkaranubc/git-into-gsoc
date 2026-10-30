@@ -333,6 +333,16 @@ def test_a_list_for_a_single_value_parameter_is_an_error_unless_it_has_one_item(
         _validate("gsoc_find_issues", {"languages": ["python", "rust"]})
 
 
+def test_text_that_looks_like_a_json_list_stays_text_outside_list_parameters() -> None:
+    # gsoc_diagnose(text=<eslint JSON output>) was refused as "a list of 2", a one-item
+    # array became a Python repr, and gsoc_log(done='["merged"]') saved `merged`.
+    lint = '[{"filePath": "a.js", "messages": []}, {"filePath": "b.js", "messages": []}]'
+    assert _validate("gsoc_diagnose", {"text": lint})["text"] == lint
+    one = '[{"filePath": "a.js"}]'
+    assert _validate("gsoc_diagnose", {"text": one})["text"] == one
+    assert _validate("gsoc_log", {"done": '["merged"]'})["done"] == '["merged"]'
+
+
 _REAL_PATH = __import__("pytest").mark.skipif(
     __import__("sys").platform == "win32",
     reason="an event loop opens a socket pair, which the network guard blocks on Windows",

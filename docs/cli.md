@@ -220,6 +220,6 @@ git-into-gsoc issues --language rust -n 5 --output json > issues.json
 git-into-gsoc repo sympy/sympy --output json | python3 -c "import json,sys; print(json.load(sys.stdin)['health']['grade'])"
 ```
 
-Successful JSON goes to standard output. Expected failures print `error: ...` and usually a `hint: ...` line to standard error and exit with code 1. Invalid command syntax exits with code 2. Errors are not JSON. A successful command can still return data such as `found: false` or availability `unknown`, so inspect the result as well as the exit code.
+Successful JSON goes to standard output. Expected failures print `error: ...` and usually a `hint: ...` line to standard error and exit with code 1; these errors are not JSON. Invalid command syntax exits with code 2. One exception: when `org`, `ideas`, `mentors`, or `projects --org` cannot find the organization, `--output json` prints the result with `found: false`, `error`, and `hint` to standard output, and still exits with code 1. A successful command can still return data such as availability `unknown`, so inspect the result as well as the exit code.
 
 [Configuration](configuration.md) · [Troubleshooting](troubleshooting.md) · [Guide contents](README.md)

@@ -837,7 +837,8 @@ def _tolerant_arguments(tool_name: str, model: type[_Model]) -> type[_Model]:
                     if not target:
                         unknown.append(key)
                         continue
-                if target in text_fields and isinstance(value, str) and value.startswith("["):
+                # Only list parameters: gsoc_diagnose's `text` can be a linter's JSON output.
+                if target in _LIST_PARAMETERS and isinstance(value, str) and value.startswith("["):
                     try:  # a JSON list sent as a string, which some clients do
                         parsed = json.loads(value)
                     except ValueError:
