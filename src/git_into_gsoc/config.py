@@ -250,10 +250,6 @@ def data_dir(settings: Settings | None = None) -> Path:
     return _private_dir(data_location(settings))
 
 
-def progress_path() -> Path:
-    return data_dir() / "progress.json"
-
-
 def latest_program_year(settings: Settings | None = None) -> int:
     """The newest year worth asking about: the target year, or next calendar year."""
     from datetime import UTC, datetime

@@ -35,6 +35,9 @@ MAX_TEXT_CHARS = 2000
 MAX_NAME_CHARS = 200
 MAX_LINKS = 20
 MAX_LINK_CHARS = 500
+# The summary is part of `next` and the assistant's progress resource, so it carries
+# only the newest few notes.
+RECENT_NOTES = 5
 _LOG_TEXT_FIELDS = {
     "goal": "goal",
     "done": "done",
@@ -400,6 +403,8 @@ class ProgressStore:
             "tracked_repos": state.tracked_repos,
             "tracked_issues": state.tracked_issues,
             "contributions": len(state.contributions),
+            "notes": len(state.notes),
+            "recent_notes": state.notes[::-1][:RECENT_NOTES],
             "profile": state.profile,
             "phases": state.phases,
             "updated_at": state.updated_at.isoformat() if state.updated_at else None,

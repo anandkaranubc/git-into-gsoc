@@ -177,7 +177,7 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 
 | Action after `progress` | Required value | Effect |
 |---|---|---|
-| `summary` (default) | none | The phases as a checklist with the next one marked, your shortlist, tracked repositories and issues, and how recent your weekly notes are |
+| `summary` (default) | none | The phases as a checklist with the next one marked, your shortlist, tracked repositories and issues, how recent your weekly notes are, and your five newest notes |
 | `complete_phase` | `--phase NAME` | Mark a phase complete. Names: `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, `track` |
 | `shortlist_org` | `--value "NAME"` | Save an organization name |
 | `track_repo` | `--value OWNER/REPO` | Save a repository as `owner/repo`, once whatever the spelling. A project link on GitLab or another host is saved as it is |

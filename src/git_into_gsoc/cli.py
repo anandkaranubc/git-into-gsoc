@@ -2060,6 +2060,10 @@ def _render_progress(data: dict[str, Any]) -> None:
         days, f", the last one {days} days ago"
     )
     console.print(f"\nWeekly notes: {data['log_entries']}{when}")
+    if data["recent_notes"]:
+        console.print(f"\n[bold]Notes[/bold] ({data['notes']}, newest first)")
+        for note in data["recent_notes"]:
+            console.print(f"  {note}")
     if data["next_phase"]:
         console.print(
             f"[dim]When {data['next_phase']} is done: git-into-gsoc progress complete_phase "
