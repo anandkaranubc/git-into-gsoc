@@ -94,7 +94,8 @@ CROWDED_ASKS = 3
 def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | None:
     """Why an issue is not a good first task for this person, or None when it may be."""
     title = str(issue.get("title") or "")
-    labels = {str(lab).lower() for lab in issue.get("labels") or []}
+    ordered = [str(lab).lower() for lab in issue.get("labels") or []]
+    labels = set(ordered)
     if is_not_code_repo(str(issue.get("repo") or "")):
         return "in a governance, test, or sandbox repository"
     body = str(issue.get("body_excerpt") or "")
@@ -105,7 +106,7 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     if _NOT_A_TASK_RE.search(title) or labels & _NOT_A_TASK_LABELS:
         return "an announcement, roadmap, tracker, or call for testing rather than a task"
     not_ready = next(
-        (lab for lab in labels if _NOT_READY_RE.search(lab) or _MEDIUM_RE.match(lab)), None
+        (lab for lab in ordered if _NOT_READY_RE.search(lab) or _MEDIUM_RE.match(lab)), None
     )
     if not_ready:
         return f"labelled '{not_ready}'"

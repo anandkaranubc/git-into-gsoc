@@ -15,6 +15,7 @@ import html
 import re
 from collections import Counter
 from html.parser import HTMLParser
+from itertools import takewhile
 from typing import ClassVar
 from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
@@ -258,6 +259,9 @@ class _LineParser(HTMLParser):
 
     _BLOCK: ClassVar[frozenset[str]] = frozenset(
         {"p", "div", "li", "br", "tr", "section", "article", "blockquote", "pre", "table"}
+        # Docusaurus writes <td>Difficulty</td><td>Hard</td> with nothing between the
+        # cells, which ran together as "DifficultyHard".
+        | {"td", "th"}
         # C2SI writes each field as <dt>Mentors</dt><dd>names</dd>: two lines, not one.
         | {"dl", "dt", "dd"}
     )
@@ -781,6 +785,26 @@ def _is_non_idea(title: str) -> bool:
     )
 
 
+def _is_page_part(title: str, body: list[str], source_url: str) -> bool:
+    """A heading that is part of the page, not an idea: "Timeline", "Selected Project Ideas".
+
+    A title that only starts or ends with such a word ("Interactive timeline", "Speaker
+    notes") is an idea when its own text, before any subheading, holds two idea fields.
+    A heading about ideas never is: GCC's "Selected Project Ideas" and Alaska's "Project
+    Ideas" hold the ideas' fields in their own text, ListenBrainz's "Ideas" under it. Nor
+    is KDE's template, "Project: Something that you're totally excited about".
+    """
+    if not _is_non_idea(title):
+        return False
+    low = title.lower().strip(" :#")
+    if re.search(r"\bideas?\b|\babout$", low) or any(
+        low in (w, w + "s") for w in _NON_IDEA_HEADINGS
+    ):
+        return True
+    own = list(takewhile(lambda line: not _heading(line), body))
+    return _labelled(_parse_block(title, own, section=None, source_url=source_url)) < 2
+
+
 def _without_urls(text: str) -> str:
     """A heading without the address of the link it is ("ListenBrainz (https://...)"),
     or a wiki's section edit link ("Add support for SPFS[edit]")."""
@@ -881,6 +905,11 @@ def _parse_block(
         if current:
             _assign(idea, current, line)
             taken += 1
+            if current in {"difficulty", "size"} and not _BULLET_RE.match(line):
+                # One line holds the value: "**Difficulty:**", then "Medium", then prose
+                # whose "high-level" was read as a second, hard level. A list goes on:
+                # sktime gives one level for each of three projects.
+                current = None
         elif cell:
             _assign(idea, cell, line)
             if _BULLET_RE.match(line):
@@ -1162,7 +1191,7 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         ideas = [
             _parse_block(t, b, section=s, source_url=source_url)
             for t, b, s in blocks
-            if not _is_non_idea(t) and not _links_to_post(t)
+            if not _is_page_part(t, b, source_url) and not _links_to_post(t)
         ]
         yield_ = sum(_labelled(i) for i in ideas)
         # When as many blocks carry as many fields, the deeper level wins: LibreOffice's
@@ -1416,8 +1445,10 @@ class _TableParser(HTMLParser):
             if self._depth == 1:
                 self.tables.append([])
         elif self._depth == 1 and tag == "tr":
+            self._save()
             self.tables[-1].append([])
         elif self._depth == 1 and tag in ("td", "th") and self.tables and self.tables[-1]:
+            self._save()
             self._cell, self._link = [], None
         elif tag == "a" and self._cell is not None and self._link is None:
             href = dict(attrs).get("href")
@@ -1426,12 +1457,19 @@ class _TableParser(HTMLParser):
         elif tag == "br" and self._cell is not None:
             self._cell.append(", ")
 
-    def handle_endtag(self, tag: str) -> None:
-        if tag in ("td", "th") and self._cell is not None and self.tables and self.tables[-1]:
+    def _save(self) -> None:
+        # HTML lets a cell end where the next cell, row, or the table does, without </td>.
+        if self._cell is not None and self.tables and self.tables[-1]:
             text = " ".join("".join(self._cell).split())
             self.tables[-1][-1].append((text, self._link))
-            self._cell = None
+        self._cell = None
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("td", "th"):
+            self._save()
         elif tag == "table" and self._depth:
+            if self._depth == 1:
+                self._save()
             self._depth -= 1
 
     def handle_data(self, data: str) -> None:

@@ -1152,3 +1152,96 @@ def test_the_parts_of_one_idea_are_not_ideas() -> None:
     )
     doc = extract_ideas(lines, source_url="https://x")
     assert [i.title for i in doc.ideas] == ["Imaging toolkit"]
+
+
+def test_a_value_on_the_line_after_its_label_ends_there() -> None:
+    # The prose after "Medium" said "high-level", which read as a second, hard level.
+    lines = markdown_to_lines(
+        "# Ideas\n\n## Faster parser\n\n**Mentors:** Alice Smith\n\n**Difficulty:**\nMedium\n\n"
+        "This project improves the high-level API of the parser.\n\n"
+        "## Better docs\n\n**Mentors:** Bob Jones\n\n**Size:**\n90 hours\n\n"
+        "**Difficulty:**\nHard\n\nA simple first step is to read the docs.\n"
+    )
+    first, second = extract_ideas(lines, source_url="https://x").ideas
+    assert (first.difficulty, first.difficulty_raw) == ("medium", "Medium")
+    assert "high-level" in first.description
+    assert (second.difficulty, second.hours, second.size_raw) == ("hard", 90, "90 hours")
+    # sktime lists one level for each of three projects under one label.
+    listed = ["## Forecasting", "Mentors: fkiraly", "Difficulty:", "- Project 1: medium"]
+    listed += ["- Project 2: hard", "Size: 350 hours", "## Docs", "Mentors: Ann", "Size: 90 hours"]
+    idea = extract_ideas(["# Ideas", *listed], source_url="https://x").ideas[0]
+    assert (idea.difficulty, idea.hours) == ("hard", 350)
+
+
+def test_labelled_ideas_named_with_common_page_words_are_read() -> None:
+    titles = [
+        "Interactive timeline",
+        "Navigation stack for drones",
+        "Speaker notes",
+        "Contact tracing app",
+        "Proposal review dashboard",
+    ]
+    raw = "# Ideas\n\n## Timeline\n\nApplications open in March.\n"
+    for title in titles:
+        raw += f"\n## {title}\n\nDifficulty: Medium\nMentors: Alice Smith\nSize: 175 hours\n"
+    # KDE's template for an idea of your own fills every label with instructions.
+    raw += "\n## Project: Something that you're totally excited about\n\n"
+    raw += "Difficulty: Easy, medium or difficult project\nDuration: ~90, ~175 or ~350 hours\n"
+    doc = extract_ideas(markdown_to_lines(raw), source_url="https://x")
+    assert [i.title for i in doc.ideas] == titles
+    # A heading about the ideas is never one, even with every idea's fields in its own
+    # text: GCC's "Selected Project Ideas" lists them as bold lines, not headings.
+    gcc = ["# GCC", "## Selected Project Ideas", "- **Rust front-end**", "- Mentors: Ann Lee"]
+    gcc += [
+        "- Difficulty: Hard",
+        "- **Static analysis**",
+        "- Size: 350 hours",
+        "## Before you apply",
+    ]
+    gcc += ["Build GCC first.", "## Use of AI", "Do not submit generated code."]
+    doc = extract_ideas(gcc, source_url="https://x")
+    assert "Selected Project Ideas" not in [i.title for i in doc.ideas]
+
+
+def test_table_cells_with_no_space_between_them_stay_apart() -> None:
+    # Docusaurus writes each field as <td>Difficulty</td><td>Hard</td>, with nothing
+    # between the cells, which read as "DifficultyHard".
+    def idea(title: str, level: str, mentor: str, size: str) -> str:
+        return (
+            f"<h2>{title}</h2><table><tbody>"
+            f"<tr><td><strong>Difficulty</strong></td><td>{level}</td></tr>"
+            f"<tr><td><strong>Mentors</strong></td><td>{mentor}</td></tr>"
+            f"<tr><td><strong>Size</strong></td><td>{size}</td></tr>"
+            "</tbody></table><p>What to build.</p>"
+        )
+
+    page = (
+        "<html><body>"
+        + idea("Faster parser", "Hard", "Alice Smith", "350 hours")
+        + idea("Better docs", "Easy", "Bob Jones", "90 hours")
+        + "</body></html>"
+    )
+    doc = extract_ideas(to_lines(page, base_url="https://x"), source_url="https://x")
+    assert [(i.title, i.difficulty, i.hours, i.mentors) for i in doc.ideas] == [
+        ("Faster parser", "hard", 350, ["Alice Smith"]),
+        ("Better docs", "easy", 90, ["Bob Jones"]),
+    ]
+
+
+def test_a_table_that_leaves_out_closing_tags_is_read() -> None:
+    from git_into_gsoc.gsoc.project_ideas import table_ideas
+
+    # HTML lets a cell or row end where the next one starts, without </td> or </tr>.
+    closed = (
+        "<table><tr><th>Project</th><th>Mentors</th><th>Difficulty</th></tr>"
+        "<tr><td>Idea A</td><td>Alice Smith</td><td>Easy</td></tr>"
+        "<tr><td>Idea B</td><td>Bob Jones</td><td>Hard</td></tr></table>"
+    )
+    omitted = (
+        "<table><tr><th>Project<th>Mentors<th>Difficulty"
+        "<tr><td>Idea A<td>Alice Smith<td>Easy<tr><td>Idea B<td>Bob Jones<td>Hard</table>"
+    )
+    expected = [("Idea A", ["Alice Smith"], "easy"), ("Idea B", ["Bob Jones"], "hard")]
+    for raw in (closed, omitted):
+        ideas = table_ideas(raw, source_url="https://x/")
+        assert [(i.title, i.mentors, i.difficulty) for i in ideas] == expected
