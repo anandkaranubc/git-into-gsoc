@@ -447,6 +447,86 @@ def test_cli_registration_is_skipped_for_a_redirected_home(
     assert any("claude mcp add" in step for step in plan.manual)
 
 
+def test_a_stale_claude_code_registration_is_replaced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # `claude mcp get` exits 0 even when the registered command is gone (after a move
+    # from pipx to uv), so setup said "already registered" while doctor said to run it.
+    import git_into_gsoc.install.plan as plan_module
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    monkeypatch.setattr(plan_module, "find_program", lambda name: f"/fake/bin/{name}")
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        plan_module, "register_via_cli", lambda exe, argv, **kw: calls.append(argv) or (True, "")
+    )
+    claude_json = home / ".claude.json"
+    stale = {"type": "stdio", "command": "/old/pipx/bin/git-into-gsoc", "args": ["mcp"]}
+    claude_json.write_text(json.dumps({"mcpServers": {SERVER_NAME: stale}}), encoding="utf-8")
+    plan = plan_setup(
+        scope="user", assistants=["claude-code"], home=home, project=None, command=CMD
+    )
+    plan.install_skill = False
+    run_setup(plan)
+    assert plan.changes[0].action == "updated"
+    assert [argv[1] for argv in calls] == ["get", "remove", "add"]
+    assert calls[-1][-2:] == CMD
+    current = {**stale, "command": CMD[0]}
+    claude_json.write_text(json.dumps({"mcpServers": {SERVER_NAME: current}}), encoding="utf-8")
+    calls.clear()
+    run_setup(plan)
+    assert (plan.changes[0].action, [argv[1] for argv in calls]) == ("unchanged", ["get"])
+
+
+def test_a_config_setup_cannot_write_is_skipped_with_a_manual_step(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A read-only folder, or a config symlinked into a read-only store, crashed setup
+    # with a PermissionError traceback and skipped every assistant after it.
+    import git_into_gsoc.install.clients as clients
+
+    def refuse(path: Path, text: str) -> None:
+        raise PermissionError(13, "Permission denied", str(path))
+
+    monkeypatch.setattr(clients, "_write_config", refuse)
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    config = home / ".cursor/mcp.json"
+    config.write_text(json.dumps({"mcpServers": {SERVER_NAME: {"command": "old"}}}))
+    plan = plan_setup(
+        scope="user",
+        assistants=["cursor", "codex"],
+        home=home,
+        project=None,
+        command=CMD,
+        use_cli=False,
+    )
+    plan.install_skill = False
+    run_setup(plan)
+    rows = {c.assistant: c for c in plan.changes}
+    assert rows["Cursor"].action == "skipped" and "Permission denied" in rows["Cursor"].note
+    assert rows["Codex"].action == "skipped"
+    assert any(step.startswith(f"Cursor: add this to {config}") for step in plan.manual)
+    run_removal(plan)
+    assert next(c for c in plan.changes if c.assistant == "Cursor").action == "skipped"
+    assert f"Cursor: remove the {SERVER_NAME} entry from {config} by hand" in plan.manual
+
+
+def test_project_scope_refuses_a_folder_that_does_not_exist(tmp_path: Path) -> None:
+    # A typo in --project-dir used to create the folder and write into it.
+    with pytest.raises(GigError, match="No folder"):
+        plan_setup(
+            scope="project",
+            assistants=["cursor"],
+            home=tmp_path,
+            project=tmp_path / "typo",
+            command=CMD,
+        )
+    assert not (tmp_path / "typo").exists()
+
+
 def test_run_setup_project_scope_writes_into_project(tmp_path: Path) -> None:
     home, project = tmp_path / "home", tmp_path / "proj"
     home.mkdir()
@@ -567,6 +647,26 @@ def test_a_config_with_comments_is_left_alone_with_a_manual_step(tmp_path: Path)
     assert not (home / ".cursor/mcp.json.bak").exists()
     step = next(s for s in plan.manual if s.startswith("Cursor"))
     assert SERVER_NAME in step and json.dumps(CMD[0]) in step
+
+
+def test_removal_from_a_config_with_comments_gives_a_manual_step(tmp_path: Path) -> None:
+    # It printed "left as is" under "Removal complete" with nothing to do next.
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    config = home / ".cursor/mcp.json"
+    config.write_text(JSONC, encoding="utf-8")
+    plan = plan_setup(
+        scope="user", assistants=["cursor"], home=home, project=None, command=CMD, use_cli=False
+    )
+    plan.install_skill = False
+    run_removal(plan)
+    assert (plan.changes[0].action, plan.manual) == ("unchanged", [])  # not registered there
+    with_ours = JSONC.replace('"other"', f'"{SERVER_NAME}": {{"command": "x"}},\n    "other"')
+    config.write_text(with_ours, encoding="utf-8")
+    run_removal(plan)
+    assert plan.changes[0].action == "skipped"
+    assert plan.manual == [f"Cursor: remove the {SERVER_NAME} entry from {config} by hand"]
+    assert config.read_text(encoding="utf-8") == with_ours
 
 
 def test_doctor_finds_a_server_added_by_hand_to_a_config_with_comments(tmp_path: Path) -> None:

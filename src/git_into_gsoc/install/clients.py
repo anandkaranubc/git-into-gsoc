@@ -389,6 +389,22 @@ def _write_config(path: Path, text: str) -> None:
         raise
 
 
+def _save(path: Path, text: str, action: str) -> tuple[str, str]:
+    """Back up and replace a config file. Returns (action, note), or skipped when the
+    system refuses the write.
+
+    A read-only folder, or a config symlinked into a read-only store, raised a
+    PermissionError traceback and stopped setup for every later assistant (setup
+    audit, 2026-10-29).
+    """
+    try:
+        _backup(path)
+        _write_config(path, text)
+    except OSError as exc:
+        return "skipped", f"{path.name} could not be written ({exc.strerror or exc}), left as is"
+    return action, ""
+
+
 def register_json(
     path: Path, key: str, entry: dict[str, Any], *, dry_run: bool = False
 ) -> tuple[str, str]:
@@ -419,9 +435,7 @@ def register_json(
         return action, ""
     servers[SERVER_NAME] = entry
     data[key] = servers
-    _backup(path)
-    _write_config(path, json.dumps(data, indent=2) + "\n")
-    return action, ""
+    return _save(path, json.dumps(data, indent=2) + "\n", action)
 
 
 # Codex hands a server only a short list of variables (HOME, PATH, and a few more),
@@ -550,9 +564,7 @@ def register_codex_toml(
     action = "updated" if path.exists() else "created"
     if dry_run:
         return action, ""
-    _backup(path)
-    _write_config(path, new_text)
-    return action, ""
+    return _save(path, new_text, action)
 
 
 def unregister_json(path: Path, key: str, *, dry_run: bool = False) -> tuple[str, str]:
@@ -562,6 +574,11 @@ def unregister_json(path: Path, key: str, *, dry_run: bool = False) -> tuple[str
     try:
         data = _read_json(path)
     except (ValueError, OSError) as exc:
+        # Removal prints a manual step for a skipped file, so one with comments that
+        # never listed us must not ask the person to remove anything.
+        fmt = "json-servers" if key == "servers" else "json-mcpServers"
+        if registered_entry(path, fmt) is None:
+            return "unchanged", ""
         return "skipped", f"{path.name} is {exc}"
     servers = data.get(key)
     if not isinstance(servers, dict) or SERVER_NAME not in servers:
@@ -571,9 +588,7 @@ def unregister_json(path: Path, key: str, *, dry_run: bool = False) -> tuple[str
     servers = dict(servers)
     del servers[SERVER_NAME]
     data[key] = servers
-    _backup(path)
-    _write_config(path, json.dumps(data, indent=2) + "\n")
-    return "removed", ""
+    return _save(path, json.dumps(data, indent=2) + "\n", "removed")
 
 
 def unregister_codex_toml(path: Path, *, dry_run: bool = False) -> tuple[str, str]:
@@ -600,9 +615,7 @@ def unregister_codex_toml(path: Path, *, dry_run: bool = False) -> tuple[str, st
         )
     if dry_run:
         return "removed", ""
-    _backup(path)
-    _write_config(path, new_text)
-    return "removed", ""
+    return _save(path, new_text, "removed")
 
 
 def _config_key(fmt: str) -> str:
