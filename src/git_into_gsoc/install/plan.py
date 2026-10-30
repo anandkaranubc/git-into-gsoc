@@ -14,6 +14,7 @@ from git_into_gsoc.install.clients import (
     Assistant,
     Change,
     Scope,
+    backup_path,
     detect_assistants,
     installed_plugin,
     is_our_skill,
@@ -96,6 +97,30 @@ def plan_setup(
     )
 
 
+def _project_link(plan: SetupPlan, *paths: Path) -> Path | None:
+    """The first symbolic link between the project folder and any of ``paths``.
+
+    A cloned repository can commit links next to the files setup writes. Followed,
+    ``.mcp.json.bak -> .git/hooks/pre-commit`` turned the backup into a git hook that
+    ran on the next commit, and ``.claude/skills`` linked to the data folder had setup
+    delete progress.json. User scope still follows links: dotfiles managers link
+    ~/.claude.json on purpose.
+    """
+    if plan.scope != "project":
+        return None
+    for path in paths:
+        current = plan.root
+        for part in path.relative_to(plan.root).parts:
+            current = current / part
+            if current.is_symlink():
+                return current
+    return None
+
+
+def _link_note(link: Path, plan: SetupPlan) -> str:
+    return f"{_rel(link, plan)} is a symbolic link; setup does not follow links in a project"
+
+
 def _plugin_for(plan: SetupPlan, assistant: Assistant) -> str | None:
     # Plugins are installed per person, so they only matter for the home-folder setup.
     return installed_plugin(assistant, plan.home) if plan.scope == "user" else None
@@ -117,6 +142,8 @@ def run_setup(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
             )
             dest, legacy = skill_locations(assistant, plan.scope, plan.root)
             for old in legacy:
+                if _project_link(plan, old):
+                    continue
                 if old != dest and old.is_dir() and is_our_skill(old):
                     action = remove_skill(old, dry_run=dry_run)
                     note = f"old location; {assistant.label} reads {_rel(dest, plan)}"
@@ -136,8 +163,12 @@ def run_setup(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
                 continue
             if dest in written:
                 continue  # one shared copy serves every assistant that reads this folder
-            action = copy_skill(source, dest, dry_run=dry_run)
             written[dest] = len(plan.changes)
+            if link := _project_link(plan, dest):
+                note = _link_note(link, plan)
+                plan.changes.append(Change(assistant.label, "skill", dest, "skipped", note))
+                continue
+            action = copy_skill(source, dest, dry_run=dry_run)
             plan.changes.append(Change(assistant.label, "skill", dest, action))
     if plan.install_mcp:
         for assistant in plan.assistants:
@@ -189,6 +220,10 @@ def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
                 if path in removed or (path != dest and not path.exists()):
                     continue
                 removed.add(path)
+                if link := _project_link(plan, path):
+                    note = _link_note(link, plan)
+                    plan.changes.append(Change(assistant.label, "skill", path, "skipped", note))
+                    continue
                 if path == shared and readers and path.exists():
                     note = f"still used by {', '.join(readers)}"
                     plan.changes.append(Change(assistant.label, "skill", path, "skipped", note))
@@ -236,6 +271,8 @@ def _unregister(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Chan
                 )
         plan.manual.append(f"{assistant.label}: remove the server named {SERVER_NAME} by hand")
         return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
+    if link := _project_link(plan, path, backup_path(path)):
+        return Change(assistant.label, "mcp", path, "skipped", _link_note(link, plan))
     fmt = target.fmt_for(plan.scope)
     if fmt == "toml-codex":
         action, note = unregister_codex_toml(path, dry_run=dry_run)
@@ -261,6 +298,8 @@ def _register(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change
         if hint:
             plan.manual.append(f"{assistant.label}: {hint}")
         return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
+    if link := _project_link(plan, path, backup_path(path)):
+        return Change(assistant.label, "mcp", path, "skipped", _link_note(link, plan))
     fmt = target.fmt_for(plan.scope)
     if fmt == "toml-codex":
         action, note = register_codex_toml(path, plan.command, dry_run=dry_run)

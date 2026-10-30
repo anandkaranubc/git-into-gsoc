@@ -318,9 +318,13 @@ def server_entry(command: list[str], fmt: str, style: EntryStyle = "plain") -> d
 # ----------------------------------------------------------------- file edits
 
 
+def backup_path(path: Path) -> Path:
+    return path.with_name(path.name + ".bak")
+
+
 def _backup(path: Path) -> None:
     if path.exists():
-        shutil.copy2(path, path.with_name(path.name + ".bak"))
+        shutil.copy2(path, backup_path(path))
 
 
 def _read_text(path: Path) -> str:
