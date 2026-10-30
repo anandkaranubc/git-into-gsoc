@@ -371,3 +371,25 @@ def test_an_unknown_argument_comes_back_as_a_tool_error_through_a_real_call() ->
 
     with pytest.raises(ToolError, match="gsoc_search_orgs does not take 'bogus'"):
         asyncio.run(mcp_server.mcp.call_tool("gsoc_search_orgs", {"bogus": 1}))
+
+
+def test_a_limit_below_one_is_a_tool_error() -> None:
+    import pytest
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    from git_into_gsoc import mcp_server as server
+
+    # The CLI refuses --limit 0; MCP clients send any number, and -1 quietly dropped the
+    # last result while 0 returned nothing at all.
+    calls = (
+        lambda: server.gsoc_search_orgs(technologies="python", limit=0),
+        lambda: server.gsoc_past_projects(query="parser", limit=-1),
+        lambda: server.gsoc_org_mentors("SymPy", limit=-5),
+        lambda: server.gsoc_discover_repos("sympy", limit=0),
+        lambda: server.gsoc_find_issues(language="python", max_results=-1),
+        lambda: server.gsoc_org_ideas("SymPy", limit=0),
+        lambda: server.gsoc_log(limit=0),
+    )
+    for call in calls:
+        with pytest.raises(ToolError, match="1 or more"):
+            call()

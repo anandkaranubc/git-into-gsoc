@@ -95,7 +95,7 @@ git-into-gsoc issue OWNER/REPO#NUMBER
 | `repo OWNER/REPO` | Repository or URL; `--track` saves it to your progress | A grade from A to F with the evidence, warnings, plain notes, where it lost points, setup hints, and the command to run next. A read-only mirror, a fork in a person's account, and a repository with pull requests turned off are not graded; it says where the project really takes changes. A fork owned by an organization is graded and names the original. `--track` on a person's fork saves the original |
 | `issues` | `--language` / `-l`, `--org`, `--repo`, `--label`, `--scope gsoc\|all`, `--limit` / `-n` | Beginner issues with a verified availability status and, where one applies, a caution |
 | `issue REF [NUMBER]` | `owner/repo#123`, a URL, or `owner/repo` plus a number; `--track` saves it to your progress | One issue: linked pull requests, claims with dates, maintainer approvals, caveats, the caution a search would give it, and a before-you-comment checklist |
-| `orient OWNER/REPO` | Repository or URL; `--codetour FILE` also writes a CodeTour file (a VS Code extension that walks you through files step by step) pinned to the inspected commit | A code map with purpose guesses, entry points, the test command CI runs and the environment it sets up, docs to read first, the most active commit authors and CODEOWNERS, the rules before a pull request with their sources, policy sentences, channels, an example merged outsider pull request, and a reading plan |
+| `orient OWNER/REPO` | Repository or URL; `--codetour FILE` also writes a CodeTour file (a VS Code extension that walks you through files step by step) pinned to the inspected commit; it never replaces a file that already exists | A code map with purpose guesses, entry points, the test command CI runs and the environment it sets up, docs to read first, the most active commit authors and CODEOWNERS, the rules before a pull request with their sources, policy sentences, channels, an example merged outsider pull request, and a reading plan |
 | `pointers REF [NUMBER]` | Issue reference as for `issue`; `--similar N` (default 5), `--no-search` | Files the issue names, resolved against the tree with a confidence label; code-search hits or ready-made search links for identifiers; closed issues with the same beginner label and the pull requests that fixed them; how big a typical fix is |
 
 Notes on `repos` and `repo`:
@@ -133,7 +133,7 @@ git-into-gsoc recommend --tech html,css --interests accessibility --experience n
 
 | Command | Options | Result |
 |---|---|---|
-| `profile` | `--github` / `-g`, `--tech` / `-t`, `--interests` / `-i`, `--hours`, `--experience` / `-e` (`new`, `some`, or `experienced`), `--tz` | Saves the facts recommendations are built from, or shows what is saved when you give no options |
+| `profile` | `--github` / `-g`, `--tech` / `-t`, `--interests` / `-i`, `--hours` (1 to 80), `--experience` / `-e` (`new`, `some`, or `experienced`), `--tz` | Saves the facts recommendations are built from, or shows what is saved when you give no options |
 | `recommend` | `--tech`, `--interests`, `--experience`, `--hours`, `--github` | Organizations that fit, with evidence; ideas that fit you; starter issues; and a short path with a command for each step |
 
 Notes:

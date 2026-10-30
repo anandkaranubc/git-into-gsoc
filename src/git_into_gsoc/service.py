@@ -139,6 +139,7 @@ from git_into_gsoc.validation import (
     parse_issue_ref,
     parse_repo,
     plain_skill,
+    validate_limit,
     validate_login,
     validate_year,
 )
@@ -530,6 +531,7 @@ class GSoCToolkit:
         """Organizations ranked for the person. With `check_posts`, the top three are
         checked for posts about the coming year, and one that says it sits out moves last
         (one search each)."""
+        validate_limit(limit)
         from_profile = False
         saved = self.progress.profile()
         if not (query or technologies or topics or category):
@@ -774,6 +776,7 @@ class GSoCToolkit:
         since: int | None = None,
         limit: int = 15,
     ) -> dict[str, Any]:
+        validate_limit(limit)
         if org:
             resolved = self.gsoc.resolve_org_name(org)
             if resolved is None:
@@ -904,6 +907,7 @@ class GSoCToolkit:
         `org` may be a GSoC org name (resolved to its GitHub orgs and ideas page)
         or a GitHub login.
         """
+        validate_limit(limit)
         gsoc_org = self.gsoc.get_organization(org, year=year)
         if gsoc_org is None:
             owners = [validate_login(org, kind="GitHub org/user or GSoC org name")]
@@ -1380,6 +1384,7 @@ class GSoCToolkit:
         organization's name or a GitHub login. The note says what was searched and
         what was left out.
         """
+        validate_limit(max_results, name="max_results")
         if repo:
             # A pasted link (https://github.com/ML4SCI/DeepLense) reached the advice as is:
             # "github.com/https://github.com/.../issues" and "repos https:".
@@ -2903,6 +2908,7 @@ class GSoCToolkit:
 
     def org_mentors(self, name: str, *, years: int = 3, limit: int = 25) -> dict[str, Any]:
         """Who mentored this org's completed projects in recent years, from the archive."""
+        validate_limit(limit)
         org = self.gsoc.get_organization(name)
         if org is None:
             return self._org_not_found(name)
@@ -2933,6 +2939,7 @@ class GSoCToolkit:
         follow: bool = True,
     ) -> dict[str, Any]:
         """Structured project ideas from an org's ideas page, ranked for the contributor."""
+        validate_limit(limit)
         org = self.gsoc.get_organization(name, year=year)
         if org is None:
             return self._org_not_found(name, year=year)
@@ -2977,7 +2984,7 @@ class GSoCToolkit:
         )
         idea_dicts = [i.model_dump(mode="json") | {"repo": _idea_repo(i.links)} for i in ranked]
         hours_note = _mark_ideas_too_big(idea_dicts, self.progress.profile().get("hours_per_week"))
-        shown = idea_dicts[: max(1, limit)]
+        shown = idea_dicts[:limit]
         # UC OSPO's ideas sit in a dozen projects' repositories; `repos` and `next` lead
         # here, so say where an idea's code is (a launch audit, 2026-10-23).
         several_repos = len({str(i["repo"]).lower() for i in shown if i["repo"]}) > 1

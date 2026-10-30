@@ -221,6 +221,24 @@ def test_cli_orient_writes_a_codetour_file(tmp_path: Path) -> None:
     assert "Wrote the CodeTour file" in result.stdout
 
 
+@respx.mock
+def test_cli_orient_checks_the_codetour_path_first(tmp_path: Path) -> None:
+    # `--codetour <a folder>` failed with IsADirectoryError after about 20 API calls, and an
+    # existing file was replaced without a word.
+    existing = tmp_path / "old.tour"
+    existing.write_text("mine")
+    for target in (tmp_path, existing):
+        result = runner.invoke(app, ["orient", "acme/lib", "--codetour", str(target)])
+        assert result.exit_code == 1, result.output
+        assert "already exists" in result.output
+    assert not respx.calls
+    assert existing.read_text() == "mine"
+    _mock_repo(respx)
+    result = runner.invoke(app, ["orient", "acme/lib", "--codetour", str(existing / "x.tour")])
+    assert result.exit_code == 1, result.output
+    assert "Cannot write" in result.output
+
+
 def test_example_pr_skips_authors_who_can_be_assigned_issues(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     # ArduPilot (2026-10-21): orient called a PR by @khancyr "a recently merged small PR
     # from an outside contributor"; GitHub marks every merged author CONTRIBUTOR.

@@ -125,7 +125,9 @@ PROPOSAL_GUIDE_URL = "https://google.github.io/gsocguides/student/writing-a-prop
 
 _URL_RE = re.compile(r"https?://[^\s)>\]]+")
 _GITHUB_LINK_RE = re.compile(
-    r"https?://github\.com/([A-Za-z0-9-]+)/([A-Za-z0-9._-]+)/(pull|issues|commit|discussions)/([0-9a-f]+)",
+    # A commit is a hex hash; anything else is a number, so ".../pull/1e" is no link.
+    r"https?://github\.com/([A-Za-z0-9-]+)/([A-Za-z0-9._-]+)/(pull|issues|commit|discussions)/"
+    r"((?<=commit/)[0-9a-f]+|\d+\b)",
     re.IGNORECASE,
 )
 _HEADING_RE = re.compile(
@@ -328,7 +330,11 @@ def verify_links(
         if link.kind != "pull" or checked >= limit:
             continue
         checked += 1
-        data = lookup(link.repo, int(link.number))
+        try:
+            data = lookup(link.repo, int(link.number))
+        except ValueError:  # github.com/o/../pull/1 stopped the whole check
+            link.note = "not a GitHub repository"
+            continue
         if not data:
             link.note = "could not fetch (private, deleted, or rate limited)"
             continue

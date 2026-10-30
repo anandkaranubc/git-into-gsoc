@@ -35,6 +35,17 @@ def test_cli_proposal_json() -> None:
     assert "checklist" in result.stdout
 
 
+def test_cli_json_output_is_plain_ascii() -> None:
+    import json
+
+    # Piped on Windows, stdout is cp1252 with errors="replace", so a note saved as "café ✓"
+    # came back from `--output json` as "caf? ?".
+    result = runner.invoke(app, ["progress", "note", "--value", "café ✓", "--output", "json"])
+    assert result.exit_code == 0, result.output
+    assert result.stdout.isascii()
+    assert json.loads(result.stdout)["notes"] == ["café ✓"]
+
+
 def test_cli_invalid_repo_is_a_friendly_error() -> None:
     result = runner.invoke(app, ["repo", "../../etc"])
     assert result.exit_code == 1

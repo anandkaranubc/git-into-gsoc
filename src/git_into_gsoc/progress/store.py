@@ -20,7 +20,7 @@ from pydantic import ValidationError
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, _private_dir, data_location
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
-from git_into_gsoc.validation import parse_issue_ref, parse_repo
+from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_limit
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
 LOCK_TIMEOUT_SECONDS = 10.0
@@ -322,11 +322,12 @@ class ProgressStore:
         return self.save(state)
 
     def recent_logs(self, limit: int = 5) -> list[LogEntry]:
+        validate_limit(limit)
         # Newest first; entries saved within the same clock tick keep insertion order,
         # so the index breaks ties (Windows timestamps are coarse).
         indexed = list(enumerate(self.load().weekly_log))
         indexed.sort(key=lambda pair: (pair[1].at, pair[0]), reverse=True)
-        return [entry for _, entry in indexed][: max(1, limit)]
+        return [entry for _, entry in indexed][:limit]
 
     @_mutating
     def shortlist_org(self, name: str) -> ProgressState:
