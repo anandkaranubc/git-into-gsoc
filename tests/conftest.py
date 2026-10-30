@@ -5,12 +5,19 @@ tests/fixtures/."""
 from __future__ import annotations
 
 import json
+import os
 import socket
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
 import pytest
+
+# Rich fixes the console width when cli.py builds its console at import, if COLUMNS
+# is set then, and ignores the env={"COLUMNS": ...} a test passes to CliRunner.
+# A shell that exported COLUMNS=80 broke five table asserts (#392); at 60, twelve
+# more failed. Without it the width follows each CliRunner call, and is 80 otherwise.
+os.environ.pop("COLUMNS", None)
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 

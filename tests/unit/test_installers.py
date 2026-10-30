@@ -579,3 +579,107 @@ def test_a_folder_already_on_path_needs_no_advice() -> None:
         "/home/newbie/.local/bin", path="/usr/bin:/home/newbie/.local/bin", shell="/bin/bash"
     )
     assert out == ""
+
+
+@posix_only
+def test_a_dry_run_installs_nothing(tmp_path: Path) -> None:
+    # `--dry-run` still ran `uv tool install --force`, replacing the installed version.
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    for name in ("uv", "pipx", "git-into-gsoc"):
+        stub = bin_dir / name
+        stub.write_text(f'#!/bin/sh\necho "{name} $*" >> "{tmp_path}/calls"\n')
+        stub.chmod(0o755)
+    (bin_dir / "curl").write_text("#!/bin/sh\nexit 22\n")
+    (bin_dir / "curl").chmod(0o755)
+    script = tmp_path / "install.sh"  # outside a checkout, so it takes the remote path
+    shutil.copy(ROOT / "install.sh", script)
+    result = subprocess.run(
+        [shutil.which("bash") or "bash", str(script), "--dry-run"],
+        capture_output=True,
+        text=True,
+        env={
+            "PATH": f"{bin_dir}{os.pathsep}/usr/bin{os.pathsep}/bin",
+            "HOME": str(tmp_path / "home"),
+            "GIG_REPO_URL": str(tmp_path / "no-source"),
+        },
+        stdin=subprocess.DEVNULL,
+        timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    calls = (tmp_path / "calls").read_text().splitlines()
+    assert calls == ["git-into-gsoc setup --scope user --dry-run"]
+    assert "not installed or updated" in result.stdout
+
+
+def _link_gsoc(tmp_path: Path, target: str) -> subprocess.CompletedProcess[str]:
+    script = (
+        "set -euo pipefail\n"
+        "log() { printf '==> %s\\n' \"$*\"; }\n"
+        + _function("link_gsoc")
+        + f'link_gsoc "{target}"\n'
+    )
+    return subprocess.run(
+        [shutil.which("bash") or "bash", "-c", script],
+        capture_output=True,
+        text=True,
+        env={"PATH": os.environ["PATH"], "HOME": str(tmp_path)},
+        timeout=30,
+    )
+
+
+@posix_only
+def test_the_short_name_never_replaces_another_program(tmp_path: Path) -> None:
+    # `ln -sf` replaced whatever ~/.local/bin/gsoc was, which can be another tool.
+    link = tmp_path / ".local/bin/gsoc"
+    link.parent.mkdir(parents=True)
+    link.write_text("#!/bin/sh\necho another program\n")
+    result = _link_gsoc(tmp_path, "/opt/gig/venv/bin/gsoc")
+    assert result.returncode == 0, result.stderr
+    assert link.read_text() == "#!/bin/sh\necho another program\n"
+    assert "another program has that name" in result.stdout
+    link.unlink()
+    for _ in range(2):  # a missing name is taken, and taking it again changes nothing
+        assert _link_gsoc(tmp_path, "/opt/gig/venv/bin/gsoc").returncode == 0
+        assert os.readlink(link) == "/opt/gig/venv/bin/gsoc"
+
+
+def _ps_lines() -> list[str]:
+    return (ROOT / "install.ps1").read_text(encoding="utf-8").splitlines()
+
+
+def test_a_powershell_dry_run_installs_nothing_and_leaves_path_alone() -> None:
+    # `-DryRun` still installed the package and wrote the user PATH in the registry.
+    lines = _ps_lines()
+    start = lines.index("if (-not ($SkillOnly -or $DryRun)) {")
+    end = lines.index("} else {", start)
+    for number, line in enumerate(lines):
+        if "Install-FirstWorking {" in line or re.match(r"\s*Add-ToUserPath ", line):
+            assert start < number < end, line
+
+
+def test_the_powershell_installer_stops_when_a_step_fails() -> None:
+    # A native command that fails does not stop PowerShell: a failed `pip install -e` or
+    # setup still ended with "All set".
+    lines = _ps_lines()
+    checked = 0
+    for number, line in enumerate(lines):
+        if "Install-FirstWorking" in line:
+            continue  # that loop reads $LASTEXITCODE itself
+        if re.search(r"& \$(?:venvPy -m pip|GigBin) ", line):
+            assert lines[number + 1].strip().startswith("Assert-ExitCode "), line
+            checked += 1
+    assert checked == 5
+
+
+def test_the_powershell_installer_keeps_path_entries_that_name_variables() -> None:
+    # Reading the user PATH expanded and writing it back as plain text froze entries
+    # such as %JAVA_HOME%\bin at their current value.
+    text = (ROOT / "install.ps1").read_text(encoding="utf-8")
+    found = re.search(r"^function Add-ToUserPath.*?^\}", text, re.M | re.S)
+    assert found
+    body = found.group(0)
+    assert "DoNotExpandEnvironmentNames" in body and "-Type ExpandString" in body
+    assert "ExpandEnvironmentVariables" in body
+    assert 'GetEnvironmentVariable("Path", "User")' not in body
+    assert "[NullString]::Value" in body  # the change is announced to open programs

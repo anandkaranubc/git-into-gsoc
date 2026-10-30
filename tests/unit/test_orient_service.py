@@ -241,3 +241,20 @@ def test_example_pr_skips_authors_who_can_be_assigned_issues(monkeypatch) -> Non
 
     example = toolkit._example_outsider_pr("a", "b", [pull(1, "khancyr"), pull(2, "newcomer")])
     assert example is not None and example["author"] == "newcomer"
+
+
+@respx.mock
+def test_branch_names_with_a_slash_or_an_accent_are_encoded_once() -> None:
+    from git_into_gsoc.github.client import GitHubClient
+
+    tree = respx.get(f"{API}/git/trees/release%2F1.x").mock(
+        return_value=httpx.Response(200, json={"tree": [_tree_entry("README.md")]})
+    )
+    rules = respx.get(f"{API}/rules/branches/d%C3%A9veloppement").mock(
+        return_value=httpx.Response(200, json=[{"type": "pull_request"}])
+    )
+    github = GitHubClient()
+    assert github.git_tree("acme", "lib", "release/1.x")["tree"]
+    assert github.branch_rules("acme", "lib", "développement") == [{"type": "pull_request"}]
+    assert tree.calls.last.request.url.raw_path.endswith(b"/trees/release%2F1.x?recursive=1")
+    assert rules.calls.last.request.url.raw_path.endswith(b"/branches/d%C3%A9veloppement")

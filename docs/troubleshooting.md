@@ -63,7 +63,7 @@ Check your internet connection and the first error from pip. If a network proxy 
 
 ## `error: GitHub API rate limit exceeded`
 
-The message says when the limit resets and which limit it was. A **search rate limit** is separate from the hourly allowance: GitHub permits 10 searches a minute without a token and 30 with one, and `issues` and `repos` each use at least one search, so wait a minute or narrow the search with `--repo` or `--org`. Cached results keep working meanwhile. If the hint says to run `gh auth login` or set `GITHUB_TOKEN`, you are unauthenticated and limited to 60 requests per hour; see [configuration](configuration.md). A **secondary rate limit** means too many searches in a short time; a token does not remove it, so wait a few minutes. Narrow searches with `--repo` and a small `-n` to use fewer requests. `doctor` shows the main allowance.
+The message says when the limit resets and which limit it was. A **search rate limit** is separate from the hourly allowance: GitHub permits 10 searches a minute without a token and 30 with one, and `issues` and `repos` each use at least one search, so wait a minute or narrow the search with `--repo` or `--org`. Cached results keep working meanwhile. If the hint says to run `gh auth login` or set `GITHUB_TOKEN`, you are unauthenticated and limited to 60 requests per hour; see [configuration](configuration.md). A **secondary rate limit** means too many searches in a short time; a token does not remove it, so wait a few minutes. Narrow searches with `--repo` and a small `-n` to use fewer requests. `doctor` shows the main allowance. When the error names another site instead, such as a GitLab server, that site's own limit was reached: wait a few minutes, because a GitHub token does not change it.
 
 ## Issues marked `unknown` in a list
 
@@ -89,7 +89,7 @@ An empty issue search does not mean the project has no useful work. Try `--label
 
 ## Results are old or an issue is already taken
 
-Most GitHub responses are cached for an hour and revalidated after that; issue checks refresh after 5 minutes. For a fresh check, run `git-into-gsoc cache --clear` first (`GIG_CACHE_TTL_SECONDS` changes only the one-hour default and does not affect issue checks). Restart an MCP server to clear its in-memory organization data. Even fresh results cannot prove availability: the tool reads up to 100 timeline events and maintainers may coordinate elsewhere. Read the live issue discussion before starting.
+Most GitHub responses are cached for an hour and revalidated after that; issue checks refresh after 5 minutes. For a fresh check, run `git-into-gsoc cache --clear` first (`GIG_CACHE_TTL_SECONDS` changes only the one-hour default and does not affect issue checks). Restart an MCP server to clear its in-memory organization data. Even fresh results cannot prove availability: the tool reads up to 500 timeline events and maintainers may coordinate elsewhere. Read the live issue discussion before starting.
 
 ## "Ideas page not readable"
 
@@ -99,7 +99,7 @@ Some organizations host ideas on wikis that block automated readers. `repos` the
 
 `git-into-gsoc mcp` waits for protocol input. It is not an interactive chat command. Press Ctrl+C if you started it manually, then let your assistant launch it.
 
-Run `git-into-gsoc doctor`: it lists which assistants have the skill and which config files register the MCP server. If yours is missing, run `git-into-gsoc setup --assistant NAME` and restart the assistant. If you moved or reinstalled the tool, re-run setup so the registered path is updated; it reports `updated` for the files it changed. A `setup` row that ends in `left as is` means setup did not change that config file. Usually the file has comments or trailing commas, which VS Code and Cursor allow but which setup will not rewrite, because rewriting would drop your comments. Setup then prints a manual step with the exact entry to paste, and `doctor` finds the entry once you add it. Before every write setup saves a `.bak` copy next to the file, and it keeps the file's permissions and any symlink. [Set up by hand](assistants.md#set-up-by-hand) has the manual equivalents.
+Run `git-into-gsoc doctor`: it lists which assistants have the skill and which config files register the MCP server. If yours is missing, run `git-into-gsoc setup --assistant NAME` and restart the assistant. If you moved or reinstalled the tool, re-run setup so the registered path is updated; it reports `updated` for the files it changed. A `setup` row that ends in `left as is` means setup did not change that config file. Usually the file has comments or trailing commas, which VS Code and Cursor allow but which setup will not rewrite, because rewriting would drop your comments. Sometimes setup was not allowed to write the file, for example in a read-only folder; the row then says `could not be written`. Setup then prints a manual step with the exact entry to paste, and `doctor` finds the entry once you add it. Before every write setup saves a `.bak` copy next to the file, and it keeps the file's permissions and any symlink. [Set up by hand](assistants.md#set-up-by-hand) has the manual equivalents.
 
 ## A plugin or one-click button installed, but the tools never appear
 
