@@ -12,6 +12,7 @@ import pytest
 from git_into_gsoc.errors import GigError
 from git_into_gsoc.install import copy_skill, plan_setup, run_removal, run_setup, skill_source
 from git_into_gsoc.install.clients import (
+    GEMINI_TOKEN_ENV,
     SERVER_NAME,
     installed_skills,
     register_codex_toml,
@@ -55,6 +56,42 @@ def test_register_json_merges_and_backs_up(tmp_path: Path) -> None:
     assert data["mcpServers"][SERVER_NAME] == {"command": CMD[0], "args": ["mcp"]}
     assert path.with_name("mcp.json.bak").is_file()
     assert register_json(path, "mcpServers", entry) == ("unchanged", "")
+
+
+def test_register_json_keeps_what_the_person_added(tmp_path: Path) -> None:
+    # Replacing the whole entry dropped env and disabled, turned a server the person
+    # had switched off back on, and reported every re-run as updated.
+    path = tmp_path / "settings.json"
+    mine = {
+        "command": "/old/bin/git-into-gsoc",
+        "args": ["mcp"],
+        "disabled": True,
+        "autoApprove": ["gsoc_next"],
+        "env": {"GIG_TARGET_YEAR": "2027"},
+    }
+    path.write_text(json.dumps({"mcpServers": {SERVER_NAME: mine}}), encoding="utf-8")
+    entry = server_entry(CMD, "json-mcpServers", "gemini")
+    assert register_json(path, "mcpServers", entry) == ("updated", "")
+    saved = json.loads(path.read_text(encoding="utf-8"))["mcpServers"][SERVER_NAME]
+    assert (saved["command"], saved["disabled"], saved["autoApprove"]) == (
+        CMD[0],
+        True,
+        ["gsoc_next"],
+    )
+    assert saved["env"] == {"GIG_TARGET_YEAR": "2027", **GEMINI_TOKEN_ENV}
+    assert register_json(path, "mcpServers", entry) == ("unchanged", "")
+
+
+def test_register_json_keeps_a_token_the_person_put_in_env(tmp_path: Path) -> None:
+    # Our env holds only Gemini's "$GITHUB_TOKEN" passthroughs; a real value the person
+    # wrote there must survive every re-run.
+    path = tmp_path / "settings.json"
+    entry = server_entry(CMD, "json-mcpServers", "gemini")
+    mine = {**entry, "env": {**GEMINI_TOKEN_ENV, "GITHUB_TOKEN": "my-own-token"}}
+    path.write_text(json.dumps({"mcpServers": {SERVER_NAME: mine}}), encoding="utf-8")
+    assert register_json(path, "mcpServers", entry) == ("unchanged", "")
+    saved = json.loads(path.read_text(encoding="utf-8"))["mcpServers"][SERVER_NAME]
+    assert saved["env"]["GITHUB_TOKEN"] == "my-own-token"
 
 
 def test_register_json_creates_missing_file_and_vscode_shape(tmp_path: Path) -> None:
@@ -125,6 +162,47 @@ def test_codex_update_keeps_the_persons_own_subtables(tmp_path: Path) -> None:
     entry = tomllib.loads(path.read_text(encoding="utf-8"))["mcp_servers"][SERVER_NAME]
     assert entry["command"] == CMD[0]
     assert entry["env"] == {"GIG_TARGET_YEAR": "2027"}
+
+
+def test_codex_update_keeps_the_persons_own_keys_and_comments(tmp_path: Path) -> None:
+    # Replacing the whole table switched a server the person had turned off back on.
+    path = tmp_path / "config.toml"
+    path.write_text(
+        "[mcp_servers.git-into-gsoc]\n"
+        "# off while I travel\n"
+        'command = "/old/bin/git-into-gsoc"\n'
+        'args = ["mcp"]\n'
+        "enabled = false\n"
+        "tool_timeout_sec = 120\n"
+        'env = { GIG_TARGET_YEAR = "2027" }\n\n'
+        '[mcp_servers.other]\ncommand = "y"\n',
+        encoding="utf-8",
+    )
+    assert register_codex_toml(path, CMD) == ("updated", "")
+    text = path.read_text(encoding="utf-8")
+    assert "# off while I travel" in text
+    servers = tomllib.loads(text)["mcp_servers"]
+    entry = servers[SERVER_NAME]
+    assert (entry["command"], entry["enabled"], entry["tool_timeout_sec"]) == (CMD[0], False, 120)
+    assert entry["env"] == {"GIG_TARGET_YEAR": "2027"}
+    assert servers["other"] == {"command": "y"}
+    assert register_codex_toml(path, CMD) == ("unchanged", "")
+
+
+def test_codex_update_that_would_change_the_persons_keys_is_skipped(tmp_path: Path) -> None:
+    # A line inside a multi-line string looks like one of our keys; dropping it would
+    # change the person's value, so the file is left for a person to edit.
+    path = tmp_path / "config.toml"
+    original = (
+        "[mcp_servers.git-into-gsoc]\n"
+        'command = "old"\n'
+        'args = ["mcp"]\n'
+        'description = """\ncommand = "kept"\n"""\n'
+    )
+    path.write_text(original, encoding="utf-8")
+    action, note = register_codex_toml(path, CMD)
+    assert action == "skipped" and "left as is" in note
+    assert path.read_text(encoding="utf-8") == original
 
 
 def test_codex_extra_keys_the_person_added_count_as_current(tmp_path: Path) -> None:
@@ -369,6 +447,86 @@ def test_cli_registration_is_skipped_for_a_redirected_home(
     assert any("claude mcp add" in step for step in plan.manual)
 
 
+def test_a_stale_claude_code_registration_is_replaced(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # `claude mcp get` exits 0 even when the registered command is gone (after a move
+    # from pipx to uv), so setup said "already registered" while doctor said to run it.
+    import git_into_gsoc.install.plan as plan_module
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    monkeypatch.setattr(plan_module, "find_program", lambda name: f"/fake/bin/{name}")
+    calls: list[list[str]] = []
+    monkeypatch.setattr(
+        plan_module, "register_via_cli", lambda exe, argv, **kw: calls.append(argv) or (True, "")
+    )
+    claude_json = home / ".claude.json"
+    stale = {"type": "stdio", "command": "/old/pipx/bin/git-into-gsoc", "args": ["mcp"]}
+    claude_json.write_text(json.dumps({"mcpServers": {SERVER_NAME: stale}}), encoding="utf-8")
+    plan = plan_setup(
+        scope="user", assistants=["claude-code"], home=home, project=None, command=CMD
+    )
+    plan.install_skill = False
+    run_setup(plan)
+    assert plan.changes[0].action == "updated"
+    assert [argv[1] for argv in calls] == ["get", "remove", "add"]
+    assert calls[-1][-2:] == CMD
+    current = {**stale, "command": CMD[0]}
+    claude_json.write_text(json.dumps({"mcpServers": {SERVER_NAME: current}}), encoding="utf-8")
+    calls.clear()
+    run_setup(plan)
+    assert (plan.changes[0].action, [argv[1] for argv in calls]) == ("unchanged", ["get"])
+
+
+def test_a_config_setup_cannot_write_is_skipped_with_a_manual_step(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A read-only folder, or a config symlinked into a read-only store, crashed setup
+    # with a PermissionError traceback and skipped every assistant after it.
+    import git_into_gsoc.install.clients as clients
+
+    def refuse(path: Path, text: str) -> None:
+        raise PermissionError(13, "Permission denied", str(path))
+
+    monkeypatch.setattr(clients, "_write_config", refuse)
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    config = home / ".cursor/mcp.json"
+    config.write_text(json.dumps({"mcpServers": {SERVER_NAME: {"command": "old"}}}))
+    plan = plan_setup(
+        scope="user",
+        assistants=["cursor", "codex"],
+        home=home,
+        project=None,
+        command=CMD,
+        use_cli=False,
+    )
+    plan.install_skill = False
+    run_setup(plan)
+    rows = {c.assistant: c for c in plan.changes}
+    assert rows["Cursor"].action == "skipped" and "Permission denied" in rows["Cursor"].note
+    assert rows["Codex"].action == "skipped"
+    assert any(step.startswith(f"Cursor: add this to {config}") for step in plan.manual)
+    run_removal(plan)
+    assert next(c for c in plan.changes if c.assistant == "Cursor").action == "skipped"
+    assert f"Cursor: remove the {SERVER_NAME} entry from {config} by hand" in plan.manual
+
+
+def test_project_scope_refuses_a_folder_that_does_not_exist(tmp_path: Path) -> None:
+    # A typo in --project-dir used to create the folder and write into it.
+    with pytest.raises(GigError, match="No folder"):
+        plan_setup(
+            scope="project",
+            assistants=["cursor"],
+            home=tmp_path,
+            project=tmp_path / "typo",
+            command=CMD,
+        )
+    assert not (tmp_path / "typo").exists()
+
+
 def test_run_setup_project_scope_writes_into_project(tmp_path: Path) -> None:
     home, project = tmp_path / "home", tmp_path / "proj"
     home.mkdir()
@@ -461,7 +619,13 @@ def test_project_removal_never_follows_a_link_inside_the_project(tmp_path: Path)
     assert not (project / ".git/hooks/pre-commit").exists()
 
 
-def test_removal_undoes_setup_and_keeps_other_entries(tmp_path: Path) -> None:
+def test_removal_undoes_setup_and_keeps_other_entries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import git_into_gsoc.install.clients as clients
+
+    # An assistant installed on this machine would keep the shared copy in use.
+    monkeypatch.setattr(clients, "find_program", lambda name: None)
     home = tmp_path / "home"
     home.mkdir()
     (home / ".cursor").mkdir()
@@ -498,6 +662,28 @@ def test_removal_undoes_setup_and_keeps_other_entries(tmp_path: Path) -> None:
     assert {c.action for c in plan.changes} == {"unchanged"}
 
 
+def test_removing_one_assistant_keeps_the_shared_copy_others_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # `setup --remove -a claude-code` deleted ~/.agents/skills, which Cursor still read.
+    import git_into_gsoc.install.clients as clients
+
+    monkeypatch.setattr(clients, "find_program", lambda name: None)
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    (home / ".claude").mkdir()
+    run_setup(plan_setup(scope="user", assistants=None, home=home, project=None, command=CMD))
+    shared = home / ".agents/skills/git-into-gsoc"
+    plan = plan_setup(
+        scope="user", assistants=["claude-code"], home=home, project=None, command=CMD
+    )
+    run_removal(plan)
+    assert (shared / "SKILL.md").is_file()
+    assert not (home / ".claude/skills/git-into-gsoc").exists()
+    row = next(c for c in plan.changes if c.path == shared)
+    assert row.action == "skipped" and "Cursor" in row.note
+
+
 JSONC = '{\n  // my servers\n  "mcpServers": {\n    "other": {"command": "x"},\n  }\n}\n'
 
 
@@ -525,6 +711,26 @@ def test_a_config_with_comments_is_left_alone_with_a_manual_step(tmp_path: Path)
     assert not (home / ".cursor/mcp.json.bak").exists()
     step = next(s for s in plan.manual if s.startswith("Cursor"))
     assert SERVER_NAME in step and json.dumps(CMD[0]) in step
+
+
+def test_removal_from_a_config_with_comments_gives_a_manual_step(tmp_path: Path) -> None:
+    # It printed "left as is" under "Removal complete" with nothing to do next.
+    home = tmp_path / "home"
+    (home / ".cursor").mkdir(parents=True)
+    config = home / ".cursor/mcp.json"
+    config.write_text(JSONC, encoding="utf-8")
+    plan = plan_setup(
+        scope="user", assistants=["cursor"], home=home, project=None, command=CMD, use_cli=False
+    )
+    plan.install_skill = False
+    run_removal(plan)
+    assert (plan.changes[0].action, plan.manual) == ("unchanged", [])  # not registered there
+    with_ours = JSONC.replace('"other"', f'"{SERVER_NAME}": {{"command": "x"}},\n    "other"')
+    config.write_text(with_ours, encoding="utf-8")
+    run_removal(plan)
+    assert plan.changes[0].action == "skipped"
+    assert plan.manual == [f"Cursor: remove the {SERVER_NAME} entry from {config} by hand"]
+    assert config.read_text(encoding="utf-8") == with_ours
 
 
 def test_doctor_finds_a_server_added_by_hand_to_a_config_with_comments(tmp_path: Path) -> None:

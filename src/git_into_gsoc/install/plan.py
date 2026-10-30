@@ -10,6 +10,7 @@ from git_into_gsoc.install.clients import (
     ASSISTANTS,
     PLUGIN_REMOVAL,
     SERVER_NAME,
+    SHARED_SKILLS,
     Assistant,
     Change,
     Scope,
@@ -20,6 +21,7 @@ from git_into_gsoc.install.clients import (
     register_codex_toml,
     register_json,
     register_via_cli,
+    registered_entry,
     server_command,
     server_entry,
     skill_locations,
@@ -63,6 +65,12 @@ def plan_setup(
     """Resolve which assistants to configure. ``assistants`` of None means auto-detect."""
     if scope == "project" and project is None:
         raise InstallError("Project scope needs a project directory.", hint="Pass --project-dir.")
+    if project is not None and not project.is_dir():
+        # A typo in --project-dir created a new folder and wrote the setup into it.
+        raise InstallError(
+            f"No folder found at {project}.",
+            hint="Check --project-dir for a typo, or create the folder first.",
+        )
     if assistants:
         unknown = [a for a in assistants if a not in ASSISTANTS and a != "all"]
         if unknown:
@@ -183,12 +191,29 @@ def _rel(path: Path, plan: SetupPlan) -> str:
     return str(path)
 
 
+def _shared_readers(plan: SetupPlan) -> list[str]:
+    """Assistants found on this machine, other than the ones being removed, that read
+    the shared skill copy.
+
+    `setup --remove -a claude-code` used to delete ~/.agents/skills, which Cursor and
+    Codex still read (setup audit, 2026-10-29).
+    """
+    removing = {a.key for a in plan.assistants}
+    return [
+        a.label
+        for a in detect_assistants(plan.home)
+        if a.key not in removing and a.skill_dir_for(plan.scope) == SHARED_SKILLS
+    ]
+
+
 def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
     """Undo what run_setup did for the same scope and assistants."""
     plan.changes = []
     plan.manual = []
     if plan.install_skill:
         removed: set[Path] = set()
+        shared = skill_locations(ASSISTANTS["agents"], plan.scope, plan.root)[0]
+        readers = _shared_readers(plan)
         for assistant in [ASSISTANTS["agents"], *plan.assistants]:
             dest, legacy = skill_locations(assistant, plan.scope, plan.root)
             for path in (dest, *legacy):
@@ -197,6 +222,10 @@ def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
                 removed.add(path)
                 if link := _project_link(plan, path):
                     note = _link_note(link, plan)
+                    plan.changes.append(Change(assistant.label, "skill", path, "skipped", note))
+                    continue
+                if path == shared and readers and path.exists():
+                    note = f"still used by {', '.join(readers)}"
                     plan.changes.append(Change(assistant.label, "skill", path, "skipped", note))
                     continue
                 plan.changes.append(
@@ -250,6 +279,8 @@ def _unregister(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Chan
     else:
         key = "servers" if fmt == "json-servers" else "mcpServers"
         action, note = unregister_json(path, key, dry_run=dry_run)
+    if action == "skipped":
+        plan.manual.append(f"{assistant.label}: remove the {SERVER_NAME} entry from {path} by hand")
     return Change(assistant.label, "mcp", path, action, note)
 
 
@@ -306,11 +337,23 @@ def _register_via_cli(
     if not executable or plan.home.resolve() != Path.home().resolve():
         return None
     where = Path(executable)
+    target = assistant.mcp
+    action = "created"
     if check and register_via_cli(executable, check[1])[0]:
-        return Change(assistant.label, "mcp", where, "unchanged", "already registered")
+        # `claude mcp get` exits 0 even when the registered command no longer exists
+        # (after a move from pipx to uv), so check what it points at as well.
+        old = None
+        if target and target.user_read_path:
+            old = registered_entry(plan.home / target.user_read_path, target.fmt)
+        ours = (plan.command[0], plan.command[1:])
+        if old is None or (old.get("command"), old.get("args")) == ours:
+            return Change(assistant.label, "mcp", where, "unchanged", "already registered")
+        action = "updated"
     if dry_run:
-        return Change(assistant.label, "mcp", where, "created", f"via {cli[0]} {cli[1][0]} add")
+        return Change(assistant.label, "mcp", where, action, f"via {cli[0]} {cli[1][0]} add")
+    if action == "updated" and target and target.cli_remove:
+        register_via_cli(executable, target.cli_remove[1])
     ok, output = register_via_cli(executable, [*cli[1], *plan.command])
     if ok:
-        return Change(assistant.label, "mcp", where, "created", f"via {cli[0]} mcp add")
+        return Change(assistant.label, "mcp", where, action, f"via {cli[0]} mcp add")
     return Change(assistant.label, "mcp", where, "skipped", f"{cli[0]} mcp add failed: {output}")
