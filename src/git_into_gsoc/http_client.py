@@ -21,7 +21,7 @@ import tempfile
 import threading
 import time
 from collections.abc import Callable
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
@@ -41,6 +41,10 @@ PRUNE_INTERVAL_SECONDS = 86400
 # strangers can edit are linked from ideas pages, so a body (after decompression)
 # larger than this is refused instead of filling memory.
 MAX_RESPONSE_BYTES = 64 * 1024 * 1024
+# httpx's timeout restarts with every byte, so a server sending one byte at a time held a
+# call open for good (an audit, 2026-10-29). Ten timeouts (five minutes by default) still
+# let the 15 MB organization list arrive over a 1 Mbit/s connection.
+RESPONSE_DEADLINE_TIMEOUTS = 10
 # Left by a write that was interrupted; a live write finishes in well under this.
 STALE_TMP_SECONDS = 3600
 _PRUNE_MARKER = ".last-pruned"
@@ -57,6 +61,7 @@ class CachedHttpClient:
         cache_root: Path | None = None,
         transport: httpx.BaseTransport | None = None,
         sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.settings = settings or get_settings()
         try:
@@ -68,6 +73,7 @@ class CachedHttpClient:
             log.warning("Running without a response cache: %s", exc)
             self._cache_root = cache_root or (cache_location(self.settings) / "http")
         self._sleep = sleep
+        self._clock = clock
         self._prune_if_due()
         # Service addresses the user configured may be local (a mirror, a test server).
         self._trusted_origins = {
@@ -171,7 +177,9 @@ class CachedHttpClient:
                 if response.status_code >= 400:
                     response.read()
                     if _is_rate_limited(response):
-                        raise _rate_limit_error(response, url, "Authorization" in (headers or {}))
+                        raise _rate_limit_error(
+                            response, url, "Authorization" in (headers or {}), self.settings
+                        )
                     raise _http_error(response, url, self.settings)
                 tail, seen = b"", 0
                 for chunk in response.iter_bytes():
@@ -286,6 +294,9 @@ class CachedHttpClient:
 
         try:
             response = self._send(url, request_headers, params, json_body=json_body)
+            # Parsed here, so a body that is not JSON falls back to the cache below.
+            revalidated = response.status_code == 304 and entry is not None
+            data: Any = None if revalidated else _decode(response, url, kind)
         except (RateLimitError, HttpError) as exc:
             if isinstance(exc, NotFoundError) or entry is None:
                 raise
@@ -305,8 +316,10 @@ class CachedHttpClient:
             self._write_cache(cache_path, entry)
             return entry["data"]
 
-        data: Any = response.json() if kind == "json" else response.text
-        if use_cache:
+        # GraphQL reports a failure such as RATE_LIMITED inside a 200, and a cached one
+        # hid the data for the whole TTL (an audit, 2026-10-29).
+        failed_query = json_body is not None and isinstance(data, dict) and data.get("errors")
+        if use_cache and not failed_query:
             self._write_cache(
                 cache_path,
                 {
@@ -345,6 +358,14 @@ class CachedHttpClient:
                     url=url,
                     hint="Check your connection; cached data is used when available.",
                 ) from exc
+            except httpx.RequestError as exc:
+                # A redirect loop (TooManyRedirects) fails the same way every time.
+                raise HttpError(
+                    f"Could not read {_host(url)}: {exc}",
+                    url=url,
+                    hint="Open the address in a browser to see what it does; cached data is "
+                    "used when available.",
+                ) from exc
 
             if response.status_code < 400 or response.status_code == 304:
                 return response
@@ -358,7 +379,7 @@ class CachedHttpClient:
                 ):
                     self._sleep(wait)
                     continue
-                raise _rate_limit_error(response, url, authenticated)
+                raise _rate_limit_error(response, url, authenticated, self.settings)
 
             if response.status_code in _RETRY_STATUSES and attempt + 1 < attempts:
                 self._sleep(min(2**attempt * 0.5, self.settings.http_max_retry_wait_seconds))
@@ -401,6 +422,8 @@ class CachedHttpClient:
             method, url, headers=headers, params=params, json=json_body
         )
         undecodable = f"The response from {_host(url)} could not be decompressed."
+        seconds = RESPONSE_DEADLINE_TIMEOUTS * self.settings.http_timeout_seconds
+        deadline = self._clock() + seconds
         try:
             response = self._client.send(request, stream=True)
         except httpx.DecodingError as exc:
@@ -416,6 +439,13 @@ class CachedHttpClient:
                         f"{MAX_RESPONSE_BYTES // 1_048_576} MB, so it was not read.",
                         url=url,
                         hint="Open the page in a browser instead.",
+                    )
+                if self._clock() > deadline:
+                    raise HttpError(
+                        f"{_host(url)} took longer than {seconds:.0f} seconds to answer, "
+                        "so the request was stopped.",
+                        url=url,
+                        hint="Try again later; cached data is used when available.",
                     )
                 chunks.append(chunk)
         except httpx.DecodingError as exc:
@@ -470,6 +500,23 @@ class CachedHttpClient:
                     os.unlink(tmp)
 
 
+def _decode(response: httpx.Response, url: str, kind: str) -> Any:
+    """The body as text, or parsed as JSON; raises HttpError when it is not JSON."""
+    if kind != "json":
+        return response.text
+    try:
+        return response.json()
+    except ValueError as exc:
+        # A Wi-Fi sign-in page answers every address with 200 and a web page, and so
+        # does a site that is not GitLab behind a link shaped like a GitLab issue.
+        raise HttpError(
+            f"The answer from {_host(url)} is not JSON, the data this tool reads.",
+            url=url,
+            hint="If a Wi-Fi network asks you to sign in, do that in a browser and try "
+            "again. Otherwise check the address; cached data is used when available.",
+        ) from exc
+
+
 def _unlink(path: Path) -> int:
     """1 when the file was removed; another process may have removed it first."""
     try:
@@ -488,13 +535,16 @@ def _origin(url: httpx.URL) -> tuple[str, str, int | None]:
 
 
 _LOCAL_SUFFIXES = (".localhost", ".local", ".internal", ".home.arpa", ".lan")
+# IPv4-compatible (::/96) and NAT64 (64:ff9b::/96) addresses carry an IPv4 address in
+# their last 32 bits, so [64:ff9b::a9fe:a9fe] reaches 169.254.169.254 on a NAT64 network.
+_EMBEDDED_IPV4 = (ipaddress.IPv6Network("::/96"), ipaddress.IPv6Network("64:ff9b::/96"))
 
 
 def is_private_host(host: str) -> bool:
     """True when a host names this computer or a private network.
 
-    Covers local names and every way of writing an address directly
-    (127.1, 2130706433, 0x7f.0.0.1, [::1], ::ffff:127.0.0.1). Public names that
+    Covers local names, names without a dot, and every way of writing an address
+    directly (127.1, 2130706433, 0x7f.0.0.1, [::1], ::ffff:127.0.0.1). Public names that
     resolve to private addresses are not caught here; that would need a DNS lookup
     per request.
     """
@@ -506,6 +556,8 @@ def is_private_host(host: str) -> bool:
     try:
         address: ipaddress.IPv4Address | ipaddress.IPv6Address = ipaddress.ip_address(name)
     except ValueError:
+        if "." not in name:
+            return True  # resolved on the local network: instance-data on AWS, a router's nas
         if not all(part.isalnum() for part in name.split(".")):
             return False  # a hostname with hyphens or underscores, never an address
         try:
@@ -513,6 +565,8 @@ def is_private_host(host: str) -> bool:
         except OSError:
             return False
     mapped = getattr(address, "ipv4_mapped", None)
+    if mapped is None and any(address in network for network in _EMBEDDED_IPV4):
+        mapped = ipaddress.IPv4Address(int(address) & 0xFFFFFFFF)
     return not (mapped or address).is_global
 
 
@@ -577,15 +631,36 @@ def _retry_after_seconds(response: httpx.Response) -> float | None:
             when = parsedate_to_datetime(value)
         except (TypeError, ValueError):
             return None
+        if when.tzinfo is None:  # "-0000" means "zone unknown"; HTTP dates are UTC
+            when = when.replace(tzinfo=UTC)
         return max(0.0, (when - datetime.now(UTC)).total_seconds())
 
 
-def _rate_limit_error(response: httpx.Response, url: str, authenticated: bool) -> RateLimitError:
+def _rate_limit_error(
+    response: httpx.Response, url: str, authenticated: bool, settings: Settings
+) -> RateLimitError:
     reset_at = None
+    wait = _retry_after_seconds(response)
     reset = response.headers.get("x-ratelimit-reset")
-    if reset and reset.isdigit():
+    if wait is not None:
+        # A secondary limit leaves x-ratelimit-reset at the primary limit's reset, up to
+        # an hour away; Retry-After says when to try again.
+        reset_at = datetime.now(UTC) + timedelta(seconds=wait)
+    elif reset and reset.isdigit():
         reset_at = datetime.fromtimestamp(int(reset), tz=UTC)
     when = f"; it {reset_phrase(reset_at)}" if reset_at else ""
+    host = _host(url)
+    github = {"github.com", _host(settings.github_api_url)}
+    if host not in github and not host.endswith(".github.com"):
+        # A GitLab server or an ideas page said 429; a GitHub token does not help there.
+        return RateLimitError(
+            f"{host} has limited how many requests this tool can make{when}",
+            reset_at=reset_at,
+            status_code=response.status_code,
+            url=url,
+            authenticated=authenticated,
+            resource="other",
+        )
     resource = response.headers.get("x-ratelimit-resource") or (
         "search" if "/search/" in url else "core"
     )

@@ -57,6 +57,9 @@ from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import parse_repo, validate_login
 
 MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample is short
+# Each page is one of the 60 requests an hour GitHub allows without a token, so a few long
+# threads must not use them up; past 500 events, the newest ones are still not read.
+MAX_TIMELINE_PAGES = 5
 
 
 def _parse_dt(value: str | None) -> datetime | None:
@@ -184,7 +187,10 @@ class GitHubClient:
         use_cache: bool = True,
         accept: str | None = None,
     ) -> Any:
-        url = f"{self.settings.github_api_url.rstrip('/')}/{quote(path.lstrip('/'), safe='/')}"
+        # Callers quote a branch name so its slash becomes %2F; quoting that again sent
+        # release%252F1.x, and the tree and branch rules came back empty (an audit,
+        # 2026-10-29). A literal % in a path must be quoted by the caller.
+        url = f"{self.settings.github_api_url.rstrip('/')}/{quote(path.lstrip('/'), safe='/%')}"
         headers = self._headers()
         if accept:
             headers["Accept"] = accept
@@ -201,7 +207,8 @@ class GitHubClient:
             ) from exc
 
     def rate_limit(self) -> dict[str, Any]:
-        data = self._api("rate_limit")
+        # Never cached: GitHub does not count this call, and an hour-old count misled doctor.
+        data = self._api("rate_limit", use_cache=False)
         core = data.get("resources", {}).get("core", {})
         return {
             "limit": core.get("limit"),
@@ -384,20 +391,32 @@ class GitHubClient:
         return data if isinstance(data, dict) else None
 
     def get_issue_timeline(self, owner: str, repo: str, number: int) -> list[dict[str, Any]] | None:
-        """Timeline events for an issue, or None when GitHub could not be reached."""
+        """Timeline events for an issue, or None when GitHub could not be reached.
+
+        GitHub sends them oldest first, so the next page is read while a page is full:
+        on an issue with more than 100 events, a claim or pull request made since sat on
+        page 2 and the issue read as available (an audit, 2026-10-29).
+        """
         owner, repo = parse_repo(f"{owner}/{repo}")
-        try:
-            data = self._api(
-                f"repos/{owner}/{repo}/issues/{int(number)}/timeline",
-                params={"per_page": 100},
-                ttl=300,
-            )
-        except RateLimitError as err:
-            self.rate_limited = err
-            return None
-        except HttpError:
-            return None
-        return data if isinstance(data, list) else []
+        events: list[dict[str, Any]] = []
+        for page in range(1, MAX_TIMELINE_PAGES + 1):
+            try:
+                data = self._api(
+                    f"repos/{owner}/{repo}/issues/{int(number)}/timeline",
+                    params={"per_page": 100, "page": page},
+                    ttl=300,
+                )
+            except RateLimitError as err:
+                self.rate_limited = err
+                return None
+            except HttpError:
+                return None
+            if not isinstance(data, list):
+                break
+            events.extend(data)
+            if len(data) < 100:
+                break
+        return events
 
     def list_pulls(
         self,
@@ -417,7 +436,7 @@ class GitHubClient:
     def contents_exists(self, owner: str, repo: str, path: str) -> bool:
         owner, repo = parse_repo(f"{owner}/{repo}")
         try:
-            self._api(f"repos/{owner}/{repo}/contents/{path}")
+            self._api(f"repos/{owner}/{repo}/contents/{quote(path)}")
             return True
         except NotFoundError:
             return False
