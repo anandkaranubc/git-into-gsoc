@@ -57,8 +57,8 @@ class NotFoundError(HttpError):
 
 
 class RateLimitError(HttpError):
-    """GitHub's request limit was hit. The hint depends on the resource (core or
-    search) and on whether a token was used."""
+    """A site's request limit was hit. The hint depends on the resource (GitHub's core
+    or search, or `other` for another site) and on whether a token was used."""
 
     def __init__(
         self,
@@ -80,7 +80,7 @@ class RateLimitError(HttpError):
                 "GitHub search allows 10 requests a minute without a token and 30 with one; "
                 "wait a minute, or run `gh auth login` to get the higher limit."
             )
-        elif authenticated:
+        elif authenticated or resource == "other":
             hint = "Wait a few minutes; cached results keep working meanwhile."
         else:
             hint = (

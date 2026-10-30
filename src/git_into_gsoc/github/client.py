@@ -207,7 +207,8 @@ class GitHubClient:
             ) from exc
 
     def rate_limit(self) -> dict[str, Any]:
-        data = self._api("rate_limit")
+        # Never cached: GitHub does not count this call, and an hour-old count misled doctor.
+        data = self._api("rate_limit", use_cache=False)
         core = data.get("resources", {}).get("core", {})
         return {
             "limit": core.get("limit"),

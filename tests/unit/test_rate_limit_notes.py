@@ -97,3 +97,17 @@ def test_a_timeline_read_that_hits_the_limit_is_remembered() -> None:
     assert client.get_issue_timeline("acme", "lib", 7) is None
     assert client.rate_limited is not None
     assert "resets in 10 minutes" in str(client.rate_limited)
+
+
+@respx.mock
+def test_the_remaining_count_is_never_read_from_the_cache() -> None:
+    route = respx.get("https://api.github.com/rate_limit").mock(
+        side_effect=[
+            httpx.Response(200, json={"resources": {"core": {"limit": 60, "remaining": 60}}}),
+            httpx.Response(200, json={"resources": {"core": {"limit": 60, "remaining": 3}}}),
+        ]
+    )
+    client = GitHubClient()
+    assert client.rate_limit()["remaining"] == 60
+    assert client.rate_limit()["remaining"] == 3
+    assert route.call_count == 2

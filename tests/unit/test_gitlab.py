@@ -125,9 +125,10 @@ def test_other_statuses(extra: dict[str, Any], status: str) -> None:
     assert found["availability"] == status
 
 
-def test_an_unreadable_issue_says_what_to_do() -> None:
+@pytest.mark.parametrize("routes", [{}, {API: []}])
+def test_an_unreadable_issue_says_what_to_do(routes: dict[str, Any]) -> None:
     with pytest.raises(NotFoundError) as failed:
-        gitlab_issue_status(FakeHttp({}), "https://gitlab.gnome.org/GNOME/gitg/-/issues/494")  # type: ignore[arg-type]
+        gitlab_issue_status(FakeHttp(routes), "https://gitlab.gnome.org/GNOME/gitg/-/issues/494")  # type: ignore[arg-type]
     assert failed.value.hint and "check for an assignee" in failed.value.hint
 
 

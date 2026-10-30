@@ -17,6 +17,7 @@ from git_into_gsoc.errors import HttpError, NotFoundError, RateLimitError
 from git_into_gsoc.http_client import CachedHttpClient
 
 URL = "https://example.test/data.json"
+GITHUB = "https://api.github.com/repos/acme/lib"
 
 
 def make_client(tmp_path: Path, **overrides: object) -> tuple[CachedHttpClient, list[float]]:
@@ -84,7 +85,7 @@ def test_retries_transient_server_errors(tmp_path: Path) -> None:
 @respx.mock
 def test_rate_limit_raises_with_reset_and_hint(tmp_path: Path) -> None:
     reset = int(time.time()) + 600
-    respx.get(URL).mock(
+    respx.get(GITHUB).mock(
         return_value=httpx.Response(
             403,
             json={"message": "API rate limit exceeded"},
@@ -93,7 +94,7 @@ def test_rate_limit_raises_with_reset_and_hint(tmp_path: Path) -> None:
     )
     client, _ = make_client(tmp_path)
     with pytest.raises(RateLimitError) as info:
-        client.get_json(URL, use_cache=False)
+        client.get_json(GITHUB, use_cache=False)
     assert info.value.reset_in_seconds is not None
     assert "gh auth login" in (info.value.hint or "")
 
@@ -197,6 +198,88 @@ def test_search_rate_limit_gets_a_search_specific_hint() -> None:
         client.get_json("https://api.github.com/repos/a/b")
     assert core.value.resource == "core"
     assert "gh auth login" in (core.value.hint or "")
+
+
+@respx.mock
+def test_an_answer_that_is_not_json_is_explained(tmp_path: Path) -> None:
+    portal = httpx.Response(200, text="<html>Sign in to the Wi-Fi</html>")
+    respx.get(URL).mock(side_effect=[httpx.Response(200, json={"v": 1}), portal, portal])
+    client, _ = make_client(tmp_path)
+    assert client.get_json(URL, ttl=0) == {"v": 1}
+    time.sleep(0.01)
+    assert client.get_json(URL, ttl=0) == {"v": 1}  # the recent copy stands in
+    with pytest.raises(HttpError, match="not JSON") as failed:
+        client.get_json(URL, use_cache=False)
+    assert "Wi-Fi" in (failed.value.hint or "")
+
+
+@respx.mock
+def test_a_redirect_loop_is_explained_and_not_retried(tmp_path: Path) -> None:
+    respx.get(URL).mock(return_value=httpx.Response(302, headers={"Location": URL}))
+    client, sleeps = make_client(tmp_path)
+    with pytest.raises(HttpError, match="redirects"):
+        client.get_text(URL)
+    assert sleeps == []
+
+
+@respx.mock
+def test_a_retry_after_date_without_a_time_zone_counts_as_utc(tmp_path: Path) -> None:
+    from datetime import UTC, datetime, timedelta
+    from email.utils import format_datetime
+
+    later = datetime.now(UTC).replace(tzinfo=None) + timedelta(minutes=10)
+    stamp = format_datetime(later)
+    assert stamp.endswith("-0000")
+    respx.get(URL).mock(return_value=httpx.Response(429, headers={"Retry-After": stamp}))
+    client, _ = make_client(tmp_path)
+    with pytest.raises(RateLimitError) as limited:
+        client.get_json(URL, use_cache=False)
+    assert 500 < (limited.value.reset_in_seconds or 0) <= 600
+
+
+@respx.mock
+def test_a_limit_on_another_site_names_it_and_does_not_suggest_gh(tmp_path: Path) -> None:
+    respx.get(URL).mock(return_value=httpx.Response(429))
+    client, _ = make_client(tmp_path)
+    with pytest.raises(RateLimitError) as limited:
+        client.get_json(URL, use_cache=False)
+    assert "example.test" in str(limited.value)
+    assert "GitHub" not in str(limited.value)
+    assert "gh auth" not in (limited.value.hint or "")
+
+
+@respx.mock
+def test_a_secondary_limit_resets_when_retry_after_says(tmp_path: Path) -> None:
+    respx.get(GITHUB).mock(
+        return_value=httpx.Response(
+            403,
+            json={"message": "You have exceeded a secondary rate limit."},
+            headers={
+                "Retry-After": "60",
+                "x-ratelimit-remaining": "4800",
+                "x-ratelimit-reset": str(int(time.time()) + 3000),
+            },
+        )
+    )
+    client, _ = make_client(tmp_path)
+    with pytest.raises(RateLimitError, match="secondary rate limit") as limited:
+        client.get_json(GITHUB, headers={"Authorization": "Bearer t"}, use_cache=False)
+    assert 50 < (limited.value.reset_in_seconds or 0) <= 60
+
+
+@respx.mock
+def test_a_graphql_answer_with_errors_is_not_cached(tmp_path: Path) -> None:
+    graphql = "https://example.test/graphql"
+    route = respx.post(graphql).mock(
+        side_effect=[
+            httpx.Response(200, json={"errors": [{"type": "RATE_LIMITED"}]}),
+            httpx.Response(200, json={"data": {"ok": True}}),
+        ]
+    )
+    client, _ = make_client(tmp_path)
+    client.post_json(graphql, {"query": "q"})
+    assert client.post_json(graphql, {"query": "q"}) == {"data": {"ok": True}}
+    assert route.call_count == 2
 
 
 def _aged(path: Path, days: float, size: int = 10) -> Path:

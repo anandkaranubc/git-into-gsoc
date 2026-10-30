@@ -152,21 +152,24 @@ def gitlab_issue_status(
         raise NotFoundError(f"Not a GitLab issue link: {url}")
     host, project, number = parsed
     api = f"https://{host}/api/v4/projects/{quote(project, safe='')}/issues/{number}"
+    unreadable = NotFoundError(
+        f"Could not read {host}/{project} issue {number} through GitLab's public API",
+        hint="It may be private, deleted, or on a host that is not GitLab. Open the link "
+        "and check for an assignee, a merge request, and recent claims yourself.",
+    )
     try:
         issue = http.get_json(api, ttl=300)
     except GigError as exc:
-        raise NotFoundError(
-            f"Could not read {host}/{project} issue {number} through GitLab's public API",
-            hint="It may be private, deleted, or on a host that is not GitLab. Open the link "
-            "and check for an assignee, a merge request, and recent claims yourself.",
-        ) from exc
+        raise unreadable from exc
+    if not isinstance(issue, dict):  # a host that is not GitLab can answer with a list
+        raise unreadable
     try:
         merge_requests = http.get_json(f"{api}/related_merge_requests", ttl=300)
     except GigError:
         merge_requests = []
     now = datetime.now(UTC)
     status, reason, linked, caveats = _status(
-        issue if isinstance(issue, dict) else {},
+        issue,
         merge_requests if isinstance(merge_requests, list) else [],
         project=project,
         now=now,
