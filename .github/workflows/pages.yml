@@ -14,9 +14,11 @@ permissions:
   pages: write
   id-token: write
 
+# A deployment cut off halfway can leave the site half updated; let it finish and
+# queue the next one, as GitHub's own Pages workflow does.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
