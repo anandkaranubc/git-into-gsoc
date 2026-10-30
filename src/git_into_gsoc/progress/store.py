@@ -293,10 +293,15 @@ class ProgressStore:
         return self.save(state)
 
     @_mutating
-    def mark_checked(self, statuses: dict[str, str], at: datetime) -> ProgressState:
+    def mark_checked(self, statuses: dict[str, str], at: datetime | None) -> ProgressState:
+        """Save the statuses a check could tell, and `at` as the check time unless None.
+
+        "unknown" (offline, rate limited) never replaces what an earlier check saw.
+        """
         state = self.load()
-        state.issue_status.update(statuses)
-        state.last_checked_at = at
+        state.issue_status.update({k: v for k, v in statuses.items() if v != "unknown"})
+        if at is not None:
+            state.last_checked_at = at
         return self.save(state)
 
     @_mutating

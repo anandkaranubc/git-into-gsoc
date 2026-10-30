@@ -2140,6 +2140,8 @@ def next_cmd(
             console.print(
                 f"  [{style}]{item['availability']:<12}[/] {item['ref']}  [dim]{escape(item['reason'])}[/dim]"
             )
+    if data.get("not_checked"):
+        console.print(f"  [dim]{escape(data['not_checked'])}[/dim]")
     if data.get("open_pull_requests"):
         console.print("\n[bold]Your open pull requests[/bold]")
         for pr in data["open_pull_requests"]:

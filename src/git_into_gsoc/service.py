@@ -178,6 +178,9 @@ _COMMON_BEGINNER_LABELS = (
 # An organization counts as matching someone's interests from this interest fit up; a
 # passing mention in its description (LLVM mentions "embedded") stays below it.
 INTEREST_MATCH = 0.5
+# `next` re-checks this many of the newest tracked issues and repositories, which keeps
+# one run to about a dozen API calls.
+RECHECK_LIMIT = 10
 HOW_RANKED = (
     "Fit compares your skills and interests with each organization's official listing, its "
     "ideas page, and its GitHub repositories; every reason names its source. It says how well "
@@ -2148,6 +2151,7 @@ class GSoCToolkit:
     ) -> dict[str, Any]:
         """What to do right now: phase, deadlines, tracked-issue changes, new issues, actions."""
         now = now or datetime.now(UTC)
+        year = validate_year(year, latest=latest_program_year(self.settings))
         year = year or self.settings.target_year
         offline = False
         try:
@@ -2162,7 +2166,7 @@ class GSoCToolkit:
         statuses: dict[str, str] = {}
         if recheck and state.tracked_issues:
             refs: list[tuple[str, str, str, int]] = []
-            for raw in state.tracked_issues[:10]:
+            for raw in state.tracked_issues[-RECHECK_LIMIT:]:
                 try:
                     owner, repo, num = parse_issue_ref(raw)
                 except GigError:
@@ -2189,13 +2193,15 @@ class GSoCToolkit:
                         "availability": status,
                         "reason": reason,
                         "previous": previous,
-                        "changed": bool(previous and previous != status),
+                        # "unknown" means the check could not tell (offline, rate limited).
+                        "changed": bool(previous and status != "unknown" and previous != status),
                     }
                     tracked.append(entry)
                     if entry["changed"]:
                         changes.append(f"{key} went from {previous} to {status}: {reason}")
 
-        new_issues = self._new_beginner_issues(state, now=now) if recheck else []
+        found_issues = self._new_beginner_issues(state, now=now) if recheck else []
+        new_issues = found_issues or []
         org_posts = self._shortlist_posts(state, year) if recheck else []
         github_login = str((state.profile or {}).get("github") or "").strip()
         open_prs = (
@@ -2216,8 +2222,9 @@ class GSoCToolkit:
         if recheck:
             # Where the progress folder cannot be written (a sandboxed assistant), the
             # results still count; the next run just reports the same changes again.
+            # A failed search keeps the old check time, so its window is searched next run.
             with contextlib.suppress(InputError):
-                self.progress.mark_checked(statuses, now)
+                self.progress.mark_checked(statuses, now if found_issues is not None else None)
 
         # Plan around orgs that are taking part; one that says it is sitting out goes last.
         sitting_out = {p["org"] for p in org_posts if p["status"] == "not_taking_part"}
@@ -2268,6 +2275,7 @@ class GSoCToolkit:
             "hours_note": hours_note((state.profile or {}).get("hours_per_week")),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
+            "not_checked": _not_checked(state) if recheck else None,
             "open_pull_requests": open_prs,
             "merged_pull_requests": merged_news,
             "first_merge": first_merge and bool(merged_news),
@@ -3448,11 +3456,14 @@ class GSoCToolkit:
             post["org"] = owners.get(post["repo"].split("/")[0].lower(), post["repo"])
         return posts[:5]
 
-    def _new_beginner_issues(self, state: ProgressState, *, now: datetime) -> list[dict[str, Any]]:
-        """Beginner issues created in tracked repos / shortlisted orgs since the last check."""
+    def _new_beginner_issues(
+        self, state: ProgressState, *, now: datetime
+    ) -> list[dict[str, Any]] | None:
+        """Beginner issues created in tracked repos / shortlisted orgs since the last check,
+        or None when the search failed."""
         since = state.last_checked_at or (now - timedelta(days=14))
         scope: list[str] = []
-        for raw in state.tracked_repos[:10]:
+        for raw in state.tracked_repos[-RECHECK_LIMIT:]:
             try:
                 owner, repo = parse_repo(raw)
             except GigError:
@@ -3486,7 +3497,7 @@ class GSoCToolkit:
         try:
             items = self.github.search_issues(query, per_page=20, sort="created")
         except HttpError:
-            return []
+            return None
         out = []
         for item in items:
             if "pull_request" in item:
@@ -3508,6 +3519,22 @@ class GSoCToolkit:
                 }
             )
         return out[:10]
+
+
+def _not_checked(state: ProgressState) -> str | None:
+    """Which tracked items `next` left out, and where to see them, or None."""
+    left_out = [
+        f"{len(items) - RECHECK_LIMIT} of your {len(items)} tracked {what}"
+        for what, items in (("issues", state.tracked_issues), ("repositories", state.tracked_repos))
+        if len(items) > RECHECK_LIMIT
+    ]
+    if not left_out:
+        return None
+    return (
+        f"Only the newest {RECHECK_LIMIT} tracked issues and repositories are re-checked. "
+        f"Left out: {', '.join(left_out)}. See them all with git-into-gsoc progress, and "
+        "check one issue with git-into-gsoc issue OWNER/REPO#NUMBER."
+    )
 
 
 def _license_label(license_obj: Any) -> str | None:
