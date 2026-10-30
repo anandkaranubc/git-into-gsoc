@@ -206,12 +206,12 @@ git-into-gsoc setup --scope project --assistant claude-code --assistant cursor
 |---|---|
 | `--assistant` / `-a NAME` | `claude-code`, `cursor`, `codex`, `gemini`, `antigravity`, `windsurf` (Devin Desktop), `vscode` (VS Code and Copilot CLI), or `all`. Default: every assistant with a config folder or executable on this machine |
 | `--scope user` (default) | One shared skill copy in `~/.agents/skills`, which Codex, Cursor, Gemini CLI, Devin Desktop, VS Code, and Copilot CLI all read, plus `~/.claude/skills` for Claude Code and `~/.gemini/config/skills` for Antigravity. The MCP server goes into each assistant's user config (Claude Code via `claude mcp add` when available). Copies that older versions left in `~/.cursor/skills`, `~/.codex/skills`, `~/.gemini/skills`, or `~/.codeium/windsurf/skills` are removed, so the skill is listed once. An assistant that already has the git-into-gsoc plugin or extension is left to it |
-| `--scope project` | The same inside the current repository (`.agents/skills`, `.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `.codex/config.toml`, and so on); `--project-dir` picks another folder |
+| `--scope project` | The same inside the current repository (`.agents/skills`, `.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `.codex/config.toml`, and so on); `--project-dir` picks another folder, which must already exist |
 | `--no-skill`, `--no-mcp` | Do only one of the two jobs |
 | `--dry-run` | Print the plan without writing |
-| `--remove` | Undo: delete the skill copies and remove the MCP registrations for the same scope and assistants, keeping every other entry in those files |
+| `--remove` | Undo: delete the skill copies and remove the MCP registrations for the same scope and assistants, keeping every other entry in those files. The shared `.agents/skills` copy stays while another assistant found on this machine still reads it |
 
-Setup merges into existing JSON and TOML files rather than replacing them, writes a `.bak` copy first, refuses to touch a file it cannot parse, and reports `unchanged` on re-runs. An assistant it cannot configure gets a printed manual command. [Use it in your AI assistant](assistants.md) covers each assistant; [configuration](configuration.md) covers tokens and settings.
+Setup merges into existing JSON and TOML files rather than replacing them. In its own `git-into-gsoc` entry it changes only the command and the settings it needs, so settings you added there, such as `env` or `disabled`, stay. It writes a `.bak` copy first, refuses to touch a file it cannot parse, and reports `unchanged` on re-runs. With `--scope project`, it never follows a symbolic link (a file that points somewhere else) inside the project, so a cloned repository cannot steer it into other folders; that file or folder is reported as `skipped`. An assistant it cannot configure gets a printed manual command. [Use it in your AI assistant](assistants.md) covers each assistant; [configuration](configuration.md) covers tokens and settings.
 
 ## Use output in a script
 
