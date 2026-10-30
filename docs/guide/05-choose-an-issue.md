@@ -113,7 +113,7 @@ git-into-gsoc issue https://github.com/OWNER/REPO/issues/NUMBER
 
 It lists linked PRs with their state and author, every claim with its age and whether a maintainer approved it, whether maintainers have engaged at all, and caveats such as "Merged PR #12 mentions this issue; read it to see whether it already fixes part of it". A closed or merged pull request that only mentions the issue is marked "mentions this issue", so you can tell it from work on it. Below that is a short checklist to complete before you write anything in the thread. If an open pull request already references the issue but has been quiet for ninety days or more, it says so and suggests asking its author in the thread before you start. If an earlier pull request that said it fixes the issue was closed without merging, it says so: read that pull request's review comments before you start, because they show what the maintainers expect. A closed one that only mentions the issue is marked as a mention instead; if it did try, its review comments are still worth reading.
 
-Availability is an estimate from public data. The tool reads up to 100 timeline events, so very long threads may hide a claim. Read the discussion yourself before starting. Results are cached briefly; add `--output json` to see the full assessment.
+Availability is an estimate from public data. The tool reads up to 500 timeline events, so very long threads may hide a claim. Read the discussion yourself before starting. Results are cached briefly; add `--output json` to see the full assessment.
 
 ## Choose one understandable task
 
