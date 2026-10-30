@@ -57,6 +57,9 @@ from git_into_gsoc.text import clean_untrusted
 from git_into_gsoc.validation import parse_repo, validate_login
 
 MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample is short
+# Each page is one of the 60 requests an hour GitHub allows without a token, so a few long
+# threads must not use them up; past 500 events, the newest ones are still not read.
+MAX_TIMELINE_PAGES = 5
 
 
 def _parse_dt(value: str | None) -> datetime | None:
@@ -384,20 +387,32 @@ class GitHubClient:
         return data if isinstance(data, dict) else None
 
     def get_issue_timeline(self, owner: str, repo: str, number: int) -> list[dict[str, Any]] | None:
-        """Timeline events for an issue, or None when GitHub could not be reached."""
+        """Timeline events for an issue, or None when GitHub could not be reached.
+
+        GitHub sends them oldest first, so the next page is read while a page is full:
+        on an issue with more than 100 events, a claim or pull request made since sat on
+        page 2 and the issue read as available (an audit, 2026-10-29).
+        """
         owner, repo = parse_repo(f"{owner}/{repo}")
-        try:
-            data = self._api(
-                f"repos/{owner}/{repo}/issues/{int(number)}/timeline",
-                params={"per_page": 100},
-                ttl=300,
-            )
-        except RateLimitError as err:
-            self.rate_limited = err
-            return None
-        except HttpError:
-            return None
-        return data if isinstance(data, list) else []
+        events: list[dict[str, Any]] = []
+        for page in range(1, MAX_TIMELINE_PAGES + 1):
+            try:
+                data = self._api(
+                    f"repos/{owner}/{repo}/issues/{int(number)}/timeline",
+                    params={"per_page": 100, "page": page},
+                    ttl=300,
+                )
+            except RateLimitError as err:
+                self.rate_limited = err
+                return None
+            except HttpError:
+                return None
+            if not isinstance(data, list):
+                break
+            events.extend(data)
+            if len(data) < 100:
+                break
+        return events
 
     def list_pulls(
         self,
