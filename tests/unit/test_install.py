@@ -397,6 +397,70 @@ def test_run_setup_project_scope_writes_into_project(tmp_path: Path) -> None:
     assert not any(home.iterdir())
 
 
+def _plant_links(project: Path, outside: Path) -> None:
+    """Links a cloned repository can commit next to the files project setup writes."""
+    (project / ".git/hooks").mkdir(parents=True)
+    (project / ".mcp.json").write_text('{"mcpServers": {}}\n', encoding="utf-8")
+    (project / ".claude").mkdir()
+    (project / ".codex").mkdir()
+    (outside / "data/git-into-gsoc").mkdir(parents=True)
+    (outside / "data/git-into-gsoc/progress.json").write_text("{}", encoding="utf-8")
+    try:
+        (project / ".mcp.json.bak").symlink_to(project / ".git/hooks/pre-commit")
+        (project / ".claude/skills").symlink_to(outside / "data", target_is_directory=True)
+        (project / ".codex/config.toml").symlink_to(outside / "created.toml")
+    except OSError:
+        pytest.skip("symlinks need extra rights on this system")
+
+
+def test_project_setup_never_follows_a_link_inside_the_project(tmp_path: Path) -> None:
+    home, project, outside = tmp_path / "home", tmp_path / "proj", tmp_path / "outside"
+    home.mkdir()
+    project.mkdir()
+    _plant_links(project, outside)
+    plan = plan_setup(
+        scope="project",
+        assistants=["claude-code", "codex"],
+        home=home,
+        project=project,
+        command=CMD,
+    )
+    run_setup(plan)
+    assert not (project / ".git/hooks/pre-commit").exists()
+    assert (project / ".mcp.json").read_text(encoding="utf-8") == '{"mcpServers": {}}\n'
+    assert (outside / "data/git-into-gsoc/progress.json").read_text(encoding="utf-8") == "{}"
+    assert not (outside / "created.toml").exists()
+    skipped = {c.path: c.note for c in plan.changes if c.action == "skipped"}
+    assert set(skipped) == {
+        project / ".mcp.json",
+        project / ".claude/skills/git-into-gsoc",
+        project / ".codex/config.toml",
+    }
+    assert all("symbolic link" in note for note in skipped.values())
+    assert (project / ".agents/skills/git-into-gsoc/SKILL.md").is_file()
+
+
+def test_project_removal_never_follows_a_link_inside_the_project(tmp_path: Path) -> None:
+    home, project, outside = tmp_path / "home", tmp_path / "proj", tmp_path / "outside"
+    home.mkdir()
+    project.mkdir()
+    _plant_links(project, outside)
+    (outside / "data/git-into-gsoc/SKILL.md").write_text(
+        "---\nname: git-into-gsoc\n---\n", encoding="utf-8"
+    )
+    plan = plan_setup(
+        scope="project",
+        assistants=["claude-code", "codex"],
+        home=home,
+        project=project,
+        command=CMD,
+    )
+    run_removal(plan)
+    assert (outside / "data/git-into-gsoc/progress.json").is_file()
+    assert not (outside / "created.toml").exists()
+    assert not (project / ".git/hooks/pre-commit").exists()
+
+
 def test_removal_undoes_setup_and_keeps_other_entries(tmp_path: Path) -> None:
     home = tmp_path / "home"
     home.mkdir()
