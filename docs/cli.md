@@ -209,9 +209,9 @@ git-into-gsoc setup --scope project --assistant claude-code --assistant cursor
 | `--scope project` | The same inside the current repository (`.agents/skills`, `.claude/skills`, `.mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`, `.codex/config.toml`, and so on); `--project-dir` picks another folder |
 | `--no-skill`, `--no-mcp` | Do only one of the two jobs |
 | `--dry-run` | Print the plan without writing |
-| `--remove` | Undo: delete the skill copies and remove the MCP registrations for the same scope and assistants, keeping every other entry in those files |
+| `--remove` | Undo: delete the skill copies and remove the MCP registrations for the same scope and assistants, keeping every other entry in those files. The shared `.agents/skills` copy stays while another assistant found on this machine still reads it |
 
-Setup merges into existing JSON and TOML files rather than replacing them, writes a `.bak` copy first, refuses to touch a file it cannot parse, and reports `unchanged` on re-runs. An assistant it cannot configure gets a printed manual command. [Use it in your AI assistant](assistants.md) covers each assistant; [configuration](configuration.md) covers tokens and settings.
+Setup merges into existing JSON and TOML files rather than replacing them. In its own `git-into-gsoc` entry it changes only the command and the settings it needs, so settings you added there, such as `env` or `disabled`, stay. It writes a `.bak` copy first, refuses to touch a file it cannot parse, and reports `unchanged` on re-runs. An assistant it cannot configure gets a printed manual command. [Use it in your AI assistant](assistants.md) covers each assistant; [configuration](configuration.md) covers tokens and settings.
 
 ## Use output in a script
 

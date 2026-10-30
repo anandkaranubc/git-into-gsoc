@@ -10,6 +10,7 @@ from git_into_gsoc.install.clients import (
     ASSISTANTS,
     PLUGIN_REMOVAL,
     SERVER_NAME,
+    SHARED_SKILLS,
     Assistant,
     Change,
     Scope,
@@ -152,18 +153,39 @@ def _rel(path: Path, plan: SetupPlan) -> str:
     return str(path)
 
 
+def _shared_readers(plan: SetupPlan) -> list[str]:
+    """Assistants found on this machine, other than the ones being removed, that read
+    the shared skill copy.
+
+    `setup --remove -a claude-code` used to delete ~/.agents/skills, which Cursor and
+    Codex still read (setup audit, 2026-10-29).
+    """
+    removing = {a.key for a in plan.assistants}
+    return [
+        a.label
+        for a in detect_assistants(plan.home)
+        if a.key not in removing and a.skill_dir_for(plan.scope) == SHARED_SKILLS
+    ]
+
+
 def run_removal(plan: SetupPlan, *, dry_run: bool = False) -> SetupPlan:
     """Undo what run_setup did for the same scope and assistants."""
     plan.changes = []
     plan.manual = []
     if plan.install_skill:
         removed: set[Path] = set()
+        shared = skill_locations(ASSISTANTS["agents"], plan.scope, plan.root)[0]
+        readers = _shared_readers(plan)
         for assistant in [ASSISTANTS["agents"], *plan.assistants]:
             dest, legacy = skill_locations(assistant, plan.scope, plan.root)
             for path in (dest, *legacy):
                 if path in removed or (path != dest and not path.exists()):
                     continue
                 removed.add(path)
+                if path == shared and readers and path.exists():
+                    note = f"still used by {', '.join(readers)}"
+                    plan.changes.append(Change(assistant.label, "skill", path, "skipped", note))
+                    continue
                 plan.changes.append(
                     Change(assistant.label, "skill", path, remove_skill(path, dry_run=dry_run))
                 )

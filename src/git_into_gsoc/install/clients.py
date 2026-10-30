@@ -401,7 +401,18 @@ def register_json(
     if servers is not None and not isinstance(servers, dict):
         return "skipped", f"{path.name} has a non-object {key!r}, left as is"
     servers = dict(servers or {})
-    if servers.get(SERVER_NAME) == entry:
+    old = servers.get(SERVER_NAME)
+    if isinstance(old, dict):
+        # Only the keys server_entry writes are ours. Replacing the whole entry dropped
+        # the person's env, disabled, and autoApprove, turned a server they had switched
+        # off back on, and reported every re-run as updated (setup audit, 2026-10-29).
+        merged = {**old, **entry}
+        if isinstance(old.get("env"), dict) and isinstance(entry.get("env"), dict):
+            # In env the person's values win: ours are only Gemini's "$GITHUB_TOKEN"
+            # passthroughs, and a person may have written a real token there.
+            merged["env"] = {**entry["env"], **old["env"]}
+        entry = merged
+    if old == entry:
         return "unchanged", ""
     action = "updated" if path.exists() else "created"
     if dry_run:
@@ -433,24 +444,38 @@ _NAME = rf'(?:"{re.escape(SERVER_NAME)}"|{re.escape(SERVER_NAME)})'
 _TOML_OUR_TABLE = re.compile(rf"^\s*\[\s*mcp_servers\s*\.\s*{_NAME}\s*\](?:\s*#.*)?\s*$")
 _TOML_OUR_SUBTABLE = re.compile(rf"^\s*\[\s*mcp_servers\s*\.\s*{_NAME}\s*\.[^\]]*\](?:\s*#.*)?\s*$")
 _TOML_ANY_TABLE = re.compile(r"^\s*\[")
+# The keys setup writes in our table (startup_timeout_ms is the older spelling of the
+# timeout). Every other key and comment in that table is the person's.
+_CODEX_OWNED = ("command", "args", "env_vars", "startup_timeout_sec", "startup_timeout_ms")
+_TOML_OWNED_KEY = re.compile(rf"^\s*(?:{'|'.join(_CODEX_OWNED)})\s*=")
 
 
-def _drop_codex_sections(text: str, *, subtables: bool) -> tuple[list[str], int | None]:
-    """Remove our table (and, if asked, its subtables). Returns the remaining lines and
-    the line index where the first removed section started, or None."""
+def _drop_codex_sections(
+    text: str, *, subtables: bool, keep_extras: bool = False
+) -> tuple[list[str], int | None]:
+    """Remove our table (and, if asked, its subtables). With ``keep_extras``, only the
+    table's header and the keys setup writes go. Returns the remaining lines and the
+    line index where the first removed section started, or None."""
     kept: list[str] = []
     first: int | None = None
     skipping = False
     for line in text.splitlines(keepends=True):
-        if _TOML_ANY_TABLE.match(line):
+        header = bool(_TOML_ANY_TABLE.match(line))
+        if header:
             skipping = bool(
                 _TOML_OUR_TABLE.match(line) or (subtables and _TOML_OUR_SUBTABLE.match(line))
             )
             if skipping and first is None:
                 first = len(kept)
-        if not skipping:
+        if not skipping or (keep_extras and not header and not _TOML_OWNED_KEY.match(line)):
             kept.append(line)
     return kept, first
+
+
+def _codex_extras(entry: object) -> dict[str, Any]:
+    if not isinstance(entry, dict):
+        return {}
+    return {k: v for k, v in entry.items() if k not in _CODEX_OWNED}
 
 
 def _codex_block(command: list[str]) -> str:
@@ -485,9 +510,11 @@ def _codex_entry_current(entry: object, command: list[str]) -> bool:
 def register_codex_toml(
     path: Path, command: list[str], *, dry_run: bool = False
 ) -> tuple[str, str]:
-    """Add or replace ``[mcp_servers.git-into-gsoc]`` in Codex's config.toml.
+    """Add or update ``[mcp_servers.git-into-gsoc]`` in Codex's config.toml.
 
-    Subtables the person added (``.env``, ``.tools``) stay attached to the new table.
+    Only the keys setup writes change. The person's other keys, comments, and
+    subtables (``.env``, ``.tools``) stay, such as ``enabled = false``, which a
+    full replace used to switch back on (setup audit, 2026-10-29).
     """
     existing = _read_text(path) if path.exists() else ""
     try:
@@ -496,10 +523,13 @@ def register_codex_toml(
         return "skipped", f"{path.name} is not valid TOML ({exc}), left as is"
     if _codex_entry_current(current, command):
         return "unchanged", ""
-    kept, at = _drop_codex_sections(existing, subtables=False)
+    # shortcut: lines are matched one at a time, so one of our keys written over several
+    # lines leaves its tail behind; the checks below then skip the file with a manual step.
+    kept, at = _drop_codex_sections(existing, subtables=False, keep_extras=True)
     block = _codex_block(command)
     if at is not None:
-        kept.insert(at, block + ("\n" if at < len(kept) else ""))
+        before_table = at < len(kept) and _TOML_ANY_TABLE.match(kept[at])
+        kept.insert(at, block + ("\n" if before_table else ""))
         new_text = "".join(kept)
     else:
         rest = "".join(kept)
@@ -511,7 +541,8 @@ def register_codex_toml(
         # For example an inline `git-into-gsoc = {...}` under [mcp_servers]: editing
         # that safely needs a person, so say what to change instead.
         return "skipped", f"{path.name} could not be updated safely ({exc}), left as is"
-    if not _codex_entry_current(written, command):
+    theirs_kept = _codex_extras(written) == _codex_extras(current)
+    if not (_codex_entry_current(written, command) and theirs_kept):
         return (
             "skipped",
             f"{path.name} defines {SERVER_NAME} in a way setup cannot edit, left as is",
