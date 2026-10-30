@@ -110,7 +110,28 @@ def baseline_ranker(profile: dict[str, Any]) -> list[str]:
     return [name for *_, name in sorted(scored)]
 
 
-RANKERS: dict[str, Ranker] = {"current": current_ranker, "baseline": baseline_ranker}
+def _remembered(ranker: Ranker) -> Ranker:
+    """The same ranker, computed once per profile.
+
+    The benchmark tests score each split three to five times (quality floor, baseline,
+    completed grades, `all`), and recomputing every ranking took about 60 of the
+    suite's 100 seconds. The catalog is built once, so a profile always ranks the same.
+    """
+    seen: dict[str, list[str]] = {}
+
+    def ranked(profile: dict[str, Any]) -> list[str]:
+        key = json.dumps(profile, sort_keys=True)
+        if key not in seen:
+            seen[key] = ranker(profile)
+        return list(seen[key])
+
+    return ranked
+
+
+RANKERS: dict[str, Ranker] = {
+    "current": _remembered(current_ranker),
+    "baseline": _remembered(baseline_ranker),
+}
 
 
 def _dcg(gains: list[int]) -> float:
