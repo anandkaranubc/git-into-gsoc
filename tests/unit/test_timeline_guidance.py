@@ -64,6 +64,31 @@ def test_offline_falls_back_to_embedded_snapshot() -> None:
     assert "snapshot" in status["source"].lower()
 
 
+def test_published_year_the_site_does_not_return_uses_snapshot() -> None:
+    for year in (2025, 2026):
+        status = program_status(year, official_program=None, now=OCT_2026)
+        assert status["dates_are_official"] is True
+        assert "snapshot" in status["source"].lower()
+    deadline = next(m for m in status["timeline"] if m["key"] == "proposal_deadline")
+    assert deadline["at"].startswith("2026-03-31")
+
+
+def test_deadline_earlier_today_is_past() -> None:
+    history = load_history()
+    # The 2026 proposal deadline was 18:00 UTC on March 31.
+    after = program_status(
+        2026, official_program=history[2026], now=datetime(2026, 3, 31, 20, tzinfo=UTC)
+    )
+    deadline = next(m for m in after["timeline"] if m["key"] == "proposal_deadline")
+    assert deadline["status"] == "past"
+    assert "proposal_deadline" not in {m["key"] for m in after["next_milestones"]}
+    before = program_status(
+        2026, official_program=history[2026], now=datetime(2026, 3, 31, 10, tzinfo=UTC)
+    )
+    assert before["next_milestones"][0]["key"] == "proposal_deadline"
+    assert before["next_milestones"][0]["status"] == "today"
+
+
 def test_project_size_filters_evaluation_milestones() -> None:
     official = load_fixture("official_program_2026.json")
     small = build_timeline(official, official=True, project_size="small", now=OCT_2026)

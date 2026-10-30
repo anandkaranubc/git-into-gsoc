@@ -152,7 +152,9 @@ def build_timeline(
             continue
         at = _parse(raw["datetime"])
         days = (at.date() - now.date()).days
-        status = "today" if days == 0 else ("upcoming" if days > 0 else "past")
+        # The 2026 proposal deadline was 18:00 UTC; at 20:00 the same day it is over,
+        # and calling it "today" told people they could still submit.
+        status = "past" if at <= now else ("today" if days == 0 else "upcoming")
         items.append(
             Milestone(
                 key=str(raw.get("name")),
@@ -195,9 +197,12 @@ def program_status(
     official = official_program is not None
     program = official_program
     source_note: str
-    if program is None and offline and year in history:
+    # The site can also answer 404 or a changed shape for a year it published, and
+    # projecting 2025 forward put the 2026 proposal deadline a week after the real one.
+    if program is None and year in history:
         program, official = history[year], True
-        source_note = "Embedded snapshot of official dates (live site unreachable)."
+        reason = "live site unreachable" if offline else "the live site did not return this year"
+        source_note = f"Embedded snapshot of official dates ({reason})."
     elif program is None:
         program = estimate_program(year, history)
         source_note = (
