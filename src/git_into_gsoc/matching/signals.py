@@ -79,7 +79,8 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
 
     A parser sometimes splits one idea into blocks with titles such as
     "Description" or "Skills". Their text still counts as evidence, but they are
-    left out of the idea count and the list of ideas shown to people.
+    left out of the idea count, the difficulty and size counts, and the list of
+    ideas shown to people.
     """
     real = [
         i
@@ -88,17 +89,14 @@ def summarize_ideas(ideas: list[dict[str, Any]], *, layout: str, url: str) -> di
             str(i.get("title") or ""), labelled=bool(i.get("difficulty") or i.get("size"))
         )
     ]
-    difficulty: Counter[str] = Counter()
-    size: Counter[str] = Counter()
+    # Like the count, only real ideas: Neovim's page gave 9 ideas but 14 difficulties.
+    difficulty = Counter(str(i["difficulty"]) for i in real if i.get("difficulty"))
+    size = Counter(str(i["size"]) for i in real if i.get("size"))
     skills: Counter[str] = Counter()
     mentions: Counter[str] = Counter()
     mentors: set[str] = set()
     kept: list[dict[str, Any]] = []
     for idea in ideas:
-        if idea.get("difficulty"):
-            difficulty[str(idea["difficulty"])] += 1
-        if idea.get("size"):
-            size[str(idea["size"])] += 1
         labelled: set[str] = set()
         for skill in idea.get("skills") or []:
             labelled.update(skill_concepts(str(skill)))

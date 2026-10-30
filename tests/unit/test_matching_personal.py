@@ -49,6 +49,29 @@ def test_ideas_summary_counts_what_the_page_states() -> None:
     }
 
 
+def test_ideas_summary_counts_levels_and_sizes_of_real_ideas_only() -> None:
+    from git_into_gsoc.gsoc.project_ideas import extract_ideas
+
+    # Neovim's page gave 9 ideas but 14 difficulties: taken ideas and headings counted.
+    page = [
+        "# Ideas",
+        "## Restore terminal buffers after restart",
+        "Difficulty: medium",
+        "Size: 350 hours",
+        "## Run Neovim in a web browser [TAKEN]",
+        "Difficulty: hard",
+        "Size: 350 hours",
+        "## Prerequisites",
+        "Difficulty: hard",
+        "Size: 90 hours",
+    ]
+    doc = extract_ideas(page, source_url="https://x")
+    ideas = [i.model_dump() for i in doc.ideas]
+    summary = summarize_ideas(ideas, layout=doc.layout, url="https://x")
+    assert (summary["count"], summary["blocks"]) == (1, 3)
+    assert (summary["difficulty"], summary["size"]) == ({"medium": 1}, {"large": 1})
+
+
 def test_repository_summary_keeps_only_active_code() -> None:
     fresh = (NOW - timedelta(days=10)).isoformat()
     stale = (NOW - timedelta(days=500)).isoformat()
