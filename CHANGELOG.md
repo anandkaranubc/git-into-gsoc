@@ -2,6 +2,41 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.24.8](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.7...v0.24.8) (2026-10-30)
+
+
+### Bug Fixes
+
+* **cli:** refuse odd input with a clear message instead of a traceback ([f710562](https://github.com/anandkaranubc/git-into-gsoc/commit/f7105623d7eadbd64fdaf4fa85e506ee2ec29662))
+* **deps:** require typer 0.16 or newer ([1e8f816](https://github.com/anandkaranubc/git-into-gsoc/commit/1e8f816abf82d0c55d19a4f2daf3b12d9c3ac806))
+* **github:** encode branch names in API paths only once ([f4d7285](https://github.com/anandkaranubc/git-into-gsoc/commit/f4d72857b6a13d82d801495582a764c178f1fd22))
+* **github:** read past the first page of an issue's timeline ([f4d7285](https://github.com/anandkaranubc/git-into-gsoc/commit/f4d72857b6a13d82d801495582a764c178f1fd22))
+* **http:** explain bad responses instead of crashing, and do not cache errors ([f4d7285](https://github.com/anandkaranubc/git-into-gsoc/commit/f4d72857b6a13d82d801495582a764c178f1fd22))
+* **http:** keep tokens and requests away from other and private hosts ([f4d7285](https://github.com/anandkaranubc/git-into-gsoc/commit/f4d72857b6a13d82d801495582a764c178f1fd22))
+* **ideas:** read ideas written in tables and under common words ([5f9ca35](https://github.com/anandkaranubc/git-into-gsoc/commit/5f9ca3513abaced21d3c9affc94cda976c9fb62a))
+* **install:** make dry runs change nothing and stop on failed steps ([#398](https://github.com/anandkaranubc/git-into-gsoc/issues/398)) ([5596c00](https://github.com/anandkaranubc/git-into-gsoc/commit/5596c002572c6b81b1226765df6e715aaf0a2305))
+* **matching:** keep the order of labels and concepts the same on every run ([5f9ca35](https://github.com/anandkaranubc/git-into-gsoc/commit/5f9ca3513abaced21d3c9affc94cda976c9fb62a))
+* **mcp:** read JSON lists only for list arguments ([f710562](https://github.com/anandkaranubc/git-into-gsoc/commit/f7105623d7eadbd64fdaf4fa85e506ee2ec29662))
+* **next:** keep the last check time when the check fails ([f710562](https://github.com/anandkaranubc/git-into-gsoc/commit/f7105623d7eadbd64fdaf4fa85e506ee2ec29662))
+* **progress:** read hand-edited times and keep fields from newer versions ([f710562](https://github.com/anandkaranubc/git-into-gsoc/commit/f7105623d7eadbd64fdaf4fa85e506ee2ec29662))
+* **release:** publish from the tag and stop when the registry cannot answer ([1e8f816](https://github.com/anandkaranubc/git-into-gsoc/commit/1e8f816abf82d0c55d19a4f2daf3b12d9c3ac806))
+* **setup:** fix a stale Claude Code entry and explain failed writes ([6624a04](https://github.com/anandkaranubc/git-into-gsoc/commit/6624a04e9a47c27f36862f17c444fe9d2913a12a))
+* **setup:** keep what a person added to their assistant settings ([6624a04](https://github.com/anandkaranubc/git-into-gsoc/commit/6624a04e9a47c27f36862f17c444fe9d2913a12a))
+* **setup:** never follow a symbolic link inside a project ([#402](https://github.com/anandkaranubc/git-into-gsoc/issues/402)) ([4c2f1b0](https://github.com/anandkaranubc/git-into-gsoc/commit/4c2f1b0d498859d7ed05fbc20b5dfa0e13325937))
+* **signals:** count difficulty and size only for real ideas ([5f9ca35](https://github.com/anandkaranubc/git-into-gsoc/commit/5f9ca3513abaced21d3c9affc94cda976c9fb62a))
+* **timeline:** stop calling a passed deadline today ([5f9ca35](https://github.com/anandkaranubc/git-into-gsoc/commit/5f9ca3513abaced21d3c9affc94cda976c9fb62a))
+
+
+### Performance Improvements
+
+* **test:** reuse rankings in the benchmark and trace coverage with sys.monitoring ([1e8f816](https://github.com/anandkaranubc/git-into-gsoc/commit/1e8f816abf82d0c55d19a4f2daf3b12d9c3ac806))
+
+
+### Documentation
+
+* record that the awesome-copilot listing was declined ([#395](https://github.com/anandkaranubc/git-into-gsoc/issues/395)) ([dab6e03](https://github.com/anandkaranubc/git-into-gsoc/commit/dab6e036529424b371f2e23fb40ac1cef2e5ebd9))
+* spell out WSL the first time it appears ([#391](https://github.com/anandkaranubc/git-into-gsoc/issues/391)) ([1119647](https://github.com/anandkaranubc/git-into-gsoc/commit/1119647e1085ba86888589c2206515a503c0c6bc))
+
 ## [0.24.7](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.6...v0.24.7) (2026-10-24)
 
 
