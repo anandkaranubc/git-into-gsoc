@@ -5,7 +5,10 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
+      # On its own this checks only newly staged files, so CI's --all-files run on a
+      # clean checkout checked nothing; --enforce-all checks every tracked file.
       - id: check-added-large-files
+        args: [--enforce-all]
       - id: check-merge-conflict
       - id: check-toml
       - id: check-yaml
