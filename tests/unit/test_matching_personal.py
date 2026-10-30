@@ -375,6 +375,35 @@ def test_labels_that_say_not_ready_keep_an_issue_off_the_starter_list() -> None:
     assert starter_problem(fine, person) is None
 
 
+def test_label_and_tag_order_is_the_same_on_every_run() -> None:
+    """Python orders a set of strings differently in each process, so each run needs one."""
+    import os
+    import subprocess
+    import sys
+
+    script = (
+        "from git_into_gsoc.matching.concepts import find_tag_concepts\n"
+        "from git_into_gsoc.matching.issues import starter_problem\n"
+        "from git_into_gsoc.matching.profile import build_profile\n"
+        "labels = ['good first issue', 'needs triage', 'blocked', 'stale']\n"
+        "issue = {'title': 'Fix crash', 'labels': labels}\n"
+        "print(starter_problem(issue, build_profile(technologies=['python'])))\n"
+        "print(list(find_tag_concepts('c/r/go')))\n"
+    )
+    outputs = {
+        subprocess.run(
+            [sys.executable, "-c", script],
+            capture_output=True,
+            text=True,
+            check=True,
+            env={**os.environ, "PYTHONHASHSEED": seed},
+            timeout=60,
+        ).stdout
+        for seed in ("1", "2", "4")
+    }
+    assert outputs == {"labelled 'needs triage'\n['c', 'r', 'go']\n"}
+
+
 def test_the_path_never_says_learn_the_organizations_own_product() -> None:
     orgs = [{"name": "Blender Foundation"}]
     fitting = [{"org": "Blender Foundation", "ideas": [{"you_would_learn": ["Blender", "Python"]}]}]

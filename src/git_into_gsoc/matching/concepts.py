@@ -321,7 +321,7 @@ def find_tag_concepts(tag: str) -> dict[str, int]:
     index = _term_index()
     cleaned = re.sub(r"\s+", " ", tag.strip().lower())
     # "c/c++", "C\\C++" and "c/rust/go" are lists: each part may be a short word.
-    for part in {cleaned, *(p.strip() for p in re.split(r"[/\\,]", cleaned))}:
+    for part in dict.fromkeys([cleaned, *(p.strip() for p in re.split(r"[/\\,]", cleaned))]):
         for key in index.get(part) or ():
             found.setdefault(key, 1)
     return found
