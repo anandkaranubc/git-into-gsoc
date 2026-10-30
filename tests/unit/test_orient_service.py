@@ -230,7 +230,7 @@ def test_cli_orient_checks_the_codetour_path_first(tmp_path: Path) -> None:
     for target in (tmp_path, existing):
         result = runner.invoke(app, ["orient", "acme/lib", "--codetour", str(target)])
         assert result.exit_code == 1, result.output
-        assert "already exists" in result.output
+        assert "already exists" in " ".join(result.output.split())
     assert not respx.calls
     assert existing.read_text() == "mine"
     _mock_repo(respx)
