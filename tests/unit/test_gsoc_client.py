@@ -10,7 +10,8 @@ import pytest
 import respx
 
 from conftest import ARCHIVE, OFFICIAL, archive_year_json, load_fixture, mock_catalog
-from git_into_gsoc.gsoc.client import GSoCClient, github_refs, normalize_name
+from git_into_gsoc.gsoc.client import GSoCClient, github_refs
+from git_into_gsoc.gsoc.names import normalize_name
 from git_into_gsoc.scoring.org_match import expand_terms
 
 

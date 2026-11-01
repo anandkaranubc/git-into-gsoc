@@ -13,6 +13,7 @@ import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.text import clean_untrusted
 
 # A commit or reply counts as answering a comment only if it came this long
@@ -21,15 +22,6 @@ RESPONSE_GAP = timedelta(minutes=2)
 # The GSoC contributor guide suggests one follow-up after about five days of silence.
 FOLLOW_UP_DAYS = 5
 FAILED_CONCLUSIONS = {"failure", "timed_out", "action_required", "startup_failure"}
-
-
-def _dt(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
 
 
 def _login(user: dict[str, Any] | None) -> str:
@@ -94,7 +86,7 @@ def pull_request_status(
     author = _login(pull.get("user")).lower()
     base = str((pull.get("base") or {}).get("ref") or "the default branch")
 
-    last_author: datetime | None = _dt(pull.get("created_at"))
+    last_author: datetime | None = parse_iso(pull.get("created_at"))
     last_commit: datetime | None = None
     last_other: tuple[datetime, str] | None = None
     latest_review: dict[str, tuple[str, datetime]] = {}
@@ -107,7 +99,7 @@ def pull_request_status(
     for event in timeline:
         kind = event.get("event")
         if kind == "committed":
-            at = _dt(
+            at = parse_iso(
                 ((event.get("author") or {}).get("date"))
                 or (event.get("committer") or {}).get("date")
             )
@@ -119,7 +111,7 @@ def pull_request_status(
         if _is_bot(user):
             continue
         login = _login(user).lower()
-        at = _dt(event.get("submitted_at") or event.get("created_at"))
+        at = parse_iso(event.get("submitted_at") or event.get("created_at"))
         if kind == "head_ref_force_pushed" and login == author:
             author_did(at)
         elif kind in {"commented", "reviewed", "line-commented"} and at:

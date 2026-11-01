@@ -53,6 +53,21 @@ def test_mcp_progress_raises_tool_errors_with_hints(tmp_path: Path) -> None:
         gsoc_progress(action="dance")
 
 
+def test_mcp_progress_writes_return_the_bounded_summary(tmp_path: Path) -> None:
+    """The whole state after a write put every note into the model's context each time."""
+    import json
+
+    from git_into_gsoc.mcp_server import gsoc_progress
+
+    for i in range(12):
+        out = json.loads(gsoc_progress(action="note", value=f"note {i}"))
+    assert out["notes"] == 12 and len(out["recent_notes"]) == 5
+    assert "weekly_log" not in out
+    assert json.loads(gsoc_progress(action="shortlist_org", value="SymPy"))["shortlisted_orgs"] == [
+        "SymPy"
+    ]
+
+
 def test_old_progress_files_gain_new_phases(tmp_path: Path) -> None:
     path = tmp_path / "progress.json"
     path.write_text(
@@ -199,6 +214,46 @@ def test_stale_lock_from_a_crashed_process_is_broken(tmp_path: Path) -> None:
     os.utime(lock, (old, old))
     ProgressStore(path).add_note("after a crash")
     assert ProgressStore(path).load().notes == ["after a crash"]
+
+
+def test_a_waiter_with_a_stale_view_does_not_steal_a_fresh_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import os
+    import time
+
+    from git_into_gsoc.progress import store as store_module
+
+    lock = tmp_path / "progress.json.lock"
+    lock.write_text("", encoding="utf-8")
+    os.utime(lock, (time.time() - 3600, time.time() - 3600))
+    real_rename = os.rename
+    calls: list[str] = []
+
+    def other_waiter_wins_first(src, dst):  # type: ignore[no-untyped-def]
+        if not calls:  # between our stale check and our rename, the other waiter won
+            lock.unlink()
+            lock.write_text("theirs", encoding="utf-8")
+        calls.append(str(dst))
+        real_rename(src, dst)
+
+    monkeypatch.setattr(store_module.os, "rename", other_waiter_wins_first)
+    monkeypatch.setattr(store_module, "LOCK_TIMEOUT_SECONDS", 0.2)
+    with pytest.raises(InputError, match="Another git-into-gsoc process"):
+        ProgressStore(tmp_path / "progress.json").add_note("lost")
+    assert lock.read_text(encoding="utf-8") == "theirs"
+    assert not list(tmp_path.glob("*.stale-*"))
+
+
+def test_a_hand_edited_comma_list_reads_as_a_list(tmp_path: Path) -> None:
+    path = tmp_path / "progress.json"
+    path.write_text(
+        '{"profile": {"technologies": "python, rust", "interests": "science"}}',
+        encoding="utf-8",
+    )
+    profile = ProgressStore(path).profile()
+    assert profile["technologies"] == ["python", "rust"]
+    assert profile["interests"] == ["science"]
 
 
 def test_tracking_saves_one_canonical_link_per_issue(tmp_path: Path) -> None:

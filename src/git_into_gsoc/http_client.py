@@ -4,8 +4,8 @@ Caching strategy:
 * Fresh entries (younger than the TTL) are served without a request.
 * Stale entries are revalidated with ETag / Last-Modified. A 304 refreshes the
   entry and, for authenticated GitHub calls, does not count against the quota.
-* If the network fails or a rate limit is hit, a stale entry (up to
-  `STALE_IF_ERROR_SECONDS` old) is served instead of failing.
+* If the network fails, the server has an outage (5xx), or a rate limit is hit, a
+  stale entry (up to `STALE_IF_ERROR_SECONDS` old) is served instead of failing.
 """
 
 from __future__ import annotations
@@ -156,6 +156,7 @@ class CachedHttpClient:
         host. That second request carries no Authorization header and asks for the end
         of the file only, so a log of tens of megabytes costs a few hundred kilobytes.
         """
+        _require_valid_url(url)
         try:
             self._throttle(url)
             request = self._client.build_request("GET", url, headers=headers or {}, timeout=timeout)
@@ -277,6 +278,7 @@ class CachedHttpClient:
         kind: str,
         json_body: dict[str, Any] | None = None,
     ) -> Any:
+        _require_valid_url(url)
         ttl = self.settings.cache_ttl_seconds if ttl is None else ttl
         cache_key = params if json_body is None else {"body": json_body}
         cache_path = self._cache_path(kind, url, cache_key, "Authorization" in headers)
@@ -297,8 +299,12 @@ class CachedHttpClient:
             # Parsed here, so a body that is not JSON falls back to the cache below.
             revalidated = response.status_code == 304 and entry is not None
             data: Any = None if revalidated else _decode(response, url, kind)
-        except (RateLimitError, HttpError) as exc:
-            if isinstance(exc, NotFoundError) or entry is None:
+        except HttpError as exc:
+            # Only an outage or a limit is waited out on old data. A definite answer such
+            # as 410 Gone (a deleted issue) or 403 (access blocked) kept reading as open
+            # for up to a week. No status means the network failed or the body was not JSON.
+            passing = isinstance(exc, RateLimitError) or exc.status_code in (None, *_RETRY_STATUSES)
+            if not passing or entry is None:
                 raise
             if time.time() - entry.get("ts", 0) > STALE_IF_ERROR_SECONDS:
                 raise
@@ -487,6 +493,8 @@ class CachedHttpClient:
         return payload if isinstance(payload, dict) and "data" in payload else None
 
     def _write_cache(self, path: Path, payload: dict[str, Any]) -> None:
+        # The MCP server runs for days, so a prune only at start never came due there.
+        self._prune_if_due()
         tmp: str | None = None
         try:
             fd, tmp = tempfile.mkstemp(dir=self._cache_root, suffix=".tmp")
@@ -524,6 +532,23 @@ def _unlink(path: Path) -> int:
     except OSError:
         return 0
     return 1
+
+
+def _require_valid_url(url: str) -> None:
+    """Raise HttpError for an address httpx cannot request.
+
+    Ideas pages link to anything: "https://xn--/gsoc/ideas" fails IDNA and
+    "http://[::1/x" leaves a bracket open. Both raised ValueError, which no caller
+    expects, so `ideas` stopped with an internal error.
+    """
+    try:
+        httpx.URL(url).host  # noqa: B018 - reading the host runs the IDNA check
+    except (httpx.InvalidURL, ValueError) as exc:
+        raise HttpError(
+            f"Not a valid web address: {url}",
+            url=url,
+            hint="Check the link for a typing mistake; pages with broken links are skipped.",
+        ) from exc
 
 
 def _host(url: str) -> str:
@@ -623,6 +648,11 @@ def _is_rate_limited(response: httpx.Response) -> bool:
 def _retry_after_seconds(response: httpx.Response) -> float | None:
     value = response.headers.get("Retry-After")
     if not value:
+        # GitHub's search limit (10 a minute without a token) sends no Retry-After, so a
+        # wait of seconds failed at once. An hour-long core wait stays above the retry cap.
+        reset = response.headers.get("x-ratelimit-reset")
+        if response.headers.get("x-ratelimit-remaining") == "0" and reset and reset.isdigit():
+            return max(0.0, int(reset) - time.time())
         return None
     try:
         return max(0.0, float(value))

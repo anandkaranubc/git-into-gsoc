@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote
 
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.errors import GigError, NotFoundError
 from git_into_gsoc.github.availability import (
     RESERVED_LABELS,
@@ -41,12 +42,8 @@ def parse_gitlab_issue(url: str) -> tuple[str, str, int] | None:
 
 
 def _days(value: str | None, now: datetime) -> int | None:
-    if not value:
-        return None
-    try:
-        return (now - datetime.fromisoformat(value.replace("Z", "+00:00"))).days
-    except ValueError:
-        return None
+    when = parse_iso(value)
+    return None if when is None else (now - when).days
 
 
 def _status(

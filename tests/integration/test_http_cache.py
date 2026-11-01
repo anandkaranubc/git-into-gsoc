@@ -7,6 +7,7 @@ import logging
 import os
 import time
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -19,6 +20,11 @@ from git_into_gsoc.http_client import CachedHttpClient
 
 URL = "https://example.test/data.json"
 GITHUB = "https://api.github.com/repos/acme/lib"
+
+
+def _seconds_until(reset_at: datetime | None) -> float:
+    assert reset_at is not None
+    return (reset_at - datetime.now(UTC)).total_seconds()
 
 
 def make_client(tmp_path: Path, **overrides: object) -> tuple[CachedHttpClient, list[float]]:
@@ -96,7 +102,7 @@ def test_rate_limit_raises_with_reset_and_hint(tmp_path: Path) -> None:
     client, _ = make_client(tmp_path)
     with pytest.raises(RateLimitError) as info:
         client.get_json(GITHUB, use_cache=False)
-    assert info.value.reset_in_seconds is not None
+    assert info.value.reset_at is not None
     assert "gh auth login" in (info.value.hint or "")
 
 
@@ -242,7 +248,41 @@ def test_a_retry_after_date_without_a_time_zone_counts_as_utc(tmp_path: Path) ->
     client, _ = make_client(tmp_path)
     with pytest.raises(RateLimitError) as limited:
         client.get_json(URL, use_cache=False)
-    assert 500 < (limited.value.reset_in_seconds or 0) <= 600
+    assert 500 < _seconds_until(limited.value.reset_at) <= 600
+
+
+@respx.mock
+def test_a_definite_refusal_is_never_masked_by_stale_cache(tmp_path: Path) -> None:
+    respx.get(URL).mock(
+        side_effect=[httpx.Response(200, json={"state": "open"}), httpx.Response(410, json={})]
+    )
+    client, _ = make_client(tmp_path)
+    client.get_json(URL, ttl=0)
+    time.sleep(0.01)
+    with pytest.raises(HttpError, match="410"):
+        client.get_json(URL, ttl=0)
+
+
+@respx.mock
+def test_a_short_search_limit_is_waited_out(tmp_path: Path) -> None:
+    search = "https://api.github.com/search/issues"
+    limited = {"x-ratelimit-remaining": "0", "x-ratelimit-reset": str(int(time.time()) + 5)}
+    respx.get(search).mock(
+        side_effect=[httpx.Response(403, headers=limited), httpx.Response(200, json={"ok": 1})]
+    )
+    client, sleeps = make_client(tmp_path, search_min_interval_seconds=0)
+    assert client.get_json(search, use_cache=False) == {"ok": 1}
+    assert len(sleeps) == 1 and 0 < sleeps[0] <= 5
+
+
+@respx.mock
+def test_an_hour_long_limit_is_not_waited_out(tmp_path: Path) -> None:
+    limited = {"x-ratelimit-remaining": "0", "x-ratelimit-reset": str(int(time.time()) + 3600)}
+    route = respx.get(GITHUB).mock(return_value=httpx.Response(403, headers=limited))
+    client, sleeps = make_client(tmp_path)
+    with pytest.raises(RateLimitError):
+        client.get_json(GITHUB, use_cache=False)
+    assert route.call_count == 1 and sleeps == []
 
 
 @respx.mock
@@ -272,7 +312,7 @@ def test_a_secondary_limit_resets_when_retry_after_says(tmp_path: Path) -> None:
     client, _ = make_client(tmp_path)
     with pytest.raises(RateLimitError, match="secondary rate limit") as limited:
         client.get_json(GITHUB, headers={"Authorization": "Bearer t"}, use_cache=False)
-    assert 50 < (limited.value.reset_in_seconds or 0) <= 60
+    assert 50 < _seconds_until(limited.value.reset_at) <= 60
 
 
 @respx.mock
@@ -340,6 +380,17 @@ def test_pruning_runs_on_start_at_most_once_a_day(tmp_path: Path) -> None:
     _aged(root / ".last-pruned", 2)
     _client_for(tmp_path)
     assert not second.exists()
+
+
+@respx.mock
+def test_a_long_running_client_prunes_when_it_writes(tmp_path: Path) -> None:
+    client = _client_for(tmp_path)
+    root = tmp_path / "http"
+    old = _aged(root / "old.json", 60)
+    _aged(root / ".last-pruned", 2)  # the start-up prune was a day ago or more
+    respx.get(URL).mock(return_value=httpx.Response(200, json={"ok": True}))
+    client.get_json(URL)
+    assert not old.exists()
 
 
 def test_a_response_larger_than_the_cap_is_refused(
