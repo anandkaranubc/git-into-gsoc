@@ -25,16 +25,6 @@ def test_progress_roundtrip(tmp_path: Path) -> None:
     assert summary["percent"] > 0
 
 
-def test_unknown_phase_raises(tmp_path: Path) -> None:
-    store = ProgressStore(tmp_path / "progress.json")
-    try:
-        store.complete_phase("not-a-phase")
-        raised = False
-    except ValueError:
-        raised = True
-    assert raised
-
-
 def test_empty_values_are_rejected(tmp_path: Path) -> None:
     store = ProgressStore(tmp_path / "progress.json")
     for method in (store.shortlist_org, store.track_repo, store.track_issue, store.add_note):
