@@ -36,6 +36,16 @@ from git_into_gsoc.github.orientation import (
     since_iso,
     work_branch,
 )
+from git_into_gsoc.github.pointers import (
+    closing_pull_request,
+    code_first,
+    days_between,
+    extract_mentions,
+    fix_norm,
+    rank_similar,
+    resolve_paths,
+    title_file_matches,
+)
 from git_into_gsoc.github.repos import (
     channels_in,
     detect_toolchain,
@@ -46,6 +56,7 @@ from git_into_gsoc.github.repos import (
     repo_lead_score,
 )
 from git_into_gsoc.http_client import CachedHttpClient
+from git_into_gsoc.labels import is_beginner_label
 from git_into_gsoc.matching.profile import ContributorProfile
 from git_into_gsoc.models import (
     Availability,
@@ -886,6 +897,35 @@ def gitlab_ci_environment(text: str, *, source: str = ".gitlab-ci.yml") -> dict[
     }
 
 
+def _gitlab_tree(
+    http: CachedHttpClient, base: str, pid: str, branch: str
+) -> tuple[list[dict[str, Any]], bool]:
+    """The top level of a project's tree plus one page of each top-level directory, and
+    whether anything was cut (a directory over 100 entries, or more directories than
+    _TREE_DIRS). A failed read gives an empty page, never an error."""
+
+    def page(params: dict[str, Any]) -> list[dict[str, Any]]:
+        try:
+            found = http.get_json(
+                f"{base}/projects/{pid}/repository/tree",
+                params={**params, "per_page": 100, "ref": branch},
+                ttl=3600,
+            )
+        except GigError:
+            return []
+        return [e for e in (found if isinstance(found, list) else []) if isinstance(e, dict)]
+
+    top = page({})
+    directories = [str(e.get("path")) for e in top if e.get("type") == "tree" and e.get("path")]
+    truncated = len(top) >= 100 or len(directories) > _TREE_DIRS
+    entries: list[dict[str, Any]] = list(top)
+    for directory in directories[:_TREE_DIRS]:
+        inside = page({"path": directory, "recursive": "true"})
+        entries.extend(inside)
+        truncated = truncated or len(inside) >= 100
+    return entries, truncated
+
+
 def gitlab_orientation(
     http: CachedHttpClient, host: str, path: str, *, codetour: bool = False
 ) -> dict[str, Any]:
@@ -926,20 +966,7 @@ def gitlab_orientation(
         except GigError:
             return ""
 
-    def tree_page(params: dict[str, Any]) -> list[dict[str, Any]]:
-        found = read(
-            f"{base}/projects/{pid}/repository/tree", {**params, "per_page": 100, "ref": branch}
-        )
-        return [e for e in (found if isinstance(found, list) else []) if isinstance(e, dict)]
-
-    top = tree_page({})
-    directories = [str(e.get("path")) for e in top if e.get("type") == "tree" and e.get("path")]
-    truncated = len(top) >= 100 or len(directories) > _TREE_DIRS
-    entries: list[dict[str, Any]] = list(top)
-    for directory in directories[:_TREE_DIRS]:
-        inside = tree_page({"path": directory, "recursive": "true"})
-        entries.extend(inside)
-        truncated = truncated or len(inside) >= 100
+    entries, truncated = _gitlab_tree(http, base, pid, branch)
     found_paths = find_paths(entries)
     blobs = {
         str(e.get("path")).lower(): str(e.get("path")) for e in entries if e.get("type") == "blob"
@@ -1090,3 +1117,223 @@ def gitlab_orientation(
     if codetour:
         result["codetour"] = codetour_from_orientation(result)
     return result
+
+
+def gitlab_issue_pointers(
+    http: CachedHttpClient,
+    host: str,
+    path: str,
+    number: int,
+    *,
+    similar: int = 5,
+    code_search: bool = True,
+    token: str | None = None,
+    token_host: str | None = None,
+) -> dict[str, Any]:
+    """Where to start reading for an issue on a GitLab host, in the shape `pointers`
+    gives for GitHub: paths the issue names resolved against the tree, closed issues
+    with the same beginner label and the merge requests that closed them, and a fix
+    norm when the changed files could be read. Code search and the files a merge
+    request changed need a sign-in to the host (GITLAB_TOKEN with GITLAB_HOST); without
+    one, search links are given and the fix norm stays empty.
+
+    Raises NotFoundError when the project or the issue is not there.
+    """
+    base = f"https://{host}/api/v4"
+    pid = quote(path, safe="")
+    repo = f"{host}/{path}"
+    project = http.get_json(f"{base}/projects/{pid}", ttl=3600)
+    issue = http.get_json(f"{base}/projects/{pid}/issues/{number}", ttl=300)
+    if not isinstance(project, dict) or not isinstance(issue, dict):
+        raise NotFoundError(
+            f"Could not read {repo} issue {number} through GitLab's public API",
+            status_code=404,
+            url=f"https://{host}/{path}/-/issues/{number}",
+        )
+    branch = str(project.get("default_branch") or "main")
+    signed_in = bool(token) and _same_host(host, token_host)
+    headers = {"Authorization": f"Bearer {token}"} if signed_in else None
+
+    def read(url: str, params: dict[str, Any] | None = None) -> Any:
+        try:
+            return http.get_json(url, params=params, headers=headers, ttl=300)
+        except GigError:
+            return None
+
+    entries, _ = _gitlab_tree(http, base, pid, branch)
+    tree_paths = [str(e.get("path")) for e in entries if e.get("type") == "blob" and e.get("path")]
+    title = str(issue.get("title") or "")
+    mentions = extract_mentions(f"{title}\n{issue.get('description') or ''}", repo=repo)
+    resolved = resolve_paths(mentions, tree_paths)
+    resolved_paths = {r["path"] for r in resolved}
+    unresolved = [
+        m["text"]
+        for m in mentions
+        if m["kind"] in {"identifier", "backtick"} and m["text"] not in resolved_paths
+    ][:4]
+    searched: list[dict[str, Any]] = []
+    code_search_note = ""
+    if code_search and unresolved and signed_in:
+        for ident in unresolved[:2]:
+            hits = read(
+                f"{base}/projects/{pid}/search", {"scope": "blobs", "search": ident, "per_page": 8}
+            )
+            if hits is None:
+                code_search_note = f"Code search on {host} did not answer."
+                break
+            paths = code_first(
+                [
+                    str(h.get("path") or h.get("filename"))
+                    for h in hits
+                    if isinstance(h, dict) and (h.get("path") or h.get("filename"))
+                ]
+            )
+            searched.append({"identifier": ident, "paths": paths[:6]})
+            for found_path in paths[:3]:
+                if found_path not in resolved_paths:
+                    resolved_paths.add(found_path)
+                    resolved.append(
+                        {
+                            "path": found_path,
+                            "score": 1.0,
+                            "lines": [],
+                            "reasons": [f"code search: {ident}"],
+                            "confidence": "code search",
+                        }
+                    )
+    elif code_search and unresolved:
+        code_search_note = (
+            f"Code search on {host} needs a sign-in (set GITLAB_TOKEN and GITLAB_HOST); "
+            "search links are given instead."
+        )
+    if not resolved:
+        resolved = title_file_matches(title, tree_paths)
+
+    own_labels = [str(label) for label in issue.get("labels") or []]
+    label = next((lab for lab in own_labels if is_beginner_label(lab)), None) or (
+        own_labels[0] if own_labels else None
+    )
+    fixes: list[dict[str, Any]] = []
+    shared = False
+    if label is None:
+        similar_note = "No label on this issue to look up similar closed issues with."
+    else:
+        closed = read(
+            f"{base}/projects/{pid}/issues",
+            {"state": "closed", "labels": label, "per_page": 30, "order_by": "updated_at"},
+        )
+        items = [
+            i
+            for i in (closed if isinstance(closed, list) else [])
+            if isinstance(i, dict) and i.get("iid") and i.get("iid") != number
+        ]
+        for item in items:
+            item["number"] = item.get("iid")
+        if closed is None:
+            similar_note = f"Could not list closed '{label}' issues on {host}."
+        elif not items:
+            similar_note = f"No closed issues carry the '{label}' label yet."
+        else:
+            items, shared = rank_similar(title, items, limit=similar)
+            similar_note = (
+                ""
+                if shared
+                else f"None of the closed '{label}' issues share words with this title; these are the most recent ones."
+            )
+            for item in items:
+                closers = read(f"{base}/projects/{pid}/issues/{item['iid']}/closed_by") or []
+                # closed_by lists the merge requests whose text closes the issue; shaped as
+                # GitHub timeline events so closing_pull_request picks the same way.
+                events = [
+                    {
+                        "event": "cross-referenced",
+                        "source": {
+                            "issue": {
+                                "pull_request": {"merged_at": mr.get("merged_at")},
+                                "number": mr.get("iid"),
+                                "html_url": mr.get("web_url"),
+                                "title": mr.get("title"),
+                                "user": {"login": (mr.get("author") or {}).get("username")},
+                                "created_at": mr.get("created_at"),
+                                "repository": {"full_name": repo},
+                            }
+                        },
+                    }
+                    for mr in closers
+                    if isinstance(mr, dict) and mr.get("merged_at")
+                ]
+                closer = closing_pull_request(item, events, repo=repo)
+                if not closer:
+                    continue
+                files: list[str] = []
+                if signed_in:
+                    diffs = read(
+                        f"{base}/projects/{pid}/merge_requests/{closer['number']}/diffs",
+                        {"per_page": 50},
+                    )
+                    files = [
+                        str(d.get("new_path"))
+                        for d in (diffs if isinstance(diffs, list) else [])
+                        if isinstance(d, dict) and d.get("new_path")
+                    ]
+                fixes.append(
+                    {
+                        "issue": {
+                            "number": int(item["iid"]),
+                            "title": clean_untrusted(item.get("title"), limit=120),
+                            "url": item.get("web_url"),
+                        },
+                        "pull_request": closer,
+                        "files": files[:12],
+                        "additions": 0,
+                        "deletions": 0,
+                        "days_to_merge": days_between(
+                            closer.get("opened_at"), closer.get("merged_at")
+                        ),
+                    }
+                )
+            if items and not fixes and not similar_note:
+                similar_note = f"The closed '{label}' issues were not closed by a merge request that names them."
+    project_id = project.get("id")
+    search_links = [
+        {
+            "identifier": ident,
+            "url": f"https://{host}/search?project_id={project_id}&scope=blobs&search={quote(ident, safe='')}",
+        }
+        for ident in unresolved
+        if project_id and not any(s["identifier"] == ident for s in searched)
+    ]
+    head = read(f"{base}/projects/{pid}/repository/branches/{quote(branch, safe='')}")
+    files_note = (
+        ""
+        if signed_in
+        else " The files each merge request changed need a sign-in to read (GITLAB_TOKEN and "
+        "GITLAB_HOST), so open the merge requests to see them."
+    )
+    return {
+        "issue": {
+            "repo": repo,
+            "number": number,
+            "title": clean_untrusted(title, limit=200),
+            "url": issue.get("web_url") or f"https://{host}/{path}/-/issues/{number}",
+            "labels": own_labels,
+        },
+        "as_of_commit": ((head or {}).get("commit") or {}).get("id")
+        if isinstance(head, dict)
+        else None,
+        "files_likely_involved": resolved[:8],
+        "code_search": searched,
+        "search_links": search_links[:4],
+        "code_search_note": code_search_note,
+        "similar_fixes": fixes,
+        "similar_label": label,
+        "similar_note": similar_note,
+        "similar_shares_title_words": shared,
+        "fix_norm": fix_norm(fixes),
+        "next_step": (
+            "Open the files above and the merge requests for similar issues before touching "
+            "code. If no file resolved, the issue needs clarification: ask in the thread what "
+            "part of the code it concerns." + files_note
+        ),
+        "note": "Pointers are places to read, not a diagnosis. The fix is yours to work out.",
+    }

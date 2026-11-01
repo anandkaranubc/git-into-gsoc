@@ -396,7 +396,8 @@ def gsoc_issue_pointers(
     the pull requests that closed them with the files they touched; and the repository's fix
     norm (median files per fix, how often tests and docs are touched). Use after
     gsoc_issue_status says the issue is available and before the contributor comments a plan.
-    ref: "owner/repo#123", an issue URL, or "owner/repo" + number.
+    ref: "owner/repo#123", an issue URL, or "owner/repo" + number; a GitLab issue link works too
+    (code search and changed files there need GITLAB_TOKEN with GITLAB_HOST).
     """
     return _call(
         toolkit().issue_pointers, ref, number or None, similar=similar, code_search=code_search

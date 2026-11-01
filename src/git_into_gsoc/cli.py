@@ -1639,8 +1639,11 @@ def pointers_cmd(
         console.print(
             "[yellow]The issue text names no file this tool could match in the tree.[/yellow]"
         )
+    # A GitLab issue's repo starts with its host; its fixes are merge requests.
+    host = str(issue["repo"]).split("/", 1)[0]
+    on_gitlab = "." in host
     if data["search_links"]:
-        console.print("\n[bold]Search these on GitHub[/bold]")
+        console.print(f"\n[bold]Search these on {host if on_gitlab else 'GitHub'}[/bold]")
         for link in data["search_links"]:
             console.print(f"  {escape(link['identifier'])}: {link['url']}")
     if data["code_search_note"]:
@@ -1649,7 +1652,7 @@ def pointers_cmd(
         kind = "similar" if data.get("similar_shares_title_words") else "recent"
         table = Table(title=f"How {kind} '{data['similar_label']}' issues were fixed here")
         table.add_column("Issue", overflow="fold")
-        table.add_column("Fix PR")
+        table.add_column("Fix MR" if on_gitlab else "Fix PR")
         table.add_column("Files", justify="right")
         table.add_column("Days")
         table.add_column("Touched", overflow="fold")
@@ -1657,7 +1660,7 @@ def pointers_cmd(
             pr = fix["pull_request"]
             table.add_row(
                 f"#{fix['issue']['number']} {escape(fix['issue']['title'][:50])}",
-                f"#{pr['number']} ({pr['confidence']})",
+                f"{'!' if on_gitlab else '#'}{pr['number']} ({pr['confidence']})",
                 str(len(fix["files"])),
                 str(fix["days_to_merge"] if fix["days_to_merge"] is not None else ""),
                 ", ".join(escape(p) for p in fix["files"][:4]),

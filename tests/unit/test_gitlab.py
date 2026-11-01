@@ -15,6 +15,7 @@ from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
     gitlab_ci_as_workflow,
     gitlab_ci_environment,
+    gitlab_issue_pointers,
     gitlab_issue_status,
     gitlab_orientation,
     gitlab_repo_health,
@@ -730,3 +731,88 @@ def test_orientation_is_built_from_the_project_api() -> None:
     assert data["reading_plan"][0]["path"] == "README.md"
     assert not data["tree_truncated"] and "codetour" in data
     assert "GitLab" in data["note"]
+
+
+# Pointers for an issue, as `pointers` does for a GitLab link.
+
+
+def test_pointers_resolve_paths_and_find_the_closing_merge_request() -> None:
+    k = FakeProject.key
+    tree_top = [
+        {"path": "README.md", "type": "blob", "name": "README.md"},
+        {"path": "gitg", "type": "tree", "name": "gitg"},
+    ]
+    tree_gitg = [
+        {"path": "gitg/window.py", "type": "blob", "name": "window.py"},
+        {"path": "gitg/dialog.py", "type": "blob", "name": "dialog.py"},
+    ]
+    closed = [
+        {
+            "iid": 300,
+            "title": "Dialog loses its size",
+            "closed_at": _iso(30),
+            "web_url": "https://gitlab.gnome.org/GNOME/gitg/-/issues/300",
+            "labels": ["4. Newcomers"],
+        },
+        {
+            "iid": 301,
+            "title": "Typo in README",
+            "closed_at": _iso(60),
+            "web_url": "https://gitlab.gnome.org/GNOME/gitg/-/issues/301",
+            "labels": ["4. Newcomers"],
+        },
+    ]
+    http = FakeProject(
+        {
+            k(GITG_API): {
+                "id": 1550,
+                "path_with_namespace": "GNOME/gitg",
+                "default_branch": "master",
+            },
+            k(f"{GITG_API}/issues/494"): {
+                "iid": 494,
+                "title": "Dialog opens off screen",
+                "description": "See `gitg/dialog.py` and the `GitgWindow` class.",
+                "labels": ["4. Newcomers", "1. Bug"],
+                "web_url": "https://gitlab.gnome.org/GNOME/gitg/-/issues/494",
+            },
+            k(f"{GITG_API}/repository/tree"): tree_top,
+            k(f"{GITG_API}/repository/tree", path="gitg"): tree_gitg,
+            k(f"{GITG_API}/issues", labels="4. Newcomers", state="closed"): closed,
+            k(f"{GITG_API}/issues/300/closed_by"): [
+                {
+                    "iid": 77,
+                    "merged_at": _iso(30),
+                    "created_at": _iso(33),
+                    "title": "Remember the dialog size",
+                    "web_url": "https://gitlab.gnome.org/GNOME/gitg/-/merge_requests/77",
+                    "author": {"username": "newcomer"},
+                }
+            ],
+            k(f"{GITG_API}/issues/301/closed_by"): [],
+            k(f"{GITG_API}/repository/branches/master"): {"commit": {"id": "abc123"}},
+        }
+    )
+    data = gitlab_issue_pointers(http, "gitlab.gnome.org", "GNOME/gitg", 494)  # type: ignore[arg-type]
+    assert (
+        data["issue"]["repo"] == "gitlab.gnome.org/GNOME/gitg" and data["as_of_commit"] == "abc123"
+    )
+    assert data["files_likely_involved"][0]["path"] == "gitg/dialog.py"
+    assert data["search_links"][0]["identifier"] == "GitgWindow"
+    assert data["search_links"][0]["url"].startswith(
+        "https://gitlab.gnome.org/search?project_id=1550"
+    )
+    assert "sign-in" in data["code_search_note"]
+    assert data["similar_label"] == "4. Newcomers" and data["similar_shares_title_words"]
+    fix = data["similar_fixes"][0]
+    assert fix["issue"]["number"] == 300 and fix["pull_request"]["number"] == 77
+    assert fix["pull_request"]["confidence"] == "closing PR" and fix["days_to_merge"] == 3
+    assert fix["files"] == [] and data["fix_norm"] == {"sample": 0}
+    assert "merge requests" in data["next_step"] and "GITLAB_TOKEN" in data["next_step"]
+
+
+def test_pointers_for_a_missing_issue_raise() -> None:
+    k = FakeProject.key
+    http = FakeProject({k(GITG_API): {"id": 1, "default_branch": "master"}})
+    with pytest.raises(NotFoundError):
+        gitlab_issue_pointers(http, "gitlab.gnome.org", "GNOME/gitg", 1)  # type: ignore[arg-type]

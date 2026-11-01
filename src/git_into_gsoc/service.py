@@ -92,6 +92,7 @@ from git_into_gsoc.github.search import (
 )
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
+    gitlab_issue_pointers,
     gitlab_issue_status,
     gitlab_orientation,
     gitlab_repo_health,
@@ -2687,6 +2688,16 @@ class GSoCToolkit:
         code_search: bool = True,
     ) -> dict[str, Any]:
         """Where to start reading for one issue: resolved paths, past fixes, fix norms."""
+        on_gitlab = parse_gitlab_issue(ref) if number is None else None
+        if on_gitlab:
+            return gitlab_issue_pointers(
+                self.http,
+                *on_gitlab,
+                similar=similar,
+                code_search=code_search,
+                token=self.settings.gitlab_token,
+                token_host=self.settings.gitlab_host,
+            )
         owner, repo, num = parse_issue_ref(ref, number)
         full = f"{owner}/{repo}"
         issue = self.github.get_issue(owner, repo, num)
