@@ -147,6 +147,21 @@ def test_other_statuses(extra: dict[str, Any], status: str) -> None:
     assert found["availability"] == status
 
 
+def test_merge_requests_it_could_not_read_do_not_mean_there_are_none() -> None:
+    http = FakeHttp({API: _issue()})  # the related_merge_requests route fails
+    found = gitlab_issue_status(http, "https://gitlab.gnome.org/GNOME/gitg/-/issues/494")  # type: ignore[arg-type]
+    assert found["availability"] == "unknown"
+    assert "could not be read" in found["reason"]
+    # An assignee still decides; the unread merge requests change nothing then.
+    taken = FakeHttp({API: _issue(assignees=[{"username": "sajal64"}])})
+    assert (
+        gitlab_issue_status(taken, "https://gitlab.gnome.org/GNOME/gitg/-/issues/494")[  # type: ignore[arg-type]
+            "availability"
+        ]
+        == "assigned"
+    )
+
+
 @pytest.mark.parametrize("routes", [{}, {API: []}])
 def test_an_unreadable_issue_says_what_to_do(routes: dict[str, Any]) -> None:
     with pytest.raises(NotFoundError) as failed:

@@ -176,16 +176,20 @@ def gitlab_issue_status(
     if not isinstance(issue, dict):  # a host that is not GitLab can answer with a list
         raise unreadable
     try:
-        merge_requests = http.get_json(f"{api}/related_merge_requests", ttl=300)
+        found_mrs = http.get_json(f"{api}/related_merge_requests", ttl=300)
     except GigError:
-        merge_requests = []
+        found_mrs = None
+    merge_requests = found_mrs if isinstance(found_mrs, list) else None
     now = datetime.now(UTC)
-    status, reason, linked, caveats = _status(
-        issue,
-        merge_requests if isinstance(merge_requests, list) else [],
-        project=project,
-        now=now,
-    )
+    status, reason, linked, caveats = _status(issue, merge_requests or [], project=project, now=now)
+    if merge_requests is None and status is Availability.AVAILABLE:
+        # A failed read is not "no merge request": the GitHub path says unverified
+        # for the same failure, and this one said available (an audit, 2026-11-01).
+        status = Availability.UNKNOWN
+        reason = (
+            "Open and unassigned, but the merge requests that reference it could not be "
+            "read; check the issue page for one before you start"
+        )
     notes = int(issue.get("user_notes_count") or 0)
     claims: list[dict[str, Any]] = []
     read_comments = False
