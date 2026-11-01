@@ -87,6 +87,18 @@ Each needs the repository owner's account or decision, and most are reviewed by 
 | punkpeye/awesome-mcp-servers | A long-running list many people read | A pull request under Education. Its bot asks for a Glama listing that passes Glama's checks, so claim Glama first |
 | Codex plugin directory | Codex and ChatGPT | Not open to this project: local MCP servers are accepted only from approved partners |
 
+### Where GSoC applicants look
+
+Checked on 2026-11-01. Directories above reach people who already use an assistant. The people this tool is for search for "how to prepare for GSoC" and read community lists, so these matter more, and each needs the owner's account or voice.
+
+| Where | What it reaches | How |
+|---|---|---|
+| Google Search | The site is not in Google's index: a search for the project name finds nothing, and the site carried no sitemap until 2026-11-01 | Verify the site in Google Search Console (an HTML tag in `site/index.html` or a file in `site/`), then submit `sitemap.xml`. Search results show the `<title>`, which now names what the tool does |
+| GitHub topic pages | People browsing `gsoc`, `good-first-issue`, and `claude-code` topics | The repository's topics (set with `gh repo edit --add-topic`). Set on 2026-11-01: gsoc-2027, good-first-issue, beginner-friendly, students, claude-code, codex, cursor, open-source-contribution |
+| gsoc-cn/gsoc-cn (about 960 stars) | Chinese-speaking applicants | Its README has a list "other resources or communities about Google Summer of Code". A pull request adding one line |
+| SammanSarkar/GSoC_archive_2025 (about 1,000 stars) and gsocguide.vercel.app | People reading accepted proposals | Its README and site list "blogs, tips, and resources". A pull request or an issue offering one line |
+| The official GSoC Discord and a dev.to or Hashnode post | Applicants asking where to start; search results for "GSoC 2027 preparation" are personal posts today | One post in the owner's own words that walks through `start`, with real output. Read each community's rules on self-promotion first, and post once |
+
 ### Looked at, not adopted
 
 | Idea | Why not |
