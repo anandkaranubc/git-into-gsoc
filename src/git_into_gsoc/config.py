@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from platformdirs import user_cache_dir, user_data_dir
-from pydantic import AliasChoices, Field
+from pydantic import AliasChoices, Field, ValidationError, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -20,7 +20,9 @@ from pydantic_settings import (
 )
 
 from git_into_gsoc import __version__
+from git_into_gsoc.errors import InputError
 from git_into_gsoc.programs import find_program
+from git_into_gsoc.validation import FIRST_GSOC_YEAR
 
 DEFAULT_TARGET_YEAR = 2027
 LATEST_ARCHIVED_YEAR = 2026
@@ -121,21 +123,43 @@ class Settings(BaseSettings):
     gsoc_orgs_api_url: str = GSOC_ORGS_API
     gsoc_official_api_url: str = GSOC_OFFICIAL_API
     ecosystems_commits_api_url: str = ECOSYSTEMS_COMMITS_API
+    # Bounds, because a cloned repository's .env may set any of these: a zero here was a
+    # ThreadPoolExecutor traceback, a negative timeout a socket one (an audit, 2026-11-01).
     target_year: int = DEFAULT_TARGET_YEAR
-    cache_ttl_seconds: int = 3600
+    cache_ttl_seconds: int = Field(default=3600, ge=0)
     # Entries untouched this long are deleted, then the oldest until under the size cap.
     # Zero or less turns a limit off.
     cache_max_age_days: int = 30
     cache_max_mb: int = 500
-    archive_ttl_seconds: int = 86400
-    http_timeout_seconds: float = 30.0
-    http_max_retries: int = 2
-    http_max_retry_wait_seconds: float = 20.0
-    max_concurrency: int = 6
-    search_min_interval_seconds: float = 2.0
+    archive_ttl_seconds: int = Field(default=86400, ge=0)
+    http_timeout_seconds: float = Field(default=30.0, gt=0)
+    http_max_retries: int = Field(default=2, ge=0)
+    http_max_retry_wait_seconds: float = Field(default=20.0, ge=0)
+    max_concurrency: int = Field(default=6, ge=1)
+    search_min_interval_seconds: float = Field(default=2.0, ge=0)
     cache_dir: Path | None = None
     data_dir: Path | None = None
     user_agent: str = f"{_APP_NAME}/{__version__} (+{PROJECT_URL})"
+
+    @field_validator("target_year")
+    @classmethod
+    def _a_year_gsoc_can_have(cls, year: int) -> int:
+        # `validate_year` trusts this as its upper bound, so 2099 here let `program`
+        # print a timeline for 2099.
+        from datetime import UTC, datetime
+
+        latest = datetime.now(UTC).year + 2
+        if not FIRST_GSOC_YEAR <= year <= latest:
+            raise ValueError(f"must be a year from {FIRST_GSOC_YEAR} to {latest}")
+        return year
+
+    @field_validator("user_agent")
+    @classmethod
+    def _one_header_line(cls, value: str) -> str:
+        # A newline in it is a header injection; h11 refused the first request.
+        if not value.strip() or re.search(r"[^\x20-\x7e]", value):
+            raise ValueError("must be one line of plain ASCII text")
+        return value
 
     @classmethod
     def settings_customise_sources(
@@ -216,8 +240,29 @@ def _gh_cli_token() -> str | None:
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     """The settings, read once per process. Tests call `get_settings.cache_clear()`
-    after changing the environment."""
-    return Settings()
+    after changing the environment. Raises InputError naming the variable when a
+    value is not valid."""
+    try:
+        return Settings()
+    except ValidationError as exc:
+        raise InputError(
+            _settings_problem(exc),
+            hint="Fix or unset it in your environment, or in the .env file in this folder.",
+        ) from exc
+
+
+def _settings_problem(exc: ValidationError) -> str:
+    # pydantic's own report names the field, not the variable, and ends in a link; a
+    # beginner saw it as a traceback.
+    problems = []
+    for error in exc.errors():
+        field = str(error["loc"][0]).upper() if error["loc"] else "A SETTING"
+        if not field.startswith("GIG_") and field not in {"GITHUB_TOKEN", "GH_TOKEN"}:
+            field = f"GIG_{field}"
+        message = str(error["msg"]).removeprefix("Value error, ")
+        shown = "" if "TOKEN" in field else f" (got {error.get('input')!r})"
+        problems.append(f"{field} {message[:1].lower()}{message[1:]}{shown}")
+    return "A setting is not valid: " + "; ".join(problems)
 
 
 def _private_dir(path: Path) -> Path:

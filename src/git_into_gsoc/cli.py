@@ -315,7 +315,8 @@ def _relative(days: int) -> str:
 
 
 def _stdin_is_interactive() -> bool:
-    return sys.stdin.isatty()
+    # sys.stdin is None when a sandboxed assistant or a scheduler closed it.
+    return sys.stdin is not None and sys.stdin.isatty()
 
 
 def _ask(question: str, default: str = "") -> str:
@@ -356,11 +357,15 @@ def _ask_github(toolkit: GSoCToolkit, default: str) -> tuple[str | None, list[st
 
 
 def _ask_hours(default: str) -> int | None:
+    # A hand-edited progress.json held "ten": Enter kept the default and failed forever.
+    if not (default.isdecimal() and 1 <= int(default) <= 80):
+        default = ""
     while True:
         answer = _ask("4 of 4  About how many hours a week can you give?", default)
         if not answer:
             return None
-        if answer.isdigit() and 1 <= int(answer) <= 80:
+        # isdecimal, not isdigit: "²" passes isdigit and int() then raises.
+        if answer.isdecimal() and 1 <= int(answer) <= 80:
             return int(answer)
         console.print("  [yellow]![/yellow] Type a number from 1 to 80, or press Enter to skip.")
 
@@ -540,7 +545,9 @@ def start_cmd(
         answer = _ask("Shortlist any of these now? Type their numbers, or press Enter to skip")
         names = [org["name"] for org in data["organizations"]]
         picks = [
-            names[int(p) - 1] for p in split_csv(answer) if p.isdigit() and 0 < int(p) <= len(names)
+            names[int(p) - 1]
+            for p in split_csv(answer)
+            if p.isdecimal() and 0 < int(p) <= len(names)
         ]
         if picks:
             data = _markup_safe(onboarding.shortlist(toolkit, data, picks))
@@ -622,7 +629,11 @@ def orgs_cmd(
         None, "--tech", "-t", help="Technologies you know, comma-separated (python,javascript)"
     ),
     topics: str | None = typer.Option(
-        None, "--topics", help="Topics you care about, comma-separated (science,education)"
+        None,
+        "--topics",
+        "--interests",
+        help="Topics you care about, comma-separated (science,education). --interests, as "
+        "start, profile, and recommend call it, means the same",
     ),
     category: str | None = typer.Option(
         None, "--category", "-c", help="Organization category, for example 'Science and medicine'"
@@ -896,6 +907,21 @@ def projects_cmd(
     console.print(table)
 
 
+def _first_few(items: list[str], count: int, *, width: int = 48) -> str:
+    """The first few of a list, each cut at a word boundary, then how many more. A
+    60-character cut of the joined list left "migration fro" and "Fam" in GNOME's
+    skills column, and its skills are whole sentences (2026-11-01)."""
+    kept = [str(item) for item in items if str(item).strip()]
+    shown = []
+    for text in kept[:count]:
+        if len(text) > width:
+            # One more character, so a word that ends exactly at the width survives.
+            text = text[: width + 1].rsplit(" ", 1)[0].rstrip(",;:") + "…"
+        shown.append(escape(text))
+    more = len(kept) - len(shown)
+    return ", ".join(shown) + (f", +{more} more" if more > 0 else "")
+
+
 @app.command("ideas", rich_help_panel="Find an organization")
 def ideas_cmd(
     org: str = typer.Argument(..., help="GSoC organization name, for example SymPy"),
@@ -983,8 +1009,8 @@ def ideas_cmd(
                 title,
                 hours,
                 idea.get("difficulty") or "",
-                ", ".join(idea.get("mentors") or [])[:60],
-                ", ".join(idea.get("skills") or [])[:60],
+                _first_few(idea.get("mentors") or [], 3),
+                _first_few(idea.get("skills") or [], 4),
             )
         console.print(table)
         # UC OSPO has 41 ideas; the table showed 20 and nothing said there were more.
@@ -1009,7 +1035,7 @@ def ideas_cmd(
 @app.command("mentors", rich_help_panel="Find an organization")
 def mentors_cmd(
     org: str = typer.Argument(..., help="GSoC organization name, for example SymPy"),
-    years: int = typer.Option(3, "--years", help="How many archived years to read"),
+    years: int = typer.Option(3, "--years", min=1, help="How many archived years to read"),
     limit: int = typer.Option(25, "--limit", "-n", min=1, help="How many mentors to show"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
@@ -1221,7 +1247,9 @@ def _ci_environment_lines(env: dict[str, Any]) -> list[str]:
 
 @app.command("orient", rich_help_panel="Pick a repository and an issue")
 def orient_cmd(
-    full_name: str,
+    full_name: str = typer.Argument(
+        ..., help="Repository as owner/name or a GitHub link, for example sympy/sympy"
+    ),
     codetour: Path | None = typer.Option(
         None, "--codetour", help="Also write a CodeTour file (VS Code) for the reading plan here"
     ),
@@ -1305,6 +1333,7 @@ def orient_cmd(
                 for p in (
                     docs.get("readme"),
                     docs.get("contributing"),
+                    *docs.get("agent_instructions", []),
                     *docs.get("architecture", []),
                 )
                 if p
@@ -1603,7 +1632,7 @@ def pointers_cmd(
     ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
     number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
     similar: int = typer.Option(
-        5, "--similar", help="How many similar closed issues to learn from"
+        5, "--similar", min=1, help="How many similar closed issues to learn from"
     ),
     no_search: bool = typer.Option(False, "--no-search", help="Skip GitHub code search"),
     output: Output = OUTPUT_OPTION,
@@ -1691,6 +1720,11 @@ def diagnose_cmd(
     """Name the likely cause of a failed setup or test run, and what to try next."""
     # A file goes through the same reader as proposals: Windows PowerShell 5.1
     # writes `pytest > log.txt` as UTF-16, which plain UTF-8 reading turns to noise.
+    if file == "-" and sys.stdin is None:
+        raise InputError(
+            "Nothing to read: standard input is closed.",
+            hint="Save the output to a file and pass its name instead of -.",
+        )
     text = sys.stdin.read() if file == "-" else _read_document(Path(file))
     data = _toolkit().diagnose(text, repo=repo)
     if output == Output.json:

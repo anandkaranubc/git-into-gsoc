@@ -483,6 +483,25 @@ def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # ty
     assert "PR #9 (closed) by @dev" in lines  # a closed one that said it fixes this tried it
 
 
+def test_counts_that_must_be_at_least_one_are_refused_by_the_option() -> None:
+    # `mentors --years 0` said "found" with nobody; `pointers --similar -1` dropped a fix.
+    for args in (["mentors", "SymPy", "--years", "0"], ["pointers", "a/b#1", "--similar", "0"]):
+        result = runner.invoke(app, args)
+        assert result.exit_code == 2, result.output
+        assert "not in the range" in result.output
+
+
+def test_diagnose_from_a_closed_standard_input_is_a_friendly_error(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    import pytest
+
+    from git_into_gsoc import cli
+    from git_into_gsoc.errors import InputError
+
+    monkeypatch.setattr(cli.sys, "stdin", None)
+    with pytest.raises(InputError, match="standard input is closed"):
+        cli.diagnose_cmd(file="-", repo=None, output=cli.Output.rich)
+
+
 def test_the_issues_table_stays_inside_a_100_column_terminal(monkeypatch) -> None:  # type: ignore[no-untyped-def]
     # Rich shrinks the Title column, then grows the Issue column back to its minimum
     # width: at 100 columns a 43-character reference lost the table's right border.
