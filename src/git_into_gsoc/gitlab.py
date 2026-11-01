@@ -124,6 +124,18 @@ def _status(
     return Availability.AVAILABLE, "Open, unassigned, no merge request or comments", linked, caveats
 
 
+def _merge_requests_unread(status: Availability, reason: str) -> tuple[Availability, str]:
+    """An open, unassigned issue whose merge requests could not be read is unknown, not
+    free: a request failure used to read as "no merge request" (review, 2026-11-01)."""
+    if status is Availability.AVAILABLE:
+        return (
+            Availability.UNKNOWN,
+            "Open and unassigned, but its merge requests could not be read; open the issue "
+            "and check for one before you start",
+        )
+    return status, reason
+
+
 def _same_host(host: str, token_host: str | None) -> bool:
     wanted = (token_host or "").lower().removeprefix("https://").removeprefix("http://")
     return bool(wanted) and host.lower() == wanted.strip("/").removeprefix("www.")
@@ -178,7 +190,7 @@ def gitlab_issue_status(
     try:
         merge_requests = http.get_json(f"{api}/related_merge_requests", ttl=300)
     except GigError:
-        merge_requests = []
+        merge_requests = None
     now = datetime.now(UTC)
     status, reason, linked, caveats = _status(
         issue,
@@ -186,6 +198,8 @@ def gitlab_issue_status(
         project=project,
         now=now,
     )
+    if not isinstance(merge_requests, list):
+        status, reason = _merge_requests_unread(status, reason)
     notes = int(issue.get("user_notes_count") or 0)
     claims: list[dict[str, Any]] = []
     read_comments = False
@@ -383,7 +397,7 @@ def search_gitlab_issues(
         try:
             merge_requests = http.get_json(f"{api}/related_merge_requests", ttl=300)
         except GigError:
-            merge_requests = []
+            merge_requests = None
         item = items[(project, candidate.number)]
         status, reason, linked, caveats = _status(
             item,
@@ -391,6 +405,8 @@ def search_gitlab_issues(
             project=project,
             now=now,
         )
+        if not isinstance(merge_requests, list):
+            status, reason = _merge_requests_unread(status, reason)
         candidate.assessment = IssueAssessment(
             availability=status,
             reason=reason,
