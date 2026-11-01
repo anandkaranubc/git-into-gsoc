@@ -297,7 +297,7 @@
         "openWorldHint": true,
         "readOnlyHint": true
       },
-      "description": "Rank a mentoring org's GitHub repositories for a first contribution.\n\norg: GSoC org name (\"GNU Radio\") or GitHub login. Repos named on the org's ideas page,\nwith open good-first-issues, recent pushes, and the preferred `language` rank highest.",
+      "description": "Rank a mentoring org's repositories for a first contribution.\n\norg: GSoC org name (\"GNU Radio\") or GitHub login. Repos named on the org's ideas page,\nwith open good-first-issues, recent pushes, and the preferred `language` rank highest.\nAn org whose code is on a GitLab host (GNOME) gets its group's active projects instead.",
       "inputSchema": {
         "properties": {
           "org": {
@@ -330,7 +330,7 @@
         "openWorldHint": true,
         "readOnlyHint": true
       },
-      "description": "Find beginner issues that are genuinely free to pick up.\n\norg: a GSoC organization's name (its GitHub owners plus organizations whose repositories\nits ideas page names) or a GitHub login.\nscope=\"gsoc\" (default) searches only repos owned by GSoC mentoring orgs that use `language`;\nscope=\"all\" searches all of GitHub. Excludes assigned, PR-linked, and archived-repo issues,\nthen checks the top candidates' timelines for claims (\"can I work on this?\"), contested\nthreads, and maintainer engagement. Each result has availability + reason + signals.",
+      "description": "Find beginner issues that are genuinely free to pick up.\n\norg: a GSoC organization's name (its GitHub owners plus organizations whose repositories\nits ideas page names; one whose code is on a GitLab host, such as GNOME or QEMU, is\nsearched there, and its comments cannot be read) or a GitHub login.\nscope=\"gsoc\" (default) searches only repos owned by GSoC mentoring orgs that use `language`;\nscope=\"all\" searches all of GitHub. Excludes assigned, PR-linked, and archived-repo issues,\nthen checks the top candidates' timelines for claims (\"can I work on this?\"), contested\nthreads, and maintainer engagement. Each result has availability + reason + signals.",
       "inputSchema": {
         "properties": {
           "language": {
