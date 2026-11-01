@@ -74,6 +74,13 @@ def test_an_org_off_github_gets_a_clear_answer(monkeypatch: Any) -> None:
     monkeypatch.setattr(toolkit, "gsoc_github_orgs", lambda **k: ({}, [], ""))
     monkeypatch.setattr("git_into_gsoc.service.fetch_ideas_text", lambda *a: "ideas")
     monkeypatch.setattr(toolkit, "_repos_named_on_page", lambda *a, **k: [])
+
+    def gitlab_down(*args: Any, **kwargs: Any) -> None:
+        raise NotFoundError("no answer", status_code=404)
+
+    # GNOME is searched on gitlab.gnome.org now; when that host does not answer, the
+    # error still names where the code lives.
+    monkeypatch.setattr("git_into_gsoc.service.search_gitlab_issues", gitlab_down)
     with pytest.raises(NotFoundError) as found:
         toolkit.find_issues(org="GNOME Foundation")
     assert "outside GitHub (https://gitlab.gnome.org/)" in str(found.value)

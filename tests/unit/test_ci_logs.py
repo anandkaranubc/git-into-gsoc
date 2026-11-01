@@ -118,6 +118,15 @@ def test_a_rate_limit_on_a_log_is_a_rate_limit(tmp_path: Path) -> None:
         )
 
 
+def test_a_log_that_redirects_twice_is_an_error_not_an_empty_log(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(302, headers={"Location": "https://elsewhere.example.net/x"})
+
+    client = _client(tmp_path, handler)
+    with pytest.raises(HttpError, match="redirected twice"):
+        client.get_tail("https://api.github.com/repos/o/r/actions/jobs/1/logs")
+
+
 def test_an_expired_log_is_a_not_found_error(tmp_path: Path) -> None:
     client = _client(tmp_path, lambda request: httpx.Response(404, json={"message": "Not Found"}))
     with pytest.raises(NotFoundError):

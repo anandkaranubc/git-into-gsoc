@@ -117,7 +117,19 @@ Most of the code explains itself through its names. A comment is for what the co
 - Every module starts with a docstring that says what it is for. A public function or class gets one when its name does not say it all: what it returns, what it leaves out, and what it raises.
 - The docstring of a command in `cli.py` is its `--help` text, so a change there changes what people see in the terminal. Check `git-into-gsoc COMMAND --help` after editing one.
 - Do not add comments to tidy an area you are not changing, and do not delete one you do not understand; ask in the pull request.
-- Two kinds of text are for models, not people: the MCP tool docstrings in `mcp_server.py` and the skill in `skills/git-into-gsoc/`. Change those only with before-and-after assistant runs.
+- Two kinds of text are for models, not people: the MCP tool docstrings in `mcp_server.py` and the skill in `skills/git-into-gsoc/`. Change those only with before-and-after runs of the eval suite (see [Text for models](#text-for-models)).
+
+### Text for models
+
+The skill and the MCP tool descriptions steer an assistant, so a wording change can change what it does. `plugin-evals/` holds behaviour tests for them, run by [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals), which ships with Claude Code. Each case is a prompt a person might type plus graders: which tools were called and in what order, a regex over the reply, and a short rubric a judge model scores. Tool calls are answered from `plugin-evals/mocks/git-into-gsoc/`, one file per tool with a saved JSON answer, so a run needs no network and no token. `_tools.json` there is the server's tool list with the real descriptions; `python scripts/snapshot_mcp_tools.py` refreshes it, and a test fails while it is stale.
+
+Before and after a change to either text, run the suite once from the repository root and compare the two reports:
+
+```bash
+claude plugin eval . --ablation none --max-cost-usd 5
+```
+
+It runs each case three times and prints a score per case; the HTML report under `plugin-evals/results/` (ignored by Git) shows every grader's verdict. Add `--runs 1` while you adjust a grader, and `--case NAME` for one case. The run uses your own Claude account, which is why CI does not run it. Paste the before and after scores into the pull request.
 
 ### Writing docs
 
@@ -151,6 +163,7 @@ You are welcome to use AI assistants while contributing. You are responsible for
 | `docs/` | The beginner guide and the references for people using the tool, plus `architecture.md`, `releasing.md`, and `distribution.md` for people changing it |
 | `tests/` | Unit and integration tests with fixtures; no live network |
 | `evals/` | Benchmarks for the organization ranking ([evals/README.md](evals/README.md)) |
+| `plugin-evals/` | Behaviour tests for the skill and tool text, run by `claude plugin eval` (see [Text for models](#text-for-models)) |
 | `scripts/` | Maintainer scripts: generated files, assistant checks, live journeys, the benchmark, the brand kit |
 | `examples/`, `brand/`, `site/` | A sample terminal session and prompts; the logo; the project website |
 | `install.sh`, `install.ps1` | The installers people run |

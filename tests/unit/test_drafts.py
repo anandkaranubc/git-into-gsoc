@@ -3,6 +3,7 @@ commands a PR draft lists, and the rule behind every finding."""
 
 from __future__ import annotations
 
+import pytest
 from typer.testing import CliRunner
 
 from git_into_gsoc.cli import app
@@ -621,3 +622,18 @@ def test_html_tags_from_pull_request_templates_are_not_placeholders() -> None:
 
     text = '<a short summary> <code to reproduce> <details open> <a href="x">y</a> <br/>'
     assert _ANGLE_PLACEHOLDER_RE.findall(text) == ["<a short summary>", "<code to reproduce>"]
+
+
+def test_a_draft_for_an_unknown_organization_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
+    # A typo in --org quietly gave a generic intro with "<public channel>" unfilled.
+    from git_into_gsoc.errors import InputError
+    from git_into_gsoc.service import GSoCToolkit
+
+    toolkit = GSoCToolkit()
+    monkeypatch.setattr(toolkit.gsoc, "get_organization", lambda name: None)
+    monkeypatch.setattr(
+        toolkit.gsoc, "suggest_organizations", lambda name, year=None: (["SymPy"], [])
+    )
+    with pytest.raises(InputError, match="No GSoC organization is named 'Simpy'") as refused:
+        toolkit.draft("intro", org="Simpy")
+    assert "SymPy" in (refused.value.hint or "")
