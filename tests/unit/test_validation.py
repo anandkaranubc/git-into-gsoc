@@ -172,6 +172,6 @@ def test_a_project_on_another_site_is_named_as_such_without_its_scheme() -> None
     for raw in ("gitlab.com/inkscape/inkscape", "salsa.debian.org/a/b"):
         with pytest.raises(InputError, match=r"Not a github\.com URL") as found:
             parse_repo(raw)
-        assert "`git-into-gsoc issue` does read" in (found.value.hint or "")
+        assert "take a project or issue link on a GitLab host" in (found.value.hint or "")
     assert parse_repo("github.com/sympy/sympy") == ("sympy", "sympy")
     assert parse_repo("sympy/sympy.github.io") == ("sympy", "sympy.github.io")
