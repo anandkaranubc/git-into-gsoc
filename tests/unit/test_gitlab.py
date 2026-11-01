@@ -413,19 +413,20 @@ def test_group_projects_are_ranked_and_the_top_get_a_language() -> None:
         http,  # type: ignore[arg-type]
         "gitlab.gnome.org",
         "GNOME",
-        ideas="Ideas: improve https://gitlab.gnome.org/GNOME/gnome-shell notifications",
+        ideas="Ideas: https://gitlab.gnome.org/GNOME/gnome-shell notifications, https://gitlab.gnome.org/GNOME/gtk-vnc",
         language="javascript",
         person=None,
         limit=2,
     )
     names = [lead.full_name for lead in leads]
-    assert names == ["GNOME/gnome-shell", "GNOME/gtk"]  # ideas mention and language win
+    assert names == ["gitlab.gnome.org/GNOME/gnome-shell", "gitlab.gnome.org/GNOME/gtk"]
     shell = leads[0]
     assert shell.ideas_mention and shell.language == "JavaScript"
     assert "Named on the GSoC ideas page" in shell.reasons
+    assert not leads[1].ideas_mention  # gtk is not gtk-vnc
     assert any(r.startswith("Active in the last") for r in shell.reasons)
     assert not any("Pushed" in r for r in shell.reasons)
-    assert "GNOME/old-thing" not in names and "GNOME/gtk-fork" not in names
+    assert not any(n.endswith(("/old-thing", "/gtk-fork")) for n in names)
 
 
 def test_a_project_path_gives_that_one_project() -> None:
@@ -445,7 +446,7 @@ def test_a_project_path_gives_that_one_project() -> None:
         person=None,
         limit=10,
     )
-    assert [lead.full_name for lead in leads] == ["GNOME/gimp"]
+    assert [lead.full_name for lead in leads] == ["gitlab.gnome.org/GNOME/gimp"]
     assert leads[0].language == "C" and leads[0].stars == 305
     assert http.asked[0][0] == "https://gitlab.gnome.org/api/v4/groups/GNOME%2Fgimp/projects"
 
@@ -554,7 +555,8 @@ def test_a_gitlab_project_is_graded_from_its_merge_requests_and_tree() -> None:
     health, guide = gitlab_repo_health(http, "gitlab.gnome.org", "GNOME/gitg")  # type: ignore[arg-type]
     assert health.full_name == "gitlab.gnome.org/GNOME/gitg" and health.pr_source == "gitlab"
     assert health.has_contributing and health.contributing_source == "file"
-    assert health.has_ci and health.has_issue_template and not health.has_code_of_conduct
+    assert health.has_ci and health.has_issue_template and not health.has_pr_template
+    assert not health.has_code_of_conduct
     assert health.license == "GNU General Public License v2.0 or later"
     assert health.language == "Vala" and health.topics == ["git"]
     assert health.insiders_known and health.prs_sampled == 5
@@ -593,9 +595,10 @@ def test_a_project_without_a_known_label_or_members_still_grades() -> None:
     assert guide.setup_hints == ["Read README.md before coding"]
 
 
-def test_a_missing_project_raises() -> None:
-    with pytest.raises(NotFoundError):
-        gitlab_repo_health(FakeProject({}), "gitlab.gnome.org", "GNOME/nothing")  # type: ignore[arg-type]
+def test_a_missing_project_raises_with_a_hint() -> None:
+    with pytest.raises(NotFoundError) as caught:
+        gitlab_repo_health(FakeProject({}), "codeberg.org", "a/b")  # type: ignore[arg-type]
+    assert "another server" in (caught.value.hint or "")
 
 
 # Orientation, as `orient` does for a GitLab link.
