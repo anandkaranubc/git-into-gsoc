@@ -1,0 +1,1 @@
+{"kind":"claim","words":11,"findings":[{"id":"bare_claim","status":"fail","title":"A bare request to work on it","detail":"Add how you reproduced it and a one or two line plan. A list of your skills does not tell the maintainer how you would fix this issue.","source":"https://pandas.pydata.org/docs/development/contributing.html"}],"verdict":"Fix 1 problem(s) before sending."}

@@ -1,0 +1,811 @@
+{
+  "tools": [
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Get GSoC program status, timeline, official links, and anti-spam rules.\n\nyear: program year; 0 means the configured target year (currently 2027). Dates for a\nyear Google has not published yet are estimates. Always verify on\nsummerofcode.withgoogle.com.",
+      "inputSchema": {
+        "properties": {
+          "year": {
+            "default": 0,
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_program_infoArguments"
+      },
+      "name": "gsoc_program_info",
+      "title": "GSoC program status and timeline"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Return journey phase guidance for GSoC contributors.\n\nPhases: learn, discover, evaluate, find_issues, contribute, community, proposal, track.\nOmit phase to get the full overview.",
+      "inputSchema": {
+        "properties": {
+          "phase": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Phase"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_journey_guideArguments"
+      },
+      "name": "gsoc_journey_guide",
+      "title": "Journey phase guide"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Rank GSoC mentoring organizations by fit with a contributor's skills and interests.\n\ntechnologies/topics: comma-separated, in the person's own words (\"python,rust\",\n\"healthcare\", \"web dev\"); synonyms and common misspellings are understood and\n`read_as` says when a word was corrected. With no filters at all, the saved profile is\nused and `matched_on.from_profile` is true; saved experience and hours always apply.\nyear: target program year (default: configured target, 2027). If that year's orgs are not\nannounced yet, the latest official list is used and `catalog.note` says so: say clearly\nthat these organizations are not confirmed for the coming year.\nEach org has `fit` (strong, good, or partial), `evidence` (why, each line naming its\nsource: official listing, ideas page, or GitHub repositories), `readiness`, `caveats`,\nand `skills_to_learn`, plus ideas_url, guide_url, github_orgs, channels, and slot\nhistory. `match_score` only orders results: never present it as a chance of acceptance.\nWhen nothing matches, `hint` says why (for example, the org took part in earlier years).\nThe top three are checked for posts about the coming year: one whose maintainers say it\nwill not take part has `participation.status` \"not_taking_part\", a caveat, and moves last.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          },
+          "technologies": {
+            "default": "",
+            "title": "Technologies",
+            "type": "string"
+          },
+          "topics": {
+            "default": "",
+            "title": "Topics",
+            "type": "string"
+          },
+          "category": {
+            "default": "",
+            "title": "Category",
+            "type": "string"
+          },
+          "year": {
+            "default": 0,
+            "title": "Year",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 10,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_search_orgsArguments"
+      },
+      "name": "gsoc_search_orgs",
+      "title": "Rank mentoring organizations"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Full profile for one org: ideas page, contributor guide, channels, GitHub orgs,\nprojects per year, and recent accepted project titles. Accepts the full name or a\nwhole word of it (\"mailman\"); a word that fits several orgs returns their names to\nchoose from, and an unknown name returns close matches in did_you_mean.\n`statement_on_file` is what the monthly check found the org said about the coming\nyear (also in issue bodies, which the live `gsoc_posts` search misses); give its date.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "year": {
+            "default": 0,
+            "title": "Year",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "title": "gsoc_org_detailsArguments"
+      },
+      "name": "gsoc_org_details",
+      "title": "Organization profile"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Search accepted GSoC projects from past years by keyword and/or org.\n\nUse to calibrate proposal scope and discover which orgs fund a kind of work.\nNever suggest copying a past proposal.",
+      "inputSchema": {
+        "properties": {
+          "query": {
+            "default": "",
+            "title": "Query",
+            "type": "string"
+          },
+          "org": {
+            "default": "",
+            "title": "Org",
+            "type": "string"
+          },
+          "since": {
+            "default": 0,
+            "title": "Since",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 15,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_past_projectsArguments"
+      },
+      "name": "gsoc_past_projects",
+      "title": "Past accepted projects"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Who has mentored a GSoC organization's completed projects in recent archived years,\nfrom the official archive: each mentor with years, project count and recent project\ntitles; how many mentors return; the GitHub repositories past projects touched; and the\ntechnology tags on past projects. Use it to find who to talk to in the public channel\nand which repository past work lives in. Names show past mentors, not next year's.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "years": {
+            "default": 3,
+            "title": "Years",
+            "type": "integer"
+          },
+          "limit": {
+            "default": 25,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "title": "gsoc_org_mentorsArguments"
+      },
+      "name": "gsoc_org_mentors",
+      "title": "Org mentors from the archive"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Read a GSoC org's ideas page into structured project ideas: title, description, size\n(small/medium/large and hours), difficulty, mentors, skills, expected outcome, links, and a\nconfidence flag; plus any AI-use policy sentences found on the page. Ideas are ranked by\n`skills` (comma-separated; defaults to the saved profile), `size`, and `difficulty`.\n`layout` tells you how the page was read: headings, index (umbrella org; sub-pages followed\nwhen `follow`), issues (ideas are GitHub issues), unstructured, unreachable, or missing.\nEmpty fields were not on the page. Never paste idea text into a proposal.",
+      "inputSchema": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "skills": {
+            "default": "",
+            "title": "Skills",
+            "type": "string"
+          },
+          "size": {
+            "default": "",
+            "title": "Size",
+            "type": "string"
+          },
+          "difficulty": {
+            "default": "",
+            "title": "Difficulty",
+            "type": "string"
+          },
+          "limit": {
+            "default": 20,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "follow": {
+            "default": true,
+            "title": "Follow",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object",
+        "title": "gsoc_org_ideasArguments"
+      },
+      "name": "gsoc_org_ideas",
+      "title": "Org ideas page"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Will a newcomer's PR land here? Health grade (A-F) with signals and warnings:\nactivity, CONTRIBUTING/CoC/templates, CI, open beginner issues, bot-free merge rate,\noutside-contributor merge rate, review speed; plus toolchain/dev-container setup hints.\n`points` gives what each signal earned out of its most, and `capped_by` the rule that\nheld the score down, so you can say where a grade came from. `notes` earn nothing.\n\nfull_name: owner/repo or a GitHub URL (e.g. sympy/sympy)",
+      "inputSchema": {
+        "properties": {
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "full_name"
+        ],
+        "type": "object",
+        "title": "gsoc_evaluate_repoArguments"
+      },
+      "name": "gsoc_evaluate_repo",
+      "title": "Repository health for newcomers"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Orientation sheet for a repository the contributor has chosen, built from about 16\ncached GitHub calls and containing facts and paths only: top-level code map with file\ncounts and purpose guesses, entry points, the test command CI really runs, README /\nCONTRIBUTING / architecture docs, active committers in the last 90 days and CODEOWNERS,\nrules before a PR (DCO sign-off, CLA, commit style, pre-commit, PR checklist, AI\ndisclosure) each with evidence, verbatim policy sentences (assignment, AI, PR limits),\nchat channels, one recently merged small outsider PR as a worked example, and an ordered\nreading plan. Use after gsoc_evaluate_repo, before the contributor reads code. Any\nnarrative you write about the code must cite paths from this result.\nfull_name: owner/repo or a GitHub URL. codetour=True adds a CodeTour (VS Code) file as JSON\nunder \"codetour\" that walks the reading plan, pinned to the inspected commit.",
+      "inputSchema": {
+        "properties": {
+          "full_name": {
+            "title": "Full Name",
+            "type": "string"
+          },
+          "codetour": {
+            "default": false,
+            "title": "Codetour",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "full_name"
+        ],
+        "type": "object",
+        "title": "gsoc_orient_repoArguments"
+      },
+      "name": "gsoc_orient_repo",
+      "title": "Repository orientation"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Rank a mentoring org's repositories for a first contribution.\n\norg: GSoC org name (\"GNU Radio\") or GitHub login. Repos named on the org's ideas page,\nwith open good-first-issues, recent pushes, and the preferred `language` rank highest.\nAn org whose code is on a GitLab host (GNOME) gets its group's active projects instead.",
+      "inputSchema": {
+        "properties": {
+          "org": {
+            "title": "Org",
+            "type": "string"
+          },
+          "language": {
+            "default": "",
+            "title": "Language",
+            "type": "string"
+          },
+          "limit": {
+            "default": 10,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "org"
+        ],
+        "type": "object",
+        "title": "gsoc_discover_reposArguments"
+      },
+      "name": "gsoc_discover_repos",
+      "title": "Rank an organization's repositories"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Find beginner issues that are genuinely free to pick up.\n\norg: a GSoC organization's name (its GitHub owners plus organizations whose repositories\nits ideas page names; one whose code is on a GitLab host, such as GNOME or QEMU, is\nsearched there, and its comments cannot be read) or a GitHub login.\nscope=\"gsoc\" (default) searches only repos owned by GSoC mentoring orgs that use `language`;\nscope=\"all\" searches all of GitHub. Excludes assigned, PR-linked, and archived-repo issues,\nthen checks the top candidates' timelines for claims (\"can I work on this?\"), contested\nthreads, and maintainer engagement. Each result has availability + reason + signals.",
+      "inputSchema": {
+        "properties": {
+          "language": {
+            "default": "",
+            "title": "Language",
+            "type": "string"
+          },
+          "org": {
+            "default": "",
+            "title": "Org",
+            "type": "string"
+          },
+          "repo": {
+            "default": "",
+            "title": "Repo",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "title": "Label",
+            "type": "string"
+          },
+          "scope": {
+            "default": "gsoc",
+            "title": "Scope",
+            "type": "string"
+          },
+          "max_results": {
+            "default": 10,
+            "title": "Max Results",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_find_issuesArguments"
+      },
+      "name": "gsoc_find_issues",
+      "title": "Beginner issues that are free"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Check if one issue is free: linked PRs, assignees, claims (with dates), maintainer\napproval, and caveats. ref: \"owner/repo#123\", an issue URL, or \"owner/repo\" + number. A\nGitLab issue link (gitlab.com, gitlab.gnome.org, ...) gets state, assignees, labels, and\nmerge requests from GitLab's public API; its comments cannot be read, and it says so.",
+      "inputSchema": {
+        "properties": {
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "number": {
+            "default": 0,
+            "title": "Number",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "type": "object",
+        "title": "gsoc_issue_statusArguments"
+      },
+      "name": "gsoc_issue_status",
+      "title": "Is this issue free?"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Where to start reading the code for one issue, as evidence only (never a fix): files the\nissue text names (blob links, stack frames, paths, identifiers) resolved against the real\ntree with a confidence label; GitHub code search hits for unresolved identifiers (needs a\ntoken; otherwise ready-made search links); closed issues with the same beginner label and\nthe pull requests that closed them with the files they touched; and the repository's fix\nnorm (median files per fix, how often tests and docs are touched). Use after\ngsoc_issue_status says the issue is available and before the contributor comments a plan.\nref: \"owner/repo#123\", an issue URL, or \"owner/repo\" + number.",
+      "inputSchema": {
+        "properties": {
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          },
+          "number": {
+            "default": 0,
+            "title": "Number",
+            "type": "integer"
+          },
+          "similar": {
+            "default": 5,
+            "title": "Similar",
+            "type": "integer"
+          },
+          "code_search": {
+            "default": true,
+            "title": "Code Search",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "type": "object",
+        "title": "gsoc_issue_pointersArguments"
+      },
+      "name": "gsoc_issue_pointers",
+      "title": "Issue code pointers"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Name the likely cause of failed setup or test output, with what to try next.\n\ntext: the failing terminal output (the last 50 to 200 lines are enough).\nrepo: optional owner/repo, to add the runtime versions, services, systems and test\ncommand its CI uses. Recognises missing modules, wrong runtime versions, missing\ncompilers or headers, services not running, missing environment variables, missing\ncommands, permissions, network failures, ports in use, lock-file mismatches, memory,\nand test failures. Each cause quotes the line it matched. Walk the contributor through\nthe steps; do not run commands on their machine for them.",
+      "inputSchema": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "repo": {
+            "default": "",
+            "title": "Repo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object",
+        "title": "gsoc_diagnoseArguments"
+      },
+      "name": "gsoc_diagnose",
+      "title": "Diagnose a failed setup or test run"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Check one pull request against the repository's own rules before review.\n\nref: owner/repo#123 or a pull request URL. Returns pass/warn/fail findings with the\nevidence for each: merge conflict, failing checks, linked issue (a fail when a workflow\ncloses pull requests without one), description length, the template checklist, AI\ndisclosure when the template asks, commit sign-off when the repository requires DCO,\ncommit style, tests changed alongside code, a changelog entry when one is expected, size,\nand draft state; plus the branch-rule gates still ahead. Coach the author to fix their own\nbranch; never push or comment for them.",
+      "inputSchema": {
+        "properties": {
+          "ref": {
+            "title": "Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ref"
+        ],
+        "type": "object",
+        "title": "gsoc_pr_checkArguments"
+      },
+      "name": "gsoc_pr_check",
+      "title": "Check a pull request"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Check a message the contributor wrote, before they post it, against the rules for its kind.\n\nkind: intro, question, claim, pr, review-reply, status, or final (the same kinds as\ngsoc_draft). Reports leftover placeholders, phrases that read as machine-written, and\nkind-specific problems: a greeting with nothing else, no question, asking to ask, not\nsaying what was tried, a bare \"can I work on this\", no plan, no linked issue or testing\nnote in a PR description, missing weekly-update questions, missing final-report parts.\nEach finding cites its source. Never rewrite the message for them; point to the finding.",
+      "inputSchema": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "text"
+        ],
+        "type": "object",
+        "title": "gsoc_check_messageArguments"
+      },
+      "name": "gsoc_check_message",
+      "title": "Check a message before sending"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Skeleton for a message the contributor must write themselves: kind is intro, question,\nclaim, pr, review-reply, status, or final. Returns a template with <placeholders>, the\nfields that must hold the contributor's own observations, and the rules maintainers and\nthe official guide state, each with its source URL. With org, repo, or issue it fills in\nreal context: channels, the project's claim convention (/assign, .take, \"do not assign\"),\nsign-off and AI-disclosure requirements, and the issue's availability. Never fill the\nplaceholders with invented observations; ask the contributor for them.",
+      "inputSchema": {
+        "properties": {
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "org": {
+            "default": "",
+            "title": "Org",
+            "type": "string"
+          },
+          "repo": {
+            "default": "",
+            "title": "Repo",
+            "type": "string"
+          },
+          "issue": {
+            "default": "",
+            "title": "Issue",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "type": "object",
+        "title": "gsoc_draftArguments"
+      },
+      "name": "gsoc_draft",
+      "title": "Message draft"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Personalized starting path: matching orgs with evidence, ideas that fit, starter\nissues, and a learning path.\n\nexperience: new, some, or experienced (default: the saved profile, else read from the\nperson's merged pull requests when a GitHub username is known).\nhours_per_week: hours a week they can give (default: the saved profile).\nReturns `program` (whether the organizations are confirmed for the target year or only\ntook part last year), `recommended_orgs` (each with fit, evidence naming its source,\ncaveats, skills_to_learn, and `participation` when the org posted that it will or will\nnot take part), `ideas_that_fit` (from each top org's latest ideas page: what the person\nalready knows and what they would learn), `starter_issues` (each with `fits_you`), and\n`learning_path` (ordered steps, each with the command that does it). Quote the evidence;\nnever turn fit into a chance of acceptance.\nWith no arguments and no saved profile, asks the person what they know and care\nabout through the client (MCP elicitation) when the client supports it; otherwise\nit falls back to the saved profile or GitHub languages.",
+      "inputSchema": {
+        "properties": {
+          "github_username": {
+            "default": "",
+            "title": "Github Username",
+            "type": "string"
+          },
+          "technologies": {
+            "default": "",
+            "title": "Technologies",
+            "type": "string"
+          },
+          "interests": {
+            "default": "",
+            "title": "Interests",
+            "type": "string"
+          },
+          "experience": {
+            "default": "",
+            "title": "Experience",
+            "type": "string"
+          },
+          "hours_per_week": {
+            "default": 0,
+            "title": "Hours Per Week",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_recommend_pathArguments"
+      },
+      "name": "gsoc_recommend_path",
+      "title": "Personalized starting path"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Collect a contributor's real history in an org's repos as proposal evidence.\n\nReturns merged/open/closed PRs, issues opened, threads joined, reviews given, paste-ready\nmarkdown evidence lines, a standing (none/starting/developing/strong), and honest gaps.\norg: GSoC org name or GitHub org; or scope with repo=\"owner/repo\". One of them is required.",
+      "inputSchema": {
+        "properties": {
+          "github_username": {
+            "title": "Github Username",
+            "type": "string"
+          },
+          "org": {
+            "default": "",
+            "title": "Org",
+            "type": "string"
+          },
+          "repo": {
+            "default": "",
+            "title": "Repo",
+            "type": "string"
+          }
+        },
+        "required": [
+          "github_username"
+        ],
+        "type": "object",
+        "title": "gsoc_contribution_evidenceArguments"
+      },
+      "name": "gsoc_contribution_evidence",
+      "title": "Contribution evidence"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Proposal quality checklist grounded in official GSoC guidance.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+        "title": "gsoc_proposal_checklistArguments"
+      },
+      "name": "gsoc_proposal_checklist",
+      "title": "Proposal checklist"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Check a draft proposal for what organizations reject on. Never rewrites it.\n\nReports pass/warn/fail findings with reasons: required sections (synopsis,\ndeliverables, timeline, about), recommended ones (benefits, contributions,\navailability, AI statement), links to the author's PRs (verified on GitHub when\nverify_links is true, flagging PRs authored by someone else when github_username is\ngiven), week-by-week timeline detail and buffer, concrete code references, generic\nAI-sounding phrasing, leftover template placeholders, and length. Pass the org's ideas\npage as ideas_text to flag passages copied from it. Use the findings to coach the author\nto revise in their own voice; do not draft replacement text for them.",
+      "inputSchema": {
+        "properties": {
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "github_username": {
+            "default": "",
+            "title": "Github Username",
+            "type": "string"
+          },
+          "verify_links": {
+            "default": true,
+            "title": "Verify Links",
+            "type": "boolean"
+          },
+          "ideas_text": {
+            "default": "",
+            "title": "Ideas Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object",
+        "title": "gsoc_proposal_checkArguments"
+      },
+      "name": "gsoc_proposal_check",
+      "title": "Check a draft proposal"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Track local GSoC journey progress.\n\naction: summary | complete_phase | shortlist_org | track_repo | track_issue | note\nphase: required for complete_phase\nvalue: org name / owner/repo / issue url / note text depending on action",
+      "inputSchema": {
+        "properties": {
+          "action": {
+            "default": "summary",
+            "title": "Action",
+            "type": "string"
+          },
+          "phase": {
+            "default": "",
+            "title": "Phase",
+            "type": "string"
+          },
+          "value": {
+            "default": "",
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_progressArguments"
+      },
+      "name": "gsoc_progress",
+      "title": "Local journey progress"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      },
+      "description": "What should the contributor do right now? One call that combines the program phase and\nupcoming deadlines, their saved progress, a live re-check of every tracked issue (reporting\nstatus changes such as available -> claimed), beginner issues created in tracked repos and\nshortlisted orgs since the last check, the contributor's open pull requests sorted into\n\"needs_you\" (conflict, failing check, requested changes, unanswered comment, draft) and\n\"waiting\" (when a saved profile has a GitHub username), and an ordered list of concrete next actions, each\nwith the exact command. Use this first when a user asks \"what now?\" or returns after a break.\nrecheck=False skips the live GitHub checks.",
+      "inputSchema": {
+        "properties": {
+          "year": {
+            "default": 0,
+            "title": "Year",
+            "type": "integer"
+          },
+          "recheck": {
+            "default": true,
+            "title": "Recheck",
+            "type": "boolean"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_nextArguments"
+      },
+      "name": "gsoc_next",
+      "title": "What to do next"
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Write the contributor's weekly note (goal, what happened, links, learned, stuck, next\nstep), or list recent notes when every field is empty. Notes stay local; they feed the\n`gsoc_next` reminder and give the contributor material for proposals and mentor updates.\nlinks: comma-separated URLs. Ask the user for their own words; never invent progress.",
+      "inputSchema": {
+        "properties": {
+          "goal": {
+            "default": "",
+            "title": "Goal",
+            "type": "string"
+          },
+          "done": {
+            "default": "",
+            "title": "Done",
+            "type": "string"
+          },
+          "links": {
+            "default": "",
+            "title": "Links",
+            "type": "string"
+          },
+          "learned": {
+            "default": "",
+            "title": "Learned",
+            "type": "string"
+          },
+          "stuck": {
+            "default": "",
+            "title": "Stuck",
+            "type": "string"
+          },
+          "next_step": {
+            "default": "",
+            "title": "Next Step",
+            "type": "string"
+          },
+          "limit": {
+            "default": 5,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "type": "object",
+        "title": "gsoc_logArguments"
+      },
+      "name": "gsoc_log",
+      "title": "Weekly note"
+    },
+    {
+      "annotations": {
+        "idempotentHint": true,
+        "openWorldHint": true,
+        "readOnlyHint": true
+      },
+      "description": "Show GitHub API rate limit status. Set GITHUB_TOKEN for higher limits.",
+      "inputSchema": {
+        "properties": {},
+        "type": "object",
+        "title": "gsoc_rate_limitArguments"
+      },
+      "name": "gsoc_rate_limit",
+      "title": "GitHub API budget"
+    }
+  ]
+}
