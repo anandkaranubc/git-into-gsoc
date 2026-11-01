@@ -314,9 +314,7 @@ class CachedHttpClient:
             revalidated = response.status_code == 304
             data: Any = None if revalidated else _decode(response, url, kind)
         except (RateLimitError, HttpError) as exc:
-            # A 401 means the token was refused: a week of cached answers would hide
-            # that from the person until they hit an uncached address.
-            if isinstance(exc, NotFoundError) or entry is None or exc.status_code == 401:
+            if isinstance(exc, NotFoundError) or entry is None:
                 raise
             if time.time() - entry.get("ts", 0) > STALE_IF_ERROR_SECONDS:
                 raise

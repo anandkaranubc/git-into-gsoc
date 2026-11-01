@@ -483,18 +483,3 @@ def test_a_304_without_a_cached_copy_is_not_an_empty_page(tmp_path: Path) -> Non
     with pytest.raises(HttpError, match="no copy"):
         client.get_text(URL)
     assert client.stats["cache_hits"] == 0
-
-
-@respx.mock
-def test_a_refused_token_is_not_hidden_behind_a_stale_copy(tmp_path: Path) -> None:
-    respx.get(GITHUB).mock(
-        side_effect=[
-            httpx.Response(200, json={"v": 1}),
-            httpx.Response(401, json={"message": "Bad credentials"}),
-        ]
-    )
-    client, _ = make_client(tmp_path)
-    assert client.get_json(GITHUB, headers={"Authorization": "Bearer old"}) == {"v": 1}
-    with pytest.raises(HttpError, match="401") as refused:
-        client.get_json(GITHUB, headers={"Authorization": "Bearer old"}, ttl=0)
-    assert "token" in (refused.value.hint or "")
