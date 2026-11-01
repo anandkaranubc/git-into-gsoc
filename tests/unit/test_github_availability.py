@@ -119,16 +119,87 @@ def test_old_claim_without_pr_is_available_with_caveat() -> None:
     assert any("@frank" in c for c in result.caveats)
 
 
-def test_bots_and_maintainers_are_not_claimants() -> None:
+def test_bots_are_not_claimants_but_a_maintainer_working_on_it_has_taken_it() -> None:
+    # A member's "I'm working on this, will push a PR tonight" with no assignee left the
+    # issue "available" (reviewer probe, 2026-11-01).
     timeline = [
         {
             **_comment("dependabot[bot]", "I'm working on it", 1),
             "user": {"login": "dependabot[bot]", "type": "Bot"},
         },
-        _comment("owner", "I am working on this myself", 1, role="OWNER"),
+        _comment("owner", "I am working on this myself, will push a PR tonight", 1, role="OWNER"),
     ]
     result = assess_issue(_issue(), timeline, now=NOW)
-    assert result.claims == []
+    assert [c.login for c in result.claims] == ["owner"]
+    assert result.claims[0].granted
+    assert result.availability == Availability.CLAIMED
+    # Maintenance talk is not a claim: "I'll add more detail to the description".
+    tidy = assess_issue(
+        _issue(),
+        [_comment("owner", "I'll add more detail to the description", 1, "OWNER")],
+        now=NOW,
+    )
+    assert tidy.claims == []
+    # An offer with a condition is not a claim: this one hid the issue for 180 days
+    # (review of #428, 2026-11-01).
+    for body in (
+        "If nobody picks this up by Friday I'll take it.",
+        "I'll take it if nobody else does.",
+        "Good first issue. Unless someone wants it, I'll fix it next week.",
+    ):
+        offer = assess_issue(_issue(), [_comment("owner", body, 1, "OWNER")], now=NOW)
+        assert offer.claims == [] and offer.availability == Availability.AVAILABLE, body
+    # A condition in another sentence does not undo a plain claim.
+    plain = "I'm working on this. Ping me if you have questions."
+    taken = assess_issue(_issue(), [_comment("owner", plain, 1, "OWNER")], now=NOW)
+    assert [c.login for c in taken.claims] == ["owner"]
+
+
+def test_a_grant_goes_to_the_latest_claimant_only_when_it_is_a_reply() -> None:
+    # Each of these marked @bob approved and hid the issue (reviewer probe, 2026-11-01):
+    # the words matched a grant pattern, but nothing in them was said to bob.
+    for aside in [
+        "Not sure this is still relevant, that looks fine as is to me.",
+        "This isn't assigned to anyone yet, but we're reworking this area; hold off for now.",
+        "The typo fix: feel free to open a PR. This issue itself needs design first.",
+    ]:
+        timeline = [
+            _comment("bob", "Can I work on this?", 5),
+            _comment("maint", aside, 1, role="MEMBER"),
+        ]
+        result = assess_issue(_issue(), timeline, now=NOW)
+        assert not result.claims[0].granted, aside
+        assert "approved" not in result.reason, aside
+    assert not is_grant("This isn't assigned to anyone yet")
+    assert not is_grant("It is not assigned")
+    # Addressed with an @mention, the same words do grant.
+    timeline = [
+        _comment("bob", "Can I work on this?", 5),
+        _comment("maint", "@bob feel free, this looks good", 1, role="MEMBER"),
+    ]
+    assert "approved @bob" in assess_issue(_issue(), timeline, now=NOW).reason
+
+
+def test_mentions_match_logins_in_any_case() -> None:
+    # GitHub logins are not case-sensitive: "@alice go ahead" after "Alice" claimed
+    # approved the other claimant, bob (reviewer probe, 2026-11-01).
+    timeline = [
+        _comment("Alice", "I'd like to work on this.", 10),
+        _comment("bob", "Can I take this?", 3),
+        _comment("maint", "@alice go ahead, it's yours.", 2, role="MEMBER"),
+    ]
+    result = assess_issue(_issue(), timeline, now=NOW)
+    assert "approved @Alice" in result.reason
+    assert [c.login for c in result.claims if c.granted] == ["Alice"]
+    released = assess_issue(
+        _issue(),
+        [
+            _comment("Alice", "I'd like to work on this.", 10),
+            _comment("maint", "@ALICE has been unassigned due to inactivity.", 2, role="MEMBER"),
+        ],
+        now=NOW,
+    )
+    assert released.claims == []
 
 
 def test_project_bots_without_the_suffix_are_not_claimants() -> None:

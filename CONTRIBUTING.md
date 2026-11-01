@@ -117,13 +117,26 @@ Most of the code explains itself through its names. A comment is for what the co
 - Every module starts with a docstring that says what it is for. A public function or class gets one when its name does not say it all: what it returns, what it leaves out, and what it raises.
 - The docstring of a command in `cli.py` is its `--help` text, so a change there changes what people see in the terminal. Check `git-into-gsoc COMMAND --help` after editing one.
 - Do not add comments to tidy an area you are not changing, and do not delete one you do not understand; ask in the pull request.
-- Two kinds of text are for models, not people: the MCP tool docstrings in `mcp_server.py` and the skill in `skills/git-into-gsoc/`. Change those only with before-and-after assistant runs.
+- Two kinds of text are for models, not people: the MCP tool docstrings in `mcp_server.py` and the skill in `skills/git-into-gsoc/`. Change those only with before-and-after runs of the eval suite (see [Text for models](#text-for-models)).
+
+### Text for models
+
+The skill and the MCP tool descriptions steer an assistant, so a wording change can change what it does. `plugin-evals/` holds behaviour tests for them, run by [`claude plugin eval`](https://code.claude.com/docs/en/plugin-evals), which ships with Claude Code. Each case is a prompt a person might type plus graders: which tools were called and in what order, a regex over the reply, and a short rubric a judge model scores. Tool calls are answered from `plugin-evals/mocks/git-into-gsoc/`, one file per tool with a saved JSON answer, so a run needs no network and no token. `_tools.json` there is the server's tool list with the real descriptions; `python scripts/snapshot_mcp_tools.py` refreshes it, and a test fails while it is stale.
+
+Before and after a change to either text, run the suite once from the repository root and compare the two reports:
+
+```bash
+claude plugin eval . --ablation none --max-cost-usd 5
+```
+
+It runs each case three times and prints a score per case; the HTML report under `plugin-evals/results/` (ignored by Git) shows every grader's verdict. Add `--runs 1` while you adjust a grader, and `--case NAME` for one case. The run uses your own Claude account, which is why CI does not run it. Paste the before and after scores into the pull request.
 
 ### Writing docs
 
 The docs should read as if one person wrote them. These rules keep them that way:
 
 - **One home per fact.** Explain each thing once, in the page that owns it, and link to it from everywhere else. The map: `README.md` is the first two minutes. `docs/README.md` is the index. The guide chapters say what to do and why, in order. `docs/cli.md` and `docs/mcp.md` list every command, tool, and option briefly; a test fails when one is missing. `docs/sources.md` says where data comes from and what it cannot tell you. `docs/troubleshooting.md` is organized by symptom and `docs/configuration.md` by setting. `docs/architecture.md`, `docs/releasing.md`, and `docs/distribution.md` are for people changing the tool.
+- **The site shows the same pages.** The Pages workflow renders `docs/` to https://gitintogsoc.me/docs/ with `scripts/build_docs.py`, rewriting relative Markdown links as it goes, so link between pages with relative paths and keep one `#` heading per page: it becomes the page title.
 - **Write for someone who has never contributed to open source.** Short sentences. Define a term the first time a page uses it. Say what to do before explaining why.
 - **Plain words.** No em dashes; use a comma, a colon, a period, or parentheses. No filler or sales words, the kind that praise the tool instead of saying what it does; `tests/unit/test_docs_style.py` keeps the short list of words we never use.
 - **Commands run as written.** Uppercase words such as `OWNER/REPO` are placeholders, and the page says so once. Prefer placeholders to real issue numbers, so nobody acts on an issue they never chose.
@@ -151,6 +164,7 @@ You are welcome to use AI assistants while contributing. You are responsible for
 | `docs/` | The beginner guide and the references for people using the tool, plus `architecture.md`, `releasing.md`, and `distribution.md` for people changing it |
 | `tests/` | Unit and integration tests with fixtures; no live network |
 | `evals/` | Benchmarks for the organization ranking ([evals/README.md](evals/README.md)) |
+| `plugin-evals/` | Behaviour tests for the skill and tool text, run by `claude plugin eval` (see [Text for models](#text-for-models)) |
 | `scripts/` | Maintainer scripts: generated files, assistant checks, live journeys, the benchmark, the brand kit |
 | `examples/`, `brand/`, `site/` | A sample terminal session and prompts; the logo; the project website |
 | `install.sh`, `install.ps1` | The installers people run |

@@ -54,3 +54,11 @@ coverage.xml
 .agents/mcp_config.json
 .devin/
 *.bak
+
+# Written by every `claude plugin eval` run
+plugin-evals/results/
+# Written by scripts/build_site.py and scripts/build_docs.py in the Pages workflow
+site/orgs/
+site/start/
+site/docs/
+site/sitemap.xml

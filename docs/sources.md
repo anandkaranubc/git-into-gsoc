@@ -43,7 +43,7 @@ Each signal adds points, and the points add up to exactly 100. A repository with
 | Open beginner issues | 10 | 10 when one is free, 4 when the label has no open issues, 2 when every one is assigned |
 | Time to a first human reply | 10 | 10 within a day, 6 within three days. With too few replies measured, time to merge: 10 within three days, 5 within ten |
 | Merge rate of all human PRs | 8 | 8 at 50% or more, 4 at 25% or more |
-| CI (automatic checks) on pull requests | 8 | At least one workflow |
+| GitHub Actions workflows | 8 | At least one workflow file, whatever it does; CI run outside GitHub Actions is not seen |
 | Different outside authors merged | 6 | 2 for each, up to three |
 | People who landed a single commit last year | 6 | 6 for ten or more, 3 for three or more |
 | Code of Conduct | 4 | Found in the repository |
@@ -72,13 +72,13 @@ Where these features came from, and which ideas from other tools were adopted or
 
 `contributions` uses four GitHub searches scoped to the organization's GitHub owners or one repository: pull requests you authored, issues you opened, threads you commented in, and pull requests you reviewed. Counts cover public activity only and the search index can lag by minutes.
 
-Text written by other people is cleaned before it is shown. That covers issue and pull request titles, issue text, idea descriptions, policy sentences, repository descriptions, profile bios, and commit author names. Hidden Unicode characters, HTML comments, and risky tags are removed, and length is capped. Every line the tool prints or returns to an assistant also loses invisible characters and terminal control codes. It is still data written by strangers; read it as such.
+Text written by other people is cleaned before it is shown. That covers issue and pull request titles, issue text, idea descriptions, policy sentences, repository descriptions, profile bios, and commit author names. Hidden Unicode characters, HTML comments, images, elements marked hidden, link reference definitions, and risky tags are removed, and length is capped. Every line the tool prints or returns to an assistant also loses invisible characters and terminal control codes. It is still data written by strangers; read it as such.
 
 Pages link to other pages, and `ideas` follows some links on umbrella pages. The tool never fetches an address on your computer or your local network, such as `localhost`, `127.0.0.1`, `192.168.x.x`, or the cloud metadata address `169.254.169.254`. This also holds when a public page redirects there. Service addresses you set yourself, such as `GIG_GITHUB_API_URL`, are exempt.
 
 ## Caching
 
-Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source is down or rate limited, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.
+Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source is down or rate limited, a cached copy up to a week old is served and a warning is logged. A page that does not exist (a 404) is remembered for up to an hour, so it is not asked for again on every command. See [configuration](configuration.md) for refreshing results.
 
 ## If a source is unavailable
 

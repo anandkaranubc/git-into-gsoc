@@ -127,6 +127,26 @@ def test_cli_ideas_table(api: respx.MockRouter) -> None:
     assert "AI" in result.stdout or "disclose" in result.stdout
 
 
+def test_ideas_cells_cut_at_words_and_count_the_rest() -> None:
+    from git_into_gsoc.cli import _first_few
+
+    skills = [
+        "Read documentation about Gtk4",
+        "Read docs about migration from Gtk3 to Gtk4 and the porting guide",
+        "C",
+        "Vala",
+        "Meson",
+    ]
+    cell = _first_few(skills, 4)
+    assert cell.startswith("Read documentation about Gtk4, Read docs about migration from Gtk3 to")
+    assert "…, C, Vala, +1 more" in cell
+    assert "fro" not in cell.replace("from", "")
+    assert _first_few(["Alberto Fanjul"], 3) == "Alberto Fanjul"
+    assert _first_few(["aaaa bbbb cccc"], 1, width=9) == "aaaa bbbb…"  # a word ends at the width
+    assert _first_few(["", "C", " "], 4) == "C"
+    assert _first_few([], 3) == ""
+
+
 def test_past_proposal_folders_match_org_names() -> None:
     from git_into_gsoc.gsoc.archive import proposal_folders
 

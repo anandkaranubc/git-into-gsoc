@@ -23,7 +23,9 @@ from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
 from git_into_gsoc.validation import parse_issue_ref, parse_repo, split_csv, validate_limit
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
-LOCK_TIMEOUT_SECONDS = 10.0
+# A save holds the lock for milliseconds, but the wait is unfair: eight writers on a
+# slow Windows CI runner starved one past 10 seconds (PR 408's Windows job, 2026-11-01).
+LOCK_TIMEOUT_SECONDS = 30.0
 STALE_LOCK_SECONDS = 60.0
 # Windows briefly denies access to a file another process is replacing or deleting
 # (a sharing violation, raised as PermissionError). A replace takes milliseconds.
@@ -144,11 +146,19 @@ def other_host_link(value: str) -> str | None:
     if not raw.startswith(("https://", "http://")):
         return None
     parsed = urlparse(raw)
-    host = parsed.netloc.lower()
+    # hostname, not netloc: "github.com:443" is still GitHub.
+    host = (parsed.hostname or "").lower()
     path = [p for p in parsed.path.split("/") if p]
     if not host or "." not in host or host.removeprefix("www.") == "github.com" or len(path) < 2:
         return None
-    return raw.split("#", 1)[0].rstrip("/").removesuffix(".git")
+    # "#note_5" names the same issue, and so does "?x=1" after "/issues/5". The query is
+    # kept everywhere else: Bugzilla (gcc.gnu.org/bugzilla/show_bug.cgi?id=N) and
+    # Savannah (bugs/index.php?N) put the bug number there, and cutting it saved
+    # every GCC bug as one issue (review of #425, 2026-11-01).
+    link = raw.split("#", 1)[0]
+    if _OTHER_HOST_ISSUE.search(parsed.path):
+        link = link.split("?", 1)[0]
+    return link.rstrip("/").removesuffix(".git")
 
 
 _OTHER_HOST_ISSUE = re.compile(r"/(?:-/)?(?:issues|merge_requests|pulls?|bugs?|tickets?)/\d+")
@@ -174,10 +184,18 @@ class ProgressStore:
     def __init__(self, path: Path | None = None) -> None:
         # Created on the first save, so reading works where writing is not allowed.
         self.path = path or (data_location() / "progress.json")
+        self._held = False
 
     @contextlib.contextmanager
     def _lock(self) -> Iterator[None]:
-        """Cross-platform exclusive lock: a lock file created with O_EXCL."""
+        """Cross-platform exclusive lock: a lock file created with O_EXCL.
+
+        Re-entrant within one store: `_recover` locks too, and a mutating method
+        that meets a damaged file calls it while already holding the lock.
+        """
+        if self._held:
+            yield
+            return
         _private_dir(self.path.parent)
         lock = self.path.with_name(self.path.name + ".lock")
         deadline = time.monotonic() + LOCK_TIMEOUT_SECONDS
@@ -209,9 +227,11 @@ class ProgressStore:
                         "git-into-gsoc command is running.",
                     ) from None
                 time.sleep(0.05)
+        self._held = True
         try:
             yield
         finally:
+            self._held = False
             with contextlib.suppress(OSError):
                 lock.unlink()
 
@@ -219,7 +239,7 @@ class ProgressStore:
         if not self.path.exists():
             return self._fresh()
         try:
-            text = _retry_busy(lambda: self.path.read_text(encoding="utf-8"))
+            raw = _retry_busy(self.path.read_bytes)
         except OSError as exc:
             # Unreadable is not damaged: moving the file aside would hide the person's
             # progress behind a fresh, empty one.
@@ -228,9 +248,9 @@ class ProgressStore:
                 hint="Check the file's permissions, or close other programs using it.",
             ) from exc
         try:
-            state = ProgressState.model_validate_json(text)
+            state = ProgressState.model_validate_json(raw)
         except (ValidationError, ValueError) as exc:
-            return self._recover(exc)
+            return self._recover(exc, raw)
         state.phases = {**DEFAULT_PHASES, **state.phases}  # files saved before a phase was added
         # docs/configuration.md invites hand edits, and "technologies": "python, rust"
         # became ['p', 'y', ...] in every reader that calls list() on it.
@@ -246,18 +266,33 @@ class ProgressStore:
             updated_at=datetime.now(UTC),
         )
 
-    def _recover(self, exc: Exception) -> ProgressState:
+    def _recover(self, exc: Exception, raw: bytes) -> ProgressState:
         """Keep a damaged file for the user and carry on with a fresh one."""
-        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+        # Microseconds: two recoveries in one second wrote the same backup name.
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
         backup = self.path.with_name(f"{self.path.stem}.damaged-{stamp}{self.path.suffix}")
-        with contextlib.suppress(OSError):
-            self.path.replace(backup)
-        log.warning(
-            "progress.json could not be read (%s); it was kept as %s and a fresh one "
-            "will be saved. Copy entries back from the kept file if you need them.",
-            type(exc).__name__,
-            backup,
-        )
+        moved = False
+        # load() runs without the lock, so another process may have recovered and saved
+        # a good file since `raw` was read; moving that aside lost it. The compare and
+        # the move happen under the lock, so no save can slip in between them. A folder
+        # that cannot be locked cannot be written either, so the file stays as it is.
+        with contextlib.suppress(OSError, InputError), self._lock():
+            if self.path.read_bytes() == raw:
+                self.path.replace(backup)
+                moved = True
+        if moved:
+            log.warning(
+                "progress.json could not be read (%s); it was moved to %s and a fresh one "
+                "will be saved. Copy entries back from the moved file if you need them.",
+                type(exc).__name__,
+                backup,
+            )
+        else:
+            log.warning(
+                "progress.json could not be read (%s); it changed on disk meanwhile, so it "
+                "was left in place and this read starts from a fresh one.",
+                type(exc).__name__,
+            )
         return self._fresh()
 
     def save(self, state: ProgressState) -> ProgressState:
@@ -355,8 +390,13 @@ class ProgressStore:
     @_mutating
     def track_repo(self, full_name: str) -> ProgressState:
         link = other_host_link(_require(full_name, "repository"))
+        if link and _OTHER_HOST_ISSUE.search(link):
+            raise InputError(
+                f"That is an issue link, not a repository: {full_name!r}",
+                hint="Save it with track_issue instead.",
+            )
         if link:
-            full_name = link
+            full_name = _bounded(link, "link", MAX_LINK_CHARS)
         else:
             owner, repo = parse_repo(full_name)
             full_name = f"{owner}/{repo}"
@@ -370,6 +410,7 @@ class ProgressStore:
         issue_ref = _require(issue_ref, "issue reference")
         link = other_host_link(issue_ref)
         if link and _OTHER_HOST_ISSUE.search(link):
+            _bounded(link, "link", MAX_LINK_CHARS)
             state = self.load()
             if link.lower() not in {i.lower() for i in state.tracked_issues}:
                 state.tracked_issues.append(link)
@@ -404,9 +445,11 @@ class ProgressStore:
 
     def summary(self) -> dict[str, object]:
         state = self.load()
-        done = sum(1 for v in state.phases.values() if v)
-        total = len(state.phases)
-        next_phases = [k for k, v in state.phases.items() if not v]
+        # Known phases only: a phase from a newer version became `next_phase`, and the
+        # command printed for it was one this version's complete_phase refuses.
+        done = sum(1 for k in DEFAULT_PHASES if state.phases.get(k))
+        total = len(DEFAULT_PHASES)
+        next_phases = [k for k in DEFAULT_PHASES if not state.phases.get(k)]
         last_log = max((e.at for e in state.weekly_log), default=None)
         return {
             "log_entries": len(state.weekly_log),

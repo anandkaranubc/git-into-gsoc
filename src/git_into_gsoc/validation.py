@@ -42,7 +42,7 @@ def _split_github_path(value: str) -> list[str]:
     elsewhere = "://" not in raw and bool(_HOST_RE.match(first))
     if raw.startswith(("http://", "https://")) or raw.startswith(tuple(_GITHUB_HOSTS)) or elsewhere:
         parsed = urlparse(raw if "://" in raw else f"https://{raw}")
-        if parsed.netloc.lower() not in _GITHUB_HOSTS:
+        if (parsed.hostname or "") not in _GITHUB_HOSTS:  # "github.com:443" is GitHub too
             raise InputError(
                 f"Not a github.com URL: {value!r}",
                 hint="This command reads GitHub. repo, orient, issue, and pointers also take a "
@@ -86,6 +86,19 @@ def parse_repo(value: str) -> tuple[str, str]:
 def parse_issue_ref(value: str, number: int | None = None) -> tuple[str, str, int]:
     """Parse `owner/repo#123`, `owner/repo 123`, or an issue/PR URL."""
     raw = (value or "").strip()
+    if number is not None:
+        # `issue https://github.com/a/b/issues/5 7` quietly read issue 7.
+        try:
+            owner, repo, found = parse_issue_ref(raw)
+        except InputError:
+            pass
+        else:
+            if found != number:
+                raise InputError(
+                    f"{value!r} points at issue {found}, but the number given is {number}.",
+                    hint="Pass the link alone, or owner/repo with the number.",
+                )
+            return owner, repo, found
     # URLs first: a pasted comment link (".../issues/12#issuecomment-34") or a URL with a
     # query string must resolve from its path, not from the text after "#".
     if number is None and ("://" in raw or raw.lower().startswith(tuple(_GITHUB_HOSTS))):

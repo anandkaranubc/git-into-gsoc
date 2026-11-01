@@ -404,6 +404,46 @@ def test_the_repository_step_says_what_to_do_when_repos_points_to_ideas() -> Non
     assert 'git-into-gsoc ideas "UC OSPO"' in pick["why"]
 
 
+def test_next_saves_a_gitlab_issue_status_and_reports_its_change(
+    api: respx.MockRouter, monkeypatch: pytest.MonkeyPatch, tmp_path: Any
+) -> None:
+    # Only the GitHub loop filled the statuses saved by mark_checked, so a GitLab
+    # issue never had a `previous` and its change was never reported.
+    from git_into_gsoc import config
+
+    link = "https://gitlab.gnome.org/GNOME/gitg/-/issues/494"
+    gitlab = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgitg/issues/494"
+    ProgressStore().track_issue(link)
+    api.get(f"{GH}/search/issues").mock(return_value=httpx.Response(200, json={"items": []}))
+    api.get(f"{gitlab}/related_merge_requests").mock(return_value=httpx.Response(200, json=[]))
+    issue = {"iid": 494, "state": "opened", "assignees": [], "labels": [], "updated_at": _iso(1)}
+    api.get(gitlab).mock(return_value=httpx.Response(200, json=issue))
+    assert GSoCToolkit().next_steps(now=NOW)["tracked_issues"][0]["changed"] is False
+    assert ProgressStore().load().issue_status[link] == "available"
+
+    # A new cache folder, or the second run would be answered from the first one.
+    monkeypatch.setenv("GIG_CACHE_DIR", str(tmp_path / "cache2"))
+    config.get_settings.cache_clear()
+    api.get(gitlab).mock(
+        return_value=httpx.Response(200, json={**issue, "assignees": [{"username": "bob"}]})
+    )
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert data["tracked_issues"][0]["changed"] is True
+    assert data["changes"] and "went from available to" in data["changes"][0]
+    saved = ProgressStore().load().issue_status[link]
+
+    # Comments this tool cannot read make the status "unknown": not a change, as on
+    # GitHub, and the earlier status stays saved (review of #425, 2026-11-01).
+    monkeypatch.setenv("GIG_CACHE_DIR", str(tmp_path / "cache3"))
+    config.get_settings.cache_clear()
+    api.get(gitlab).mock(return_value=httpx.Response(200, json={**issue, "user_notes_count": 3}))
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert data["tracked_issues"][0]["availability"] == "unknown"
+    assert data["tracked_issues"][0]["changed"] is False
+    assert data["changes"] == []
+    assert ProgressStore().load().issue_status[link] == saved
+
+
 def test_next_after_start_names_the_organizations_start_matched() -> None:
     from git_into_gsoc.coach import plan_actions
     from git_into_gsoc.models import ProgressState

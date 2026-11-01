@@ -80,6 +80,19 @@ CONTESTED_WINDOW_DAYS = 60
 CONTESTED_MIN_CLAIMANTS = 3
 STALE_DAYS = 365
 
+# Saying the work is in hand. From a maintainer this is the only kind of claim we
+# record: "I'll add more detail to the description" is maintenance, not taking the
+# issue, while "I'm working on this, will push a PR tonight" with no assignee left the
+# issue "available" (reviewer probe, 2026-11-01).
+_WORKING_ON_PATTERNS = [
+    r"\bi(?:'m| am) (?:currently |now )?working on (?:this|it|the issue)\b",
+    r"\bi(?:'ll| will) (?:take|work on|pick up|handle|fix) (?:this|it)\b",
+]
+# "If nobody picks this up I'll take it" is an offer to newcomers, not a claim; counting
+# it hid the issue from `recommend` for 180 days (review of #428, 2026-11-01). A sentence
+# with a condition in it never counts.
+_CONDITIONAL_RE = re.compile(r"\b(?:if|unless|otherwise|in case|until)\b", re.I)
+_SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 _CLAIM_PATTERNS = [
     # A plan is a claim. This project's own good-first issues ask "comment with what you
     # plan to do", and a "## Planned change ... I will add ..." comment read as no claim
@@ -92,8 +105,7 @@ _CLAIM_PATTERNS = [
     r"approach|plan|solution)|approach)[ \t]*(?::[ \t]*)?$",
     r"\bi(?:'ll| will) (?:add|update|write|rewrite|change|document|refactor|create|replace|"
     r"remove|move|rename|clarify|improve|extend)\b",
-    r"\bi(?:'m| am) (?:currently |now )?working on (?:this|it|the issue)\b",
-    r"\bi(?:'ll| will) (?:take|work on|pick up|handle|fix) (?:this|it)\b",
+    *_WORKING_ON_PATTERNS,
     r"(?<!how )\b(?:can|could|may) i (?:please )?(?:work on|take|pick up|tackle|fix|be assigned|"
     r"get assigned)\b",
     r"\b(?:please |kindly )?(?<!un-)(?<!un)assign (?:this |it )?(?:issue )?(?:to )?me\b",
@@ -246,15 +258,24 @@ _OWN_RELEASE_PATTERNS = [
     r"\b(?:please )?un-?assign me\b",
     r"\bi(?:'m| am) (?:not |un)able to (?:continue|work on|finish|complete|set up)\b",
 ]
-_GRANT_PATTERNS = [
-    r"\bassigned\b",
+# A reply to the person asking: without an @mention it still goes to the latest claimant.
+_REPLY_GRANT_PATTERNS = [
     r"\bgo ahead\b",
     r"\bgo for it\b",
-    r"\bfeel free\b",
     r"\ball yours\b",
     r"\bsure,? (?:go|you can|please)\b",
-    r"\b(?:this|that|your plan|the plan|your approach) (?:sounds|looks) (?:good|great|fine)\b",
+    r"\b(?:your plan|the plan|your approach) (?:sounds|looks) (?:good|great|fine)\b",
 ]
+# Words that grant only when the comment @mentions a claimant. "That looks fine as is to
+# me", "this isn't assigned to anyone yet, hold off" and "the typo fix: feel free to open
+# a PR" each marked the latest claimant approved and hid the issue (reviewer probe,
+# 2026-11-01). "isn't assigned" and "not assigned" never grant.
+_MENTION_GRANT_PATTERNS = [
+    r"(?<!not )(?<!n't )(?<!yet )\bassigned\b",
+    r"\bfeel free\b",
+    r"\b(?:this|that) (?:sounds|looks) (?:good|great|fine)\b",
+]
+_GRANT_PATTERNS = _REPLY_GRANT_PATTERNS + _MENTION_GRANT_PATTERNS
 # A comment pointing at a pull request: "covered by #1293", "PR #12", or a PR link.
 _PR_MENTION_RE = re.compile(
     r"\b(?:PR|pull request)\s*#(\d+)"
@@ -290,12 +311,20 @@ def imported_jira_key(body: str | None) -> str | None:
 PullLookup = Callable[[str, int], dict[str, Any] | None]
 _CLAIM_RE = re.compile("|".join(_CLAIM_PATTERNS), re.IGNORECASE | re.MULTILINE)
 _GRANT_RE = re.compile("|".join(_GRANT_PATTERNS), re.IGNORECASE)
+_REPLY_GRANT_RE = re.compile("|".join(_REPLY_GRANT_PATTERNS), re.IGNORECASE)
+_WORKING_ON_RE = re.compile("|".join(_WORKING_ON_PATTERNS), re.IGNORECASE)
 _RELEASE_RE = re.compile("|".join(_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
 _OWN_RELEASE_RE = re.compile("|".join(_OWN_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
 
 
 def _login(obj: dict[str, Any] | None) -> str | None:
     return (obj or {}).get("login")
+
+
+def _mentions(body: str) -> set[str]:
+    """Logins the comment @mentions, lower-cased: GitHub logins are not case-sensitive, and
+    "@alice go ahead" after "Alice" claimed went to the other claimant (probe, 2026-11-01)."""
+    return {name.lower() for name in re.findall(r"@([A-Za-z0-9-]+)", body)}
 
 
 _QUOTED_LINE = re.compile(r"^\s*>.*$", re.MULTILINE)
@@ -314,6 +343,14 @@ def is_claim(text: str) -> bool:
 
 def is_grant(text: str) -> bool:
     return bool(_GRANT_RE.search(straight_quotes(text)))
+
+
+def maintainer_takes_it(text: str) -> bool:
+    """A maintainer saying the work is in hand, in a sentence with no condition."""
+    return any(
+        _WORKING_ON_RE.search(sentence) and not _CONDITIONAL_RE.search(sentence)
+        for sentence in _SENTENCE_END_RE.split(_own_words(text))
+    )
 
 
 def is_own_release(text: str) -> bool:
@@ -459,19 +496,27 @@ def assess_issue(
             if is_release(body) and login:
                 _release(claims, body, caveats, who=login)
             mentioned += _mentioned_pulls(body, repo)
-            if role in MAINTAINER_ROLES:
+            maintainer = role in MAINTAINER_ROLES
+            if maintainer:
                 maintainer_engaged = True
                 if is_grant(body):
                     _grant(claims, body)
                 # "@x are you still working on this?" keeps x's claim alive.
                 if at is not None:
-                    for name in set(re.findall(r"@([A-Za-z0-9-]+)", body)) & set(claims):
-                        _touch(claims[name], at, now)
-            elif is_claim(body) and not is_own_release(body) and at is not None and login:
+                    pinged = _mentions(body)
+                    for name, claim in claims.items():
+                        if name.lower() in pinged:
+                            _touch(claim, at, now)
+                takes_it = maintainer_takes_it(body)
+            else:
+                takes_it = is_claim(body)
+            if takes_it and not is_own_release(body) and at is not None and login:
                 if login in claims:
                     _touch(claims[login], at, now)
                 else:
-                    claims[login] = IssueClaim(login=login, at=at, days_ago=(now - at).days)
+                    claims[login] = IssueClaim(
+                        login=login, at=at, days_ago=(now - at).days, granted=maintainer
+                    )
             elif login in claims and not is_release(body) and at is not None:
                 _touch(claims[login], at, now)  # the claimant is still talking about it
         elif kind == "unassigned":
@@ -719,8 +764,8 @@ def _release(
     claims: dict[str, IssueClaim], body: str, caveats: list[str], *, who: str | None
 ) -> None:
     """Drop claims a comment gives back: the author's own, or those it mentions."""
-    mentioned = set(re.findall(r"@([A-Za-z0-9-]+)", body))
-    targets = [login for login in claims if login in mentioned or (who and login == who)]
+    mentioned = _mentions(body)
+    targets = [login for login in claims if login.lower() in mentioned or (who and login == who)]
     if not targets and who is None and len(claims) == 1:
         targets = list(claims)
     for login in targets:
@@ -736,9 +781,9 @@ def _touch(claim: IssueClaim, at: datetime, now: datetime) -> None:
 
 
 def _grant(claims: dict[str, IssueClaim], body: str) -> None:
-    mentioned = set(re.findall(r"@([A-Za-z0-9-]+)", body))
-    targets = [c for login, c in claims.items() if login in mentioned]
-    if not targets and claims:
+    mentioned = _mentions(body)
+    targets = [c for login, c in claims.items() if login.lower() in mentioned]
+    if not targets and claims and _REPLY_GRANT_RE.search(straight_quotes(body)):
         targets = [max(claims.values(), key=lambda c: c.at)]
     for claim in targets:
         claim.granted = True

@@ -585,8 +585,15 @@ def render_draft(kind: str, *, context: dict[str, Any]) -> dict[str, Any]:
 # ---------------------------------------------------------------- checking a message
 
 # The angle-bracket placeholders the templates above use, plus the proposal
-# checker's patterns. Links and email addresses in angle brackets are not placeholders.
-_ANGLE_PLACEHOLDER_RE = re.compile(r"<(?!https?:|/|!--)[A-Za-z][^<>\n@]{1,80}>")
+# checker's patterns. Links, email addresses, and the HTML tags pull request templates
+# use (`<details>`, `<summary>`) are not placeholders. A tag name must be followed by
+# ">" or an attribute: excluding it on a following space hid `<a short summary>` and
+# `<code to reproduce>` (review of #426, 2026-11-01).
+_ANGLE_PLACEHOLDER_RE = re.compile(
+    r"<(?!https?:|/|!--|(?:details|summary|kbd|br|img|b|i|p|a|em|strong|code|pre|sub|sup"
+    r"|table|tr|td|th|ul|ol|li|hr|blockquote)(?:\s*/?>|\s+[A-Za-z-]+\s*[=/>]))"
+    r"[A-Za-z][^<>\n@]{1,80}>"
+)
 _ASSISTANT_TELLS = (
     "certainly!",
     "great question",
