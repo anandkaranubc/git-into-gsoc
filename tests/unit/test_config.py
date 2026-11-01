@@ -117,3 +117,31 @@ def test_a_dotenv_cannot_send_the_gitlab_token_to_another_host(
     assert settings.gitlab_host == "gitlab.com"
     monkeypatch.setenv("GITLAB_HOST", "gitlab.gnome.org")
     assert Settings().gitlab_host == "gitlab.gnome.org"  # the real environment still works
+
+
+@pytest.mark.parametrize(
+    ("variable", "value", "words"),
+    [
+        ("GIG_MAX_CONCURRENCY", "0", "greater than or equal to 1"),
+        ("GIG_HTTP_TIMEOUT_SECONDS", "-1", "greater than 0"),
+        ("GIG_CACHE_TTL_SECONDS", "abc", "integer"),
+        ("GIG_TARGET_YEAR", "2099", "year from 2005"),
+        ("GIG_USER_AGENT", "evil\r\nX-Injected: 1", "one line"),
+    ],
+)
+def test_a_setting_out_of_range_is_refused_naming_the_variable(
+    monkeypatch: pytest.MonkeyPatch, variable: str, value: str, words: str
+) -> None:
+    # A cloned folder's .env may set any of these: 0 workers was a ThreadPoolExecutor
+    # traceback, a negative timeout a socket one, 2099 a timeline for 2099.
+    from git_into_gsoc.errors import InputError
+
+    monkeypatch.setenv(variable, value)
+    config.get_settings.cache_clear()
+    try:
+        with pytest.raises(InputError) as refused:
+            config.get_settings()
+    finally:
+        config.get_settings.cache_clear()
+    assert variable in str(refused.value) and words in str(refused.value)
+    assert refused.value.hint and ".env" in refused.value.hint
