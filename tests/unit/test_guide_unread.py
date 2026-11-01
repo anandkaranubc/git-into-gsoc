@@ -5,19 +5,12 @@ from __future__ import annotations
 import httpx
 import pytest
 import respx
+from test_health_unread import API, README, _limited
 
 from git_into_gsoc.drafts import render_draft
 from git_into_gsoc.github.client import GitHubClient
 
-API = "https://api.github.com/repos/acme/lib"
 CONTRIBUTING = {"html_url": "https://github.com/acme/lib/blob/main/CONTRIBUTING.md"}
-README = {"html_url": "https://github.com/acme/lib/blob/main/README.md"}
-
-
-def _limited() -> httpx.Response:
-    return httpx.Response(
-        403, headers={"x-ratelimit-remaining": "0"}, json={"message": "API rate limit exceeded"}
-    )
 
 
 def _mock(**answers: httpx.Response) -> None:

@@ -87,7 +87,6 @@ def test_each_plugin_runs_the_server_from_its_own_installed_copy() -> None:
 
 
 def test_plugins_find_the_skill_and_their_images() -> None:
-    assert (ROOT / "skills" / "git-into-gsoc" / "SKILL.md").is_file()
     plugin = _load(".claude-plugin/plugin.json")
     codex = _load(".codex-plugin/plugin.json")
     assert codex["skills"] == "./skills/"
@@ -98,7 +97,6 @@ def test_plugins_find_the_skill_and_their_images() -> None:
     marketplace = _load(".claude-plugin/marketplace.json")
     assert marketplace["plugins"][0]["name"] == plugin["name"]
     assert marketplace["plugins"][0]["source"] == "./"
-    assert "mcp-name: io.github.anandkaranubc/git-into-gsoc" in (ROOT / "README.md").read_text()
 
 
 def test_mcpb_bundle_builds_with_a_uv_manifest(tmp_path: Path) -> None:

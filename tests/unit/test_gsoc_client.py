@@ -9,36 +9,15 @@ import httpx
 import pytest
 import respx
 
-from conftest import load_fixture
+from conftest import ARCHIVE, OFFICIAL, archive_year_json, load_fixture, mock_catalog
 from git_into_gsoc.gsoc.client import GSoCClient, github_refs, normalize_name
 from git_into_gsoc.scoring.org_match import expand_terms
-
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
-
-
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
 
 
 @pytest.fixture
 def api() -> respx.MockRouter:
     with respx.mock(assert_all_called=False) as router:
-        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2026/organizations/").mock(
-            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-        )
-        router.get(f"{ARCHIVE}/organizations.json").mock(
-            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-        )
-        router.get(f"{ARCHIVE}/2026.json").mock(
-            return_value=httpx.Response(200, json=_archive_year(2026))
-        )
+        mock_catalog(router)
         yield router
 
 
@@ -116,7 +95,7 @@ def test_archive_fallback_when_official_site_down() -> None:
             return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
         )
         router.get(f"{ARCHIVE}/2026.json").mock(
-            return_value=httpx.Response(200, json=_archive_year(2026))
+            return_value=httpx.Response(200, json=archive_year_json(2026))
         )
         catalog, orgs = GSoCClient().catalog(2027)
     assert catalog.source == "archive"

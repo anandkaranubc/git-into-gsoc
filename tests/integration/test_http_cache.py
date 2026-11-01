@@ -3,6 +3,7 @@ pruning, and the response size cap, against a mocked server."""
 
 from __future__ import annotations
 
+import logging
 import os
 import time
 from collections.abc import Iterator
@@ -113,7 +114,9 @@ def test_short_retry_after_is_honoured(tmp_path: Path) -> None:
 
 
 @respx.mock
-def test_stale_cache_served_when_rate_limited(tmp_path: Path) -> None:
+def test_stale_cache_served_when_rate_limited(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture, capsys: pytest.CaptureFixture[str]
+) -> None:
     respx.get(URL).mock(
         side_effect=[
             httpx.Response(200, json={"cached": True}),
@@ -123,8 +126,13 @@ def test_stale_cache_served_when_rate_limited(tmp_path: Path) -> None:
     client, _ = make_client(tmp_path)
     client.get_json(URL, ttl=0)
     time.sleep(0.01)
+    caplog.set_level(logging.DEBUG)
     assert client.get_json(URL, ttl=0) == {"cached": True}
     assert client.stats["stale_served"] == 1
+    # Serving a recent copy after an error says nothing in the terminal.
+    assert not [r for r in caplog.records if r.levelno >= logging.WARNING]
+    captured = capsys.readouterr()
+    assert "Serving stale cache" not in captured.out + captured.err
 
 
 @respx.mock
