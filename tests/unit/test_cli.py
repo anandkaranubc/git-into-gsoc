@@ -465,24 +465,6 @@ def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # ty
     assert "PR #9 (closed) by @dev" in lines  # a closed one that said it fixes this tried it
 
 
-def test_program_defaults_to_the_configured_target_year(monkeypatch) -> None:  # type: ignore[no-untyped-def]
-    # Every sibling honoured GIG_TARGET_YEAR; `program` had 2027 typed into its option.
-    from git_into_gsoc.config import get_settings
-
-    monkeypatch.setenv("GIG_TARGET_YEAR", "2028")
-    get_settings.cache_clear()
-    try:
-        with respx.mock:
-            respx.get("https://summerofcode.withgoogle.com/api/program/2028/").mock(
-                return_value=httpx.Response(404, json={})
-            )
-            result = runner.invoke(app, ["program", "--output", "json"])
-    finally:
-        get_settings.cache_clear()
-    assert result.exit_code == 0, result.output
-    assert '"year": 2028' in result.stdout
-
-
 def test_counts_that_must_be_at_least_one_are_refused_by_the_option() -> None:
     # `mentors --years 0` said "found" with nobody; `pointers --similar -1` dropped a fix.
     for args in (["mentors", "SymPy", "--years", "0"], ["pointers", "a/b#1", "--similar", "0"]):

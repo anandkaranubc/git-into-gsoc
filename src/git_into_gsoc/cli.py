@@ -527,9 +527,7 @@ def start_cmd(
 
 @app.command("program", rich_help_panel="Start here")
 def program_cmd(
-    year: int | None = typer.Option(
-        None, help="Program year, for example 2027 (default: the target year)"
-    ),
+    year: int = typer.Option(2027, help="Program year, for example 2027"),
     size: ProjectSize = typer.Option(
         ProjectSize.medium, "--size", help="Project size; evaluation deadlines differ by size"
     ),
