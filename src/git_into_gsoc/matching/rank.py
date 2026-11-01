@@ -923,28 +923,3 @@ def _diversify(matches: list[OrgMatch], interest_count: int, window: int = 30) -
         picked.append(best)
         covered.update(i for i, t in enumerate(best.interests) if t.strength >= 0.5)
     return picked + tail
-
-
-def rank_orgs(
-    orgs: list[OrgSummary],
-    *,
-    technologies: list[str] | None = None,
-    interests: list[str] | None = None,
-    experience: str | None = None,
-    hours_per_week: int | None = None,
-    reference_year: int,
-    descriptions: dict[str, str] | None = None,
-    signals: dict[str, Any] | None = None,
-    limit: int | None = None,
-) -> list[OrgMatch]:
-    """One-call convenience for scripts and tests."""
-    index = OrgIndex.build(
-        orgs, descriptions=descriptions, signals=signals, reference_year=reference_year
-    )
-    person = build_profile(
-        technologies=technologies,
-        interests=interests,
-        experience=experience,
-        hours_per_week=hours_per_week,
-    )
-    return index.rank(person, limit=limit)

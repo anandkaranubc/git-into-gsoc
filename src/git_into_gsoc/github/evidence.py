@@ -13,8 +13,6 @@ from typing import Any
 from git_into_gsoc.models import ContributionItem
 from git_into_gsoc.text import clean_untrusted
 
-STRENGTH_ORDER = ("none", "starting", "developing", "strong")
-
 
 def _dt(value: str | None) -> datetime | None:
     if not value:

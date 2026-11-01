@@ -241,19 +241,6 @@ class GitHubClient:
         )
         return data if isinstance(data, list) else []
 
-    def search_repos(
-        self,
-        query: str,
-        *,
-        per_page: int = 10,
-        sort: str = "stars",
-    ) -> list[dict[str, Any]]:
-        data = self._api(
-            "search/repositories",
-            params={"q": query, "per_page": per_page, "sort": sort},
-        )
-        return data.get("items", []) if isinstance(data, dict) else []
-
     def search_issues(
         self,
         query: str,
@@ -433,16 +420,6 @@ class GitHubClient:
         )
         return data if isinstance(data, list) else []
 
-    def contents_exists(self, owner: str, repo: str, path: str) -> bool:
-        owner, repo = parse_repo(f"{owner}/{repo}")
-        try:
-            self._api(f"repos/{owner}/{repo}/contents/{quote(path)}")
-            return True
-        except NotFoundError:
-            return False
-        except HttpError:
-            return False
-
     def get_raw_file(self, owner: str, repo: str, path: str) -> str | None:
         try:
             return self._raw_file(owner, repo, path)
@@ -479,15 +456,8 @@ class GitHubClient:
     def community_profile(self, owner: str, repo: str) -> dict[str, Any]:
         return self._community_profile(owner, repo) or {}
 
-    def workflow_count(self, owner: str, repo: str) -> int:
-        return self._workflow_count(owner, repo) or 0
-
     def list_labels(self, owner: str, repo: str) -> list[dict[str, Any]]:
         return self._list_labels(owner, repo) or []
-
-    def count_open_issues_with_label(self, owner: str, repo: str, label: str) -> tuple[int, int]:
-        """Open issues with the label, and how many of them are assigned to someone."""
-        return self._count_open_issues_with_label(owner, repo, label) or (0, 0)
 
     # The same reads for `repo_health`, which must tell "GitHub did not answer" (None)
     # from "the repository has none": a rate limit used to read as no CONTRIBUTING guide,

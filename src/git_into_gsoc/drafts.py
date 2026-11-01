@@ -31,7 +31,6 @@ GOOGLE_CL_DESCRIPTIONS = (
     "https://google.github.io/eng-practices/review/developer/cl-descriptions.html"
 )
 PYTHON_GSOC_BLOGS = "https://python-gsoc.org/blogs.html"
-OUTREACHY_APPLICANT = "https://www.outreachy.org/docs/applicant/"
 
 _RULES: dict[str, list[dict[str, str]]] = {
     "intro": [
