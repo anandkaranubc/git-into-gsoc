@@ -1316,6 +1316,7 @@ def orient_cmd(
                 for p in (
                     docs.get("readme"),
                     docs.get("contributing"),
+                    *docs.get("agent_instructions", []),
                     *docs.get("architecture", []),
                 )
                 if p
