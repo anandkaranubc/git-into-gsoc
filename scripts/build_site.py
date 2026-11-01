@@ -6,9 +6,9 @@
 The pages come from the same bundled snapshot the CLI reads offline
 (``src/git_into_gsoc/data``), so a visitor sees what ``git-into-gsoc org`` would
 show without installing anything. The Pages workflow runs this script, and the
-output is not committed: it changes with every snapshot refresh. The explorer needs
-only the standard library; the start page (``site/start/``) also needs the package
-installed, because it ships the package's own ranker to the browser.
+output is not committed: it changes with every snapshot refresh. The build imports
+the package: for the site address, and because the start page (``site/start/``) ships
+the package's own ranker to the browser.
 """
 
 from __future__ import annotations
@@ -22,10 +22,10 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
+from git_into_gsoc.install.distribution import REPO_URL, SITE_URL
+
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "git_into_gsoc" / "data"
-SITE_URL = "https://anandkaranubc.github.io/git-into-gsoc/"
-REPO_URL = "https://github.com/anandkaranubc/git-into-gsoc"
 # Pinned so the page never changes under a visitor; bump both together after a run.
 PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/"
 # Pure-Python wheels the package imports that Pyodide does not bundle (it bundles
@@ -572,6 +572,13 @@ START_SCRIPT = """<script>
     }
     form.addEventListener("focusin", boot, { once: true });
     form.addEventListener("pointerdown", boot, { once: true });
+    // The home page asks question one and hands the answer over as ?know=, so the
+    // matcher starts loading before the visitor reads question two.
+    var known = new URLSearchParams(location.search).get("know");
+    if (known) {
+      form.elements.technologies.value = known.slice(0, 200);
+      boot();
+    }
     form.querySelectorAll("[data-topic]").forEach(function (chip) {
       chip.addEventListener("click", function () {
         chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") === "true" ? "false" : "true");
@@ -703,6 +710,7 @@ def sitemap(slugs: list[str]) -> str:
         SITE_URL,
         f"{SITE_URL}start/",
         f"{SITE_URL}orgs/",
+        f"{SITE_URL}brand.html",
         *(f"{SITE_URL}orgs/{s}/" for s in slugs),
     ]
     body = "".join(f"<url><loc>{escape(u)}</loc></url>" for u in urls)

@@ -38,8 +38,8 @@ jobs:
         with:
           python-version: "3.12"
 
-      # The start page ships the package's own ranker to the browser, so the build
-      # reads the package; the explorer pages need only the standard library.
+      # The build imports the package: the site address lives there, and the start
+      # page ships the package's own ranker to the browser.
       - name: Install the package
         run: python3 -m pip install --quiet .
 

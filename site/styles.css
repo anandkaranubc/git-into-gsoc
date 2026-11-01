@@ -23,6 +23,15 @@
 [data-theme="light"] { color-scheme: light; }
 [data-theme="dark"] { color-scheme: dark; }
 
+/* How far the visitor's cursor has walked past a journey step: 0 ahead of it, 1 behind
+   it. The initial value is 1 so browsers without scroll-driven animations show every
+   step lit, which is how the page looked before the walk existed. */
+@property --lit {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
+
 *, *::before, *::after { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -60,6 +69,15 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .wrap { width: min(100% - 2 * var(--gutter), var(--wrap)); margin-inline: auto; }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
+/* Theme-specific artwork: the stamps come in an ink drawing for paper and a lime one for ink. */
+.only-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .only-dark { display: block; }
+  :root:not([data-theme="light"]) .only-light { display: none; }
+}
+[data-theme="dark"] .only-dark { display: block; }
+[data-theme="dark"] .only-light { display: none; }
+
 /* --- nav ------------------------------------------------------------------- */
 .nav {
   display: flex; align-items: center; justify-content: space-between; gap: 16px;
@@ -82,21 +100,39 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 }
 @media (max-width: 420px) { .nav-links .optional { display: none; } }
 
-/* --- hero --------------------------------------------------------------------- */
-/* A touch lighter than merge (#7A5AF8): ink body text on it reaches 4.6:1 (WCAG AA). */
-.hero { background: #8466F9; color: var(--gig-ink); padding: clamp(40px, 7vw, 96px) 0 clamp(48px, 7vw, 104px); }
-.hero .grid { display: grid; min-width: 0; grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.75fr); gap: clamp(24px, 5vw, 72px); align-items: center; }
+/* --- hero: a dark room, the door, and you ----------------------------------------- */
+.hero {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: var(--gig-ink); color: var(--gig-paper);
+  min-height: min(92svh, 820px); display: grid; align-items: center;
+  padding: clamp(40px, 7vw, 88px) 0 clamp(48px, 7vw, 96px);
+}
+.hero .scene { position: absolute; inset: 0; z-index: -1; }
+.hero .scene canvas { display: block; image-rendering: pixelated; }
+/* The still mark, for browsers without WebGL. The script hides it once the scene draws. */
+.hero .scene .mark { position: absolute; top: 50%; left: 62%; width: min(26vw, 340px); height: auto; transform: translateY(-50%); }
+.hero .scene.live .mark { display: none; }
+.hero .scene .mark .g { fill: var(--gig-merge); }
+.hero .scene .mark .cursor { fill: var(--gig-open); animation: var(--gig-blink); }
+/* Keeps the copy readable where the door's light reaches it on narrower desktops. */
+.hero .wrap::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(21, 18, 30, 0.9) 0, rgba(21, 18, 30, 0.75) 38%, rgba(21, 18, 30, 0) 58%);
+}
+.hero .wrap { position: relative; }
+.hero .grid { display: grid; min-width: 0; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: clamp(24px, 5vw, 72px); align-items: start; }
 .hero h1 { font-size: clamp(var(--px-2), 6.2vw, var(--px-5)); line-height: 1; margin: 0 0 24px; max-width: 12ch; }
-.hero .lede { font-size: clamp(1.05rem, 1.4vw, 1.25rem); line-height: 1.5; max-width: 52ch; margin-bottom: 28px; color: var(--gig-ink); }
-.hero .mark { width: min(100%, 380px); height: auto; display: block; margin-inline: auto; }
-.hero .mark .g { fill: var(--gig-ink); }
-.hero .mark .cursor { fill: var(--gig-open); animation: var(--gig-blink); }
-.hero .after { display: flex; flex-wrap: wrap; gap: 14px 24px; align-items: center; margin-top: 18px; }
-.hero .after a { color: var(--gig-ink); font-weight: 600; }
-.hero .fine { font-size: 0.9rem; color: var(--gig-ink); margin: 0; }
+.hero .lede { font-size: clamp(1.05rem, 1.4vw, 1.25rem); line-height: 1.5; max-width: 46ch; margin-bottom: 28px; color: var(--gig-paper); }
+.hero .term { border: 1.5px solid var(--gig-ink-3); }
+.hero .fine { font-size: 0.9rem; color: var(--gig-mute-on-ink); margin: 18px 0 0; max-width: 56ch; }
+.hero .fine a { color: var(--gig-paper); font-weight: 600; }
+.hero p code { background: var(--gig-ink-2); color: var(--gig-paper); }
 @media (max-width: 860px) {
+  .hero { display: block; min-height: 0; padding-top: 0; }
+  .hero .scene { position: relative; inset: auto; height: 300px; z-index: 0; margin-bottom: 28px; }
+  .hero .scene .mark { left: 28%; width: 130px; }
+  .hero .wrap::before { display: none; }
   .hero .grid { grid-template-columns: minmax(0, 1fr); }
-  .hero .mark { width: min(60%, 260px); margin: 0; order: -1; }
 }
 
 /* --- terminal block ------------------------------------------------------------- */
@@ -107,7 +143,7 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
   box-shadow: 0 1px 0 rgba(21, 18, 30, 0.25) inset;
   max-width: 640px;
 }
-.term-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--gig-ink-2); font-size: 0.85rem; color: var(--gig-mute-on-ink); }
+.term-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; background: var(--gig-ink-2); font-size: 0.85rem; color: var(--gig-mute-on-ink); }
 .term pre { margin: 0; padding: 18px 20px 20px; overflow-x: auto; line-height: 1.6; font-size: 0.95rem; tab-size: 2; }
 .term pre + pre { padding-top: 0; font-size: 0.85rem; }
 .term pre.out { font-size: 0.8rem; line-height: 1.5; }
@@ -122,9 +158,44 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
   font: inherit; font-size: 0.85rem; font-weight: 500; padding: 4px 10px; border-radius: 999px; cursor: pointer;
   display: inline-flex; align-items: center; gap: 6px;
 }
+.copy[hidden] { display: none; }
 .copy:hover { border-color: var(--gig-paper); }
 .copy svg { width: 14px; height: 14px; fill: currentColor; }
 .copy[data-done="1"] { color: var(--gig-open); border-color: var(--gig-open); }
+
+/* tabs inside the terminal bar */
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs [role="tab"] {
+  appearance: none; border: 1.5px solid transparent; background: transparent; color: var(--gig-mute-on-ink);
+  font: inherit; font-size: 0.85rem; font-weight: 500; padding: 3px 10px; border-radius: 999px; cursor: pointer;
+}
+.tabs [role="tab"]:hover { color: var(--gig-paper); }
+.tabs [role="tab"][aria-selected="true"] { color: var(--gig-paper); border-color: var(--gig-ink-3); background: var(--gig-ink); }
+
+/* the first question of `start`, asked right here; the answer goes to start/ */
+.prompt { padding: 18px 20px 20px; font-family: var(--gig-font-mono); font-size: 0.95rem; line-height: 1.6; }
+.prompt p { margin: 0; max-width: none; }
+.prompt label { display: block; margin-top: 10px; }
+.prompt .line { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.prompt .line .k { font-weight: 600; }
+.prompt input {
+  flex: 1 1 12ch; min-width: 0; font: inherit; color: var(--gig-paper);
+  background: var(--gig-ink-2); border: 1.5px solid var(--gig-ink-3); border-radius: var(--gig-radius);
+  padding: 8px 10px; caret-color: var(--gig-open);
+}
+.prompt input::placeholder { color: var(--gig-mute-on-ink); }
+.prompt input:focus { border-color: var(--gig-open); }
+.prompt .go {
+  appearance: none; font: inherit; font-family: var(--gig-font-sans); font-weight: 600; white-space: nowrap;
+  color: var(--gig-ink); background: var(--gig-open); border: 1.5px solid var(--gig-open);
+  border-radius: 999px; padding: 8px 16px; cursor: pointer;
+}
+.prompt .go:hover { background: var(--gig-paper); border-color: var(--gig-paper); }
+.prompt .note { font-family: var(--gig-font-sans); font-size: 0.85rem; line-height: 1.5; margin-top: 12px; }
+@media (max-width: 480px) {
+  .prompt .line { flex-wrap: wrap; }
+  .prompt .go { width: 100%; }
+}
 
 /* --- sections ---------------------------------------------------------------- */
 .section { padding: clamp(56px, 8vw, 112px) 0; }
@@ -134,23 +205,14 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 72px); align-items: start; }
 @media (max-width: 860px) { .two { grid-template-columns: minmax(0, 1fr); } }
 
-/* install tabs, inside the terminal bar */
-.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
-.tabs [role="tab"] {
-  appearance: none; border: 1.5px solid transparent; background: transparent; color: var(--gig-mute-on-ink);
-  font: inherit; font-size: 0.85rem; font-weight: 500; padding: 3px 10px; border-radius: 999px; cursor: pointer;
-}
-.tabs [role="tab"]:hover { color: var(--gig-paper); }
-.tabs [role="tab"][aria-selected="true"] { color: var(--gig-paper); border-color: var(--gig-ink-3); background: var(--gig-ink); }
-.hero p code { background: rgba(21, 18, 30, 0.14); color: var(--gig-ink); }
-
-/* first run: four questions */
-.first-run .two { align-items: center; }
+/* first run: four questions, and the recording in a terminal you scroll inside */
 .steps { margin: 0 0 1em; padding-left: 1.3em; max-width: var(--measure); }
 .steps li { margin-bottom: 0.6em; }
-.demo { margin: 0; }
-.demo img { width: 100%; height: auto; display: block; border-radius: var(--gig-radius-lg); }
-.demo figcaption { font-size: 0.85rem; color: var(--fg-2); margin-top: 10px; }
+.demo { margin: 0; background: var(--gig-ink); color: var(--gig-paper); border-radius: var(--gig-radius-lg); overflow: hidden; }
+.demo .scroller { max-height: min(560px, 70vh); overflow: auto; overscroll-behavior: contain; }
+.demo .scroller:focus-visible { outline-offset: -3px; }
+.demo img { width: 100%; height: auto; display: block; }
+.demo figcaption { font-size: 0.85rem; color: var(--gig-mute-on-ink); padding: 10px 16px 12px; border-top: 1.5px solid var(--gig-ink-3); }
 
 /* failure mode */
 .fail .term { max-width: none; }
@@ -158,20 +220,53 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .fail ul { padding-left: 1.2em; margin: 0 0 1em; max-width: var(--measure); }
 .fail li { margin-bottom: 0.5em; }
 
-/* journey */
-.journey { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px 24px; counter-reset: step; }
-.journey li { border-top: 3px solid var(--line); padding-top: 14px; position: relative; }
+/* the journey: a rail with a step marker per phase, and the visitor's cursor pinned
+   near the middle of the screen so the page walks past it */
+.path .section-head { margin-bottom: clamp(16px, 3vw, 32px); }
+.track {
+  --rail: 24px; --gap: clamp(16px, 3vw, 40px);
+  position: relative; display: grid; grid-template-columns: var(--rail) minmax(0, 1fr); column-gap: var(--gap);
+  max-width: 860px;
+}
+.track::before { content: ""; position: absolute; left: 11px; top: 0; bottom: 0; width: 2px; background: var(--line); }
+.track .you {
+  position: sticky; top: 45vh; grid-row: 1 / span 2; align-self: start; z-index: 1;
+  width: 12px; height: 20px; margin-left: 6px; background: var(--cursor); animation: var(--gig-blink);
+}
+.journey { list-style: none; margin: 0; padding: 0; counter-reset: step; }
+.journey li {
+  position: relative; display: grid; grid-template-columns: 56px 28px minmax(0, 1fr); column-gap: 16px; align-items: start;
+  padding: 20px 0 24px; border-top: 1.5px solid var(--line);
+}
 .journey li::before {
   counter-increment: step; content: counter(step, decimal-leading-zero);
-  font-family: var(--gig-font-pixel); font-size: var(--px-2); line-height: 1; color: var(--accent); display: block; margin-bottom: 10px;
+  font-family: var(--gig-font-pixel); font-size: var(--px-2); line-height: 1; margin-top: 2px;
+  color: color-mix(in srgb, var(--accent) calc(var(--lit) * 100%), var(--fg-2));
 }
-.journey li:nth-child(1) { border-top-color: var(--accent); }
-.journey .ico { width: 28px; height: 28px; fill: var(--fg); display: block; margin-bottom: 10px; }
-.journey h3 { margin-bottom: 6px; }
-.journey p { font-size: 0.95rem; color: var(--fg-2); margin: 0 0 8px; }
-.journey a { font-size: 0.9rem; }
-@media (max-width: 1080px) { .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 480px) { .journey { grid-template-columns: minmax(0, 1fr); } }
+.journey li::after {
+  content: ""; position: absolute; top: -7px; left: calc(6px - var(--gap) - var(--rail)); width: 12px; height: 12px;
+  background: color-mix(in srgb, var(--accent) calc(var(--lit) * 100%), var(--line));
+}
+.journey .ico { width: 28px; height: 28px; margin-top: 4px; fill: var(--fg); opacity: calc(0.4 + 0.6 * var(--lit)); }
+.journey h3 { grid-column: 3; font-size: 1.1rem; margin: 4px 0; color: color-mix(in srgb, var(--fg) calc(var(--lit) * 100%), var(--fg-2)); }
+.journey p { grid-column: 3; font-size: 0.97rem; color: var(--fg-2); margin: 0 0 6px; }
+.journey a { grid-column: 3; justify-self: start; font-size: 0.92rem; }
+.arrival { grid-column: 2; margin: 12px 0 0; }
+.arrival img { width: min(100%, 420px); height: auto; display: block; }
+@keyframes step-lit { from { --lit: 0; } to { --lit: 1; } }
+@supports (animation-timeline: view()) {
+  /* Flip the moment a step's top edge passes 45% down the screen, where the cursor sits. */
+  .journey li { animation: step-lit linear both; animation-timeline: view(block 0 55%); animation-range: entry 0% entry 1px; }
+}
+@media (max-width: 720px) {
+  .track { --rail: 16px; --gap: 14px; }
+  .track::before { left: 7px; }
+  .track .you { margin-left: 2px; }
+  .journey li { grid-template-columns: 44px minmax(0, 1fr); }
+  .journey li::after { left: calc(2px - var(--gap) - var(--rail)); }
+  .journey .ico { display: none; }
+  .journey h3, .journey p, .journey a { grid-column: 2; }
+}
 
 /* house rules: a sticker wall */
 .rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 28px; }
