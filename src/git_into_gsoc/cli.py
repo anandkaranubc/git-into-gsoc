@@ -549,7 +549,9 @@ def start_cmd(
 
 @app.command("program", rich_help_panel="Start here")
 def program_cmd(
-    year: int = typer.Option(2027, help="Program year, for example 2027"),
+    year: int | None = typer.Option(
+        None, help="Program year, for example 2027 (default: your target year)"
+    ),
     size: ProjectSize = typer.Option(
         ProjectSize.medium, "--size", help="Project size; evaluation deadlines differ by size"
     ),
@@ -743,9 +745,10 @@ def org_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Show one organization's ideas page, channels, GitHub organizations, and past projects."""
-    data = _toolkit().org_details(name, year=year)
+    toolkit = _toolkit()
+    data = toolkit.org_details(name, year=year)
     if shortlist and data.get("found"):
-        _toolkit().progress.shortlist_org(data["organization"]["name"])
+        toolkit.progress.shortlist_org(data["organization"]["name"])
         data["shortlisted"] = True
     if output == Output.json or not data.get("found"):
         _emit_or_fail(data, output)
@@ -1106,12 +1109,13 @@ def repo_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Check whether a newcomer's pull request can land here: grade, merge history, setup hints."""
-    data = _toolkit().evaluate_repo(full_name)
+    toolkit = _toolkit()
+    data = toolkit.evaluate_repo(full_name)
     if track:
         # A person's fork has issues off, so `next` would find nothing new in it.
         saved = data["fork_of"] if data["health"] is None and data.get("fork_of") else None
         saved = saved or (data["health"] or data)["full_name"]
-        _toolkit().progress.track_repo(saved)
+        toolkit.progress.track_repo(saved)
         data["tracked"] = saved
     if output == Output.json:
         _emit(data, output)
@@ -1471,9 +1475,10 @@ def issue_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Check whether an issue is free to pick up: pull requests, claims, assignees, activity."""
-    data = _toolkit().issue_status(ref, number)
+    toolkit = _toolkit()
+    data = toolkit.issue_status(ref, number)
     if track:
-        _toolkit().progress.track_issue(data["url"])
+        toolkit.progress.track_issue(data["url"])
         data["tracked"] = True
     if output == Output.json:
         _emit(data, output)
@@ -2505,6 +2510,7 @@ def _writable(create: Any, location: Any) -> str:
 def doctor_cmd() -> None:
     """Check your setup: version, GitHub token, data locations, API access, skill, and MCP."""
     from git_into_gsoc.config import (
+        LATEST_ARCHIVED_YEAR,
         cache_dir,
         cache_location,
         data_dir,
@@ -2540,8 +2546,14 @@ def doctor_cmd() -> None:
         if exc.hint:
             console.print(f"  {exc.hint}", soft_wrap=True)
     for label, url in (
-        ("official GSoC site", f"{settings.gsoc_official_api_url.rstrip('/')}/program/2026/"),
-        ("organization archive", f"{settings.gsoc_orgs_api_url.rstrip('/')}/2026.json"),
+        (
+            "official GSoC site",
+            f"{settings.gsoc_official_api_url.rstrip('/')}/program/{LATEST_ARCHIVED_YEAR}/",
+        ),
+        (
+            "organization archive",
+            f"{settings.gsoc_orgs_api_url.rstrip('/')}/{LATEST_ARCHIVED_YEAR}.json",
+        ),
         (
             "commit statistics",
             f"{settings.ecosystems_commits_api_url.rstrip('/')}/hosts/GitHub/repositories/sympy/sympy",
