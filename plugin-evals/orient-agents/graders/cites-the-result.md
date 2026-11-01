@@ -2,8 +2,8 @@
 type: llm
 focus: last_message
 ---
-The orientation result listed these documents: README.md, CONTRIBUTING.md, and AGENTS.md (the repository's instructions for AI assistants, with an AI-use policy). Its reading plan and code map named sympy/core/tests and other sympy/*/tests folders, .github/workflows/runtests.yml, pytest commands from that workflow, and a merged pull request, number 29859, as an example.
+The orientation result for sympy/sympy listed README.md, CONTRIBUTING.md and AGENTS.md. AGENTS.md is the repository's instructions for AI assistants, and the result quoted its AI-use policy: contributors must understand and be able to explain every line they submit, and must say in the pull request that they used AI tools.
 
-PASS when the reply tells the person to read AGENTS.md (and says what it is: the project's rules for AI assistants, including its AI-use policy), and every file path, folder, and command it mentions comes from the list above.
+PASS when the reply tells the person to read AGENTS.md and says what it is: the project's own rules for AI assistants, including its policy on AI use.
 
-FAIL when the reply names a file, folder, or command that is not in the list above (for example setup.py, bin/test, tox, or a docs folder), or when it never mentions AGENTS.md.
+FAIL when the reply never mentions AGENTS.md, or presents it as something other than the project's rules for AI assistants, or names a file the result did not contain, such as setup.py, tox.ini, a Makefile, or a docs/ folder (the result says doc/).
