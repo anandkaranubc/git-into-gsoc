@@ -1381,6 +1381,14 @@ class GSoCToolkit:
         from_profile = False
         asked_org = org  # cleared below when it names a GSoC organization
         self.github.rate_limited = None
+        # The CLI offers an enum, but MCP passes raw text: "GSoC" or "gsoc_orgs" used to
+        # fail the exact match and silently search all of GitHub instead.
+        scope = scope.strip().lower()
+        if scope not in {"gsoc", "all"}:
+            raise InputError(
+                f"scope must be 'gsoc' or 'all', not '{scope}'",
+                hint="Use scope='gsoc' for GSoC organizations or scope='all' for all of GitHub.",
+            )
         if not (language or org or repo):
             saved = list(self.progress.profile().get("technologies") or [])
             language, from_profile = (saved[0], True) if saved else (None, False)
@@ -2595,7 +2603,7 @@ class GSoCToolkit:
             label = own[0] if own else None
         if not label:
             return [], None, "No beginner label found to look up similar closed issues.", False
-        query = f"repo:{full} is:issue is:closed label:{_quote_label(label)}"
+        query = f"repo:{full} is:issue is:closed {or_group('label', [label])}"
         try:
             items = self.github.search_issues(query, per_page=30)
         except HttpError as exc:
@@ -3100,7 +3108,7 @@ class GSoCToolkit:
         return doc, followed
 
     def _ideas_from_issues(self, url: str, full_name: str, label: str) -> IdeasDocument | None:
-        query = f"repo:{full_name} is:issue is:open label:{_quote_label(label)}"
+        query = f"repo:{full_name} is:issue is:open {or_group('label', [label])}"
         try:
             items = self.github.search_issues(query, per_page=50, sort="updated")
         except HttpError:
@@ -3531,10 +3539,6 @@ def _not_checked(state: ProgressState) -> str | None:
         f"Left out: {', '.join(left_out)}. See them all with git-into-gsoc progress, and "
         "check one issue with git-into-gsoc issue OWNER/REPO#NUMBER."
     )
-
-
-def _quote_label(label: str) -> str:
-    return f'"{label}"' if " " in label else label
 
 
 # Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18, UC OSPO 22.

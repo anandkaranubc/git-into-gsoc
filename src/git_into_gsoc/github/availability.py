@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from git_into_gsoc.dates import parse_iso
+from git_into_gsoc.github.repos import is_bot
 from git_into_gsoc.models import Availability, IssueAssessment, IssueClaim, LinkedPullRequest
 from git_into_gsoc.text import straight_quotes
 
@@ -297,11 +298,6 @@ def _login(obj: dict[str, Any] | None) -> str | None:
     return (obj or {}).get("login")
 
 
-def _is_bot(user: dict[str, Any] | None) -> bool:
-    login = _login(user) or ""
-    return (user or {}).get("type") == "Bot" or login.endswith("[bot]")
-
-
 _QUOTED_LINE = re.compile(r"^\s*>.*$", re.MULTILINE)
 
 
@@ -449,12 +445,12 @@ def assess_issue(
             body = str(event.get("body") or "")
             said = _NOT_OPEN_RE.search(body)
             if said and (
-                _is_bot(user) or str(event.get("author_association") or "") in MAINTAINER_ROLES
+                is_bot(user) or str(event.get("author_association") or "") in MAINTAINER_ROLES
             ):
                 not_open = f"The project said it is {said.group(0)}"
                 if said.group(0).lower().startswith("reserved"):
                     not_open += ": the contributor chosen for that GSoC project does this work"
-            if _is_bot(user):
+            if is_bot(user):
                 if is_release(body):
                     _release(claims, body, caveats, who=None)
                 continue
