@@ -9,9 +9,10 @@ in a comment cannot be seen. The status says so instead of guessing.
 from __future__ import annotations
 
 import re
-from datetime import UTC, datetime
+from collections.abc import Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 
 from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.errors import GigError, NotFoundError
@@ -21,10 +22,20 @@ from git_into_gsoc.github.availability import (
     assess_issue,
     is_not_open_label,
 )
+from git_into_gsoc.github.repos import mentioned_repos, repo_lead_score
 from git_into_gsoc.http_client import CachedHttpClient
-from git_into_gsoc.models import Availability
+from git_into_gsoc.matching.profile import ContributorProfile
+from git_into_gsoc.models import (
+    Availability,
+    IssueAssessment,
+    IssueCandidate,
+    LinkedPullRequest,
+    RepoLead,
+)
+from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.text import clean_untrusted
 
+_SHORT_REF = re.compile(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+[\w.-]+)#(\d+)$")
 _ISSUE_URL = re.compile(
     r"^https://([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+?[\w.-]+)/-/(?:issues|work_items)/(\d+)"
 )
@@ -35,6 +46,10 @@ def parse_gitlab_issue(url: str) -> tuple[str, str, int] | None:
     raw = (url or "").strip()
     if "://" not in raw and "/-/" in raw:
         raw = "https://" + raw  # copied from the address bar without "https://"
+    short = _SHORT_REF.match(raw)
+    if short:
+        # "gitlab.gnome.org/GNOME/gitg#494", as the issues table and footer print it.
+        raw = f"https://{short.group(1)}/{short.group(2)}/-/issues/{short.group(3)}"
     match = _ISSUE_URL.match(raw)
     if not match or match.group(1).lower().removeprefix("www.") == "github.com":
         return None
@@ -219,3 +234,283 @@ def gitlab_issue_status(
             "caveats": caveats,
         },
     }
+
+
+# The official listing gives GNOME only its host; everything GNOME is under this group.
+_DEFAULT_GROUPS = {"gitlab.gnome.org": "GNOME"}
+
+# One request per label, in this order, until the list is full. GitLab's label filter
+# is case-sensitive ("4. newcomers" found nothing on gitlab.gnome.org, 2026-11-01), so
+# a label projects spell differently is listed both ways.
+GITLAB_BEGINNER_LABELS: tuple[str, ...] = (
+    "4. Newcomers",
+    "Newcomers",
+    "good first issue",
+    "Good first issue",
+    "beginner",
+    "Beginner",
+    "easy",
+    "Easy",
+    "help wanted",
+    "Help wanted",
+)
+
+# GNOME has hundreds of projects; gimp's newcomer issues must not fill the whole list.
+_PER_PROJECT = 3
+
+
+def gitlab_target(source_code: str | None) -> tuple[str, str] | None:
+    """(host, group or project path) to search when an organization's code link may be
+    a GitLab group or project. None for GitHub and for a bare host with no known group
+    (KDE's invent.kde.org: its bugs live on bugs.kde.org)."""
+    parsed = urlparse((source_code or "").strip())
+    host = parsed.netloc.lower().removeprefix("www.")
+    if parsed.scheme not in {"http", "https"} or not host or host == "github.com":
+        return None
+    path = parsed.path.strip("/").removesuffix(".git") or _DEFAULT_GROUPS.get(host, "")
+    return (host, path) if path else None
+
+
+# The shared parser, under the short name the field maps below use.
+_dt = parse_iso
+
+
+def _issues_page(
+    http: CachedHttpClient, url: str, label: str, *, since: str, per_page: int
+) -> list[dict[str, Any]]:
+    found = http.get_json(
+        url,
+        params={
+            "state": "opened",
+            "labels": label,
+            "assignee_id": "None",
+            "scope": "all",
+            "updated_after": f"{since}T00:00:00Z",
+            "order_by": "updated_at",
+            "per_page": per_page,
+        },
+        ttl=300,
+    )
+    if not isinstance(found, list):  # a host that is not GitLab can answer with anything
+        raise NotFoundError(f"{url} did not answer as GitLab does", status_code=404, url=url)
+    return [item for item in found if isinstance(item, dict)]
+
+
+def search_gitlab_issues(
+    http: CachedHttpClient,
+    host: str,
+    path: str,
+    *,
+    labels: Sequence[str],
+    max_results: int,
+    org_name: str | None = None,
+) -> list[IssueCandidate]:
+    """Open, unassigned issues under a GitLab group or project that carry one of
+    `labels`, each checked for merge requests, free ones first.
+
+    Raises NotFoundError when `path` is neither a group nor a project the host's
+    public API answers for, and HttpError when the host does not answer as GitLab.
+    """
+    wanted = max(1, min(max_results, 30))
+    base = f"https://{host}/api/v4"
+    since = (datetime.now(UTC) - timedelta(days=365)).date().isoformat()
+    per_page = min(50, wanted * 3)
+    items: dict[tuple[str, int], dict[str, Any]] = {}
+
+    def keep(page: list[dict[str, Any]]) -> None:
+        for item in page:
+            parsed = parse_gitlab_issue(str(item.get("web_url") or ""))
+            if parsed and item.get("state") == "opened":
+                items.setdefault((parsed[1], parsed[2]), item)
+
+    listing: str | None = None
+    # A one-segment path is a group; GNOME/gimp or qemu-project/qemu is a project.
+    for kind in ("groups", "projects"):
+        url = f"{base}/{kind}/{quote(path, safe='')}/issues"
+        try:
+            keep(_issues_page(http, url, labels[0], since=since, per_page=per_page))
+        except NotFoundError:
+            continue
+        listing = url
+        break
+    if listing is None:
+        raise NotFoundError(
+            f"{host}/{path} is not a GitLab group or project this tool can read",
+            status_code=404,
+            url=f"https://{host}/{path}",
+        )
+    for label in labels[1:]:
+        if len(items) >= wanted + 4:
+            break
+        try:
+            keep(_issues_page(http, listing, label, since=since, per_page=per_page))
+        except GigError:
+            continue
+
+    prelim = [
+        score_issue(
+            IssueCandidate(
+                repo=f"{host}/{project}",
+                number=number,
+                title=clean_untrusted(item.get("title"), limit=256),
+                url=f"https://{host}/{project}/-/issues/{number}",
+                labels=[str(label) for label in item.get("labels") or []],
+                created_at=_dt(item.get("created_at")),
+                updated_at=_dt(item.get("updated_at")),
+                comments=int(item.get("user_notes_count") or 0),
+                author=(item.get("author") or {}).get("username"),
+                body_excerpt=clean_untrusted(item.get("description"), limit=280),
+                gsoc_org=org_name,
+            )
+        )
+        for (project, number), item in items.items()
+    ]
+    prelim.sort(key=lambda c: -c.beginner_score)
+    per_project: dict[str, int] = {}
+    shortlist: list[IssueCandidate] = []
+    for candidate in prelim:
+        if per_project.get(candidate.repo, 0) >= _PER_PROJECT:
+            continue
+        per_project[candidate.repo] = per_project.get(candidate.repo, 0) + 1
+        shortlist.append(candidate)
+        if len(shortlist) >= wanted + 4:
+            break
+
+    now = datetime.now(UTC)
+    for candidate in shortlist:
+        project = candidate.repo.split("/", 1)[1]
+        api = f"{base}/projects/{quote(project, safe='')}/issues/{candidate.number}"
+        try:
+            merge_requests = http.get_json(f"{api}/related_merge_requests", ttl=300)
+        except GigError:
+            merge_requests = []
+        item = items[(project, candidate.number)]
+        status, reason, linked, caveats = _status(
+            item,
+            merge_requests if isinstance(merge_requests, list) else [],
+            project=project,
+            now=now,
+        )
+        candidate.assessment = IssueAssessment(
+            availability=status,
+            reason=reason,
+            linked_prs=[LinkedPullRequest(**mr) for mr in linked],
+            last_activity_days=_days(item.get("updated_at"), now),
+            caveats=caveats,
+        )
+        candidate.availability, candidate.availability_reason = status, reason
+        score_issue(candidate)
+    shortlist.sort(key=lambda c: (c.availability != Availability.AVAILABLE, -c.beginner_score))
+    return shortlist[:wanted]
+
+
+def gitlab_repo_leads(
+    http: CachedHttpClient,
+    host: str,
+    path: str,
+    *,
+    ideas: str,
+    language: str | None,
+    person: ContributorProfile | None,
+    limit: int,
+) -> list[RepoLead]:
+    """The most recently active projects under a GitLab group, or the one project
+    `path` names, scored as GitHub repositories are: ideas-page mentions, activity,
+    stars, and language. Beginner-issue counts are not read: they cost one request
+    per project and label on GitLab.
+
+    Raises NotFoundError when `path` is neither a group nor a project the host's
+    public API answers for.
+    """
+    base = f"https://{host}/api/v4"
+    encoded = quote(path, safe="")
+    try:
+        listed = http.get_json(
+            f"{base}/groups/{encoded}/projects",
+            params={
+                "include_subgroups": "true",
+                "order_by": "last_activity_at",
+                "sort": "desc",
+                "per_page": 100,
+                "archived": "false",
+            },
+            ttl=3600,
+        )
+    except NotFoundError:
+        listed = [http.get_json(f"{base}/projects/{encoded}", ttl=3600)]
+    if not isinstance(listed, list) or not all(isinstance(p, dict) for p in listed):
+        raise NotFoundError(
+            f"{host}/{path} did not answer as GitLab does",
+            status_code=404,
+            url=f"https://{host}/{path}",
+        )
+    raws: list[dict[str, Any]] = [
+        {
+            "name": project.get("name"),
+            # With the host, as issues and repo print it: a bare GNOME/gtk reads as a GitHub
+            # name and `repo GNOME/gtk` would grade the mirror there.
+            "full_name": f"{host}/{project.get('path_with_namespace')}",
+            "project": str(project.get("path_with_namespace")),
+            "html_url": project.get("web_url"),
+            "description": project.get("description"),
+            "stargazers_count": project.get("star_count"),
+            "pushed_at": project.get("last_activity_at"),
+            "topics": project.get("topics") or project.get("tag_list") or [],
+        }
+        for project in listed
+        if project.get("web_url")
+        and project.get("path_with_namespace")
+        and not project.get("archived")
+        and not project.get("forked_from_project")
+    ]
+    mentioned = mentioned_repos(ideas, [], raws) if ideas else set()
+    ideas_lower = ideas.lower()
+
+    def lead(raw: dict[str, Any], main_language: str | None) -> RepoLead:
+        full = str(raw["full_name"])
+        url = str(raw["html_url"]).lower()
+        # A whole link only: GNOME/gtk must not count because the page links GNOME/gtk-vnc.
+        in_ideas = full.lower() in mentioned or bool(
+            re.search(re.escape(url) + r"(?![\w.-])", ideas_lower)
+        )
+        score, reasons = repo_lead_score(
+            {**raw, "language": main_language},
+            beginner_issues=0,
+            ideas_mention=in_ideas,
+            language=language,
+            person=person,
+        )
+        # last_activity_at moves on issues and merge requests too, not only on pushes.
+        reasons = [reason.replace("Pushed", "Active") for reason in reasons]
+        return RepoLead(
+            full_name=full,
+            url=str(raw["html_url"]),
+            description=clean_untrusted(raw.get("description"), limit=300) or None,
+            language=main_language,
+            stars=int(raw.get("stargazers_count") or 0),
+            pushed_at=_dt(raw.get("pushed_at")),
+            ideas_mention=in_ideas,
+            score=score,
+            reasons=reasons,
+        )
+
+    first = sorted((lead(raw, None) for raw in raws), key=lambda x: (-x.score, -x.stars))
+    by_name = {str(raw["full_name"]): raw for raw in raws}
+    # The main language costs one request per project, so only the likely top get it.
+    rescored: list[RepoLead] = []
+    for candidate in first[: limit + 5]:
+        try:
+            languages = http.get_json(
+                f"{base}/projects/{quote(by_name[candidate.full_name]['project'], safe='')}/languages",
+                ttl=3600,
+            )
+        except GigError:
+            languages = {}
+        main = (
+            max(languages, key=lambda name: float(languages[name]))
+            if isinstance(languages, dict) and languages
+            else None
+        )
+        rescored.append(lead(by_name[candidate.full_name], main))
+    rescored.sort(key=lambda x: (-x.score, -x.stars))
+    return rescored[:limit]
