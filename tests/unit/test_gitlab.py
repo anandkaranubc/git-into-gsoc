@@ -410,19 +410,20 @@ def test_group_projects_are_ranked_and_the_top_get_a_language() -> None:
         http,  # type: ignore[arg-type]
         "gitlab.gnome.org",
         "GNOME",
-        ideas="Ideas: improve https://gitlab.gnome.org/GNOME/gnome-shell notifications",
+        ideas="Ideas: https://gitlab.gnome.org/GNOME/gnome-shell notifications, https://gitlab.gnome.org/GNOME/gtk-vnc",
         language="javascript",
         person=None,
         limit=2,
     )
     names = [lead.full_name for lead in leads]
-    assert names == ["GNOME/gnome-shell", "GNOME/gtk"]  # ideas mention and language win
+    assert names == ["gitlab.gnome.org/GNOME/gnome-shell", "gitlab.gnome.org/GNOME/gtk"]
     shell = leads[0]
     assert shell.ideas_mention and shell.language == "JavaScript"
     assert "Named on the GSoC ideas page" in shell.reasons
+    assert not leads[1].ideas_mention  # gtk is not gtk-vnc
     assert any(r.startswith("Active in the last") for r in shell.reasons)
     assert not any("Pushed" in r for r in shell.reasons)
-    assert "GNOME/old-thing" not in names and "GNOME/gtk-fork" not in names
+    assert not any(n.endswith(("/old-thing", "/gtk-fork")) for n in names)
 
 
 def test_a_project_path_gives_that_one_project() -> None:
@@ -442,7 +443,7 @@ def test_a_project_path_gives_that_one_project() -> None:
         person=None,
         limit=10,
     )
-    assert [lead.full_name for lead in leads] == ["GNOME/gimp"]
+    assert [lead.full_name for lead in leads] == ["gitlab.gnome.org/GNOME/gimp"]
     assert leads[0].language == "C" and leads[0].stars == 305
     assert http.asked[0][0] == "https://gitlab.gnome.org/api/v4/groups/GNOME%2Fgimp/projects"
 
