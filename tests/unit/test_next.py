@@ -91,7 +91,7 @@ def test_next_rechecks_tracked_issues_and_reports_changes(api: respx.MockRouter)
     store.shortlist_org("SymPy")
     store.track_repo("sympy/sympy")
     store.track_issue("https://github.com/sympy/sympy/issues/5")
-    store.set_issue_status("sympy/sympy#5", "available")
+    store.mark_checked({"sympy/sympy#5": "available"}, None)
     store.complete_phase(JourneyPhase.LEARN)
 
     api.get(f"{GH}/repos/sympy/sympy/issues/5").mock(

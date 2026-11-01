@@ -293,12 +293,6 @@ class ProgressStore:
         return dict(self.load().profile)
 
     @_mutating
-    def set_issue_status(self, ref: str, status: str) -> ProgressState:
-        state = self.load()
-        state.issue_status[ref] = status
-        return self.save(state)
-
-    @_mutating
     def mark_checked(self, statuses: dict[str, str], at: datetime | None) -> ProgressState:
         """Save the statuses a check could tell, and `at` as the check time unless None.
 
