@@ -431,6 +431,9 @@ def register_json(
             # In env the person's values win: ours are only Gemini's "$GITHUB_TOKEN"
             # passthroughs, and a person may have written a real token there.
             merged["env"] = {**entry["env"], **old["env"]}
+        if "tools" in old:
+            # Copilot's tool list: a person who narrowed ours from ["*"] keeps that.
+            merged["tools"] = old["tools"]
         entry = merged
     if old == entry:
         return "unchanged", ""
@@ -638,11 +641,6 @@ def registered_entry(path: Path, fmt: str) -> dict[str, Any] | None:
     except (ValueError, OSError, tomllib.TOMLDecodeError):
         return None
     return entry if isinstance(entry, dict) else None
-
-
-def registered_servers(home: Path, project: Path | None = None) -> list[tuple[str, Path]]:
-    """Where our MCP server is already registered (for ``doctor``)."""
-    return [(label, path) for label, path, _ in registrations(home, project)]
 
 
 def registrations(

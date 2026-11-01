@@ -24,10 +24,11 @@ from git_into_gsoc.config import (
     get_settings,
     latest_program_year,
 )
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
 from git_into_gsoc.errors import GigError, InputError, RateLimitError, reset_phrase
 from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
-from git_into_gsoc.github.client import GitHubClient
+from git_into_gsoc.github.client import GitHubClient, license_name
 from git_into_gsoc.github.orientation import (
     active_committers,
     branch_gates,
@@ -89,10 +90,18 @@ from git_into_gsoc.github.search import (
     language_family,
     or_group,
 )
-from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
+from git_into_gsoc.gitlab import (
+    GITLAB_BEGINNER_LABELS,
+    gitlab_issue_status,
+    gitlab_repo_leads,
+    gitlab_target,
+    parse_gitlab_issue,
+    search_gitlab_issues,
+)
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
+from git_into_gsoc.gsoc.names import GITHUB_RESERVED
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
@@ -126,6 +135,7 @@ from git_into_gsoc.models import (
     Availability,
     ContactChannel,
     IdeasDocument,
+    IssueCandidate,
     OrgSummary,
     ProgressState,
     ProjectIdea,
@@ -143,16 +153,6 @@ from git_into_gsoc.validation import (
     validate_login,
     validate_year,
 )
-
-
-def _parse_iso(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
-
 
 BEFORE_YOU_COMMENT = [
     "Read the whole thread and any linked PRs first.",
@@ -231,7 +231,7 @@ def _unlinked_caveat(pull: dict[str, Any]) -> str:
 
 def _dormant_days(raw: dict[str, Any]) -> int | None:
     """Days since anything was pushed to the repository, when that is over DORMANT_DAYS."""
-    pushed = _parse_iso(raw.get("pushed_at"))
+    pushed = parse_iso(raw.get("pushed_at"))
     days = (datetime.now(UTC) - pushed).days if pushed else 0
     return days if days > DORMANT_DAYS else None
 
@@ -409,11 +409,8 @@ def _other_active_repos(repos: list[dict[str, Any]], repo: str) -> int:
     for item in repos:
         if str(item.get("name") or "").lower() == name or item.get("fork") or item.get("archived"):
             continue
-        try:
-            pushed = datetime.fromisoformat(str(item.get("pushed_at") or "").replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if pushed >= cutoff:
+        pushed = parse_iso(item.get("pushed_at"))
+        if pushed is not None and pushed >= cutoff:
             count += 1
     return count
 
@@ -936,6 +933,11 @@ class GSoCToolkit:
         host = urlparse(source).netloc.lower().removeprefix("www.")
         main_code = source if source and not owners and host != "github.com" else None
         if gsoc_org is not None and not owners and not linked_owners:
+            on_gitlab = self._repos_on_gitlab(
+                gsoc_org, ideas=ideas or "", language=language, limit=limit
+            )
+            if on_gitlab is not None:
+                return on_gitlab
             raise NotFoundError(
                 f"{gsoc_org.name} lists no GitHub organization, and its ideas page links to "
                 "no GitHub projects. Its code may live on GitLab or its own servers.",
@@ -969,7 +971,7 @@ class GSoCToolkit:
                 for r in listed
                 if not r.get("fork")
                 and not _retired_repo(r)
-                and (_parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
+                and (parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
             ]
             ranked_by_stars = sorted(
                 (r for r in repos if repo_kind(str(r.get("full_name"))) is None),
@@ -1004,7 +1006,7 @@ class GSoCToolkit:
                         description=clean_untrusted(repo.get("description"), limit=300) or None,
                         language=repo.get("language"),
                         stars=int(repo.get("stargazers_count") or 0),
-                        pushed_at=_parse_iso(repo.get("pushed_at")),
+                        pushed_at=parse_iso(repo.get("pushed_at")),
                         open_beginner_issues=beginner,
                         ideas_mention=in_ideas,
                         score=score,
@@ -1171,6 +1173,64 @@ class GSoCToolkit:
             ),
         }
 
+    def _repos_on_gitlab(
+        self, gsoc_org: OrgSummary, *, ideas: str, language: str | None, limit: int
+    ) -> dict[str, Any] | None:
+        """`repos` for an organization with nothing on GitHub whose code link is a GitLab
+        group or project (GNOME, GNU Mailman). None when it is not one, or the host does
+        not answer as GitLab does.
+
+        shortcut: an organization whose ideas page names GitHub projects (QEMU, ns-3)
+        still gets only those, because the GitHub list is checked for outside merges
+        and GitLab projects cannot be; add its own projects once `repo` reads GitLab.
+        """
+        target = gitlab_target(gsoc_org.source_code)
+        if target is None:
+            return None
+        host, path = target
+        person = self._saved_person(technologies=[language] if language else None)
+        try:
+            leads = gitlab_repo_leads(
+                self.http,
+                host,
+                path,
+                ideas=ideas,
+                language=language,
+                person=person,
+                limit=limit,
+            )
+        except GigError:
+            return None
+        where = f"{host}/{path}"
+        first = next((lead for lead in leads if repo_kind(lead.full_name) is None), None)
+        return {
+            "org": gsoc_org.name,
+            "github_owners": [where],
+            "linked_projects": [],
+            "ideas_url": gsoc_org.ideas_url,
+            "ideas_page_read": bool(ideas),
+            "count": len(leads),
+            "repos": [lead.model_dump(mode="json") for lead in leads],
+            "main_code": gsoc_org.source_code,
+            "note": (
+                f"{gsoc_org.name}'s code is on {where}, read through GitLab's public API: "
+                "its most recently active projects, ranked by ideas-page mentions, activity, "
+                "stars, and language. Beginner-issue counts and outside-contribution checks "
+                "are not read there."
+            ),
+            "next_step": (
+                f"Pick a project that holds code, such as {first.full_name}, then run "
+                f'git-into-gsoc issues --org "{gsoc_org.name}" for a free beginner issue '
+                "(repo and orient do not read GitLab yet)."
+                if first
+                else f'Start from its ideas: git-into-gsoc ideas "{gsoc_org.name}".'
+            ),
+            "score_meaning": (
+                "Score: points from its stars and recent activity plus the reasons listed, to "
+                "order this list. Not a grade or a chance of acceptance."
+            ),
+        }
+
     def _weigh_outside_merges(self, leads: list[RepoLead]) -> list[OutsideMerges | None]:
         """Adjust candidates by whether outsiders got pull requests merged lately.
 
@@ -1266,6 +1326,92 @@ class GSoCToolkit:
             "proposal still work for this organization.",
         )
 
+    def _gitlab_candidates(
+        self, gsoc_org: OrgSummary, *, label: str | None, max_results: int
+    ) -> tuple[str, list[str], list[IssueCandidate]] | None:
+        """(where, labels used, issues) from the GitLab group or project an
+        organization's code link names. None when it names none, or the host does not
+        answer as GitLab does.
+
+        Only for a named organization: `--scope gsoc` would cost a group search per
+        organization, and the language filter has no counterpart on GitLab.
+        """
+        target = gitlab_target(gsoc_org.source_code)
+        if target is None:
+            return None
+        host, path = target
+        labels_used = [label] if label else list(GITLAB_BEGINNER_LABELS)
+        try:
+            issues = search_gitlab_issues(
+                self.http,
+                host,
+                path,
+                labels=labels_used,
+                max_results=max_results,
+                org_name=gsoc_org.name,
+            )
+        except GigError:
+            return None
+        return f"{host}/{path}", labels_used, issues
+
+    def _issues_on_gitlab(
+        self, name: str, *, label: str | None, max_results: int
+    ) -> dict[str, Any] | None:
+        """`issues --org` for an organization with nothing to search on GitHub whose code
+        link is a GitLab group or project (GNOME). None when it is not one."""
+        try:
+            gsoc_org = self.gsoc.get_organization(name)
+        except GigError:
+            return None
+        found = (
+            self._gitlab_candidates(gsoc_org, label=label, max_results=max_results)
+            if gsoc_org
+            else None
+        )
+        if gsoc_org is None or found is None:
+            return None
+        where, labels_used, issues = found
+        note = (
+            f"Searching {gsoc_org.name} on {where} through GitLab's public API, with no "
+            "language filter. Left out: issues with an assignee. Comments there need a "
+            "sign-in, so an issue with comments shows unknown until you read them. Check "
+            "one with git-into-gsoc issue URL."
+        )
+        person = self._saved_person()
+        listed = _with_cautions(
+            personalize([_issue_dict(i) for i in issues], person, reorder=False), person
+        )
+        chat = next(
+            (
+                channel
+                for kind in ("chat", "mailingList")
+                for channel in gsoc_org.channels
+                if channel.kind == kind and channel.value
+            ),
+            None,
+        )
+        steps = (
+            []
+            if issues
+            else [
+                f"Read the open issues at https://{where} yourself: a small bug, a "
+                "docs gap, or a missing test is a fine first contribution even without a "
+                "beginner label.",
+                f'Or start from its ideas: git-into-gsoc ideas "{gsoc_org.name}", and ask in '
+                "its public channel how newcomers start" + (f": {chat.value}" if chat else "."),
+            ]
+        )
+        return {
+            "scope": "custom",
+            "language_used": None,
+            "labels_used": labels_used,
+            "note": note,
+            "count": len(issues),
+            "issues": listed,
+            "before_you_comment": BEFORE_YOU_COMMENT,
+            "next_steps": steps,
+        }
+
     def _repos_named_on_page(
         self, text: str, searched: list[str], *, language: str | None, limit: int = 6
     ) -> list[RepoLead]:
@@ -1275,7 +1421,7 @@ class GSoCToolkit:
         outside its own openrobotics and osrf owners. A link to a person's repository
         is usually a reference or a mentor's profile, so only organizations count.
         """
-        skip = {o.lower() for o in searched} | _NOT_OWNERS  # already listed in full
+        skip = {o.lower() for o in searched} | GITHUB_RESERVED  # already listed in full
         named: list[str] = []
         for match in _GITHUB_PROJECT_RE.finditer(text):
             owner, repo = match.group(1), match.group(2)
@@ -1357,7 +1503,7 @@ class GSoCToolkit:
             description=clean_untrusted(raw.get("description"), limit=300) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
-            pushed_at=_parse_iso(raw.get("pushed_at")),
+            pushed_at=parse_iso(raw.get("pushed_at")),
             open_beginner_issues=0,
             ideas_mention=True,
             score=score,
@@ -1392,6 +1538,14 @@ class GSoCToolkit:
         from_profile = False
         asked_org = org  # cleared below when it names a GSoC organization
         self.github.rate_limited = None
+        # The CLI offers an enum, but MCP passes raw text: "GSoC" or "gsoc_orgs" used to
+        # fail the exact match and silently search all of GitHub instead.
+        scope = scope.strip().lower()
+        if scope not in {"gsoc", "all"}:
+            raise InputError(
+                f"scope must be 'gsoc' or 'all', not '{scope}'",
+                hint="Use scope='gsoc' for GSoC organizations or scope='all' for all of GitHub.",
+            )
         if not (language or org or repo):
             saved = list(self.progress.profile().get("technologies") or [])
             language, from_profile = (saved[0], True) if saved else (None, False)
@@ -1410,8 +1564,28 @@ class GSoCToolkit:
         gsoc_owners: list[str] = []
         own_owners: list[str] = []
         linked: list[str] = []
+        own_on_gitlab: tuple[str, list[str], list[IssueCandidate]] | None = None
         if org and not repo:
-            own_owners, linked, owners_note = self._gsoc_owners(org, language=language)
+            try:
+                own_owners, linked, owners_note = self._gsoc_owners(org, language=language)
+            except NotFoundError:
+                # GNOME, QEMU, and GNU Mailman keep their issues on GitLab; the error that
+                # names the host stands for everyone else.
+                on_gitlab = self._issues_on_gitlab(org, label=label, max_results=max_results)
+                if on_gitlab is None:
+                    raise
+                return on_gitlab
+            if linked and not own_owners:
+                # QEMU and ns-3 keep their own code on GitLab and name GitHub projects on
+                # their ideas pages; both belong in the list, their own first.
+                try:
+                    gsoc_org = self.gsoc.get_organization(org)
+                except GigError:
+                    gsoc_org = None
+                if gsoc_org is not None:
+                    own_on_gitlab = self._gitlab_candidates(
+                        gsoc_org, label=label, max_results=max_results
+                    )
             gsoc_owners = [*own_owners, *linked]
             if gsoc_owners:
                 shortlist, org = gsoc_owners, None
@@ -1466,6 +1640,14 @@ class GSoCToolkit:
             max_results=max_results,
             org_names=owner_names,
         )
+        if own_on_gitlab:
+            where, _, from_gitlab = own_on_gitlab
+            issues = [*from_gitlab, *issues]
+            note += (
+                f" Its own issues on {where} come from GitLab's public API."
+                if from_gitlab
+                else f" Its own code, at {where}, has no free issue with a common beginner label."
+            )
         if gsoc_owners and linked:
             # Free issues first; among them, the organization's own before linked projects.
             linked_owners = {o.lower() for o in linked}
@@ -1476,6 +1658,7 @@ class GSoCToolkit:
                     -i.beginner_score,
                 )
             )
+            issues = issues[:max_results]
             note += " Its own repositories come first, then the linked ones."
         if use_gsoc and narrowed and not gsoc_owners and len(issues) < 3:
             # Too few in the organizations that fit the interests: keep those first and
@@ -2276,7 +2459,7 @@ class GSoCToolkit:
                 "source": program["source"],
             },
             "deadlines": upcoming_deadlines(program),
-            "time_budget": time_budget(state, program, now=now),
+            "time_budget": time_budget(state, program),
             "hours_note": hours_note((state.profile or {}).get("hours_per_week")),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
@@ -2390,7 +2573,7 @@ class GSoCToolkit:
             "as_of_commit": tree.get("sha"),
             "tree_truncated": bool(tree.get("truncated")),
             "stars": int(raw.get("stargazers_count") or 0),
-            "license": _license_label(raw.get("license")),
+            "license": license_name(raw.get("license")),
             "pushed_days_ago": days_since(raw.get("pushed_at")),
             "languages": languages,
             "code_map": code_map(entries, repo_name=repo),
@@ -2606,7 +2789,7 @@ class GSoCToolkit:
             label = own[0] if own else None
         if not label:
             return [], None, "No beginner label found to look up similar closed issues.", False
-        query = f"repo:{full} is:issue is:closed label:{_quote_label(label)}"
+        query = f"repo:{full} is:issue is:closed {or_group('label', [label])}"
         try:
             items = self.github.search_issues(query, per_page=30)
         except HttpError as exc:
@@ -3111,7 +3294,7 @@ class GSoCToolkit:
         return doc, followed
 
     def _ideas_from_issues(self, url: str, full_name: str, label: str) -> IdeasDocument | None:
-        query = f"repo:{full_name} is:issue is:open label:{_quote_label(label)}"
+        query = f"repo:{full_name} is:issue is:open {or_group('label', [label])}"
         try:
             items = self.github.search_issues(query, per_page=50, sort="updated")
         except HttpError:
@@ -3427,7 +3610,8 @@ class GSoCToolkit:
         shown = ", ".join(names[:3]) + (f", and {len(names) - 3} more" if len(names) > 3 else "")
         return (
             f" Not searched, because their code is outside GitHub: {shown}. "
-            'See git-into-gsoc org "NAME" for where each one keeps its issues.'
+            'git-into-gsoc issues --org "NAME" searches one on GitLab; org "NAME" says '
+            "where the others keep their issues."
         )
 
     def _code_elsewhere(self, names: list[str]) -> dict[str, str]:
@@ -3544,19 +3728,6 @@ def _not_checked(state: ProgressState) -> str | None:
     )
 
 
-def _license_label(license_obj: Any) -> str | None:
-    if not isinstance(license_obj, dict):
-        return None
-    spdx = str(license_obj.get("spdx_id") or "")
-    if spdx and spdx != "NOASSERTION":
-        return spdx
-    return str(license_obj.get("name") or "") or None
-
-
-def _quote_label(label: str) -> str:
-    return f'"{label}"' if " " in label else label
-
-
 # Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18, UC OSPO 22.
 MAX_FOLLOWED_PAGES = 30
 _YEAR_RE = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
@@ -3614,23 +3785,6 @@ _GITHUB_PROJECT_RE = re.compile(
 )
 # GitHub's own pages, never a project's owner. A pasted image (user-attachments/assets)
 # made a one-project ideas page look like several (a post-merge audit, 2026-10-23).
-_NOT_OWNERS = {
-    "orgs",
-    "topics",
-    "search",
-    "features",
-    "apps",
-    "settings",
-    "marketplace",
-    "user-attachments",
-    "sponsors",
-    "users",
-    "collections",
-    "codespaces",
-    "readme",
-    "explore",
-    "notifications",
-}
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
 _DISCUSSIONS_RE = re.compile(r"github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/discussions\b")
 _CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
@@ -3668,7 +3822,7 @@ def _linked_github_projects(
         if not any_link and not _looks_like_ideas_page(page):
             continue
         match = _GITHUB_PROJECT_RE.match(str(page.get("url") or ""))
-        if not match or match.group(1).lower() in _NOT_OWNERS:
+        if not match or match.group(1).lower() in GITHUB_RESERVED:
             continue
         owner, repo = match.group(1), match.group(2)
         if repo and repo.lower() not in _NOT_REPOS:
@@ -3689,7 +3843,7 @@ def _linked_repo(link: str) -> tuple[str, bool] | None:
     if not match or not match.group(2) or _CHANGE_LINK_RE.match(link, match.end()):
         return None
     owner, repo = match.group(1), match.group(2).removesuffix(".git")
-    if owner.lower() in _NOT_OWNERS or repo.lower() in _NOT_REPOS:
+    if owner.lower() in GITHUB_RESERVED or repo.lower() in _NOT_REPOS:
         return None
     return f"{owner}/{repo}", link[match.end() :].startswith("/issues/")
 
@@ -3814,13 +3968,8 @@ _OPEN_TO_NEWCOMERS = frozenset({Availability.AVAILABLE.value, Availability.UNKNO
 
 def _after(stamp: object, when: datetime) -> bool:
     """True when an ISO timestamp from GitHub is later than `when`."""
-    try:
-        moment = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
-    except ValueError:
-        return False
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
-    return moment > when
+    moment = parse_iso(stamp)
+    return moment is not None and moment > when
 
 
 def _open(issue: dict[str, Any]) -> bool:

@@ -17,7 +17,7 @@ import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
-from conftest import FIXTURES
+from conftest import load_fixture
 from git_into_gsoc import cli
 from git_into_gsoc.progress.store import ProgressStore
 
@@ -52,10 +52,6 @@ def poison(value: Any, key: str = "") -> Any:
             return value
         return value + HOSTILE + HIDDEN
     return value
-
-
-def load(name: str) -> Any:
-    return json.loads((FIXTURES / "rendering" / f"{name}.json").read_text(encoding="utf-8"))
 
 
 CASES = [
@@ -100,7 +96,7 @@ def test_command_renders_untrusted_text_literally(
     monkeypatch: pytest.MonkeyPatch,
     wide_console: None,
 ) -> None:
-    data = poison(load(fixture))
+    data = poison(load_fixture(f"rendering/{fixture}.json"))
     monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit(method, data))
     result = CliRunner().invoke(cli.app, argv)
     assert result.exception is None or isinstance(result.exception, SystemExit), repr(
@@ -128,7 +124,7 @@ def test_json_output_carries_no_hidden_characters(
     monkeypatch: pytest.MonkeyPatch,
     wide_console: None,
 ) -> None:
-    data = poison(load(fixture))
+    data = poison(load_fixture(f"rendering/{fixture}.json"))
     monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit(method, data))
     result = CliRunner().invoke(cli.app, [*argv, "--output", "json"])
     assert result.exit_code == 0, result.output[-800:]
@@ -139,7 +135,7 @@ def test_json_output_carries_no_hidden_characters(
 def test_proposal_check_renders_untrusted_text_literally(
     monkeypatch: pytest.MonkeyPatch, wide_console: None, tmp_path: Path
 ) -> None:
-    data = poison(load("proposal_check"))
+    data = poison(load_fixture("rendering/proposal_check.json"))
     monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit("check_proposal", data))
     draft = tmp_path / "draft.md"
     draft.write_text("# Draft\n", encoding="utf-8")
@@ -201,7 +197,9 @@ def test_progress_reads_as_a_checklist_and_json_is_unchanged(wide_console: None)
 def test_the_repos_table_says_what_its_score_means(
     monkeypatch: pytest.MonkeyPatch, wide_console: None
 ) -> None:
-    monkeypatch.setattr(cli, "_toolkit", lambda: FakeToolkit("discover_repos", load("repos")))
+    monkeypatch.setattr(
+        cli, "_toolkit", lambda: FakeToolkit("discover_repos", load_fixture("rendering/repos.json"))
+    )
     result = CliRunner().invoke(cli.app, ["repos", "SymPy"])
     assert result.exit_code == 0, result.output[-800:]
     # Caption wraps to the table width; collapse whitespace so the phrase still matches.
@@ -213,7 +211,7 @@ def test_recommend_marks_a_starter_issue_someone_asked_for_before(
 ) -> None:
     # rust-lang/beyond-refs#27 was shown as "available" with nothing more; `issues`
     # said "asked before" for the same issue (an ask 177 days old, no PR).
-    data = load("recommend")
+    data = load_fixture("rendering/recommend.json")
     data["starter_issues"] = [
         {
             "repo": "rust-lang/beyond-refs",

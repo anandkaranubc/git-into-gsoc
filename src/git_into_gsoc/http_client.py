@@ -4,8 +4,10 @@ Caching strategy:
 * Fresh entries (younger than the TTL) are served without a request.
 * Stale entries are revalidated with ETag / Last-Modified. A 304 refreshes the
   entry and, for authenticated GitHub calls, does not count against the quota.
-* If the network fails or a rate limit is hit, a stale entry (up to
-  `STALE_IF_ERROR_SECONDS` old) is served instead of failing.
+* If the network fails, the server has an outage (5xx), or a rate limit is hit, a
+  stale entry (up to `STALE_IF_ERROR_SECONDS` old) is served instead of failing.
+* A 404 is remembered for up to `NOT_FOUND_TTL_SECONDS`, so a page that does not
+  exist is not asked for again on every command.
 """
 
 from __future__ import annotations
@@ -48,6 +50,10 @@ MAX_RESPONSE_BYTES = 64 * 1024 * 1024
 RESPONSE_DEADLINE_TIMEOUTS = 10
 # Left by a write that was interrupted; a live write finishes in well under this.
 STALE_TMP_SECONDS = 3600
+# Every `orgs` run asked for next year's organization list and three missing wiki pages
+# again, each a 404 (a performance pass, 2026-11-01). An hour at most: a page that
+# appears, such as the newly announced list, is seen soon.
+NOT_FOUND_TTL_SECONDS = 3600
 _PRUNE_MARKER = ".last-pruned"
 _RETRY_STATUSES = {500, 502, 503, 504}
 
@@ -159,6 +165,7 @@ class CachedHttpClient:
         host. That second request carries no Authorization header and asks for the end
         of the file only, so a log of tens of megabytes costs a few hundred kilobytes.
         """
+        _require_valid_url(url)
         try:
             self._throttle(url)
             request = self._client.build_request("GET", url, headers=headers or {}, timeout=timeout)
@@ -286,10 +293,16 @@ class CachedHttpClient:
         kind: str,
         json_body: dict[str, Any] | None = None,
     ) -> Any:
+        _require_valid_url(url)
         ttl = self.settings.cache_ttl_seconds if ttl is None else ttl
         cache_key = params if json_body is None else {"body": json_body}
         cache_path = self._cache_path(kind, url, cache_key, "Authorization" in headers)
         entry = self._read_cache(cache_path) if use_cache else None
+        if entry is not None and "not_found" in entry:
+            if time.time() - entry.get("ts", 0) <= min(ttl, NOT_FOUND_TTL_SECONDS):
+                self.stats["cache_hits"] += 1
+                raise NotFoundError(entry["not_found"], status_code=404, url=url)
+            entry = None
         if entry is not None and time.time() - entry.get("ts", 0) <= ttl:
             self.stats["cache_hits"] += 1
             return entry["data"]
@@ -315,8 +328,14 @@ class CachedHttpClient:
             # Parsed here, so a body that is not JSON falls back to the cache below.
             revalidated = response.status_code == 304
             data: Any = None if revalidated else _decode(response, url, kind)
-        except (RateLimitError, HttpError) as exc:
-            if isinstance(exc, NotFoundError) or entry is None:
+        except HttpError as exc:
+            if isinstance(exc, NotFoundError) and use_cache:
+                self._write_cache(cache_path, {"ts": time.time(), "not_found": str(exc)})
+            # Only an outage or a limit is waited out on old data. A definite answer such
+            # as 410 Gone (a deleted issue) or 403 (access blocked) kept reading as open
+            # for up to a week. No status means the network failed or the body was not JSON.
+            passing = isinstance(exc, RateLimitError) or exc.status_code in (None, *_RETRY_STATUSES)
+            if not passing or entry is None:
                 raise
             if time.time() - entry.get("ts", 0) > STALE_IF_ERROR_SECONDS:
                 raise
@@ -522,9 +541,13 @@ class CachedHttpClient:
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             return None
-        return payload if isinstance(payload, dict) and "data" in payload else None
+        if not isinstance(payload, dict) or not ({"data", "not_found"} & set(payload)):
+            return None
+        return payload
 
     def _write_cache(self, path: Path, payload: dict[str, Any]) -> None:
+        # The MCP server runs for days, so a prune only at start never came due there.
+        self._prune_if_due()
         tmp: str | None = None
         try:
             fd, tmp = tempfile.mkstemp(dir=self._cache_root, suffix=".tmp")
@@ -562,6 +585,23 @@ def _unlink(path: Path) -> int:
     except OSError:
         return 0
     return 1
+
+
+def _require_valid_url(url: str) -> None:
+    """Raise HttpError for an address httpx cannot request.
+
+    Ideas pages link to anything: "https://xn--/gsoc/ideas" fails IDNA and
+    "http://[::1/x" leaves a bracket open. Both raised ValueError, which no caller
+    expects, so `ideas` stopped with an internal error.
+    """
+    try:
+        httpx.URL(url).host  # noqa: B018 - reading the host runs the IDNA check
+    except (httpx.InvalidURL, ValueError) as exc:
+        raise HttpError(
+            f"Not a valid web address: {url}",
+            url=url,
+            hint="Check the link for a typing mistake; pages with broken links are skipped.",
+        ) from exc
 
 
 def _host(url: str) -> str:
@@ -664,6 +704,11 @@ def _retry_after_seconds(response: httpx.Response) -> float | None:
     traceback (an audit, 2026-11-01)."""
     value = response.headers.get("Retry-After")
     if not value:
+        # GitHub's search limit (10 a minute without a token) sends no Retry-After, so a
+        # wait of seconds failed at once. An hour-long core wait stays above the retry cap.
+        reset = response.headers.get("x-ratelimit-reset")
+        if response.headers.get("x-ratelimit-remaining") == "0" and reset and reset.isdigit():
+            return max(0.0, int(reset) - time.time())
         return None
     try:
         seconds = float(value)

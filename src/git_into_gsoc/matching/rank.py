@@ -748,7 +748,7 @@ class OrgIndex:
             )
 
         # A fit needs something to fit: a category or a bare listing has none.
-        fit = _fit_level(relevance, interests, skills) if (query or not person.empty) else None
+        fit = _fit_level(relevance, interests) if (query or not person.empty) else None
         # A caveat that decides whether someone can start here, or a broad word that
         # matches dozens of organizations, keeps the fit from being called strong.
         if fit == "strong" and (blocking or self._broad(person)):
@@ -892,7 +892,7 @@ def _trend(projects_by_year: dict[int, int]) -> str | None:
     return None
 
 
-def _fit_level(relevance: float, interests: list[TermMatch], skills: list[TermMatch]) -> str:
+def _fit_level(relevance: float, interests: list[TermMatch]) -> str:
     if relevance >= FIT_STRONG and (not interests or any(t.how == "direct" for t in interests)):
         return "strong"
     if relevance >= FIT_GOOD:
@@ -923,28 +923,3 @@ def _diversify(matches: list[OrgMatch], interest_count: int, window: int = 30) -
         picked.append(best)
         covered.update(i for i, t in enumerate(best.interests) if t.strength >= 0.5)
     return picked + tail
-
-
-def rank_orgs(
-    orgs: list[OrgSummary],
-    *,
-    technologies: list[str] | None = None,
-    interests: list[str] | None = None,
-    experience: str | None = None,
-    hours_per_week: int | None = None,
-    reference_year: int,
-    descriptions: dict[str, str] | None = None,
-    signals: dict[str, Any] | None = None,
-    limit: int | None = None,
-) -> list[OrgMatch]:
-    """One-call convenience for scripts and tests."""
-    index = OrgIndex.build(
-        orgs, descriptions=descriptions, signals=signals, reference_year=reference_year
-    )
-    person = build_profile(
-        technologies=technologies,
-        interests=interests,
-        experience=experience,
-        hours_per_week=hours_per_week,
-    )
-    return index.rank(person, limit=limit)

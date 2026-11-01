@@ -276,3 +276,56 @@ def test_branch_names_with_a_slash_or_an_accent_are_encoded_once() -> None:
     assert github.branch_rules("acme", "lib", "développement") == [{"type": "pull_request"}]
     assert tree.calls.last.request.url.raw_path.endswith(b"/trees/release%2F1.x?recursive=1")
     assert rules.calls.last.request.url.raw_path.endswith(b"/branches/d%C3%A9veloppement")
+
+
+def test_ci_tox_and_sign_off_are_explained_in_plain_words(monkeypatch: Any) -> None:
+    from git_into_gsoc import cli
+
+    data = {
+        "repo": "acme/lib",
+        "description": "",
+        "languages": [],
+        "license": None,
+        "pushed_days_ago": 1,
+        "as_of_commit": "abc",
+        "default_branch": "main",
+        "code_map": [],
+        "entry_points": [],
+        "test_commands": [{"command": "tox -e tests", "source": ".github/workflows/tests.yml"}],
+        "ci_environment": {},
+        "setup_hints": [],
+        "docs": {
+            "readme": "README.rst",
+            "contributing": "docs/C.rst",
+            "architecture": ["docs/C.rst"],
+        },
+        "maintainers": {"commits_90d": 0, "active_committers_90d": [], "codeowners": []},
+        "conventions": {
+            "dco": {"required": True, "evidence": ["a DCO status check runs on pull requests"]},
+            "cla": {"required": False, "evidence": []},
+            "conventional_commits": {"expected": False, "evidence": []},
+            "pre_commit": False,
+            "pr_checklist_items": 0,
+            "ai_disclosure_in_pr_template": False,
+        },
+        "policies": [],
+        "reading_plan": [],
+        "next_steps": [],
+        "channels": [],
+        "codetour": None,
+        "issues": [],
+        "note": "",
+    }
+
+    class Fake:
+        def orient_repo(self, *a: Any, **k: Any) -> dict[str, Any]:
+            return data
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    result = CliRunner().invoke(app, ["orient", "acme/lib"], env={"COLUMNS": "200"})
+    assert result.exit_code == 0, result.output
+    assert "CI is the set of checks GitHub runs on every pull request" in result.output
+    assert "tox runs the tests in fresh, separate Python environments" in result.output
+    assert "adds a 'Signed-off-by' line" in result.output
+    read_first = result.output.split("Read first", 1)[1].split("\n\n", 1)[0]
+    assert read_first.count("docs/C.rst") == 1

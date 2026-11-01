@@ -3,40 +3,21 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any
 
 import httpx
 import respx
 
-from conftest import load_fixture
+from conftest import FIXTURES, mock_catalog
 from git_into_gsoc.service import GSoCToolkit, _linked_github_projects
 
-FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "ideas" / "umbrella_links_index.md"
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
+FIXTURE = FIXTURES / "ideas" / "umbrella_links_index.md"
 # SymPy's ideas page in the fixture data stands in for an umbrella index here.
 SYMPY_RAW = "https://raw.githubusercontent.com/wiki/sympy/sympy/GSoC-Ideas.md"
 
 
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
-
-
 def _mock_sources(api: respx.MockRouter) -> None:
-    api.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-    api.get(f"{OFFICIAL}/2026/organizations/").mock(
-        return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-    )
-    api.get(f"{ARCHIVE}/organizations.json").mock(
-        return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-    )
-    api.get(f"{ARCHIVE}/2026.json").mock(return_value=httpx.Response(200, json=_archive_year(2026)))
+    mock_catalog(api)
     # `repos` reads recent pull requests of its top candidates; none here.
     api.get(url__regex=r"https://api\.github\.com/repos/[\w.-]+/[\w.-]+/pulls.*").mock(
         return_value=httpx.Response(200, json=[])
@@ -119,6 +100,10 @@ def _discover_without_owners(page: str, source_code: str | None = None) -> dict[
         )
         api.get(url__regex=r"https://api\.github\.com/search/issues.*").mock(
             return_value=httpx.Response(200, json={"total_count": 0, "items": []})
+        )
+        # A GitLab code link is tried as a group or project first; here it is neither.
+        api.get(url__regex=r"https://gitlab\.com/api/v4/.*").mock(
+            return_value=httpx.Response(404, json={"message": "404 Not Found"})
         )
         toolkit = GSoCToolkit()
         _without_owners(toolkit, source_code)
