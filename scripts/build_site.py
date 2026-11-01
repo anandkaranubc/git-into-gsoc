@@ -1,13 +1,14 @@
-"""Write the organization explorer: one web page per mentoring organization.
+"""Write the organization explorer and the start page into the site folder.
 
-    python3 scripts/build_site.py              # writes site/orgs/ and site/sitemap.xml
+    python3 scripts/build_site.py              # writes site/orgs/, site/start/, site/sitemap.xml
     python3 scripts/build_site.py --out DIR    # writes somewhere else (tests)
 
 The pages come from the same bundled snapshot the CLI reads offline
 (``src/git_into_gsoc/data``), so a visitor sees what ``git-into-gsoc org`` would
 show without installing anything. The Pages workflow runs this script, and the
-output is not committed: it changes with every snapshot refresh. Only the standard
-library is used so the workflow needs no install step.
+output is not committed: it changes with every snapshot refresh. The explorer needs
+only the standard library; the start page (``site/start/``) also needs the package
+installed, because it ships the package's own ranker to the browser.
 """
 
 from __future__ import annotations
@@ -15,6 +16,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import zipfile
 from collections import Counter
 from html import escape
 from pathlib import Path
@@ -24,6 +26,16 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "git_into_gsoc" / "data"
 SITE_URL = "https://gitintogsoc.me/"
 REPO_URL = "https://github.com/anandkaranubc/git-into-gsoc"
+# Pinned so the page never changes under a visitor; bump both together after a run.
+PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/"
+# Pure-Python wheels the package imports that Pyodide does not bundle (it bundles
+# pydantic and platformdirs). Pinned to versions that work with its pydantic 2.10.
+WHEELS = (
+    "https://files.pythonhosted.org/packages/b4/46/93416fdae86d40879714f72956ac14df9c7b76f7d41a4d68aa9f71a0028b/pydantic_settings-2.7.1-py3-none-any.whl",
+    "https://files.pythonhosted.org/packages/6a/3e/b68c118422ec867fa7ab88444e1274aa40681c606d59ac27de5a5588f082/python_dotenv-1.0.1-py3-none-any.whl",
+)
+# What the first visit downloads (Pyodide, pydantic, the package, the data), rounded up.
+DOWNLOAD_MB = 8
 # A slug becomes a folder name, so anything else from the data is refused.
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
 TECH_CHIPS = 18
@@ -123,6 +135,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
       <span class="name pixel">git into gsoc</span>
     </a>
     <ul class="nav-links">
+      <li><a href="{root}start/">start</a></li>
       <li><a href="{root}orgs/">organizations</a></li>
       <li class="optional"><a href="{root}docs/">guide</a></li>
       <li><a href="{REPO_URL}">github</a></li>
@@ -417,10 +430,287 @@ def index_page(
     return html + FOOT + FILTER_SCRIPT
 
 
+WORKER_JS = """// Runs the real git_into_gsoc ranker in the browser, off the page's own thread.
+// Pyodide (CPython built for the browser) loads once; every answer after that is
+// a function call. Nothing typed on the page is sent anywhere.
+importScripts("PYODIDE_URLpyodide.js");
+var ready = (async function () {
+  var py = await loadPyodide({ indexURL: "PYODIDE_URL" });
+  await py.loadPackage(WHEEL_LIST);
+  function get(name, read) {
+    return fetch(name).then(function (r) {
+      if (!r.ok) throw new Error(name + " failed to load (" + r.status + ")");
+      return r[read]();
+    });
+  }
+  var parts = await Promise.all([get("pkg.zip", "arrayBuffer"), get("orgs.json", "text"), get("page.py", "text")]);
+  py.unpackArchive(parts[0], "zip");
+  py.FS.writeFile("orgs.json", parts[1]);
+  py.runPython(parts[2]);
+  py.runPython("import json\\nINDEX = load_index(json.load(open('orgs.json')))");
+  return py;
+})();
+ready.then(function () { self.postMessage({ ready: true }); },
+           function (e) { self.postMessage({ failed: String(e) }); });
+self.onmessage = async function (event) {
+  try {
+    var py = await ready;
+    py.globals.set("ANSWERS_JSON", JSON.stringify(event.data));
+    self.postMessage({ result: JSON.parse(py.runPython("answer_json(INDEX, ANSWERS_JSON)")) });
+  } catch (e) {
+    self.postMessage({ failed: String(e) });
+  }
+};
+"""
+
+START_SCRIPT = """<script>
+  (function () {
+    var form = document.getElementById("start-form");
+    var status = document.getElementById("start-status");
+    var out = document.getElementById("start-results");
+    var worker = null, ready = false, pending = false;
+    var SLUG = /^[a-z0-9][a-z0-9-]*$/;
+    function say(text) { status.textContent = text; }
+    function el(tag, cls, text) {
+      var node = document.createElement(tag);
+      if (cls) node.className = cls;
+      if (text !== undefined) node.textContent = text;
+      return node;
+    }
+    function boot() {
+      if (worker) return;
+      say("Loading the matcher (about DOWNLOAD_MB MB the first time; your browser keeps it).");
+      worker = new Worker("worker.js");
+      worker.onmessage = function (event) {
+        var data = event.data;
+        if (data.ready) { ready = true; say(pending ? "Matching..." : "Ready."); return; }
+        if (data.failed) { say("The matcher could not load here: " + data.failed + " Run git-into-gsoc start in a terminal instead."); return; }
+        pending = false;
+        say("");
+        render(data.result);
+      };
+      worker.onerror = function (event) {
+        say("The matcher could not load here (" + event.message + "). Run git-into-gsoc start in a terminal instead.");
+      };
+    }
+    function answers() {
+      var chips = Array.prototype.slice.call(form.querySelectorAll("[data-topic][aria-pressed='true']"))
+        .map(function (c) { return c.getAttribute("data-topic"); });
+      var typed = form.elements.interests.value.trim();
+      var level = form.querySelector("[name=experience]:checked");
+      var hours = parseInt(form.elements.hours.value, 10);
+      return {
+        technologies: form.elements.technologies.value.trim(),
+        interests: chips.concat(typed ? [typed] : []).join(", "),
+        hours: hours >= 1 && hours <= 80 ? hours : null,
+        experience: level ? level.value : null
+      };
+    }
+    function lines(parent, items, cls, mark) {
+      items.forEach(function (text) { parent.appendChild(el("p", cls, mark + text)); });
+    }
+    function render(result) {
+      out.textContent = "";
+      out.hidden = false;
+      if (!result.organizations.length) {
+        out.appendChild(el("p", "", "No organizations matched those answers yet. Try broader words, or browse by topic."));
+        return;
+      }
+      out.appendChild(el("h2", "", "Organizations that fit you"));
+      result.read_as.forEach(function (note) { out.appendChild(el("p", "fine", note)); });
+      var list = el("ol", "matches");
+      result.organizations.forEach(function (org) {
+        var item = el("li");
+        var head = el("h3");
+        if (org.slug && SLUG.test(org.slug)) {
+          var link = el("a", "", org.name);
+          link.href = "../orgs/" + org.slug + "/";
+          head.appendChild(link);
+        } else {
+          head.appendChild(document.createTextNode(org.name));
+        }
+        if (org.fit) {
+          head.appendChild(document.createTextNode(" "));
+          head.appendChild(el("span", "fit fit-" + org.fit, org.fit + " fit"));
+        }
+        item.appendChild(head);
+        if (org.description) item.appendChild(el("p", "", org.description));
+        if (org.why.length) item.appendChild(el("p", "why", "Why: " + org.why.join("; ")));
+        if (org.evidence.length) {
+          var details = el("details");
+          details.appendChild(el("summary", "", "Evidence"));
+          var ul = el("ul");
+          org.evidence.forEach(function (line) { ul.appendChild(el("li", "", line)); });
+          details.appendChild(ul);
+          item.appendChild(details);
+        }
+        lines(item, org.readiness, "tick", "\\u2713 ");
+        lines(item, org.caveats, "warn", "! ");
+        list.appendChild(item);
+      });
+      out.appendChild(list);
+      result.set_aside.forEach(function (org) {
+        out.appendChild(el("p", "fine", "Left out: " + org.name + " says it will not take part this year (" + org.url + ")."));
+      });
+      if (result.hours_note) out.appendChild(el("p", "warn", "! " + result.hours_note));
+      out.appendChild(el("h2", "", "Your next steps"));
+      var steps = el("ol", "steps");
+      result.next_steps.forEach(function (step) {
+        var item = el("li", "", step.title + " ");
+        item.appendChild(el("code", "", step.command));
+        steps.appendChild(item);
+      });
+      out.appendChild(steps);
+      var term = el("div", "term");
+      var bar = el("div", "term-bar");
+      bar.appendChild(el("span", "", "the same answers, in your terminal"));
+      term.appendChild(bar);
+      var pre = el("pre");
+      pre.appendChild(el("code", "", result.commands.join("\\n")));
+      term.appendChild(pre);
+      var ask = el("pre");
+      ask.setAttribute("aria-label", "Or ask your assistant");
+      ask.appendChild(el("span", "k", "or ask your assistant:"));
+      ask.appendChild(document.createTextNode("\\n"));
+      ask.appendChild(el("span", "v", '"I know ' + (result.matched_on.skills.join(", ") || "a little programming") + ' and care about ' + (result.matched_on.interests.join(", ") || "open source") + '. Which GSoC organizations fit me, and which beginner issue should I try first?"'));
+      term.appendChild(ask);
+      out.appendChild(term);
+      out.appendChild(el("p", "fine", "The terminal tool also checks live data: which repositories merge newcomers' pull requests, which beginner issues are still free, and what each organization has said about the coming year."));
+      out.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    form.addEventListener("focusin", boot, { once: true });
+    form.addEventListener("pointerdown", boot, { once: true });
+    form.querySelectorAll("[data-topic]").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        chip.setAttribute("aria-pressed", chip.getAttribute("aria-pressed") === "true" ? "false" : "true");
+      });
+    });
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      var given = answers();
+      if (!given.technologies && !given.interests) {
+        say("Name at least one language or tool, or pick one topic.");
+        return;
+      }
+      boot();
+      pending = true;
+      say(ready ? "Matching..." : "Still loading the matcher; your answers run as soon as it is ready.");
+      worker.postMessage(given);
+    });
+  })();
+</script>
+"""
+
+
+def start_page(year: int, generated: str, *, download_mb: int = DOWNLOAD_MB) -> str:
+    """The page that asks what `start` asks and ranks with the same code, in the browser."""
+    from git_into_gsoc.matching.profile import EXPERIENCE_HELP, EXPERIENCE_LEVELS
+    from git_into_gsoc.onboarding import TECH_EXAMPLES, TOPIC_CHOICES
+
+    chips = "".join(
+        f'<button type="button" class="chip" data-topic="{escape(key)}" aria-pressed="false">'
+        f"{escape(label)}</button>"
+        for key, label in TOPIC_CHOICES
+    )
+    helps = dict(part.partition(": ")[::2] for part in EXPERIENCE_HELP.split("; "))
+    levels = "".join(
+        f'<label class="level"><input type="radio" name="experience" value="{level}"> '
+        f"<span><b>{level}</b>: {escape(helps.get(level, ''))}</span></label>"
+        for level in EXPERIENCE_LEVELS
+    )
+    title = "Four questions, three GSoC organizations"
+    description = (
+        f"Answer what git-into-gsoc start asks and get three GSoC {year} organizations that "
+        "fit you, with the evidence. Runs in your browser; nothing to install."
+    )
+    html = _head(title, description, "../", "start/")
+    html += f"""  <section class="section start" aria-labelledby="start-title">
+    <div class="wrap">
+      <div class="section-head">
+        <h1 id="start-title" class="pixel">where would you fit?</h1>
+        <p>The four questions <code>git-into-gsoc start</code> asks, answered here. The ranking is the terminal tool's own code, run in your browser by <a href="https://pyodide.org">Pyodide</a>: the same matcher, the same reasons, the same caveats. Your answers never leave this page. Organizations are the official GSoC {year} list, snapshot of {escape(generated)}. The matcher downloads when you start typing: about {download_mb} MB the first time, kept by your browser after that.</p>
+      </div>
+      <form id="start-form" class="filters questions" aria-label="Four questions">
+        <label>1 of 4. Languages and tools you know? For example: {escape(TECH_EXAMPLES)}
+          <input name="technologies" type="text" placeholder="{escape(TECH_EXAMPLES)}" autocomplete="off" autocapitalize="none"></label>
+        <fieldset>
+          <legend>2 of 4. What would you enjoy working on? Pick any, or type your own words.</legend>
+          <div class="chips">{chips}</div>
+          <label class="visually-hidden" for="start-interests">Your own words</label>
+          <input id="start-interests" name="interests" type="text" placeholder="your own words, comma separated" autocomplete="off" autocapitalize="none">
+        </fieldset>
+        <label>3 of 4. About how many hours a week can you give?
+          <input name="hours" type="number" min="1" max="80" inputmode="numeric" placeholder="for example 10"></label>
+        <fieldset>
+          <legend>4 of 4. Your open source experience? Leave it blank if unsure.</legend>
+          {levels}
+        </fieldset>
+        <div class="actions">
+          <button type="submit" class="go">Show organizations that fit me</button>
+          <p id="start-status" class="fine" role="status" aria-live="polite"></p>
+        </div>
+      </form>
+      <noscript><p>This page needs JavaScript. Without it, run <code>git-into-gsoc start</code> in a terminal.</p></noscript>
+      <div id="start-results" class="results" hidden></div>
+    </div>
+  </section>
+"""
+    return html + FOOT + START_SCRIPT.replace("DOWNLOAD_MB", str(download_mb))
+
+
+def start_data(official: dict[str, Any], signals: dict[str, Any]) -> dict[str, Any]:
+    """Everything the page's ranker needs, built by the same code `orgs` uses.
+
+    The organization records go through the client's own reader, as the benchmark
+    script does, so the browser ranks the same `OrgSummary` objects the CLI ranks.
+    """
+    from git_into_gsoc.gsoc.client import GSoCClient
+
+    client = GSoCClient()
+    year = int(official.get("year") or 0)
+    orgs = [client._from_official(raw, year) for raw in official.get("organizations") or []]
+    return {
+        "year": year,
+        "orgs": [org.model_dump(mode="json") for org in orgs],
+        "descriptions": dict(client._search_text),
+        "signals": signals,
+    }
+
+
+def package_zip(path: Path, source: Path = ROOT / "src") -> list[str]:
+    """Zip the package's Python files for the browser; return the names written."""
+    names = sorted(
+        str(p.relative_to(source))
+        for p in (source / "git_into_gsoc").rglob("*")
+        if p.is_file() and (p.suffix == ".py" or p.name == "py.typed")
+    )
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name in names:
+            archive.write(source / name, name)
+    return names
+
+
+def build_start(out: Path, official: dict[str, Any], signals: dict[str, Any]) -> None:
+    start = out / "start"
+    start.mkdir(parents=True, exist_ok=True)
+    year = int(official.get("year") or 0)
+    generated = str(official.get("generated") or "unknown date")
+    (start / "index.html").write_text(start_page(year, generated), encoding="utf-8")
+    wheels = json.dumps(["pydantic", "platformdirs", *WHEELS])
+    worker = WORKER_JS.replace("PYODIDE_URL", PYODIDE_URL).replace("WHEEL_LIST", wheels)
+    (start / "worker.js").write_text(worker, encoding="utf-8")
+    (start / "page.py").write_text((ROOT / "scripts/start_page.py").read_text("utf-8"), "utf-8")
+    (start / "orgs.json").write_text(
+        json.dumps(start_data(official, signals), separators=(",", ":")), encoding="utf-8"
+    )
+    package_zip(start / "pkg.zip")
+
+
 def sitemap(slugs: list[str]) -> str:
     urls = [
         SITE_URL,
         f"{SITE_URL}brand.html",
+        f"{SITE_URL}start/",
         f"{SITE_URL}orgs/",
         *(f"{SITE_URL}orgs/{s}/" for s in slugs),
     ]
@@ -458,6 +748,7 @@ def build(out: Path, data: Path = DATA) -> list[str]:
         index_page(orgs, by_slug, history, year, generated), encoding="utf-8"
     )
     (out / "sitemap.xml").write_text(sitemap(slugs), encoding="utf-8")
+    build_start(out, official, signals)
     return slugs
 
 

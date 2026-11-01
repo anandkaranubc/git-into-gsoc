@@ -26,6 +26,7 @@ CHECKED = [
     "docs",
     "examples",
     "skills",
+    "plugin-evals",
     "pyproject.toml",
 ]
 SUFFIXES = {".md", ".yml", ".yaml", ".toml", ".example", ".sh", ".json"}
