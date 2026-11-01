@@ -1,6 +1,4 @@
 ---
-type: regex
-target: last_message
-pattern: "draft"
-flags: i
+type: tool_used
+tool: mcp__plugin_git-into-gsoc_git-into-gsoc__gsoc_draft
 ---
