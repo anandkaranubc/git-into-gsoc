@@ -75,7 +75,8 @@ def test_an_organization_on_gitlab_is_searched_there(monkeypatch: pytest.MonkeyP
     assert issue["repo"] == "gitlab.gnome.org/GNOME/gitg" and issue["number"] == 494
     assert issue["availability"] == "available"
     assert issue["gsoc_org"] == "GNOME Foundation"
-    assert "gitlab.gnome.org" in data["note"] and "GitLab" in data["note"]
+    assert data["note"].startswith("Searching GNOME Foundation on gitlab.gnome.org/GNOME ")
+    assert "GitLab's public API" in data["note"]
     assert data["labels_used"][0] == "4. Newcomers"
     assert data["next_steps"] == []
 
@@ -99,7 +100,7 @@ def test_a_host_that_is_not_gitlab_keeps_the_old_error(monkeypatch: pytest.Monke
         with pytest.raises(NotFoundError) as caught:
             toolkit.find_issues(org="GNOME Foundation")
     assert "outside GitHub" in str(caught.value)
-    assert caught.value.hint and "https://code.example.org/foo" in caught.value.hint
+    assert (caught.value.hint or "").startswith("Open https://code.example.org/foo ")
 
 
 def test_a_bare_host_with_no_known_group_keeps_the_old_error(
@@ -108,7 +109,7 @@ def test_a_bare_host_with_no_known_group_keeps_the_old_error(
     toolkit = _toolkit(monkeypatch, "https://invent.kde.org")
     with pytest.raises(NotFoundError) as caught:
         toolkit.find_issues(org="GNOME Foundation")
-    assert caught.value.hint and "https://invent.kde.org" in caught.value.hint
+    assert (caught.value.hint or "").startswith("Open https://invent.kde.org ")
 
 
 def test_own_gitlab_issues_come_before_linked_github_projects(
