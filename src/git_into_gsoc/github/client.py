@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.errors import InputError, RateLimitError
 from git_into_gsoc.github.announcements import (
     body_search_terms,
@@ -60,15 +61,6 @@ MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample
 # Each page is one of the 60 requests an hour GitHub allows without a token, so a few long
 # threads must not use them up; past 500 events, the newest ones are still not read.
 MAX_TIMELINE_PAGES = 5
-
-
-def _parse_dt(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
 
 
 def _excerpt(text: str | None, limit: int = 400) -> str:
@@ -135,8 +127,8 @@ def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
         title=clean_untrusted(item.get("title"), limit=256),
         url=item.get("html_url") or "",
         labels=[x for x in labels if x],
-        created_at=_parse_dt(item.get("created_at")),
-        updated_at=_parse_dt(item.get("updated_at")),
+        created_at=parse_iso(item.get("created_at")),
+        updated_at=parse_iso(item.get("updated_at")),
         comments=int(item.get("comments") or 0),
         author=(item.get("user") or {}).get("login"),
         filed_by_maintainer=str(item.get("author_association") or "") in MAINTAINER_ROLES,
@@ -670,7 +662,7 @@ class GitHubClient:
             open_issues=int(raw.get("open_issues_count") or 0),
             archived=bool(raw.get("archived")),
             disabled=bool(raw.get("disabled")),
-            pushed_at=_parse_dt(raw.get("pushed_at")),
+            pushed_at=parse_iso(raw.get("pushed_at")),
             license=_license_name(raw.get("license")),
             topics=list(raw.get("topics") or []),
             has_contributing=contributing_source is not None,

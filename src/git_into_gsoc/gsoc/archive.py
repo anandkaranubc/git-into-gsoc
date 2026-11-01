@@ -17,6 +17,7 @@ from typing import Any
 from urllib.parse import quote, urlparse
 
 from git_into_gsoc.config import Settings, get_settings
+from git_into_gsoc.gsoc.names import normalize_name
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.text import clean_untrusted
 
@@ -25,10 +26,6 @@ PROJECTS_TTL_SECONDS = 86400
 # week the cached copy is revalidated, which costs nothing when it is unchanged.
 ARCHIVED_YEAR_TTL_SECONDS = 7 * 86400
 _RESERVED = {"orgs", "topics", "settings", "features", "sponsors", "apps", "marketplace"}
-
-
-def normalize_name(value: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", (value or "").lower())
 
 
 def github_repo_of(url: str | None) -> str | None:

@@ -24,6 +24,7 @@ from git_into_gsoc.config import (
     get_settings,
     latest_program_year,
 )
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
 from git_into_gsoc.errors import GigError, InputError, RateLimitError, reset_phrase
 from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
@@ -144,16 +145,6 @@ from git_into_gsoc.validation import (
     validate_year,
 )
 
-
-def _parse_iso(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
-
-
 BEFORE_YOU_COMMENT = [
     "Read the whole thread and any linked PRs first.",
     "Reproduce the problem locally (or confirm the docs gap) before claiming.",
@@ -231,7 +222,7 @@ def _unlinked_caveat(pull: dict[str, Any]) -> str:
 
 def _dormant_days(raw: dict[str, Any]) -> int | None:
     """Days since anything was pushed to the repository, when that is over DORMANT_DAYS."""
-    pushed = _parse_iso(raw.get("pushed_at"))
+    pushed = parse_iso(raw.get("pushed_at"))
     days = (datetime.now(UTC) - pushed).days if pushed else 0
     return days if days > DORMANT_DAYS else None
 
@@ -409,11 +400,8 @@ def _other_active_repos(repos: list[dict[str, Any]], repo: str) -> int:
     for item in repos:
         if str(item.get("name") or "").lower() == name or item.get("fork") or item.get("archived"):
             continue
-        try:
-            pushed = datetime.fromisoformat(str(item.get("pushed_at") or "").replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if pushed >= cutoff:
+        pushed = parse_iso(item.get("pushed_at"))
+        if pushed is not None and pushed >= cutoff:
             count += 1
     return count
 
@@ -969,7 +957,7 @@ class GSoCToolkit:
                 for r in listed
                 if not r.get("fork")
                 and not _retired_repo(r)
-                and (_parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
+                and (parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
             ]
             ranked_by_stars = sorted(
                 (r for r in repos if repo_kind(str(r.get("full_name"))) is None),
@@ -1004,7 +992,7 @@ class GSoCToolkit:
                         description=clean_untrusted(repo.get("description"), limit=300) or None,
                         language=repo.get("language"),
                         stars=int(repo.get("stargazers_count") or 0),
-                        pushed_at=_parse_iso(repo.get("pushed_at")),
+                        pushed_at=parse_iso(repo.get("pushed_at")),
                         open_beginner_issues=beginner,
                         ideas_mention=in_ideas,
                         score=score,
@@ -1357,7 +1345,7 @@ class GSoCToolkit:
             description=clean_untrusted(raw.get("description"), limit=300) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
-            pushed_at=_parse_iso(raw.get("pushed_at")),
+            pushed_at=parse_iso(raw.get("pushed_at")),
             open_beginner_issues=0,
             ideas_mention=True,
             score=score,
@@ -3814,13 +3802,8 @@ _OPEN_TO_NEWCOMERS = frozenset({Availability.AVAILABLE.value, Availability.UNKNO
 
 def _after(stamp: object, when: datetime) -> bool:
     """True when an ISO timestamp from GitHub is later than `when`."""
-    try:
-        moment = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
-    except ValueError:
-        return False
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
-    return moment > when
+    moment = parse_iso(stamp)
+    return moment is not None and moment > when
 
 
 def _open(issue: dict[str, Any]) -> bool:

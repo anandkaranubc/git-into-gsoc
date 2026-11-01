@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import unquote, urlparse
 
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.labels import BEGINNER_LABELS
 from git_into_gsoc.labels import is_beginner_label as is_beginner_label  # matching uses it
 from git_into_gsoc.matching.concepts import find_concepts, find_tag_concepts
@@ -83,15 +84,6 @@ def is_bot(user: dict[str, Any] | None) -> bool:
     return login.endswith(("-bot", "_bot", "-robot", "-ci", "-automation", "bot-ci"))
 
 
-def _dt(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
-
-
 @dataclass(frozen=True)
 class PullStats:
     sampled: int
@@ -138,13 +130,13 @@ def landed_elsewhere(closed: list[dict[str, Any]], commits: list[dict[str, Any]]
     for pr in closed:
         number = pr.get("number")
         login = str((pr.get("user") or {}).get("login") or "").lower()
-        opened = _dt(pr.get("created_at"))
+        opened = parse_iso(pr.get("created_at"))
         if not number or pr.get("merged_at") or opened is None:
             continue
         title = _norm_title(str(pr.get("title") or ""))
         for commit in commits:
             body = str((commit.get("commit") or {}).get("message") or "")
-            when = _dt(((commit.get("commit") or {}).get("committer") or {}).get("date"))
+            when = parse_iso(((commit.get("commit") or {}).get("committer") or {}).get("date"))
             if when is None or when < opened - timedelta(days=1):
                 continue
             subject = body.split("\n", 1)[0]
@@ -167,7 +159,7 @@ def landed_elsewhere(closed: list[dict[str, Any]], commits: list[dict[str, Any]]
 
 
 def _hours_between(start: str | None, end: str | None) -> float | None:
-    a, b = _dt(start), _dt(end)
+    a, b = parse_iso(start), parse_iso(end)
     return (b - a).total_seconds() / 3600 if a and b else None
 
 
@@ -200,7 +192,7 @@ def outside_authors_merged(pulls: list[dict[str, Any]], *, since: datetime) -> i
         for p in pulls
         if not is_bot(p.get("user"))
         and p.get("author_association") in OUTSIDER_ROLES
-        and (_dt(p.get("merged_at")) or since) > since
+        and (parse_iso(p.get("merged_at")) or since) > since
     }
     return len(authors)
 
@@ -226,7 +218,7 @@ def outside_merges(
     """
     now = now or datetime.now(UTC)
     window = now - timedelta(days=OUTSIDE_WINDOW_DAYS)
-    stamps = [d for d in (_dt(p.get("updated_at") or p.get("closed_at")) for p in pulls) if d]
+    stamps = [d for d in (parse_iso(p.get("updated_at") or p.get("closed_at")) for p in pulls) if d]
     start = window
     if len(pulls) >= page and stamps and min(stamps) > window:
         start = min(stamps)
@@ -720,7 +712,7 @@ def repo_lead_score(
     if beginner_issues:
         score += min(25.0, 6 * math.log2(1 + beginner_issues))
         reasons.append(f"{beginner_issues} open beginner issue(s)")
-    pushed = _dt(repo.get("pushed_at"))
+    pushed = parse_iso(repo.get("pushed_at"))
     if pushed:
         days = (now - pushed).days
         if days <= 14:

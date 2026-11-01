@@ -52,6 +52,11 @@ ACRONYM = 75  # initials ("PSF")
 PREFIX = 70  # every word typed is most of a word of the name ("tensor")
 
 
+def normalize_name(value: str) -> str:
+    """Lower-case letters and digits only, for comparing org names across sources."""
+    return re.sub(r"[^a-z0-9]", "", (value or "").lower())
+
+
 def _words(value: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", (value or "").lower())
 

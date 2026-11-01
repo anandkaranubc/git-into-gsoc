@@ -28,7 +28,13 @@ from git_into_gsoc.config import (
     get_settings,
     latest_program_year,
 )
-from git_into_gsoc.gsoc.names import core_key, resolve_name, same_org, suggest_names
+from git_into_gsoc.gsoc.names import (
+    core_key,
+    normalize_name,
+    resolve_name,
+    same_org,
+    suggest_names,
+)
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.snapshot import load_history, load_official
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
@@ -60,10 +66,6 @@ _GITHUB_RESERVED = {
     "codespaces",
 }
 _CHANNEL_KINDS = {"chat", "mailingList", "email", "blog", "irc", "forum"}
-
-
-def normalize_name(value: str) -> str:
-    return re.sub(r"[^a-z0-9]", "", (value or "").lower())
 
 
 def _clean_text(value: str | None, limit: int = 280) -> str:

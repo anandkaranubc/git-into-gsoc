@@ -15,6 +15,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.models import Availability, IssueAssessment, IssueClaim, LinkedPullRequest
 from git_into_gsoc.text import straight_quotes
 
@@ -292,15 +293,6 @@ _RELEASE_RE = re.compile("|".join(_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILI
 _OWN_RELEASE_RE = re.compile("|".join(_OWN_RELEASE_PATTERNS), re.IGNORECASE | re.MULTILINE)
 
 
-def _dt(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
-
-
 def _login(obj: dict[str, Any] | None) -> str | None:
     return (obj or {}).get("login")
 
@@ -443,15 +435,15 @@ def assess_issue(
     linked: dict[str, LinkedPullRequest] = {}
     mentioned: list[tuple[str, int]] = []
     earlier: set[str] = set()  # keys in `linked` of pull requests merged before the issue
-    opened = _dt(issue.get("created_at"))
+    opened = parse_iso(issue.get("created_at"))
     repo = _issue_repo(issue)
     maintainer_engaged = False
-    last_activity = _dt(issue.get("updated_at"))
+    last_activity = parse_iso(issue.get("updated_at"))
 
     not_open: str | None = None
     for event in timeline:
         kind = event.get("event")
-        at = _dt(event.get("created_at") or event.get("updated_at"))
+        at = parse_iso(event.get("created_at") or event.get("updated_at"))
         if kind == "commented":
             user = event.get("user") or event.get("actor")
             body = str(event.get("body") or "")
@@ -501,13 +493,13 @@ def assess_issue(
                     "mentions this issue; it does not change its status here"
                 )
             elif "pull_request" in source:
-                merged_at = _dt((source.get("pull_request") or {}).get("merged_at"))
+                merged_at = parse_iso((source.get("pull_request") or {}).get("merged_at"))
                 merged = merged_at is not None
                 number = source.get("number")
                 key = str(number or source.get("html_url") or len(linked))
                 if merged_at and opened and merged_at < opened:
                     earlier.add(key)
-                touched = _dt(source.get("updated_at"))
+                touched = parse_iso(source.get("updated_at"))
                 text = f"{source.get('title') or ''}\n{source.get('body') or ''}"
                 linked[key] = LinkedPullRequest(
                     number=int(number) if number else None,
@@ -536,11 +528,11 @@ def assess_issue(
         pull = pull_lookup(where, number) if pull_lookup else None
         if not pull:
             continue  # not a pull request, or it could not be read
-        merged_at = _dt(pull.get("merged_at"))
+        merged_at = parse_iso(pull.get("merged_at"))
         state = "merged" if merged_at else str(pull.get("state") or "unknown")
         if state == "closed":
             continue
-        touched = _dt(pull.get("updated_at"))
+        touched = parse_iso(pull.get("updated_at"))
         if merged_at and opened and merged_at < opened:
             earlier.add(f"comment-{where}-{number}")
         text = f"{pull.get('title') or ''}\n{pull.get('body') or ''}"
