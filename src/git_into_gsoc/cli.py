@@ -907,6 +907,21 @@ def projects_cmd(
     console.print(table)
 
 
+def _first_few(items: list[str], count: int, *, width: int = 48) -> str:
+    """The first few of a list, each cut at a word boundary, then how many more. A
+    60-character cut of the joined list left "migration fro" and "Fam" in GNOME's
+    skills column, and its skills are whole sentences (2026-11-01)."""
+    kept = [str(item) for item in items if str(item).strip()]
+    shown = []
+    for text in kept[:count]:
+        if len(text) > width:
+            # One more character, so a word that ends exactly at the width survives.
+            text = text[: width + 1].rsplit(" ", 1)[0].rstrip(",;:") + "…"
+        shown.append(escape(text))
+    more = len(kept) - len(shown)
+    return ", ".join(shown) + (f", +{more} more" if more > 0 else "")
+
+
 @app.command("ideas", rich_help_panel="Find an organization")
 def ideas_cmd(
     org: str = typer.Argument(..., help="GSoC organization name, for example SymPy"),
@@ -994,8 +1009,8 @@ def ideas_cmd(
                 title,
                 hours,
                 idea.get("difficulty") or "",
-                ", ".join(idea.get("mentors") or [])[:60],
-                ", ".join(idea.get("skills") or [])[:60],
+                _first_few(idea.get("mentors") or [], 3),
+                _first_few(idea.get("skills") or [], 4),
             )
         console.print(table)
         # UC OSPO has 41 ideas; the table showed 20 and nothing said there were more.
