@@ -55,7 +55,7 @@ def parse_topics(answer: str) -> list[str]:
     """
     picked: list[str] = []
     for part in split_csv(answer.replace(" and ", ",")):
-        if part.isdigit():
+        if part.isdecimal():  # "²" passes isdigit, then int() raises
             index = int(part) - 1
             if 0 <= index < len(TOPIC_CHOICES):
                 picked.append(TOPIC_CHOICES[index][0])
