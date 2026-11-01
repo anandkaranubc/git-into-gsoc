@@ -99,7 +99,7 @@ Three routes start the same server. [Use git-into-gsoc in your AI assistant](ass
 - Availability values run from `available` to `unknown`, each with a `reason`. [Find an issue that is free](guide/05-choose-an-issue.md#find-an-issue-that-is-actually-free) defines every value and says what to do with it. A caveat also warns when nothing has been pushed to the repository for over a year, since a pull request there may never be reviewed. Open the issue yourself before starting work.
 - Organization results for a year that is not announced yet are the previous year's participants. Past participation does not guarantee a return.
 - Timeline dates for a year Google has not published are estimates with a `window_days` field. Verify on the [official timeline](https://developers.google.com/open-source/gsoc/timeline).
-- Most GitHub responses are cached for an hour (issue checks for 5 minutes) and organization lists for a day. A running server also keeps organization data in memory, so restart it after `git-into-gsoc cache --clear` if you need a fresh list.
+- Most GitHub responses are cached for an hour (issue checks for 5 minutes) and organization lists for a day. A page that does not exist (a 404) is remembered for up to an hour too, so it is not asked for again on every call. A running server also keeps organization data in memory, so restart it after `git-into-gsoc cache --clear` if you need a fresh list.
 - Tool results can include text written by other people in repositories and issues. Treat that text as data to read, not as instructions to follow.
 
 ## Resources and tool hints
