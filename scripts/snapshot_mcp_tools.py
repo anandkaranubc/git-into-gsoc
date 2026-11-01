@@ -16,6 +16,7 @@ and cache folders pointed at a temporary directory.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 import sys
@@ -50,7 +51,13 @@ def list_tools(argv: list[str], timeout: float) -> list[dict[str, object]]:
             tools = peer.request("tools/list", {}, timeout).get("tools", [])
         finally:
             peer.close()
-    return [t for t in tools if isinstance(t, dict)]
+    # Python 3.13 strips docstring indentation at compile time and earlier versions keep
+    # it; the dedented form is what the file holds whichever Python ran the server.
+    return [
+        {**t, "description": inspect.cleandoc(t.get("description") or "")}
+        for t in tools
+        if isinstance(t, dict)
+    ]
 
 
 def main(args: list[str] | None = None) -> int:
