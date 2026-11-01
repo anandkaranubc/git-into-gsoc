@@ -431,6 +431,9 @@ def register_json(
             # In env the person's values win: ours are only Gemini's "$GITHUB_TOKEN"
             # passthroughs, and a person may have written a real token there.
             merged["env"] = {**entry["env"], **old["env"]}
+        if "tools" in old:
+            # Copilot's tool list: a person who narrowed ours from ["*"] keeps that.
+            merged["tools"] = old["tools"]
         entry = merged
     if old == entry:
         return "unchanged", ""

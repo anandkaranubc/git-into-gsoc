@@ -59,4 +59,5 @@ coverage.xml
 plugin-evals/results/
 # Written by scripts/build_site.py in the Pages workflow
 site/orgs/
+site/start/
 site/sitemap.xml

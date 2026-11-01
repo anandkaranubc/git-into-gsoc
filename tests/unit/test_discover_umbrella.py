@@ -101,6 +101,10 @@ def _discover_without_owners(page: str, source_code: str | None = None) -> dict[
         api.get(url__regex=r"https://api\.github\.com/search/issues.*").mock(
             return_value=httpx.Response(200, json={"total_count": 0, "items": []})
         )
+        # A GitLab code link is tried as a group or project first; here it is neither.
+        api.get(url__regex=r"https://gitlab\.com/api/v4/.*").mock(
+            return_value=httpx.Response(404, json={"message": "404 Not Found"})
+        )
         toolkit = GSoCToolkit()
         _without_owners(toolkit, source_code)
         return toolkit.discover_repos("SymPy", limit=10)
