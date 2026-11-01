@@ -1392,6 +1392,14 @@ class GSoCToolkit:
         from_profile = False
         asked_org = org  # cleared below when it names a GSoC organization
         self.github.rate_limited = None
+        # The CLI offers an enum, but MCP passes raw text: "GSoC" or "gsoc_orgs" used to
+        # fail the exact match and silently search all of GitHub instead.
+        scope = scope.strip().lower()
+        if scope not in {"gsoc", "all"}:
+            raise InputError(
+                f"scope must be 'gsoc' or 'all', not '{scope}'",
+                hint="Use scope='gsoc' for GSoC organizations or scope='all' for all of GitHub.",
+            )
         if not (language or org or repo):
             saved = list(self.progress.profile().get("technologies") or [])
             language, from_profile = (saved[0], True) if saved else (None, False)
