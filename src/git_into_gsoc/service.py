@@ -28,7 +28,7 @@ from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
 from git_into_gsoc.errors import GigError, InputError, RateLimitError, reset_phrase
 from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
-from git_into_gsoc.github.client import GitHubClient
+from git_into_gsoc.github.client import GitHubClient, license_name
 from git_into_gsoc.github.orientation import (
     active_committers,
     branch_gates,
@@ -94,6 +94,7 @@ from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
+from git_into_gsoc.gsoc.names import GITHUB_RESERVED
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
@@ -1263,7 +1264,7 @@ class GSoCToolkit:
         outside its own openrobotics and osrf owners. A link to a person's repository
         is usually a reference or a mentor's profile, so only organizations count.
         """
-        skip = {o.lower() for o in searched} | _NOT_OWNERS  # already listed in full
+        skip = {o.lower() for o in searched} | GITHUB_RESERVED  # already listed in full
         named: list[str] = []
         for match in _GITHUB_PROJECT_RE.finditer(text):
             owner, repo = match.group(1), match.group(2)
@@ -2264,7 +2265,7 @@ class GSoCToolkit:
                 "source": program["source"],
             },
             "deadlines": upcoming_deadlines(program),
-            "time_budget": time_budget(state, program, now=now),
+            "time_budget": time_budget(state, program),
             "hours_note": hours_note((state.profile or {}).get("hours_per_week")),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
@@ -2378,7 +2379,7 @@ class GSoCToolkit:
             "as_of_commit": tree.get("sha"),
             "tree_truncated": bool(tree.get("truncated")),
             "stars": int(raw.get("stargazers_count") or 0),
-            "license": _license_label(raw.get("license")),
+            "license": license_name(raw.get("license")),
             "pushed_days_ago": days_since(raw.get("pushed_at")),
             "languages": languages,
             "code_map": code_map(entries, repo_name=repo),
@@ -3532,15 +3533,6 @@ def _not_checked(state: ProgressState) -> str | None:
     )
 
 
-def _license_label(license_obj: Any) -> str | None:
-    if not isinstance(license_obj, dict):
-        return None
-    spdx = str(license_obj.get("spdx_id") or "")
-    if spdx and spdx != "NOASSERTION":
-        return spdx
-    return str(license_obj.get("name") or "") or None
-
-
 def _quote_label(label: str) -> str:
     return f'"{label}"' if " " in label else label
 
@@ -3602,23 +3594,6 @@ _GITHUB_PROJECT_RE = re.compile(
 )
 # GitHub's own pages, never a project's owner. A pasted image (user-attachments/assets)
 # made a one-project ideas page look like several (a post-merge audit, 2026-10-23).
-_NOT_OWNERS = {
-    "orgs",
-    "topics",
-    "search",
-    "features",
-    "apps",
-    "settings",
-    "marketplace",
-    "user-attachments",
-    "sponsors",
-    "users",
-    "collections",
-    "codespaces",
-    "readme",
-    "explore",
-    "notifications",
-}
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
 _DISCUSSIONS_RE = re.compile(r"github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/discussions\b")
 _CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
@@ -3656,7 +3631,7 @@ def _linked_github_projects(
         if not any_link and not _looks_like_ideas_page(page):
             continue
         match = _GITHUB_PROJECT_RE.match(str(page.get("url") or ""))
-        if not match or match.group(1).lower() in _NOT_OWNERS:
+        if not match or match.group(1).lower() in GITHUB_RESERVED:
             continue
         owner, repo = match.group(1), match.group(2)
         if repo and repo.lower() not in _NOT_REPOS:
@@ -3677,7 +3652,7 @@ def _linked_repo(link: str) -> tuple[str, bool] | None:
     if not match or not match.group(2) or _CHANGE_LINK_RE.match(link, match.end()):
         return None
     owner, repo = match.group(1), match.group(2).removesuffix(".git")
-    if owner.lower() in _NOT_OWNERS or repo.lower() in _NOT_REPOS:
+    if owner.lower() in GITHUB_RESERVED or repo.lower() in _NOT_REPOS:
         return None
     return f"{owner}/{repo}", link[match.end() :].startswith("/issues/")
 

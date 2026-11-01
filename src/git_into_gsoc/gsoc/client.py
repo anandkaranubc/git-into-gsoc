@@ -29,6 +29,7 @@ from git_into_gsoc.config import (
     latest_program_year,
 )
 from git_into_gsoc.gsoc.names import (
+    GITHUB_RESERVED,
     core_key,
     normalize_name,
     resolve_name,
@@ -45,26 +46,6 @@ from git_into_gsoc.models import ContactChannel, OrgCatalog, OrgSummary, PastPro
 from git_into_gsoc.scoring.org_match import canonical, mentions
 from git_into_gsoc.validation import validate_year
 
-_GITHUB_RESERVED = {
-    "orgs",
-    "topics",
-    "settings",
-    "features",
-    "sponsors",
-    "apps",
-    "marketplace",
-    "about",
-    "collections",
-    "explore",
-    # FLARE's listing gives a search as its source code: github.com/search?q=...
-    "search",
-    "trending",
-    "login",
-    "notifications",
-    "enterprise",
-    "pricing",
-    "codespaces",
-}
 _CHANNEL_KINDS = {"chat", "mailingList", "email", "blog", "irc", "forum"}
 
 
@@ -86,7 +67,7 @@ def github_refs(source_code: str | None, *others: str | None) -> tuple[list[str]
         parts = [p for p in parsed.path.split("/") if p]
         if host == "github.com" and parts:
             owner = parts[0]
-            if owner.lower() in _GITHUB_RESERVED:
+            if owner.lower() in GITHUB_RESERVED:
                 continue
             orgs.append(owner)
             if index == 0 and len(parts) >= 2:

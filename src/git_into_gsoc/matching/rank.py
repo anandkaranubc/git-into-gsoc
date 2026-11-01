@@ -748,7 +748,7 @@ class OrgIndex:
             )
 
         # A fit needs something to fit: a category or a bare listing has none.
-        fit = _fit_level(relevance, interests, skills) if (query or not person.empty) else None
+        fit = _fit_level(relevance, interests) if (query or not person.empty) else None
         # A caveat that decides whether someone can start here, or a broad word that
         # matches dozens of organizations, keeps the fit from being called strong.
         if fit == "strong" and (blocking or self._broad(person)):
@@ -892,7 +892,7 @@ def _trend(projects_by_year: dict[int, int]) -> str | None:
     return None
 
 
-def _fit_level(relevance: float, interests: list[TermMatch], skills: list[TermMatch]) -> str:
+def _fit_level(relevance: float, interests: list[TermMatch]) -> str:
     if relevance >= FIT_STRONG and (not interests or any(t.how == "direct" for t in interests)):
         return "strong"
     if relevance >= FIT_GOOD:

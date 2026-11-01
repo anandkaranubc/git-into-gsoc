@@ -126,9 +126,7 @@ def hours_note(hours_per_week: Any) -> str | None:
     )
 
 
-def time_budget(
-    state: ProgressState, program: dict[str, Any], *, now: datetime | None = None
-) -> dict[str, Any] | None:
+def time_budget(state: ProgressState, program: dict[str, Any]) -> dict[str, Any] | None:
     """Hours available before the next milestone, split by what this phase needs.
 
     Uses the saved hours per week. The milestone is the proposal deadline when it

@@ -71,7 +71,7 @@ def _excerpt(text: str | None, limit: int = 400) -> str:
     return re.sub(r"\s+", " ", clean_untrusted(text, limit=limit)).strip()
 
 
-def _license_name(license_obj: Any) -> str | None:
+def license_name(license_obj: Any) -> str | None:
     """SPDX id when GitHub recognises the license, otherwise its display name."""
     if not isinstance(license_obj, dict):
         return None
@@ -663,7 +663,7 @@ class GitHubClient:
             archived=bool(raw.get("archived")),
             disabled=bool(raw.get("disabled")),
             pushed_at=parse_iso(raw.get("pushed_at")),
-            license=_license_name(raw.get("license")),
+            license=license_name(raw.get("license")),
             topics=list(raw.get("topics") or []),
             has_contributing=contributing_source is not None,
             contributing_source=contributing_source,

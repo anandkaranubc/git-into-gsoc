@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from git_into_gsoc.config import OFFICIAL_AI_GUIDANCE
 from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
 from git_into_gsoc.text import clean_untrusted, straight_quotes
 
@@ -666,7 +667,7 @@ def check_message(kind: str, text: str) -> dict[str, Any]:
                 "Phrases that read as machine-written",
                 ", ".join(dict.fromkeys(tells[:5]))
                 + ". Say it plainly, the way you would to a person.",
-                "https://developers.google.com/open-source/gsoc/resources/ai_guidance",
+                OFFICIAL_AI_GUIDANCE,
             )
         )
 

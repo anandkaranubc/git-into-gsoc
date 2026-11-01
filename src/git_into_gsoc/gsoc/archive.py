@@ -17,7 +17,7 @@ from typing import Any
 from urllib.parse import quote, urlparse
 
 from git_into_gsoc.config import Settings, get_settings
-from git_into_gsoc.gsoc.names import normalize_name
+from git_into_gsoc.gsoc.names import GITHUB_RESERVED, normalize_name
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.text import clean_untrusted
 
@@ -25,7 +25,6 @@ PROJECTS_TTL_SECONDS = 86400
 # An archived year lists completed projects only, so it no longer changes; after a
 # week the cached copy is revalidated, which costs nothing when it is unchanged.
 ARCHIVED_YEAR_TTL_SECONDS = 7 * 86400
-_RESERVED = {"orgs", "topics", "settings", "features", "sponsors", "apps", "marketplace"}
 
 
 def github_repo_of(url: str | None) -> str | None:
@@ -37,7 +36,7 @@ def github_repo_of(url: str | None) -> str | None:
     if host != "github.com":
         return None
     parts = [p for p in parsed.path.split("/") if p]
-    if len(parts) < 2 or parts[0].lower() in _RESERVED:
+    if len(parts) < 2 or parts[0].lower() in GITHUB_RESERVED:
         return None
     return f"{parts[0]}/{parts[1].removesuffix('.git')}"
 
