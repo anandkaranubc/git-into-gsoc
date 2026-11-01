@@ -179,7 +179,7 @@ The skill goes into one shared folder, `~/.agents/skills`, plus `~/.claude/skill
 
 ## What we test
 
-`scripts/check_agents.py` installs git-into-gsoc into each assistant command it finds, the way that assistant's users would. It uses a throwaway home folder, signs in nowhere, and calls no model. Then it checks that the assistant can start the server. Before installing from a checkout, it runs each format's own validator where one exists. Buttons cannot be clicked in a script, so for those it writes exactly what the app writes after you confirm, and lets the app start the server. CI runs it on Linux on every change to the files these assistants read, and weekly with each assistant's newest release, installing from GitHub.
+CI installs git-into-gsoc into each assistant the way its users would, in a throwaway home folder with no sign-in and no model calls, and checks that the assistant can start the server. It runs on every change to the files these assistants read, and weekly with each assistant's newest release. Buttons cannot be clicked in a script, so for those it writes exactly what the app writes after you confirm. [Compatibility checks](distribution.md#compatibility-checks) describes the script.
 
 | Assistant | What is checked |
 |---|---|

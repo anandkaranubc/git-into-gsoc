@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import quote
 
 from git_into_gsoc.config import Settings, get_settings
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.errors import InputError, RateLimitError
 from git_into_gsoc.github.announcements import (
     body_search_terms,
@@ -62,15 +63,6 @@ MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample
 MAX_TIMELINE_PAGES = 5
 
 
-def _parse_dt(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00"))
-    except ValueError:
-        return None
-
-
 def _excerpt(text: str | None, limit: int = 400) -> str:
     """One line of an issue body, with HTML comments removed: GitHub hides them from
     people, so they are the easiest place to leave text only a model would read."""
@@ -79,7 +71,7 @@ def _excerpt(text: str | None, limit: int = 400) -> str:
     return re.sub(r"\s+", " ", clean_untrusted(text, limit=limit)).strip()
 
 
-def _license_name(license_obj: Any) -> str | None:
+def license_name(license_obj: Any) -> str | None:
     """SPDX id when GitHub recognises the license, otherwise its display name."""
     if not isinstance(license_obj, dict):
         return None
@@ -135,8 +127,8 @@ def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
         title=clean_untrusted(item.get("title"), limit=256),
         url=item.get("html_url") or "",
         labels=[x for x in labels if x],
-        created_at=_parse_dt(item.get("created_at")),
-        updated_at=_parse_dt(item.get("updated_at")),
+        created_at=parse_iso(item.get("created_at")),
+        updated_at=parse_iso(item.get("updated_at")),
         comments=int(item.get("comments") or 0),
         author=(item.get("user") or {}).get("login"),
         filed_by_maintainer=str(item.get("author_association") or "") in MAINTAINER_ROLES,
@@ -240,19 +232,6 @@ class GitHubClient:
             params={"sort": "updated", "per_page": per_page, "type": "owner"},
         )
         return data if isinstance(data, list) else []
-
-    def search_repos(
-        self,
-        query: str,
-        *,
-        per_page: int = 10,
-        sort: str = "stars",
-    ) -> list[dict[str, Any]]:
-        data = self._api(
-            "search/repositories",
-            params={"q": query, "per_page": per_page, "sort": sort},
-        )
-        return data.get("items", []) if isinstance(data, dict) else []
 
     def search_issues(
         self,
@@ -433,16 +412,6 @@ class GitHubClient:
         )
         return data if isinstance(data, list) else []
 
-    def contents_exists(self, owner: str, repo: str, path: str) -> bool:
-        owner, repo = parse_repo(f"{owner}/{repo}")
-        try:
-            self._api(f"repos/{owner}/{repo}/contents/{quote(path)}")
-            return True
-        except NotFoundError:
-            return False
-        except HttpError:
-            return False
-
     def get_raw_file(self, owner: str, repo: str, path: str) -> str | None:
         try:
             return self._raw_file(owner, repo, path)
@@ -479,15 +448,8 @@ class GitHubClient:
     def community_profile(self, owner: str, repo: str) -> dict[str, Any]:
         return self._community_profile(owner, repo) or {}
 
-    def workflow_count(self, owner: str, repo: str) -> int:
-        return self._workflow_count(owner, repo) or 0
-
     def list_labels(self, owner: str, repo: str) -> list[dict[str, Any]]:
         return self._list_labels(owner, repo) or []
-
-    def count_open_issues_with_label(self, owner: str, repo: str, label: str) -> tuple[int, int]:
-        """Open issues with the label, and how many of them are assigned to someone."""
-        return self._count_open_issues_with_label(owner, repo, label) or (0, 0)
 
     # The same reads for `repo_health`, which must tell "GitHub did not answer" (None)
     # from "the repository has none": a rate limit used to read as no CONTRIBUTING guide,
@@ -700,8 +662,8 @@ class GitHubClient:
             open_issues=int(raw.get("open_issues_count") or 0),
             archived=bool(raw.get("archived")),
             disabled=bool(raw.get("disabled")),
-            pushed_at=_parse_dt(raw.get("pushed_at")),
-            license=_license_name(raw.get("license")),
+            pushed_at=parse_iso(raw.get("pushed_at")),
+            license=license_name(raw.get("license")),
             topics=list(raw.get("topics") or []),
             has_contributing=contributing_source is not None,
             contributing_source=contributing_source,
