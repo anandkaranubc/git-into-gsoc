@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 import time
 from collections.abc import Iterator
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -18,6 +19,11 @@ from git_into_gsoc.http_client import CachedHttpClient
 
 URL = "https://example.test/data.json"
 GITHUB = "https://api.github.com/repos/acme/lib"
+
+
+def _seconds_until(reset_at: datetime | None) -> float:
+    assert reset_at is not None
+    return (reset_at - datetime.now(UTC)).total_seconds()
 
 
 def make_client(tmp_path: Path, **overrides: object) -> tuple[CachedHttpClient, list[float]]:
@@ -95,7 +101,7 @@ def test_rate_limit_raises_with_reset_and_hint(tmp_path: Path) -> None:
     client, _ = make_client(tmp_path)
     with pytest.raises(RateLimitError) as info:
         client.get_json(GITHUB, use_cache=False)
-    assert info.value.reset_in_seconds is not None
+    assert info.value.reset_at is not None
     assert "gh auth login" in (info.value.hint or "")
 
 
@@ -234,7 +240,7 @@ def test_a_retry_after_date_without_a_time_zone_counts_as_utc(tmp_path: Path) ->
     client, _ = make_client(tmp_path)
     with pytest.raises(RateLimitError) as limited:
         client.get_json(URL, use_cache=False)
-    assert 500 < (limited.value.reset_in_seconds or 0) <= 600
+    assert 500 < _seconds_until(limited.value.reset_at) <= 600
 
 
 @respx.mock
@@ -298,7 +304,7 @@ def test_a_secondary_limit_resets_when_retry_after_says(tmp_path: Path) -> None:
     client, _ = make_client(tmp_path)
     with pytest.raises(RateLimitError, match="secondary rate limit") as limited:
         client.get_json(GITHUB, headers={"Authorization": "Bearer t"}, use_cache=False)
-    assert 50 < (limited.value.reset_in_seconds or 0) <= 60
+    assert 50 < _seconds_until(limited.value.reset_at) <= 60
 
 
 @respx.mock

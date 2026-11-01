@@ -1516,7 +1516,9 @@ def table_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
     parser = _TableParser(source_url)
     try:
         parser.feed(html_text[:MAX_CHARS])
-    except Exception:
+    except (ValueError, AssertionError):
+        # What html.parser raises on a broken page. A bug in _TableParser itself
+        # must surface, not read as "this page lists no ideas".
         return []
     ideas: list[ProjectIdea] = []
     seen: set[str] = set()
