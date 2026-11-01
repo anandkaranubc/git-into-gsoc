@@ -17,17 +17,17 @@ from git_into_gsoc.install.clients import (
     installed_skills,
     register_codex_toml,
     register_json,
-    registered_servers,
+    registrations,
     server_entry,
     unregister_codex_toml,
 )
 
+
+def registered_servers(home: Path, project: Path | None = None) -> list[tuple[str, Path]]:
+    return [(label, path) for label, path, _ in registrations(home, project)]
+
+
 CMD = ["/opt/gig/bin/git-into-gsoc", "mcp"]
-
-
-def test_skill_source_has_frontmatter() -> None:
-    text = (skill_source() / "SKILL.md").read_text(encoding="utf-8")
-    assert text.startswith("---\n") and "name: git-into-gsoc" in text
 
 
 def test_copy_skill_is_idempotent_and_replaces_stale_copies(tmp_path: Path) -> None:

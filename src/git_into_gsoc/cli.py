@@ -69,6 +69,22 @@ def _read_document(path: Path) -> str:
         return raw.decode("cp1252", errors="replace")
 
 
+# What to type after "Missing argument", for the commands whose argument is not obvious.
+_ARGUMENT_EXAMPLES = {
+    "org": 'git-into-gsoc org "SymPy" (find names with git-into-gsoc orgs)',
+    "repos": 'git-into-gsoc repos "SymPy"',
+    "ideas": 'git-into-gsoc ideas "SymPy"',
+    "mentors": 'git-into-gsoc mentors "SymPy"',
+    "repo": "git-into-gsoc repo sympy/sympy",
+    "orient": "git-into-gsoc orient sympy/sympy",
+    "issue": "git-into-gsoc issue owner/repo#123",
+    "pointers": "git-into-gsoc pointers owner/repo#123",
+    "pr-check": "git-into-gsoc pr-check owner/repo#456",
+    "draft": "git-into-gsoc draft claim",
+    "diagnose": "git-into-gsoc diagnose output.txt",
+}
+
+
 class _FriendlyErrors(TyperGroup):
     """Render expected failures as one-line errors with a hint, not tracebacks."""
 
@@ -80,6 +96,13 @@ class _FriendlyErrors(TyperGroup):
         GITHUB_CORE.clear()
         try:
             result = super().invoke(ctx)
+        except typer.BadParameter as exc:
+            # click's "Missing argument 'name'." names the parameter, not what to type.
+            # typer bundles its own click, so the class is matched by name, not import.
+            example = _ARGUMENT_EXAMPLES.get(ctx.invoked_subcommand or "")
+            if example and type(exc).__name__ == "MissingParameter" and not exc.message:
+                exc.message = f"Example: {example}"
+            raise
         except GigError as exc:
             # Messages quote what was typed ("a/b#[/bold]"), so they print literally.
             err_console.print(f"[bold red]error:[/bold red] {escape(str(exc))}")
@@ -370,12 +393,18 @@ def _render_matches(data: dict[str, Any]) -> None:
         _say(f"[dim]{data['catalog']['note']}[/dim]")
     rows = []
     for org in orgs:
-        reasons = [r for r in org["match_reasons"] if not r.startswith("Accepted in")][:3]
+        readiness = org.get("readiness") or []
+        # Ranking folds readiness lines into the reasons; the ✓ line below shows the first.
+        reasons = [
+            r
+            for r in org["match_reasons"]
+            if not r.startswith("Accepted in") and r not in readiness
+        ][:3]
         row = f"[bold]{org['name']}[/bold]"
         if org.get("description"):
             row += f"\n{org['description']}"
         row += f"\n[dim]Why: {'; '.join(reasons)}[/dim]"
-        for line in (org.get("readiness") or [])[:1]:
+        for line in readiness[:1]:
             row += f"\n[green]✓[/green] {line}"
         for line in (org.get("caveats") or [])[:2]:
             row += f"\n[yellow]![/yellow] {line}"
@@ -520,7 +549,9 @@ def start_cmd(
 
 @app.command("program", rich_help_panel="Start here")
 def program_cmd(
-    year: int = typer.Option(2027, help="Program year, for example 2027"),
+    year: int | None = typer.Option(
+        None, help="Program year, for example 2027 (default: your target year)"
+    ),
     size: ProjectSize = typer.Option(
         ProjectSize.medium, "--size", help="Project size; evaluation deadlines differ by size"
     ),
@@ -591,7 +622,11 @@ def orgs_cmd(
         None, "--tech", "-t", help="Technologies you know, comma-separated (python,javascript)"
     ),
     topics: str | None = typer.Option(
-        None, "--topics", help="Topics you care about, comma-separated (science,education)"
+        None,
+        "--topics",
+        "--interests",
+        help="Topics you care about, comma-separated (science,education). --interests, as "
+        "start, profile, and recommend call it, means the same",
     ),
     category: str | None = typer.Option(
         None, "--category", "-c", help="Organization category, for example 'Science and medicine'"
@@ -714,9 +749,10 @@ def org_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Show one organization's ideas page, channels, GitHub organizations, and past projects."""
-    data = _toolkit().org_details(name, year=year)
+    toolkit = _toolkit()
+    data = toolkit.org_details(name, year=year)
     if shortlist and data.get("found"):
-        _toolkit().progress.shortlist_org(data["organization"]["name"])
+        toolkit.progress.shortlist_org(data["organization"]["name"])
         data["shortlisted"] = True
     if output == Output.json or not data.get("found"):
         _emit_or_fail(data, output)
@@ -1077,12 +1113,13 @@ def repo_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Check whether a newcomer's pull request can land here: grade, merge history, setup hints."""
-    data = _toolkit().evaluate_repo(full_name)
+    toolkit = _toolkit()
+    data = toolkit.evaluate_repo(full_name)
     if track:
         # A person's fork has issues off, so `next` would find nothing new in it.
         saved = data["fork_of"] if data["health"] is None and data.get("fork_of") else None
         saved = saved or (data["health"] or data)["full_name"]
-        _toolkit().progress.track_repo(saved)
+        toolkit.progress.track_repo(saved)
         data["tracked"] = saved
     if output == Output.json:
         _emit(data, output)
@@ -1394,14 +1431,15 @@ def issues_cmd(
     # People copy "owner/repo#N" into `issue`: keep it on one line where it fits. At 110
     # columns "learning-unlimited/ESP-Website#2455" broke before "2455". Below 100
     # columns the title goes under the reference instead of beside it: four columns
-    # cannot keep a 35-character reference whole at 80, and a minimum width that does
-    # not fit makes rich crop the table at the right edge.
+    # cannot keep a 35-character reference whole at 80. The width is fixed, not a
+    # minimum: Rich shrinks the Title column first and then grows this one back to
+    # its minimum, which at 100 columns pushed the table one cell past the right edge.
     narrow = console.width < 100
-    others = 5 + 12 + (10 if narrow else 13 + 20)  # Score, Status, borders, a Title
+    fixed = 5 + 7 + 14 + 2  # borders, Score, Status, and this column's padding
+    room = console.width - fixed - (0 if narrow else 22)  # a Title keeps 20 columns
+    share = room if narrow else (console.width - fixed - 2) // 2  # half, as Rich splits
     longest = max(len(f"{i['repo']}#{i['number']}") for i in data["issues"])
-    table.add_column(
-        "Issue", overflow="fold", min_width=max(10, min(longest, 40, console.width - others))
-    )
+    table.add_column("Issue", overflow="fold", width=max(10, min(max(longest, share), room)))
     if not narrow:
         table.add_column("Title", overflow="fold")
     for issue in data["issues"]:
@@ -1425,7 +1463,12 @@ def issues_cmd(
         cells = [f"{issue['beginner_score']:.0f}", shown, ref]
         table.add_row(*cells, *([] if narrow else [issue["title"]]))
     console.print(table)
-    console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
+    free = next((i for i in data["issues"] if i["availability"] == "available"), None)
+    ref = f"{free['repo']}#{free['number']}" if free else "owner/repo#N"
+    console.print(
+        f"[dim]Next: check the one you like before you comment: git-into-gsoc issue {ref} "
+        "--track[/dim]"
+    )
 
 
 @app.command("issue", rich_help_panel="Pick a repository and an issue")
@@ -1436,9 +1479,10 @@ def issue_cmd(
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Check whether an issue is free to pick up: pull requests, claims, assignees, activity."""
-    data = _toolkit().issue_status(ref, number)
+    toolkit = _toolkit()
+    data = toolkit.issue_status(ref, number)
     if track:
-        _toolkit().progress.track_issue(data["url"])
+        toolkit.progress.track_issue(data["url"])
         data["tracked"] = True
     if output == Output.json:
         _emit(data, output)
@@ -2470,6 +2514,7 @@ def _writable(create: Any, location: Any) -> str:
 def doctor_cmd() -> None:
     """Check your setup: version, GitHub token, data locations, API access, skill, and MCP."""
     from git_into_gsoc.config import (
+        LATEST_ARCHIVED_YEAR,
         cache_dir,
         cache_location,
         data_dir,
@@ -2505,8 +2550,14 @@ def doctor_cmd() -> None:
         if exc.hint:
             console.print(f"  {exc.hint}", soft_wrap=True)
     for label, url in (
-        ("official GSoC site", f"{settings.gsoc_official_api_url.rstrip('/')}/program/2026/"),
-        ("organization archive", f"{settings.gsoc_orgs_api_url.rstrip('/')}/2026.json"),
+        (
+            "official GSoC site",
+            f"{settings.gsoc_official_api_url.rstrip('/')}/program/{LATEST_ARCHIVED_YEAR}/",
+        ),
+        (
+            "organization archive",
+            f"{settings.gsoc_orgs_api_url.rstrip('/')}/{LATEST_ARCHIVED_YEAR}.json",
+        ),
         (
             "commit statistics",
             f"{settings.ecosystems_commits_api_url.rstrip('/')}/hosts/GitHub/repositories/sympy/sympy",

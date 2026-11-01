@@ -151,11 +151,11 @@ def test_ideas_fetch_url_prefers_raw_github_content() -> None:
 
 
 def test_license_name_falls_back_to_display_name() -> None:
-    from git_into_gsoc.github.client import _license_name
+    from git_into_gsoc.github.client import license_name
 
-    assert _license_name({"spdx_id": "MIT", "name": "MIT License"}) == "MIT"
-    assert _license_name({"spdx_id": "NOASSERTION", "name": "Other"}) == "Other"
-    assert _license_name(None) is None
+    assert license_name({"spdx_id": "MIT", "name": "MIT License"}) == "MIT"
+    assert license_name({"spdx_id": "NOASSERTION", "name": "Other"}) == "Other"
+    assert license_name(None) is None
 
 
 def test_to_text_keeps_links() -> None:

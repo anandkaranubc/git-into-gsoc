@@ -3,6 +3,7 @@ test runner."""
 
 from __future__ import annotations
 
+import json
 import re
 
 import httpx
@@ -127,6 +128,8 @@ def test_doctor_reachability_reports_each_source() -> None:
 def test_help_groups_commands_for_beginners() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
+    assert "Usage:" in result.output
+    assert "start" in result.output and "pointers" in result.output
     for panel in (
         "Start here",
         "Find an organization",
@@ -249,6 +252,21 @@ def test_program_speaks_to_the_person_and_ends_with_a_next_step() -> None:
     assert "fabricate" not in result.stdout
     assert "Good habits" in result.stdout
     assert "git-into-gsoc start" in result.stdout  # no profile saved yet
+
+
+@respx.mock
+def test_program_without_a_year_uses_the_configured_target_year(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    """--year defaulted to a hard-coded 2027, so GIG_TARGET_YEAR changed nothing here."""
+    from git_into_gsoc import config
+
+    monkeypatch.setenv("GIG_TARGET_YEAR", "2026")
+    config.get_settings.cache_clear()
+    respx.get("https://summerofcode.withgoogle.com/api/program/2026/").mock(
+        return_value=httpx.Response(404, json={})
+    )
+    result = runner.invoke(app, ["program", "--output", "json"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.stdout)["year"] == 2026
 
 
 def test_an_empty_issue_search_prints_next_steps_not_an_empty_table(monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -463,3 +481,39 @@ def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # ty
     assert "PR #6 (merged) by @dev" in lines  # it says it fixes this one
     assert "PR #8 (open) by @dev" in lines  # an open PR may be the work itself
     assert "PR #9 (closed) by @dev" in lines  # a closed one that said it fixes this tried it
+
+
+def test_the_issues_table_stays_inside_a_100_column_terminal(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # Rich shrinks the Title column, then grows the Issue column back to its minimum
+    # width: at 100 columns a 43-character reference lost the table's right border.
+    from git_into_gsoc import cli
+
+    issues = [
+        _listed("likely_taken", repo="numfocus/disc-unconference-2023-projects", number=25),
+        _listed("available", title="Collaborative translation infrastructure?"),
+    ]
+
+    class Fake:
+        def find_issues(self, **k):  # type: ignore[no-untyped-def]
+            return {"issues": issues, "note": "Searching", "next_steps": []}
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    for columns in ("100", "80", "60"):
+        result = runner.invoke(app, ["issues", "--org", "NumFOCUS"], env={"COLUMNS": columns})
+        assert result.exit_code == 0, result.output
+        table = [line for line in result.output.splitlines() if line.startswith(("┏", "┃", "│"))]
+        assert table and all(len(line) <= int(columns) for line in table), columns
+        assert all(line.rstrip().endswith(("┓", "┃", "│")) for line in table), columns
+    # The footer names the first free issue, so the next command is a paste, not a template.
+    assert "git-into-gsoc issue acme/lib#7 --track" in result.output
+
+
+def test_a_missing_argument_shows_an_example_to_type() -> None:
+    # A beginner who typed `git-into-gsoc org` got "Missing argument 'name'." and no idea
+    # what a name looks like.
+    result = runner.invoke(app, ["org"])
+    assert result.exit_code == 2
+    text = " ".join(result.output.split())
+    assert "Missing argument 'name'. Example: git-into-gsoc org \"SymPy\"" in text
+    result = runner.invoke(app, ["issue"])
+    assert "Example: git-into-gsoc issue owner/repo#123" in " ".join(result.output.split())

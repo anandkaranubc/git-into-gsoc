@@ -643,11 +643,6 @@ def registered_entry(path: Path, fmt: str) -> dict[str, Any] | None:
     return entry if isinstance(entry, dict) else None
 
 
-def registered_servers(home: Path, project: Path | None = None) -> list[tuple[str, Path]]:
-    """Where our MCP server is already registered (for ``doctor``)."""
-    return [(label, path) for label, path, _ in registrations(home, project)]
-
-
 def registrations(
     home: Path, project: Path | None = None
 ) -> list[tuple[str, Path, dict[str, Any]]]:

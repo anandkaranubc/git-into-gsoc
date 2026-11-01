@@ -110,3 +110,26 @@ def test_an_ideas_page_linking_to_a_local_address_is_read_without_it(tmp_path: P
     client = _client(tmp_path, handler)
     assert fetch_ideas_document(client, "http://127.0.0.1:8888/gsoc-ideas", ttl=60) is None
     assert requested == []
+
+
+@pytest.mark.parametrize("url", ["https://xn--/gsoc/ideas", "http://[::1/x"])
+def test_a_malformed_address_is_an_http_error(tmp_path: Path, url: str) -> None:
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+
+    client = _client(tmp_path, lambda request: httpx.Response(200, text="never sent"))
+    with pytest.raises(HttpError, match="Not a valid web address"):
+        client.get_text(url)
+    with pytest.raises(HttpError, match="Not a valid web address"):
+        client.get_tail(url)
+    assert fetch_ideas_document(client, url, ttl=60) is None
+
+
+def test_an_ideas_page_with_a_broken_link_is_read_without_it() -> None:
+    from git_into_gsoc.gsoc.project_ideas import extract_ideas, to_lines
+
+    html = '<html><body><p><a href="http://[::1/x">Broken</a></p></body></html>'
+    assert not any("[::1" in line for line in to_lines(html, base_url="https://ex.org/"))
+    links = ["http://[::1/x"] + [f"https://ex.org/{c}" for c in "abc"]
+    markdown = "# GSoC\n\n" + "".join(f"- [Page {i}]({url})\n" for i, url in enumerate(links))
+    doc = extract_ideas(to_lines(markdown), source_url="https://ex.org/gsoc")
+    assert [page["url"] for page in doc.sub_pages] == [f"https://ex.org/{c}" for c in "abc"]
