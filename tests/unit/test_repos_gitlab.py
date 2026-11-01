@@ -47,7 +47,10 @@ def test_repos_lists_a_gitlab_groups_projects(monkeypatch: pytest.MonkeyPatch) -
             return_value=httpx.Response(200, json={"C": 90.0, "Python": 10.0})
         )
         data = toolkit.discover_repos("GNOME Foundation", limit=5)
-    assert [r["full_name"] for r in data["repos"]] == ["GNOME/gtk", "GNOME/gitg"]
+    assert [r["full_name"] for r in data["repos"]] == [
+        "gitlab.gnome.org/GNOME/gtk",
+        "gitlab.gnome.org/GNOME/gitg",
+    ]
     assert data["github_owners"] == ["gitlab.gnome.org/GNOME"]
     assert data["repos"][0]["language"] == "C" and data["repos"][0]["url"].startswith("https://")
     assert "GitLab" in data["note"]
