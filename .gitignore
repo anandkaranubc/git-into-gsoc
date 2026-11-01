@@ -54,3 +54,6 @@ coverage.xml
 .agents/mcp_config.json
 .devin/
 *.bak
+
+# Written by every `claude plugin eval` run
+plugin-evals/results/
