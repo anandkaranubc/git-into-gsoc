@@ -1273,3 +1273,8 @@ def test_a_size_needs_a_unit_or_a_cell_of_nothing_but_hours() -> None:
     assert normalize_size("175") == ("medium", 175)
     assert normalize_size("175 or 350") == ("medium", 175)
     assert normalize_size("Size: 175") == (None, None)
+    # The unit rule read these as 350, 350, 175 and nothing (review of #428).
+    assert normalize_size("175 or 350 hours") == ("medium", 175)
+    assert normalize_size("175/350 hours") == ("medium", 175)
+    assert normalize_size("90-175 hours") == ("small", 90)
+    assert normalize_size("~175") == ("medium", 175)

@@ -99,12 +99,17 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     if is_not_code_repo(str(issue.get("repo") or "")):
         return "in a governance, test, or sandbox repository"
     body = str(issue.get("body_excerpt") or "")
-    # "Reserved for GSoC applicants" or "for first-time contributors" is kept for people
-    # like this one, the same carve-out as availability's _NOT_OPEN_RE; the plain rule
-    # screened out exactly those issues (reviewer probe, 2026-11-01).
+    # "Reserved for GSoC applicants", "for GSoC contributors" or "for first-time
+    # contributors" is kept for people like this one; the plain rule screened out exactly
+    # those issues (reviewer probe, 2026-11-01). Wider than availability's _NOT_OPEN_RE,
+    # which reads what a maintainer told claimants: this reads an issue body for a
+    # beginner's list, and a doubtful one stays visible for `issue` to check live. Only
+    # "the selected contributor" is someone else.
     if re.search(
         r"(?<!not )\breserved for\b"
-        r"(?!\s+(?:[\w-]+\s+){0,2}(?:applicants?|aspirants?|newcomers?|first-?time|new contributors?|beginners?)\b)"
+        r"(?!\s+(?:(?!(?:selected|chosen)\b)[\w-]+\s+){0,2}"
+        r"(?:applicants?|aspirants?|newcomers?|first-?time|new contributors?|beginners?"
+        r"|gsoc contributors?)\b)"
         r"|\bassigned to @|\bi(?:'m| am) working on (?:this|it)\b",
         body,
         re.I,

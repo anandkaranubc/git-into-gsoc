@@ -140,6 +140,19 @@ def test_bots_are_not_claimants_but_a_maintainer_working_on_it_has_taken_it() ->
         now=NOW,
     )
     assert tidy.claims == []
+    # An offer with a condition is not a claim: this one hid the issue for 180 days
+    # (review of #428, 2026-11-01).
+    for body in (
+        "If nobody picks this up by Friday I'll take it.",
+        "I'll take it if nobody else does.",
+        "Good first issue. Unless someone wants it, I'll fix it next week.",
+    ):
+        offer = assess_issue(_issue(), [_comment("owner", body, 1, "OWNER")], now=NOW)
+        assert offer.claims == [] and offer.availability == Availability.AVAILABLE, body
+    # A condition in another sentence does not undo a plain claim.
+    plain = "I'm working on this. Ping me if you have questions."
+    taken = assess_issue(_issue(), [_comment("owner", plain, 1, "OWNER")], now=NOW)
+    assert [c.login for c in taken.claims] == ["owner"]
 
 
 def test_a_grant_goes_to_the_latest_claimant_only_when_it_is_a_reply() -> None:

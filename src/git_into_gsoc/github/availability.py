@@ -88,6 +88,11 @@ _WORKING_ON_PATTERNS = [
     r"\bi(?:'m| am) (?:currently |now )?working on (?:this|it|the issue)\b",
     r"\bi(?:'ll| will) (?:take|work on|pick up|handle|fix) (?:this|it)\b",
 ]
+# "If nobody picks this up I'll take it" is an offer to newcomers, not a claim; counting
+# it hid the issue from `recommend` for 180 days (review of #428, 2026-11-01). A sentence
+# with a condition in it never counts.
+_CONDITIONAL_RE = re.compile(r"\b(?:if|unless|otherwise|in case|until)\b", re.I)
+_SENTENCE_END_RE = re.compile(r"(?<=[.!?])\s+|\n+")
 _CLAIM_PATTERNS = [
     # A plan is a claim. This project's own good-first issues ask "comment with what you
     # plan to do", and a "## Planned change ... I will add ..." comment read as no claim
@@ -340,6 +345,14 @@ def is_grant(text: str) -> bool:
     return bool(_GRANT_RE.search(straight_quotes(text)))
 
 
+def maintainer_takes_it(text: str) -> bool:
+    """A maintainer saying the work is in hand, in a sentence with no condition."""
+    return any(
+        _WORKING_ON_RE.search(sentence) and not _CONDITIONAL_RE.search(sentence)
+        for sentence in _SENTENCE_END_RE.split(_own_words(text))
+    )
+
+
 def is_own_release(text: str) -> bool:
     """The writer gives back their own claim (not a report about someone else's)."""
     return bool(_OWN_RELEASE_RE.search(_own_words(text)))
@@ -494,7 +507,7 @@ def assess_issue(
                     for name, claim in claims.items():
                         if name.lower() in pinged:
                             _touch(claim, at, now)
-                takes_it = bool(_WORKING_ON_RE.search(_own_words(body)))
+                takes_it = maintainer_takes_it(body)
             else:
                 takes_it = is_claim(body)
             if takes_it and not is_own_release(body) and at is not None and login:

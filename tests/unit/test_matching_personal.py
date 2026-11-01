@@ -685,6 +685,7 @@ def test_an_issue_reserved_for_applicants_is_a_first_task_not_a_taken_one() -> N
     person = build_profile(technologies=["python"])
     for body in (
         "This issue is reserved for GSoC applicants.",
+        "This issue is reserved for GSoC contributors.",  # review of #428
         "Reserved for first-time contributors.",
         "reserved for new contributors",
         "This is not reserved for anyone, go ahead.",
@@ -696,4 +697,6 @@ def test_an_issue_reserved_for_applicants_is_a_first_task_not_a_taken_one() -> N
         "created_at": "2025-06-01",
         "body_excerpt": "Reserved for @bob.",
     }
+    assert "reserved" in str(starter_problem(taken, person))
+    taken["body_excerpt"] = "Reserved for the selected GSoC contributor."
     assert "reserved" in str(starter_problem(taken, person))

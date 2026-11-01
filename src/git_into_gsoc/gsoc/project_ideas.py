@@ -31,8 +31,13 @@ _URL_RE = re.compile(r"https?://[^\s<>()\"'\]]+")
 _MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
 # The unit, or nothing but GSoC numbers in the cell ("175", R's "175 or 350"): "1750
 # hours" read as 175 and "90%" as 90 (reviewer probe, 2026-11-01).
+# A GSoC hour count needs a unit, or a cell holding nothing but such counts ("175 or
+# 350", "~175", "90-175 hours"): "1750 hours" read as 175 and "90%" as 90. The first
+# count of a cell wins, as it did before the unit rule; without the trailing unit in
+# the anchored branch, "175 or 350 hours" read as 350 (review of #428, 2026-11-01).
 _HOURS_RE = re.compile(
-    r"^\s*(90|175|350)(?:\s*(?:or|/|,|-|\u2013|to)\s*(?:90|175|350))*\s*$"
+    r"^\s*(?:~|\u2248|about |approx\.? )?(90|175|350)(?:\s*(?:or|/|,|-|\u2013|to)\s*(?:90|175|350))*"
+    r"(?:\s*(?:h|hrs?|hours?))?\s*$"
     r"|\b(90|175|350)\s*(?:h\b|hrs?\b|hours?\b|-hours?\b)",
     re.I,
 )
