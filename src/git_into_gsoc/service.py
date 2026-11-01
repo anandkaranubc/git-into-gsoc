@@ -2606,7 +2606,7 @@ class GSoCToolkit:
             label = own[0] if own else None
         if not label:
             return [], None, "No beginner label found to look up similar closed issues.", False
-        query = f"repo:{full} is:issue is:closed label:{_quote_label(label)}"
+        query = f"repo:{full} is:issue is:closed {or_group('label', [label])}"
         try:
             items = self.github.search_issues(query, per_page=30)
         except HttpError as exc:
@@ -3111,7 +3111,7 @@ class GSoCToolkit:
         return doc, followed
 
     def _ideas_from_issues(self, url: str, full_name: str, label: str) -> IdeasDocument | None:
-        query = f"repo:{full_name} is:issue is:open label:{_quote_label(label)}"
+        query = f"repo:{full_name} is:issue is:open {or_group('label', [label])}"
         try:
             items = self.github.search_issues(query, per_page=50, sort="updated")
         except HttpError:
@@ -3551,10 +3551,6 @@ def _license_label(license_obj: Any) -> str | None:
     if spdx and spdx != "NOASSERTION":
         return spdx
     return str(license_obj.get("name") or "") or None
-
-
-def _quote_label(label: str) -> str:
-    return f'"{label}"' if " " in label else label
 
 
 # Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18, UC OSPO 22.
