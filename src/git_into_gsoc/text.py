@@ -14,13 +14,24 @@ from typing import Any
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
 _TAG_RE = re.compile(r"</?(?:script|style|iframe|img|svg|object|embed)[^>]*>", re.I)
+# Text GitHub renders as nothing readable: an image shows its picture, not its alt text;
+# a link reference definition shows nothing at all. A 2026-11-01 review put instructions
+# in both, and they reached the model word for word. The character classes exclude the
+# opening bracket so a flood of "![" stays linear.
+_MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\[\]]*\]\([^()]*\)")
+_LINK_REFERENCE_RE = re.compile(r"^[ \t]*\[[^\]\n]+\]:[ \t]*\S+.*$", re.M)
+_HIDDEN_OPEN_RE = re.compile(r"<(\w+)[^<>]*\b(?:hidden\b|display\s*:\s*none)[^<>]*>", re.I)
 _INVISIBLE = {
-    "​",  # zero width space
-    "‌",
-    "‍",
-    "⁠",
-    "﻿",
-    "­",  # soft hyphen
+    "\u200b",  # zero width space
+    "\u200c",
+    "\u200d",
+    "\u2060",
+    "\ufeff",
+    "\u00ad",  # soft hyphen
+    "\u3164",  # Hangul filler: category Lo, so the Cf check misses it; same for the three below
+    "\u115f",
+    "\u1160",
+    "\uffa0",
 }
 
 
@@ -69,11 +80,40 @@ def straight_quotes(text: str) -> str:
     return (text or "").translate(_TYPOGRAPHIC)
 
 
+def _drop_hidden_elements(text: str) -> str:
+    """Remove elements with a `hidden` attribute or `display:none`, content included.
+
+    A loop rather than one regex with a backreference: `<p hidden>` repeated 20,000
+    times with no closing tag made that regex rescan the text from every opener.
+    """
+    kept: list[str] = []
+    pos = 0
+    unclosed: set[str] = set()  # a name with no closing tag ahead is searched once
+    for match in _HIDDEN_OPEN_RE.finditer(text):
+        if match.start() < pos:
+            continue
+        name = match.group(1).lower()
+        end = match.end()
+        if name not in unclosed:
+            close = re.compile(rf"</{name}\s*>", re.I).search(text, end)
+            if close is None:
+                unclosed.add(name)
+            else:
+                end = close.end()
+        kept.append(text[pos : match.start()])
+        pos = end
+    kept.append(text[pos:])
+    return " ".join(kept)
+
+
 def clean_untrusted(text: str | None, *, limit: int = 400) -> str:
-    """Strip hidden characters, comments and risky tags, collapse whitespace, cap length."""
+    """Strip hidden characters and text GitHub hides, collapse whitespace, cap length."""
     if not text:
         return ""
     value = _HTML_COMMENT_RE.sub(" ", str(text))
+    value = _MARKDOWN_IMAGE_RE.sub(" ", value)
+    value = _drop_hidden_elements(value)
+    value = _LINK_REFERENCE_RE.sub(" ", value)
     value = _TAG_RE.sub(" ", value)
     value = strip_hidden(value)
     value = re.sub(r"[ \t\r\f\v]+", " ", value)

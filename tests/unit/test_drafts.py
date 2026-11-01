@@ -601,3 +601,18 @@ def test_a_claim_draft_asks_whoever_asked_before(monkeypatch) -> None:  # type: 
     status["assessment"] = {"claims": []}
     draft = toolkit.draft("claim", issue="ruxailab/RUXAILAB#2361")
     assert "I'd like to work on this." in draft["template"] and "warning" not in draft
+
+
+def test_html_tags_from_pull_request_templates_are_not_placeholders() -> None:
+    from git_into_gsoc.drafts import check_message
+
+    # `draft pr --check` flagged <details> and <summary>, which GitHub templates use to
+    # fold test output, as placeholders. A real placeholder is still caught.
+    text = (
+        "Fixes #12. <details><summary>Test output</summary>\n\n```\n3 passed\n```\n</details>\n"
+        "Tested with pytest tests/test_parser.py. <kbd>Ctrl</kbd> is <short-branch-name>."
+    )
+    placeholders = next(
+        f for f in check_message("pr", text)["findings"] if f["id"] == "placeholders"
+    )
+    assert placeholders["detail"].startswith("<short-branch-name>. ")

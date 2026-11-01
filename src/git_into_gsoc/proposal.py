@@ -103,8 +103,9 @@ GENERIC_PHRASES = (
     "amazing community",
 )
 
+# `(?!\()` keeps Markdown link text such as "[Add type hints to solvers](url)" out.
 PLACEHOLDER_RE = re.compile(
-    r"\[(?:your|insert|add|name|org|project|date|mentor)[^\]]*\]|<(?:insert|your|add)[^>]*>"
+    r"\[(?:your|insert|add|name|org|project|date|mentor)[^\]]*\](?!\()|<(?:insert|your|add)[^>]*>"
     r"|\bTODO\b|\bTBD\b|\bXXX\b|lorem ipsum|\{\{[^}]+\}\}",
     re.IGNORECASE,
 )
@@ -152,6 +153,9 @@ _OTHER_HOST_LINK_RE = re.compile(
 _AVAILABILITY_RE = re.compile(r"\bhours?\s*(?:per|a|/)\s*week\b|\bh\s*/\s*week\b", re.I)
 MAX_MR_LOOKUPS = 5
 _WORD_RE = re.compile(r"[A-Za-z0-9'\u2019-]+")
+# Sixty bare pull request links counted as 480 words and a pasted code block as hundreds
+# more, enough to pass the short-draft warning with no prose at all.
+_NOT_PROSE_RE = re.compile(r"```.*?```|https?://\S+", re.S)
 
 
 @dataclass
@@ -225,7 +229,7 @@ def github_links(text: str) -> list[LinkEvidence]:
 
 
 def word_count(text: str) -> int:
-    return len(_WORD_RE.findall(text))
+    return len(_WORD_RE.findall(_NOT_PROSE_RE.sub(" ", text)))
 
 
 def generic_phrases(text: str) -> list[str]:
@@ -243,7 +247,7 @@ def placeholders(text: str) -> list[str]:
 
 
 def _shingles(text: str, size: int = 8) -> set[tuple[str, ...]]:
-    words = [w.lower() for w in _WORD_RE.findall(text)]
+    words = [w.lower() for w in _WORD_RE.findall(_NOT_PROSE_RE.sub(" ", text))]
     return {tuple(words[i : i + size]) for i in range(0, max(0, len(words) - size + 1))}
 
 

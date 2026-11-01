@@ -288,3 +288,23 @@ def test_one_bad_link_is_reported_without_stopping_the_check() -> None:
     assert links["https://github.com/o/r/commit/0a1b2c"]["number"] == "0a1b2c"
     bad = links["https://github.com/o/../pull/1"]
     assert bad["verified"] is False and "not a GitHub repository" in bad["note"]
+
+
+def test_link_text_is_not_a_placeholder() -> None:
+    from git_into_gsoc.proposal import placeholders
+
+    # A draft with these two links was "Not ready" for "2 template placeholder(s)".
+    links = "[Add type hints to solvers](https://github.com/o/r/pull/1) at [Project Jupyter](https://jupyter.org)"
+    assert placeholders(f"{links} [Your Name]") == ["[Your Name]"]
+
+
+def test_links_and_code_blocks_do_not_count_as_words() -> None:
+    from git_into_gsoc.proposal import mirrored_fraction, word_count
+
+    # Sixty bare pull request links counted as 480 words and a pasted code block as 600,
+    # enough to pass the short-draft warning with no prose at all.
+    links = "https://github.com/o/r/pull/1 " * 60
+    code = "```\n" + "result = compute_the_thing(a, b, c)\n" * 100 + "```"
+    assert word_count(f"I fixed {links}\nsee {code}\nthe end") == 5
+    assert mirrored_fraction(code, code) == 0.0
+    assert _by_id(check_proposal(STRONG))["length"]["status"] == "warn"

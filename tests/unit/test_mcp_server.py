@@ -403,3 +403,42 @@ def test_a_limit_below_one_is_a_tool_error() -> None:
     for call in calls:
         with pytest.raises(ToolError, match="1 or more"):
             call()
+
+
+def test_progress_resource_strips_hidden_characters(monkeypatch) -> None:
+    import json
+
+    from git_into_gsoc import mcp_server
+
+    # Every tool result passes through _dump; the resource skipped it, so a note saved
+    # with ESC, a zero width space and tag characters reached the client unchanged.
+    class Progress:
+        def summary(self) -> dict[str, object]:
+            return {"recent_notes": ["Ask \x1b]0;x\x07 about​ the parser\U000e0041"]}
+
+    class Kit:
+        progress = Progress()
+
+    monkeypatch.setattr(mcp_server, "toolkit", lambda: Kit())
+    assert json.loads(mcp_server.progress_resource()) == {
+        "recent_notes": ["Ask ]0;x about the parser"]
+    }
+
+
+def test_two_guessed_names_for_one_parameter_are_an_error() -> None:
+    import pytest
+    from pydantic import ValidationError
+
+    # {"tech": "rust", "languages": "go"} once validated to technologies="go": the second
+    # guess overwrote the first, the silent drop the mapping exists to prevent.
+    with pytest.raises(ValidationError, match=r"does not take 'languages'.*technologies"):
+        _validate("gsoc_search_orgs", {"tech": "rust", "languages": "go"})
+
+
+def test_journey_guide_names_every_phase() -> None:
+    from git_into_gsoc.mcp_server import mcp
+    from git_into_gsoc.models import JourneyPhase
+
+    tool = next(t for t in mcp._tool_manager.list_tools() if t.name == "gsoc_journey_guide")
+    for phase in JourneyPhase:
+        assert phase.value in (tool.description or ""), phase.value
