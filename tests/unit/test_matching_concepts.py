@@ -214,6 +214,17 @@ def test_cms_typed_in_a_phrase_still_means_content_management() -> None:
     assert resolve("data vizualisation").concepts == ("data visualization",)
 
 
+def test_a_cased_spelling_counts_once_and_a_shared_term_honours_each_tag_only_rule() -> None:
+    # "Work on Rust code" counted rust twice (both the plain and the cased pass matched),
+    # so one mention in a description scored as many; "posix" is a plain term of linux
+    # but tag-only for operating systems, and free text credited both (probe, 2026-11-01).
+    assert find_concepts("Work on Rust code") == {"rust": 1}
+    assert find_concepts("Work on Julia and Spring Boot code") == {"julia": 1, "spring": 1}
+    assert find_concepts("Written in Go") == {"go": 1}
+    assert find_concepts("supports posix systems") == {"linux": 1}
+    assert find_concepts("posix", free_text=False) == {"linux": 1, "operating systems": 1}
+
+
 def test_free_text_scan_reads_letters_like_the_case_insensitive_regex_did() -> None:
     # The scan lowercases the text itself (see concepts._pattern); these are the letters
     # where that differs from re.I, checked against the old scan with a fuzz run.

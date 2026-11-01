@@ -265,13 +265,17 @@ def _validate() -> None:
 _validate()
 
 
-@lru_cache(maxsize=1)
-def _term_index() -> dict[str, tuple[str, ...]]:
-    """Lowercase term -> the concepts it names (a few terms name two)."""
+@lru_cache(maxsize=2)
+def _term_index(free_text: bool = False) -> dict[str, tuple[str, ...]]:
+    """Lowercase term -> the concepts it names (a few terms name two). In free text a
+    concept's tag-only terms are left out: "posix" is plain for linux but tag-only for
+    operating systems, and the shared pattern match credited both (probe, 2026-11-01)."""
     index: dict[str, list[str]] = {}
     for concept in CONCEPTS.values():
+        skip = {t.lower() for t in concept.tag_only} if free_text else set()
         for term in concept.terms:
-            index.setdefault(term.lower(), []).append(concept.key)
+            if term.lower() not in skip:
+                index.setdefault(term.lower(), []).append(concept.key)
     return {term: tuple(keys) for term, keys in index.items()}
 
 
@@ -318,7 +322,14 @@ _PLAIN_ENGLISH_AFTER = {
 
 @lru_cache(maxsize=1)
 def _cased_pattern() -> tuple[re.Pattern[str], dict[str, str]] | None:
-    cased = {term: c.key for c in CONCEPTS.values() for term in c.cased}
+    # Only spellings the case-insensitive pass skips as tag-only: "Rust" is not tag-only,
+    # so both passes counted it and one mention scored as many (probe, 2026-11-01).
+    cased = {
+        term: c.key
+        for c in CONCEPTS.values()
+        for term in c.cased
+        if term.lower() in {t.lower() for t in c.tag_only}
+    }
     if not cased:
         return None
     body = _alternation(list(cased))
@@ -358,7 +369,7 @@ def find_concepts(text: str, *, free_text: bool = True) -> dict[str, int]:
     """
     if not text:
         return {}
-    index = _term_index()
+    index = _term_index(free_text)
     found: dict[str, int] = {}
     lowered = text.lower() if text.isascii() else text.translate(_FOLD).lower()
     for match in _pattern(free_text).finditer(lowered):

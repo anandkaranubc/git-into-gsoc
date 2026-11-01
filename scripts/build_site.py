@@ -103,6 +103,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <title>{escape(title)}</title>
 <meta name="description" content="{escape(description)}">
 <link rel="canonical" href="{SITE_URL}{path}">
+<meta property="og:url" content="{SITE_URL}{path}">
 <meta property="og:type" content="website">
 <meta property="og:title" content="{escape(title)}">
 <meta property="og:description" content="{escape(description)}">
@@ -113,7 +114,8 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <link rel="icon" href="{root}brand/favicon/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap"></noscript>
 <link rel="stylesheet" href="{root}brand/tokens.css">
 <link rel="stylesheet" href="{root}styles.css">
 <script>
@@ -135,7 +137,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
     <ul class="nav-links">
       <li><a href="{root}start/">start</a></li>
       <li><a href="{root}orgs/">organizations</a></li>
-      <li class="optional"><a href="{REPO_URL}/blob/main/docs/README.md">guide</a></li>
+      <li class="optional"><a href="{root}docs/">guide</a></li>
       <li><a href="{REPO_URL}">github</a></li>
       <li><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">dark</button></li>
     </ul>
@@ -157,8 +159,8 @@ FOOT = """</main>
     <ul>
       <li><a href="REPO/">Source on GitHub</a></li>
       <li><a href="https://pypi.org/project/git-into-gsoc/">Package on PyPI</a></li>
-      <li><a href="REPO/blob/main/docs/README.md">Beginner guide</a></li>
-      <li><a href="REPO/blob/main/docs/sources.md">Sources and limitations</a></li>
+      <li><a href="SITE/docs/">Beginner guide</a></li>
+      <li><a href="SITE/docs/sources/">Sources and limitations</a></li>
       <li><a href="REPO/issues/new?template=feedback.yml">Tell us how it went</a> (a public GitHub issue)</li>
     </ul>
   </div>
@@ -188,7 +190,7 @@ FOOT = """</main>
     paint();
   })();
 </script>
-""".replace("REPO", REPO_URL)
+""".replace("REPO", REPO_URL).replace("SITE/", SITE_URL)
 
 FILTER_SCRIPT = """<script>
   (function () {
@@ -228,6 +230,13 @@ FILTER_SCRIPT = """<script>
 """
 
 
+def _link(url: str, text: str | None = None) -> str:
+    """An anchor for a web address from the data; anything else (javascript:, mailto:) is shown as text."""
+    if url.startswith(("https://", "http://")):
+        return f'<a href="{escape(url)}">{escape(text or url)}</a>'
+    return escape(text or url)
+
+
 def _tags(values: list[str], label: str) -> str:
     if not values:
         return ""
@@ -260,17 +269,14 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
         ("Source code", org.get("source_code")),
     ):
         if url:
-            links.append(f'<li>{label}: <a href="{escape(str(url))}">{escape(str(url))}</a></li>')
+            links.append(f"<li>{label}: {_link(str(url))}</li>")
     for method in org.get("direct_comm_methods") or []:
         kind = str(method.get("name") or "")
         value = str(method.get("value") or "")
         if not value:
             continue
         label = CHANNEL_LABELS.get(kind, kind.capitalize() or "Contact")
-        shown = escape(value)
-        if value.startswith("http"):
-            shown = f'<a href="{escape(value)}">{escape(value)}</a>'
-        links.append(f"<li>{escape(label)}: {shown}</li>")
+        links.append(f"<li>{escape(label)}: {_link(value)}</li>")
 
     idea_items = "".join(
         "<li>"
@@ -286,7 +292,7 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
         ideas_block += f'<ol class="ideas">{idea_items}</ol>'
     if ideas.get("url"):
         ideas_block += (
-            f'<p><a href="{escape(str(ideas["url"]))}">Read the ideas page</a>. '
+            f"<p>{_link(str(ideas['url']), 'Read the ideas page')}. "
             "Ideas are for scope reference; never copy one into a proposal.</p>"
         )
 
