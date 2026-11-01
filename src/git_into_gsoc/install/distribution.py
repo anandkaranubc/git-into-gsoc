@@ -68,6 +68,9 @@ PROXY_VARS = ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY")
 
 # How each host names the folder a plugin or extension was installed into.
 CLAUDE_PLUGIN_ROOT = "${CLAUDE_PLUGIN_ROOT}"  # also read by Cursor, Copilot, VS Code, Devin
+# Where `claude plugin eval` finds the behaviour tests for the skill and tool text.
+# Not evals/: that folder holds the organization-ranking benchmarks.
+PLUGIN_EVALS_DIR = "plugin-evals"
 COPILOT_PLUGIN_ROOT = "${PLUGIN_ROOT}"  # Copilot CLI's documented name
 GEMINI_EXTENSION_PATH = "${extensionPath}"  # also rewritten by Antigravity's converter
 
@@ -254,6 +257,7 @@ def claude_plugin(version: str) -> dict[str, Any]:
         "license": LICENSE,
         "keywords": KEYWORDS,
         "mcpServers": {SERVER_NAME: stdio_entry(plugin_command(CLAUDE_PLUGIN_ROOT))},
+        "experimental": {"evals": PLUGIN_EVALS_DIR},
     }
 
 
