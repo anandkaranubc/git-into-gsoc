@@ -290,13 +290,18 @@ def _register(plan: SetupPlan, assistant: Assistant, *, dry_run: bool) -> Change
         return Change(assistant.label, "mcp", plan.root, "skipped", "no MCP support")
     path = _config_path(plan, assistant)
     if path is None:
+        change = None
         if plan.scope == "user" and target.cli and plan.use_cli:
             change = _register_via_cli(plan, assistant, target.cli, target.cli_check, dry_run)
-            if change is not None:
+            # A failed `claude mcp add` comes after a successful `claude mcp remove`:
+            # without the manual line the person had no server and no way back.
+            if change is not None and change.action != "skipped":
                 return change
         hint = target.manual_hint.format(command=" ".join(plan.command))
         if hint:
             plan.manual.append(f"{assistant.label}: {hint}")
+        if change is not None:
+            return change
         return Change(assistant.label, "mcp", plan.root, "skipped", "needs the manual step below")
     if link := _project_link(plan, path, backup_path(path)):
         return Change(assistant.label, "mcp", path, "skipped", _link_note(link, plan))

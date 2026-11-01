@@ -1243,3 +1243,38 @@ def test_a_table_that_leaves_out_closing_tags_is_read() -> None:
     for raw in (closed, omitted):
         ideas = table_ideas(raw, source_url="https://x/")
         assert [(i.title, i.mentors, i.difficulty) for i in ideas] == expected
+
+
+def test_hostile_headings_and_label_lines_are_read_in_linear_time() -> None:
+    import time
+
+    from git_into_gsoc.gsoc.project_ideas import _heading, _is_list_heading, _is_non_idea, _label
+
+    # A 200 KB heading took the old `ideas .* gsoc` title pattern 22 seconds, and a
+    # label of 39 letters padded with 50,000 spaces took the label pattern 5 seconds
+    # (reviewer probe, 2026-11-01). Nothing on a stranger's page may cost seconds.
+    start = time.perf_counter()
+    assert not _is_non_idea("idea " * 40_000)
+    assert not _is_list_heading("summer of code " * 15_000)
+    assert _label("a" * 39 + " " * 200_000 + "x") is None
+    assert _label(" " * 200_000 + "Skills: C++")[0] == "skills"
+    assert time.perf_counter() - start < 0.5
+    level, text = _heading("# " + "idea " * 40_000)
+    assert level == 1 and len(text) == 200
+    assert _is_non_idea("Project ideas for Google Summer of Code 2026")
+    assert _is_list_heading("GSoC 2026 ideas")
+
+
+def test_a_size_needs_a_unit_or_a_cell_of_nothing_but_hours() -> None:
+    # "1750 hours" read as ("medium", 175) and "90%" as ("small", 90), because the unit
+    # was optional (reviewer probe, 2026-11-01). R's table writes "175 or 350".
+    assert normalize_size("1750 hours") == (None, None)
+    assert normalize_size("90%") == (None, None)
+    assert normalize_size("175") == ("medium", 175)
+    assert normalize_size("175 or 350") == ("medium", 175)
+    assert normalize_size("Size: 175") == (None, None)
+    # The unit rule read these as 350, 350, 175 and nothing (review of #428).
+    assert normalize_size("175 or 350 hours") == ("medium", 175)
+    assert normalize_size("175/350 hours") == ("medium", 175)
+    assert normalize_size("90-175 hours") == ("small", 90)
+    assert normalize_size("~175") == ("medium", 175)

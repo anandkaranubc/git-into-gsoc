@@ -142,11 +142,13 @@ def score_repo_health(health: RepoHealth) -> RepoHealth:
             signals.append("Issue/PR templates guide contributions")
         award("Issue or PR templates", 4 if templates else 0, 4)
     if "workflows" in unread:
-        award("CI (automatic checks) on pull requests", 0, 0, UNREAD_WHY)
+        award("GitHub Actions workflows", 0, 0, UNREAD_WHY)
     else:
+        # Any workflow file counts (a stale bot too), and CI run outside GitHub Actions
+        # is not seen, so the words say what was checked rather than "CI runs on PRs".
         if health.has_ci:
-            signals.append("CI (automatic checks) runs on pull requests")
-        award("CI (automatic checks) on pull requests", 8 if health.has_ci else 0, 8)
+            signals.append("Has GitHub Actions workflows (automatic checks)")
+        award("GitHub Actions workflows", 8 if health.has_ci else 0, 8)
 
     if unread & {"labels", "beginner issues"}:
         award("Open beginner issues", 0, 0, UNREAD_WHY)
