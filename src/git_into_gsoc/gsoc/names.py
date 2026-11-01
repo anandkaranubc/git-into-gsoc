@@ -52,12 +52,40 @@ ACRONYM = 75  # initials ("PSF")
 PREFIX = 70  # every word typed is most of a word of the name ("tensor")
 
 
+# GitHub page names that can sit where an owner would in a URL, so a link to one of
+# them is not a project.
+GITHUB_RESERVED = {
+    "orgs",
+    "topics",
+    "settings",
+    "features",
+    "sponsors",
+    "apps",
+    "marketplace",
+    "about",
+    "collections",
+    "explore",
+    # FLARE's listing gives a search as its source code: github.com/search?q=...
+    "search",
+    "trending",
+    "login",
+    "notifications",
+    "enterprise",
+    "pricing",
+    "codespaces",
+    "user-attachments",
+    "users",
+    "readme",
+}
+
+
+def normalize_name(value: str) -> str:
+    """Lower-case letters and digits only, for comparing org names across sources."""
+    return re.sub(r"[^a-z0-9]", "", (value or "").lower())
+
+
 def _words(value: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", (value or "").lower())
-
-
-def _squash(value: str) -> str:
-    return "".join(_words(value))
 
 
 def _core(words: list[str]) -> list[str]:
@@ -70,7 +98,9 @@ def core_key(name: str) -> str:
 
 
 def same_org(a: str, b: str) -> bool:
-    return bool(_squash(a)) and (_squash(a) == _squash(b) or core_key(a) == core_key(b))
+    return bool(normalize_name(a)) and (
+        normalize_name(a) == normalize_name(b) or core_key(a) == core_key(b)
+    )
 
 
 def match_level(query: str, name: str) -> int:
@@ -124,12 +154,12 @@ def resolve_name(query: str, current: Iterable[str], past: Iterable[str] = ()) -
     Raises AmbiguousNameError when several fit equally well.
     """
     current = list(dict.fromkeys(current))
-    known = {_squash(n) for n in current} | {core_key(n) for n in current}
+    known = {normalize_name(n) for n in current} | {core_key(n) for n in current}
     # A past record of a current org (renamed slightly) is the same org; keep the current one.
     past = [
         n
         for n in dict.fromkeys(past)
-        if _squash(n) not in known and core_key(n) not in known and _squash(n)
+        if normalize_name(n) not in known and core_key(n) not in known and normalize_name(n)
     ]
     scored = [(match_level(query, n), 1, n) for n in current]
     scored += [(match_level(query, n), 0, n) for n in past]
@@ -147,12 +177,12 @@ def resolve_name(query: str, current: Iterable[str], past: Iterable[str] = ()) -
 
 def suggest_names(query: str, names: Iterable[str], limit: int = 5) -> list[str]:
     """Close names for a query that matched nothing (typos, split or partial words)."""
-    wanted = _squash(query)
+    wanted = normalize_name(query)
     if len(wanted) < 3:
         return []
     by_key: dict[str, str] = {}
     for name in names:
-        by_key.setdefault(_squash(name), name)
+        by_key.setdefault(normalize_name(name), name)
         for word in _core(_words(name)):
             by_key.setdefault(word, name)
     close = difflib.get_close_matches(wanted, list(by_key), n=limit * 3, cutoff=0.75)

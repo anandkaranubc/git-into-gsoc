@@ -115,7 +115,6 @@ def fetch_pull_analysis(
     token: str,
     owner: str,
     repo: str,
-    user_agent: str | None = None,
     ttl: int = 3600,
 ) -> PullAnalysis | None:
     """Run the query; returns None on any failure so callers fall back to REST."""

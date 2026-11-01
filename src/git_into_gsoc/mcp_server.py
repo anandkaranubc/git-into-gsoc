@@ -519,8 +519,8 @@ async def gsoc_recommend_path(
             github_username = answer.data.github_username
             experience = answer.data.experience or experience
             hours_per_week = answer.data.hours_per_week or hours_per_week
-    tech = [t.strip() for t in technologies.split(",") if t.strip()]
-    interests_list = [t.strip() for t in interests.split(",") if t.strip()]
+    tech = split_csv(technologies)
+    interests_list = split_csv(interests)
     return _call(
         toolkit().recommend_path,
         username=github_username or None,
