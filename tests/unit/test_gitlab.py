@@ -552,7 +552,8 @@ def test_a_gitlab_project_is_graded_from_its_merge_requests_and_tree() -> None:
     health, guide = gitlab_repo_health(http, "gitlab.gnome.org", "GNOME/gitg")  # type: ignore[arg-type]
     assert health.full_name == "gitlab.gnome.org/GNOME/gitg" and health.pr_source == "gitlab"
     assert health.has_contributing and health.contributing_source == "file"
-    assert health.has_ci and health.has_issue_template and not health.has_code_of_conduct
+    assert health.has_ci and health.has_issue_template and not health.has_pr_template
+    assert not health.has_code_of_conduct
     assert health.license == "GNU General Public License v2.0 or later"
     assert health.language == "Vala" and health.topics == ["git"]
     assert health.insiders_known and health.prs_sampled == 5
@@ -591,6 +592,7 @@ def test_a_project_without_a_known_label_or_members_still_grades() -> None:
     assert guide.setup_hints == ["Read README.md before coding"]
 
 
-def test_a_missing_project_raises() -> None:
-    with pytest.raises(NotFoundError):
-        gitlab_repo_health(FakeProject({}), "gitlab.gnome.org", "GNOME/nothing")  # type: ignore[arg-type]
+def test_a_missing_project_raises_with_a_hint() -> None:
+    with pytest.raises(NotFoundError) as caught:
+        gitlab_repo_health(FakeProject({}), "codeberg.org", "a/b")  # type: ignore[arg-type]
+    assert "another server" in (caught.value.hint or "")

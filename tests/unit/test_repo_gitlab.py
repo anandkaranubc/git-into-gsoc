@@ -103,6 +103,7 @@ def test_track_saves_the_gitlab_link(monkeypatch: pytest.MonkeyPatch) -> None:
         "contribution_guide": {"setup_hints": []},
         "recommendation": "Looks healthy.",
         "next_step": "git-into-gsoc issue URL",
+        "track_as": "https://gitlab.gnome.org/GNOME/gitg",
     }
     monkeypatch.setattr(GSoCToolkit, "evaluate_repo", lambda self, full_name: found)
     result = runner.invoke(app, ["repo", "https://gitlab.gnome.org/GNOME/gitg", "--track"])

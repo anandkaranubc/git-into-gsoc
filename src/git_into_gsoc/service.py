@@ -886,6 +886,8 @@ class GSoCToolkit:
             "contribution_guide": guide.model_dump(),
             "recommendation": _repo_recommendation(health.grade, health.warnings),
             "next_step": next_step,
+            # --track saves this: "gitlab.gnome.org/GNOME/gitg" would read as a GitHub name.
+            "track_as": health.url,
         }
 
     def gsoc_github_orgs(
