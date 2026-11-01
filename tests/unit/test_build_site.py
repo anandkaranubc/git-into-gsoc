@@ -24,7 +24,7 @@ def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
         assert (tmp_path / "orgs" / org["slug"] / "index.html").is_file()
         assert f'href="{org["slug"]}/"' in index
     sitemap = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
-    assert sitemap.count("<loc>") == len(slugs) + 2
+    assert sitemap.count("<loc>") == len(slugs) + 3
 
 
 def test_data_text_is_escaped_and_odd_slugs_are_refused(tmp_path: Path) -> None:

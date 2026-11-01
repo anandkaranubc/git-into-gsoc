@@ -22,7 +22,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "git_into_gsoc" / "data"
-SITE_URL = "https://anandkaranubc.github.io/git-into-gsoc/"
+SITE_URL = "https://gitintogsoc.me/"
 REPO_URL = "https://github.com/anandkaranubc/git-into-gsoc"
 # A slug becomes a folder name, so anything else from the data is refused.
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
@@ -412,7 +412,12 @@ def index_page(
 
 
 def sitemap(slugs: list[str]) -> str:
-    urls = [SITE_URL, f"{SITE_URL}orgs/", *(f"{SITE_URL}orgs/{s}/" for s in slugs)]
+    urls = [
+        SITE_URL,
+        f"{SITE_URL}brand.html",
+        f"{SITE_URL}orgs/",
+        *(f"{SITE_URL}orgs/{s}/" for s in slugs),
+    ]
     body = "".join(f"<url><loc>{escape(u)}</loc></url>" for u in urls)
     return (
         '<?xml version="1.0" encoding="UTF-8"?>\n'
