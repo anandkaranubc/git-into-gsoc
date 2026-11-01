@@ -212,3 +212,12 @@ def test_cms_typed_in_a_phrase_still_means_content_management() -> None:
     assert "content management" not in resolve("cms physics").concepts
     # Other tag-only words keep their rule: "data" alone in a phrase is still generic.
     assert resolve("data vizualisation").concepts == ("data visualization",)
+
+
+def test_free_text_scan_reads_letters_like_the_case_insensitive_regex_did() -> None:
+    # The scan lowercases the text itself (see concepts._pattern); these are the letters
+    # where that differs from re.I, checked against the old scan with a fuzz run.
+    assert find_concepts("Written in PYTHON and Kotlin") == {"python": 1, "kotlin": 1}
+    assert find_concepts("\u212aotlin") == {"kotlin": 1}  # a Kelvin sign for K
+    assert find_concepts("ru\u017ft and \u0130OS") == {}  # a long s, a Turkish capital I
+    assert "c" not in find_concepts("\u0130C")  # still one word, not the C language
