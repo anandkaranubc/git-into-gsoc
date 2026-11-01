@@ -7,6 +7,8 @@ on:
       - "site/**"
       - "brand/**"
       - "scripts/build_site.py"
+      - "scripts/build_docs.py"
+      - "docs/**"
       - "scripts/start_page.py"
       # The start page ships the package to the browser: a ranker change must redeploy.
       - "src/git_into_gsoc/**"
@@ -49,6 +51,13 @@ jobs:
       # the output is not committed, so every deploy rebuilds it.
       - name: Build the organization explorer and the start page
         run: python3 scripts/build_site.py
+
+      # docs/ rendered as site pages, so the guide is indexable; see scripts/build_docs.py.
+      # Only the renderer is installed here; pyproject's dev extra keeps the same floor for tests.
+      - name: Render the docs
+        run: |
+          python3 -m pip install --quiet "markdown-it-py==4.2.0"
+          python3 scripts/build_docs.py
 
       # Pages builds from this workflow, so Jekyll never runs and no .nojekyll
       # file is needed (the upload step would leave dotfiles out anyway).
