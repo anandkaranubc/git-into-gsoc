@@ -126,9 +126,7 @@ def hours_note(hours_per_week: Any) -> str | None:
     )
 
 
-def time_budget(
-    state: ProgressState, program: dict[str, Any], *, now: datetime | None = None
-) -> dict[str, Any] | None:
+def time_budget(state: ProgressState, program: dict[str, Any]) -> dict[str, Any] | None:
     """Hours available before the next milestone, split by what this phase needs.
 
     Uses the saved hours per week. The milestone is the proposal deadline when it
@@ -273,7 +271,20 @@ def plan_actions(
             )
         )
 
-    if not orgs:
+    suggested = [str(name) for name in profile.get("suggested_orgs") or []]
+    if not orgs and suggested:
+        # The first `next` after `start` used to send people back to a fresh ranking,
+        # losing the three organizations `start` had just shown them.
+        actions.append(
+            _action(
+                f"Shortlist the organizations start matched: {', '.join(suggested)}",
+                f'git-into-gsoc org "{suggested[0]}" --shortlist',
+                'Read each one first with git-into-gsoc org "NAME", and shortlist the ones '
+                "that fit. Everything downstream (repos, issues, proposal) hangs off a "
+                "shortlist; git-into-gsoc recommend ranks more.",
+            )
+        )
+    elif not orgs:
         command = (
             "git-into-gsoc recommend" if (techs or github) else "git-into-gsoc orgs --tech python"
         )

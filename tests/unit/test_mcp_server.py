@@ -147,6 +147,13 @@ def test_recommend_path_asks_the_client_only_when_it_can_and_must(monkeypatch) -
 
     monkeypatch.setattr(mcp_server, "toolkit", lambda: Kit())
 
+    async def inline(fn):  # type: ignore[no-untyped-def]
+        return fn()
+
+    # The real tool hands the work to a thread so the server keeps answering; _run has
+    # no event loop, so call it inline here.
+    monkeypatch.setattr(mcp_server.anyio.to_thread, "run_sync", inline)
+
     class Session:
         def __init__(self, can: bool) -> None:
             self.can = can
