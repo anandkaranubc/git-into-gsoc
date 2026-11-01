@@ -13,7 +13,10 @@ import respx
 from git_into_gsoc.errors import HttpError, NotFoundError
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
+    gitlab_ci_as_workflow,
+    gitlab_ci_environment,
     gitlab_issue_status,
+    gitlab_orientation,
     gitlab_repo_health,
     gitlab_repo_leads,
     gitlab_target,
@@ -440,7 +443,7 @@ GITG_API = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgitg"
 class FakeProject:
     """Answers by URL and the parameters that tell two reads of one URL apart."""
 
-    KEYS = ("labels", "state", "assignee_id", "path")
+    KEYS = ("labels", "state", "assignee_id", "path", "page")
 
     def __init__(self, routes: dict[str, Any], texts: dict[str, str] | None = None) -> None:
         self.routes, self.texts = routes, texts or {}
@@ -578,3 +581,137 @@ def test_a_project_without_a_known_label_or_members_still_grades() -> None:
 def test_a_missing_project_raises() -> None:
     with pytest.raises(NotFoundError):
         gitlab_repo_health(FakeProject({}), "gitlab.gnome.org", "GNOME/nothing")  # type: ignore[arg-type]
+
+
+# Orientation, as `orient` does for a GitLab link.
+
+GITLAB_CI = """\
+image: python:3.12-slim
+
+services:
+  - postgres:15
+  - name: redis:7
+
+test:
+  before_script:
+    - pip install -e .[dev]
+  script:
+    - ruff check src
+    - pytest -q tests
+
+lint:
+  script: ruff format --check src
+"""
+
+
+def test_gitlab_ci_scripts_read_as_run_blocks() -> None:
+    converted = gitlab_ci_as_workflow(GITLAB_CI)
+    assert "  run: |\n    pip install -e .[dev]\n" in converted
+    assert "  run: |\n    ruff check src\n    pytest -q tests\n" in converted
+    assert "  run: ruff format --check src" in converted
+    from git_into_gsoc.github.orientation import ci_test_commands
+
+    commands = [c["command"] for c in ci_test_commands({".gitlab-ci.yml": converted})]
+    assert "pytest -q tests" in commands
+
+
+def test_gitlab_ci_images_and_services_make_the_environment() -> None:
+    env = gitlab_ci_environment(GITLAB_CI)
+    assert env["runtimes"] == [
+        {"name": "Python", "versions": ["3.12"], "most_used": "3.12", "source": ".gitlab-ci.yml"}
+    ]
+    assert [s["image"] for s in env["services"]] == ["postgres:15", "redis:7"]
+    assert env["runners"] == []
+
+
+def test_orientation_is_built_from_the_project_api() -> None:
+    k = FakeProject.key
+    tree = [
+        {
+            "path": p,
+            "type": "tree" if "." not in p.rsplit("/", 1)[-1] else "blob",
+            "name": p.rsplit("/", 1)[-1],
+        }
+        for p in (
+            "README.md",
+            "CONTRIBUTING.md",
+            ".gitlab-ci.yml",
+            "meson.build",
+            "pyproject.toml",
+            ".gitlab",
+            ".gitlab/merge_request_templates",
+            ".gitlab/merge_request_templates/Default.md",
+            "gitg",
+            "gitg/gitg.vala",
+            "gitg/main.vala",
+            "tests",
+            "tests/test_core.py",
+        )
+    ]
+    merged = [
+        {"iid": i, "merged_at": _iso(i), "target_branch": "gtk4", "author": {"username": f"p{i}"}}
+        for i in range(1, 5)
+    ] + [{"iid": 9, "merged_at": _iso(9), "target_branch": "master", "author": {"username": "p9"}}]
+    http = FakeProject(
+        {
+            k(GITG_API): {
+                "path_with_namespace": "GNOME/gitg",
+                "web_url": "https://gitlab.gnome.org/GNOME/gitg",
+                "default_branch": "master",
+                "description": "A git client",
+                "star_count": 61,
+                "last_activity_at": _iso(1),
+                "license": {"name": "GPL-2.0+"},
+            },
+            k(f"{GITG_API}/repository/tree"): [e for e in tree if "/" not in e["path"]],
+            k(f"{GITG_API}/repository/tree", path=".gitlab"): [
+                e for e in tree if e["path"].startswith(".gitlab/")
+            ],
+            k(f"{GITG_API}/repository/tree", path="gitg"): [
+                e for e in tree if e["path"].startswith("gitg/")
+            ],
+            k(f"{GITG_API}/repository/tree", path="tests"): [
+                e for e in tree if e["path"].startswith("tests/")
+            ],
+            k(f"{GITG_API}/languages"): {"Vala": 90.5, "Python": 9.5},
+            k(f"{GITG_API}/repository/commits"): [
+                {
+                    "message": "Fix dialog\n\nSigned-off-by: Ada <ada@example.org>",
+                    "author_name": "Ada",
+                },
+                {"message": "Update translation", "author_name": "Translator"},
+            ],
+            k(f"{GITG_API}/merge_requests", state="merged"): merged,
+            k(f"{GITG_API}/repository/branches/master"): {"commit": {"id": "abc123"}},
+            k(f"{GITG_API}/protected_branches"): [
+                {
+                    "name": "master",
+                    "push_access_levels": [{"access_level_description": "Maintainers"}],
+                }
+            ],
+        },
+        texts={
+            f"{GITG_API}/repository/files/CONTRIBUTING.md/raw": "# Contributing\n\nAsk on Matrix first.\n",
+            f"{GITG_API}/repository/files/.gitlab-ci.yml/raw": GITLAB_CI,
+            f"{GITG_API}/repository/files/pyproject.toml/raw": "[project]\nname = 'gitg'\n",
+            f"{GITG_API}/repository/files/.gitlab%2Fmerge_request_templates%2FDefault.md/raw": "- [ ] Tests added\n",
+        },
+    )
+    data = gitlab_orientation(http, "gitlab.gnome.org", "GNOME/gitg", codetour=True)  # type: ignore[arg-type]
+    assert data["repo"] == "gitlab.gnome.org/GNOME/gitg" and data["as_of_commit"] == "abc123"
+    assert data["languages"][0] == {"name": "Vala", "share": 90}
+    assert {d["path"] for d in data["code_map"]} >= {"gitg", "tests"}
+    assert data["docs"]["contributing"] == "CONTRIBUTING.md" and data["docs"]["test_dirs"] == [
+        "tests"
+    ]
+    assert [c["command"] for c in data["test_commands"]] == ["pytest -q tests"]
+    assert data["ci_environment"]["runtimes"][0]["name"] == "Python"
+    assert data["work_branch"]["branch"] == "gtk4" and data["work_branch"]["merged"] == 4
+    assert data["conventions"]["gates"][0]["source"] == "protected branches"
+    assert "Maintainers" in data["conventions"]["gates"][0]["gate"]
+    assert data["maintainers"]["active_committers_90d"][0]["login"] in {"Ada", "Translator"}
+    assert data["maintainers"]["commits_90d"] == 2
+    assert "Matrix" in data["channels"] and data["example_pr"] is None
+    assert data["reading_plan"][0]["path"] == "README.md"
+    assert not data["tree_truncated"] and "codetour" in data
+    assert "GitLab" in data["note"]

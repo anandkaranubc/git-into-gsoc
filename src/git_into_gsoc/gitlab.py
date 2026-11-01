@@ -21,9 +21,24 @@ from git_into_gsoc.github.availability import (
     assess_issue,
     is_not_open_label,
 )
+from git_into_gsoc.github.orientation import (
+    active_committers,
+    ci_test_commands,
+    code_map,
+    codetour_from_orientation,
+    conventions,
+    days_since,
+    entry_points,
+    find_paths,
+    policy_quotes,
+    reading_plan,
+    since_iso,
+    work_branch,
+)
 from git_into_gsoc.github.repos import (
     channels_in,
     detect_toolchain,
+    is_bot,
     mentioned_repos,
     pull_stats,
     readme_contributing_section,
@@ -749,3 +764,304 @@ def gitlab_repo_health(
         unread=sorted(set(unread)),
     )
     return score_repo_health(health), guide
+
+
+# Top-level directories read one page deep: GIMP has over a thousand files, and a
+# recursive listing paged alphabetically left only its first five directories.
+_TREE_DIRS = 20
+
+_IMAGE_RUNTIMES = {
+    "python": "Python",
+    "node": "Node.js",
+    "ruby": "Ruby",
+    "golang": "Go",
+    "rust": "Rust",
+    "openjdk": "Java",
+    "eclipse-temurin": "Java",
+    "php": "PHP",
+}
+_IMAGE_RE = re.compile(r"^\s*image:\s*['\"]?([A-Za-z0-9._/-]+?):([\w.]+)")
+_SERVICE_ITEM_RE = re.compile(
+    r"^\s*-\s*(?:name:\s*)?['\"]?([A-Za-z0-9._/-]+)(?::([\w.-]+))?['\"]?\s*$"
+)
+
+
+def gitlab_ci_as_workflow(text: str) -> str:
+    """A .gitlab-ci.yml rewritten so the GitHub Actions readers see its commands:
+    each `script:` list becomes a `run: |` block. Everything else stays as it is."""
+    out: list[str] = []
+    script_indent: int | None = None
+    for line in text.splitlines():
+        indent = len(line) - len(line.lstrip())
+        if script_indent is not None:
+            item = re.match(r"^\s*-\s+(.*)$", line)
+            if line.strip() and indent <= script_indent:
+                script_indent = None
+            elif item:
+                out.append(" " * (script_indent + 2) + item.group(1))
+                continue
+            elif line.strip():
+                out.append(line)
+                continue
+        match = re.match(r"^(\s*)(?:before_|after_)?script:\s*(.*)$", line)
+        if match:
+            rest = match.group(2).strip()
+            out.append(f"{match.group(1)}run: {rest}" if rest else f"{match.group(1)}run: |")
+            script_indent = None if rest else indent
+            continue
+        out.append(line)
+    return "\n".join(out)
+
+
+def gitlab_ci_environment(text: str, *, source: str = ".gitlab-ci.yml") -> dict[str, Any]:
+    """Runtimes from `image:` lines (python:3.12) and service containers, in the shape
+    `ci_environment` gives for GitHub Actions."""
+    versions: dict[str, list[str]] = {}
+    services: list[dict[str, str]] = []
+    lines = text.splitlines()
+    in_services: int | None = None
+    for line in lines:
+        indent = len(line) - len(line.lstrip())
+        if in_services is not None:
+            if line.strip() and indent <= in_services:
+                in_services = None
+            else:
+                item = _SERVICE_ITEM_RE.match(line)
+                if item:
+                    name = item.group(1).rsplit("/", 1)[-1]
+                    image = item.group(1) + (f":{item.group(2)}" if item.group(2) else "")
+                    if name not in (s["name"] for s in services):
+                        services.append({"name": name, "image": image, "source": source})
+                continue
+        if re.match(r"^\s*services:\s*$", line):
+            in_services = indent
+            continue
+        image = _IMAGE_RE.match(line)
+        if image:
+            runtime = _IMAGE_RUNTIMES.get(image.group(1).rsplit("/", 1)[-1])
+            version = image.group(2).split("-", 1)[0]
+            if (
+                runtime
+                and version[:1].isdigit()
+                and version not in versions.setdefault(runtime, [])
+            ):
+                versions[runtime].append(version)
+    return {
+        "runtimes": [
+            {
+                "name": name,
+                "versions": found,
+                "most_used": found[0] if len(found) == 1 else None,
+                "source": source,
+            }
+            for name, found in versions.items()
+        ],
+        "services": services,
+        "runners": [],
+    }
+
+
+def gitlab_orientation(
+    http: CachedHttpClient, host: str, path: str, *, codetour: bool = False
+) -> dict[str, Any]:
+    """The orientation sheet `orient` gives for a GitHub repository, read from a GitLab
+    project's public API: tree, languages, 90 days of commits, merged merge requests
+    (for the work branch), the protected default branch, CONTRIBUTING and the merge
+    request template, and .gitlab-ci.yml. A worked-example merge request is left out:
+    its changed files need a sign-in.
+
+    Raises NotFoundError when `path` is not a project the host answers for.
+    """
+    base = f"https://{host}/api/v4"
+    pid = quote(path, safe="")
+    project = http.get_json(f"{base}/projects/{pid}", params={"license": "true"}, ttl=3600)
+    if not isinstance(project, dict) or not project.get("web_url"):
+        raise NotFoundError(
+            f"{host}/{path} did not answer as a GitLab project",
+            status_code=404,
+            url=f"https://{host}/{path}",
+        )
+    web_url = str(project["web_url"])
+    branch = str(project.get("default_branch") or "main")
+    full = str(project.get("path_with_namespace") or path)
+
+    def read(url: str, params: dict[str, Any] | None = None) -> Any:
+        try:
+            return http.get_json(url, params=params, ttl=3600)
+        except GigError:
+            return None
+
+    def read_text(file_path: str) -> str:
+        try:
+            return http.get_text(
+                f"{base}/projects/{pid}/repository/files/{quote(file_path, safe='')}/raw",
+                params={"ref": branch},
+                ttl=3600,
+            )
+        except GigError:
+            return ""
+
+    def tree_page(params: dict[str, Any]) -> list[dict[str, Any]]:
+        found = read(
+            f"{base}/projects/{pid}/repository/tree", {**params, "per_page": 100, "ref": branch}
+        )
+        return [e for e in (found if isinstance(found, list) else []) if isinstance(e, dict)]
+
+    top = tree_page({})
+    directories = [str(e.get("path")) for e in top if e.get("type") == "tree" and e.get("path")]
+    truncated = len(top) >= 100 or len(directories) > _TREE_DIRS
+    entries: list[dict[str, Any]] = list(top)
+    for directory in directories[:_TREE_DIRS]:
+        inside = tree_page({"path": directory, "recursive": "true"})
+        entries.extend(inside)
+        truncated = truncated or len(inside) >= 100
+    found_paths = find_paths(entries)
+    blobs = {
+        str(e.get("path")).lower(): str(e.get("path")) for e in entries if e.get("type") == "blob"
+    }
+    if not found_paths.get("codeowners") and ".gitlab/codeowners" in blobs:
+        found_paths["codeowners"] = blobs[".gitlab/codeowners"]
+    if not found_paths.get("pr_template"):
+        templates = sorted(
+            p for low, p in blobs.items() if low.startswith(".gitlab/merge_request_templates/")
+        )
+        if templates:
+            found_paths["pr_template"] = templates[0]
+    ci_path = blobs.get(".gitlab-ci.yml")
+
+    texts = {
+        key: read_text(found_paths[key])
+        for key in ("contributing", "pr_template", "pyproject", "package_json", "codeowners")
+        if found_paths.get(key)
+    }
+    ci_text = read_text(ci_path) if ci_path else ""
+    workflow_texts = {ci_path: gitlab_ci_as_workflow(ci_text)} if ci_path and ci_text else {}
+
+    langs = read(f"{base}/projects/{pid}/languages")
+    languages = (
+        [
+            {"name": name, "share": round(float(share))}
+            for name, share in sorted(langs.items(), key=lambda kv: -float(kv[1]))[:4]
+        ]
+        if isinstance(langs, dict)
+        else []
+    )
+    raw_commits = read(
+        f"{base}/projects/{pid}/repository/commits", {"since": since_iso(90), "per_page": 100}
+    )
+    commits = [
+        {
+            "commit": {
+                "message": str(c.get("message") or c.get("title") or ""),
+                "author": {"name": c.get("author_name")},
+            },
+            "author": {"login": "", "type": "User"},
+        }
+        for c in (raw_commits if isinstance(raw_commits, list) else [])
+        if isinstance(c, dict)
+    ]
+    raw_merged = read(
+        f"{base}/projects/{pid}/merge_requests",
+        {"state": "merged", "order_by": "created_at", "sort": "desc", "per_page": 30},
+    )
+    merged = [
+        {
+            "number": mr.get("iid"),
+            "merged_at": mr.get("merged_at"),
+            "base": {"ref": mr.get("target_branch")},
+            "user": {"login": (mr.get("author") or {}).get("username"), "type": "User"},
+        }
+        for mr in (raw_merged if isinstance(raw_merged, list) else [])
+        if isinstance(mr, dict) and mr.get("merged_at")
+    ]
+    merged = [mr for mr in merged if not is_bot(mr.get("user"))]
+    head = read(f"{base}/projects/{pid}/repository/branches/{quote(branch, safe='')}")
+    as_of = ((head or {}).get("commit") or {}).get("id") if isinstance(head, dict) else None
+
+    gates: list[dict[str, str]] = []
+    protected = read(f"{base}/projects/{pid}/protected_branches")
+    for rule in protected if isinstance(protected, list) else []:
+        if not isinstance(rule, dict) or rule.get("name") != branch:
+            continue
+        who = ", ".join(
+            str(level.get("access_level_description") or "")
+            for level in rule.get("push_access_levels") or []
+            if isinstance(level, dict)
+        )
+        gates.append(
+            {
+                "gate": f"Direct pushes to `{branch}` are limited to {who or 'maintainers'}: "
+                "changes go through a merge request",
+                "source": "protected branches",
+            }
+        )
+
+    points = entry_points(
+        entries, pyproject=texts.get("pyproject"), package_json=texts.get("package_json")
+    )
+    rules = conventions(
+        commits,
+        contributing=texts.get("contributing", ""),
+        pr_template=texts.get("pr_template", ""),
+        check_names=[],
+        found=found_paths,
+    )
+    rules["gates"] = gates
+    license_raw = project.get("license")
+    license_obj: dict[str, Any] = license_raw if isinstance(license_raw, dict) else {}
+    result: dict[str, Any] = {
+        "repo": f"{host}/{full}",
+        "url": web_url,
+        "description": clean_untrusted(project.get("description"), limit=300),
+        "default_branch": branch,
+        "work_branch": work_branch(merged, default=branch),
+        "as_of_commit": as_of,
+        "tree_truncated": truncated,
+        "stars": int(project.get("star_count") or 0),
+        "license": str(license_obj.get("name") or license_obj.get("key") or "") or None,
+        "pushed_days_ago": days_since(project.get("last_activity_at")),
+        "languages": languages,
+        "code_map": code_map(entries, repo_name=full.rsplit("/", 1)[-1]),
+        "entry_points": points,
+        "test_commands": ci_test_commands(workflow_texts),
+        "ci_environment": gitlab_ci_environment(ci_text)
+        if ci_text
+        else {"runtimes": [], "services": [], "runners": []},
+        "setup_hints": [f"{found_paths['makefile']} lists local targets"]
+        if found_paths.get("makefile")
+        else [],
+        "docs": {
+            "readme": found_paths.get("readme"),
+            "contributing": found_paths.get("contributing"),
+            "architecture": found_paths.get("architecture_docs") or [],
+            "governance": found_paths.get("governance"),
+            "test_dirs": found_paths.get("test_dirs") or [],
+        },
+        "maintainers": {
+            "active_committers_90d": active_committers(commits),
+            "commits_90d": len(commits),
+            "codeowners": [],
+            "codeowners_path": found_paths.get("codeowners"),
+        },
+        "conventions": rules,
+        "policies": policy_quotes(
+            {
+                str(found_paths.get("contributing") or "CONTRIBUTING"): texts.get(
+                    "contributing", ""
+                ),
+                str(found_paths.get("pr_template") or "MR template"): texts.get("pr_template", ""),
+            }
+        ),
+        "channels": channels_in(texts.get("contributing", "")),
+        "example_pr": None,
+        "reading_plan": reading_plan(found=found_paths, points=points, example_pr=None),
+        "note": (
+            "Read through GitLab's public API. Purpose labels on the code map are guesses "
+            "from directory names; everything else names a real file, commit, or check. "
+            "A worked-example merge request is not shown: its changed files need a sign-in. "
+            "File counts stop at 100 per directory. Read the files; do not rely on a summary."
+        ),
+    }
+    if codetour:
+        result["codetour"] = codetour_from_orientation(result)
+    return result

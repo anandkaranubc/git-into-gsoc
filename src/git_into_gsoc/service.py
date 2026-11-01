@@ -92,6 +92,7 @@ from git_into_gsoc.github.search import (
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
     gitlab_issue_status,
+    gitlab_orientation,
     gitlab_repo_health,
     gitlab_repo_leads,
     gitlab_target,
@@ -2517,6 +2518,9 @@ class GSoCToolkit:
 
     def orient_repo(self, full_name: str, *, codetour: bool = False) -> dict[str, Any]:
         """A one-screen orientation sheet: facts and paths only, about 20 API calls."""
+        on_gitlab = parse_gitlab_project(full_name)
+        if on_gitlab:
+            return gitlab_orientation(self.http, *on_gitlab, codetour=codetour)
         owner, repo = parse_repo(full_name)
         raw = self.github.get_repo(owner, repo)
         owner, repo = (raw.get("full_name") or f"{owner}/{repo}").split("/", 1)
