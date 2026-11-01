@@ -16,8 +16,6 @@ from typing import Any
 from git_into_gsoc.github.repos import is_bot
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 
-DEFAULT_API = "https://commits.ecosyste.ms/api/v1"
-
 
 @dataclass(frozen=True)
 class CommitStats:

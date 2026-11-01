@@ -139,7 +139,7 @@ npx skills add anandkaranubc/git-into-gsoc -g
 npx add-mcp "uvx git-into-gsoc@latest mcp" --name git-into-gsoc -g
 ```
 
-The first copies the skill; the second asks which assistants to add the server to. `-g` makes both work in every folder; without it they set up only the folder you run them in. Both need [Node.js](https://nodejs.org/). Kiro and Visual Studio also have buttons below, and the [project site](https://anandkaranubc.github.io/git-into-gsoc/) has one-click links for Goose and Raycast. Those two follow each app's documented link format; we have not tested them in the apps.
+The first copies the skill; the second asks which assistants to add the server to. `-g` makes both work in every folder; without it they set up only the folder you run them in. Both need [Node.js](https://nodejs.org/). Kiro and Visual Studio also have buttons below, and the [project site](https://gitintogsoc.me/) has one-click links for Goose and Raycast. Those two follow each app's documented link format; we have not tested them in the apps.
 
 ## One-click buttons
 
@@ -179,7 +179,7 @@ The skill goes into one shared folder, `~/.agents/skills`, plus `~/.claude/skill
 
 ## What we test
 
-`scripts/check_agents.py` installs git-into-gsoc into each assistant command it finds, the way that assistant's users would. It uses a throwaway home folder, signs in nowhere, and calls no model. Then it checks that the assistant can start the server. Before installing from a checkout, it runs each format's own validator where one exists. Buttons cannot be clicked in a script, so for those it writes exactly what the app writes after you confirm, and lets the app start the server. CI runs it on Linux on every change to the files these assistants read, and weekly with each assistant's newest release, installing from GitHub.
+CI installs git-into-gsoc into each assistant the way its users would, in a throwaway home folder with no sign-in and no model calls, and checks that the assistant can start the server. It runs on every change to the files these assistants read, and weekly with each assistant's newest release. Buttons cannot be clicked in a script, so for those it writes exactly what the app writes after you confirm. [Compatibility checks](distribution.md#compatibility-checks) describes the script.
 
 | Assistant | What is checked |
 |---|---|

@@ -289,11 +289,28 @@ def _alternation(terms: list[str]) -> str:
 
 @lru_cache(maxsize=2)
 def _pattern(free_text: bool) -> re.Pattern[str]:
-    terms: list[str] = []
+    """Every spelling as one alternation over lowercase text, grouped by first letter.
+
+    A flat case-insensitive alternation of 1,300 terms made Python's regex engine try
+    every term at every character (about 1 microsecond each): scanning the 183
+    organization descriptions was 0.14 of the 0.31 seconds of a warm `orgs` run (a
+    performance pass, 2026-11-01). Plain literals grouped by first letter let the
+    engine skip a position after one character comparison, and the caller lowercases
+    the text instead of asking for re.I. Within a group the longest spelling still
+    comes first, so each position picks the same term as before.
+    """
+    terms: set[str] = set()
     for concept in CONCEPTS.values():
         skip = {t.lower() for t in concept.tag_only} if free_text else set()
-        terms.extend(t.lower() for t in concept.terms if t.lower() not in skip)
-    return re.compile(_BOUNDARY_BEFORE + "(" + _alternation(terms) + ")" + _BOUNDARY_AFTER, re.I)
+        terms.update(t.lower() for t in concept.terms if t.lower() not in skip)
+    groups: dict[str, list[str]] = {}
+    for term in sorted(terms, key=lambda t: (-len(t), t)):
+        groups.setdefault(term[0], []).append(term[1:])
+    body = "|".join(
+        re.escape(first) + "(?:" + "|".join(map(re.escape, rest)) + ")"
+        for first, rest in sorted(groups.items())
+    )
+    return re.compile(_BOUNDARY_BEFORE + "(" + body + ")" + _BOUNDARY_AFTER)
 
 
 # A capitalised word that starts a sentence or a step as plain English: "3. Go to the
@@ -317,6 +334,12 @@ def _cased_pattern() -> tuple[re.Pattern[str], dict[str, str]] | None:
         return None
     body = _alternation(list(cased))
     return re.compile(_BOUNDARY_BEFORE + "(" + body + ")" + _BOUNDARY_AFTER), cased
+
+
+# The letters re.I read as a plain i or s that str.lower() does not, mapped one to
+# one: the Turkish capital I lowercases to two characters, which moved a word boundary
+# in a fuzz run against the old scan.
+_FOLD = str.maketrans("İıſ", "iis")
 
 
 # Umbrella subjects too broad to stand in for a specific interest: "web" covers
@@ -348,8 +371,11 @@ def find_concepts(text: str, *, free_text: bool = True) -> dict[str, int]:
         return {}
     index = _term_index(free_text)
     found: dict[str, int] = {}
-    for match in _pattern(free_text).finditer(text):
-        for key in index.get(match.group(1).lower(), ()):
+    lowered = text.lower() if text.isascii() else text.translate(_FOLD).lower()
+    for match in _pattern(free_text).finditer(lowered):
+        # The original spelling, as before: re.I accepted "rust" spelled with a long s
+        # for the match, and the lookup then found no such term and dropped it.
+        for key in index.get(text[match.start() : match.end()].lower(), ()):
             found[key] = found.get(key, 0) + 1
     if free_text:
         cased = _cased_pattern()
@@ -380,6 +406,10 @@ class Resolved:
     corrected_from: str | None = None  # set when a misspelling was read as a known term
 
 
+# Ranking resolves the same GitHub language names for every organization, and an
+# unknown one ("Makefile", "TeX") runs difflib over the whole index each time: that
+# was 27 of the benchmark's 31 seconds (a performance pass, 2026-11-01).
+@lru_cache(maxsize=4096)
 def resolve(term: str) -> Resolved:
     """Map one typed skill or interest to concepts, correcting an obvious misspelling.
 

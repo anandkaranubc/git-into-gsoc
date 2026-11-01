@@ -11,9 +11,10 @@ from __future__ import annotations
 
 import re
 import statistics
-from datetime import UTC, datetime
+from datetime import datetime
 from typing import Any
 
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.text import clean_untrusted
 
 SOURCE_EXTENSIONS = (
@@ -382,21 +383,12 @@ def rank_similar(
     return [item for _, _, item in scored[:limit]], True
 
 
-def _dt(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
-
-
 def closing_pull_request(
     issue: dict[str, Any], timeline: list[dict[str, Any]], *, repo: str
 ) -> dict[str, Any] | None:
     """The same-repo merged PR that closed the issue (merged within seconds of the close),
     else the most recent same-repo merged PR before the close as a 'likely fix'."""
-    closed_at = _dt(issue.get("closed_at"))
+    closed_at = parse_iso(issue.get("closed_at"))
     candidates: list[tuple[datetime, dict[str, Any]]] = []
     for event in timeline:
         if event.get("event") != "cross-referenced":
@@ -408,7 +400,7 @@ def closing_pull_request(
         full = str((source.get("repository") or {}).get("full_name") or "")
         if full and full.lower() != repo.lower():
             continue
-        merged_at = _dt(pr.get("merged_at"))
+        merged_at = parse_iso(pr.get("merged_at"))
         if merged_at is None or not source.get("number"):
             continue
         candidates.append(
@@ -420,7 +412,7 @@ def closing_pull_request(
                     "title": clean_untrusted(source.get("title"), limit=120),
                     "author": (source.get("user") or {}).get("login"),
                     "merged_at": merged_at.isoformat(),
-                    "opened_at": (_dt(source.get("created_at")) or merged_at).isoformat(),
+                    "opened_at": (parse_iso(source.get("created_at")) or merged_at).isoformat(),
                 },
             )
         )
@@ -463,7 +455,7 @@ def fix_norm(fixes: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 def days_between(start: str | None, end: str | None) -> int | None:
-    a, b = _dt(start), _dt(end)
+    a, b = parse_iso(start), parse_iso(end)
     if a is None or b is None:
         return None
     return max(0, round((b - a).total_seconds() / 86400))

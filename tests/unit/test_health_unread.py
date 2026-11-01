@@ -9,6 +9,7 @@ import httpx
 import pytest
 import respx
 
+from conftest import rate_limited
 from git_into_gsoc.errors import NotFoundError, RateLimitError
 from git_into_gsoc.github.client import GitHubClient
 from git_into_gsoc.models import RepoHealth
@@ -132,12 +133,6 @@ GUIDE = (
 )
 
 
-def _limited() -> httpx.Response:
-    return httpx.Response(
-        403, headers={"x-ratelimit-remaining": "0"}, json={"message": "API rate limit exceeded"}
-    )
-
-
 def _repo_health(**answers: httpx.Response) -> RepoHealth:
     """Run the whole `repo_health` read with every endpoint answered, except `answers`."""
     repo = answers.pop("repo", None) or httpx.Response(
@@ -180,7 +175,7 @@ def test_repo_health_with_every_read_answered_has_nothing_unread() -> None:
 
 @respx.mock
 def test_repo_health_leaves_out_a_rate_limited_community_profile() -> None:
-    health = _repo_health(**{"community/profile": _limited()})
+    health = _repo_health(**{"community/profile": rate_limited()})
     assert health.unread == ["community profile"]
     assert _most(health, "CONTRIBUTING guide") == _most(health, "Code of Conduct") == 0
     assert not any("No CONTRIBUTING guide" in w for w in health.warnings)
@@ -189,7 +184,7 @@ def test_repo_health_leaves_out_a_rate_limited_community_profile() -> None:
 @respx.mock
 def test_a_rate_limited_readme_leaves_out_only_the_guide() -> None:
     # The README is read last, after the pull requests, so it meets the limit most often.
-    health = _repo_health(**{"contents/README.md": _limited()})
+    health = _repo_health(**{"contents/README.md": rate_limited()})
     assert health.unread == ["README"]
     assert _most(health, "CONTRIBUTING guide") == 0
     assert _most(health, "Code of Conduct") == 4
@@ -212,7 +207,9 @@ def test_a_missing_readme_and_profile_are_answers() -> None:
 
 @respx.mock
 def test_labels_read_but_the_count_unread_leaves_out_beginner_issues() -> None:
-    health = _repo_health(issues=httpx.Response(502, json={}), **{"actions/workflows": _limited()})
+    health = _repo_health(
+        issues=httpx.Response(502, json={}), **{"actions/workflows": rate_limited()}
+    )
     assert health.unread == ["workflows", "beginner issues"]
     assert _most(health, "Open beginner issues") == 0
     assert _most(health, "GitHub Actions workflows") == 0

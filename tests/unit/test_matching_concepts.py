@@ -223,3 +223,12 @@ def test_a_cased_spelling_counts_once_and_a_shared_term_honours_each_tag_only_ru
     assert find_concepts("Written in Go") == {"go": 1}
     assert find_concepts("supports posix systems") == {"linux": 1}
     assert find_concepts("posix", free_text=False) == {"linux": 1, "operating systems": 1}
+
+
+def test_free_text_scan_reads_letters_like_the_case_insensitive_regex_did() -> None:
+    # The scan lowercases the text itself (see concepts._pattern); these are the letters
+    # where that differs from re.I, checked against the old scan with a fuzz run.
+    assert find_concepts("Written in PYTHON and Kotlin") == {"python": 1, "kotlin": 1}
+    assert find_concepts("\u212aotlin") == {"kotlin": 1}  # a Kelvin sign for K
+    assert find_concepts("ru\u017ft and \u0130OS") == {}  # a long s, a Turkish capital I
+    assert "c" not in find_concepts("\u0130C")  # still one word, not the C language

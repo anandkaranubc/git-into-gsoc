@@ -4,11 +4,11 @@ templates, index pages, Google Docs, and the sentences that state an AI policy."
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from pathlib import Path
 
 import httpx
 import respx
 
+from conftest import read_fixture
 from git_into_gsoc.gsoc.project_ideas import (
     ai_policy_sentences,
     extract_ideas,
@@ -21,11 +21,9 @@ from git_into_gsoc.gsoc.project_ideas import (
     to_lines,
 )
 
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "ideas"
-
 
 def _read(name: str) -> str:
-    return (FIXTURES / name).read_text(encoding="utf-8")
+    return read_fixture(f"ideas/{name}")
 
 
 def test_wiki_headings_style_extracts_fields() -> None:

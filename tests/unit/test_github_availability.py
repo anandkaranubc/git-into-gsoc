@@ -189,6 +189,13 @@ def test_mentions_match_logins_in_any_case() -> None:
     assert released.claims == []
 
 
+def test_project_bots_without_the_suffix_are_not_claimants() -> None:
+    """sympy-bot and k8s-ci-robot are plain user accounts to the API; the repo health
+    rule already knew them, the claim scan had its own narrower check."""
+    timeline = [_comment("k8s-ci-robot", "I'll take this one", 1)]
+    assert assess_issue(_issue(), timeline, now=NOW).claims == []
+
+
 def test_stale_without_maintainers() -> None:
     result = assess_issue(_issue(updated_at=_iso(500)), [], now=NOW)
     assert result.availability == Availability.STALE
