@@ -1629,12 +1629,14 @@ def profile_cmd(
 
 @app.command("pointers", rich_help_panel="Pick a repository and an issue")
 def pointers_cmd(
-    ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
+    ref: str = typer.Argument(
+        ..., help="owner/repo#123, an issue URL on GitHub or a GitLab host, or owner/repo"
+    ),
     number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
     similar: int = typer.Option(
         5, "--similar", min=1, help="How many similar closed issues to learn from"
     ),
-    no_search: bool = typer.Option(False, "--no-search", help="Skip GitHub code search"),
+    no_search: bool = typer.Option(False, "--no-search", help="Skip code search"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Where to start reading for an issue: files it names, past fixes of similar issues."""
@@ -1671,8 +1673,11 @@ def pointers_cmd(
         console.print(
             "[yellow]The issue text names no file this tool could match in the tree.[/yellow]"
         )
+    # A GitLab issue's repo starts with its host; its fixes are merge requests.
+    host = issue.get("host")  # set for a GitLab issue; absent for GitHub
+    on_gitlab = bool(host)
     if data["search_links"]:
-        console.print("\n[bold]Search these on GitHub[/bold]")
+        console.print(f"\n[bold]Search these on {host if on_gitlab else 'GitHub'}[/bold]")
         for link in data["search_links"]:
             console.print(f"  {escape(link['identifier'])}: {link['url']}")
     if data["code_search_note"]:
@@ -1681,7 +1686,7 @@ def pointers_cmd(
         kind = "similar" if data.get("similar_shares_title_words") else "recent"
         table = Table(title=f"How {kind} '{data['similar_label']}' issues were fixed here")
         table.add_column("Issue", overflow="fold")
-        table.add_column("Fix PR")
+        table.add_column("Fix MR" if on_gitlab else "Fix PR")
         table.add_column("Files", justify="right")
         table.add_column("Days")
         table.add_column("Touched", overflow="fold")
@@ -1689,7 +1694,7 @@ def pointers_cmd(
             pr = fix["pull_request"]
             table.add_row(
                 f"#{fix['issue']['number']} {escape(fix['issue']['title'][:50])}",
-                f"#{pr['number']} ({pr['confidence']})",
+                f"{'!' if on_gitlab else '#'}{pr['number']} ({pr['confidence']})",
                 str(len(fix["files"])),
                 str(fix["days_to_merge"] if fix["days_to_merge"] is not None else ""),
                 ", ".join(escape(p) for p in fix["files"][:4]),

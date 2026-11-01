@@ -65,7 +65,8 @@ def test_a_gitlab_link_says_what_to_do_instead() -> None:
 
     with pytest.raises(InputError) as caught:
         parse_repo("https://gitlab.com/inkscape/inkscape")
-    assert caught.value.hint and "GitHub only" in caught.value.hint
+    # A project link on a GitLab host is accepted by repo and orient; the hint says so.
+    assert caught.value.hint and "link on a GitLab host" in caught.value.hint
 
 
 def _refused() -> str:

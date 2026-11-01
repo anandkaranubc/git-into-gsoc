@@ -92,6 +92,7 @@ from git_into_gsoc.github.search import (
 )
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
+    gitlab_issue_pointers,
     gitlab_issue_status,
     gitlab_orientation,
     gitlab_repo_health,
@@ -1255,9 +1256,10 @@ class GSoCToolkit:
                 "are not read there."
             ),
             "next_step": (
-                f"Pick a project that holds code, such as {first.full_name}, then run "
-                f'git-into-gsoc issues --org "{gsoc_org.name}" for a free beginner issue '
-                "(repo and orient do not read GitLab yet)."
+                f"Pick a project that holds code, such as {first.full_name}: "
+                f"git-into-gsoc repo {first.url} grades it, git-into-gsoc orient {first.url} "
+                f'shows its layout, and git-into-gsoc issues --org "{gsoc_org.name}" finds a '
+                "free beginner issue."
                 if first
                 else f'Start from its ideas: git-into-gsoc ideas "{gsoc_org.name}".'
             ),
@@ -2706,6 +2708,16 @@ class GSoCToolkit:
         code_search: bool = True,
     ) -> dict[str, Any]:
         """Where to start reading for one issue: resolved paths, past fixes, fix norms."""
+        on_gitlab = parse_gitlab_issue(ref) if number is None else None
+        if on_gitlab:
+            return gitlab_issue_pointers(
+                self.http,
+                *on_gitlab,
+                similar=similar,
+                code_search=code_search,
+                token=self.settings.gitlab_token,
+                token_host=self.settings.gitlab_host,
+            )
         owner, repo, num = parse_issue_ref(ref, number)
         full = f"{owner}/{repo}"
         issue = self.github.get_issue(owner, repo, num)
