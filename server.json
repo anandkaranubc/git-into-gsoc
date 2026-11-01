@@ -7,17 +7,17 @@
     "url": "https://github.com/anandkaranubc/git-into-gsoc",
     "source": "github"
   },
-  "websiteUrl": "https://anandkaranubc.github.io/git-into-gsoc/",
+  "websiteUrl": "https://gitintogsoc.me/",
   "icons": [
     {
-      "src": "https://anandkaranubc.github.io/git-into-gsoc/brand/logo/mark-tile-512.png",
+      "src": "https://gitintogsoc.me/brand/logo/mark-tile-512.png",
       "mimeType": "image/png",
       "sizes": [
         "512x512"
       ]
     },
     {
-      "src": "https://anandkaranubc.github.io/git-into-gsoc/brand/logo/mark-tile.svg",
+      "src": "https://gitintogsoc.me/brand/logo/mark-tile.svg",
       "mimeType": "image/svg+xml",
       "sizes": [
         "any"

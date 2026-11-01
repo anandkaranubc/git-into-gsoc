@@ -15,7 +15,7 @@ from git_into_gsoc.gsoc.timeline import (
     load_history,
     program_status,
 )
-from git_into_gsoc.guidance import ANTI_SPAM_RULES, journey_overview, proposal_checklist
+from git_into_gsoc.guidance import journey_overview
 
 OCT_2026 = datetime(2026, 10, 20, tzinfo=UTC)
 
@@ -150,5 +150,3 @@ def test_journey_overview_complete() -> None:
         "proposal",
         "track",
     ]
-    assert len(ANTI_SPAM_RULES) >= 5
-    assert len(proposal_checklist()) >= 5

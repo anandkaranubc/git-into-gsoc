@@ -6,18 +6,13 @@ import httpx
 import pytest
 import respx
 
+from conftest import rate_limited
 from git_into_gsoc.drafts import render_draft
 from git_into_gsoc.github.client import GitHubClient
 
 API = "https://api.github.com/repos/acme/lib"
-CONTRIBUTING = {"html_url": "https://github.com/acme/lib/blob/main/CONTRIBUTING.md"}
 README = {"html_url": "https://github.com/acme/lib/blob/main/README.md"}
-
-
-def _limited() -> httpx.Response:
-    return httpx.Response(
-        403, headers={"x-ratelimit-remaining": "0"}, json={"message": "API rate limit exceeded"}
-    )
+CONTRIBUTING = {"html_url": "https://github.com/acme/lib/blob/main/CONTRIBUTING.md"}
 
 
 def _mock(**answers: httpx.Response) -> None:
@@ -44,7 +39,7 @@ def test_a_guide_that_was_read_has_nothing_unread() -> None:
 
 @respx.mock
 def test_a_rate_limited_profile_is_unread_not_no_guide() -> None:
-    _mock(**{"community/profile": _limited()})
+    _mock(**{"community/profile": rate_limited()})
     guide = GitHubClient().contribution_guide("acme/lib")
     assert guide.unread == ["community profile"]
     assert any("GitHub did not answer for its community profile" in h for h in guide.setup_hints)
@@ -53,7 +48,7 @@ def test_a_rate_limited_profile_is_unread_not_no_guide() -> None:
 
 @respx.mock
 def test_a_rate_limited_contributing_file_is_unread() -> None:
-    _mock(**{"contents/CONTRIBUTING.md": _limited()})
+    _mock(**{"contents/CONTRIBUTING.md": rate_limited()})
     guide = GitHubClient().contribution_guide("acme/lib")
     assert guide.unread == ["contributing guide"]
     assert guide.contributing_url == CONTRIBUTING["html_url"]
@@ -64,7 +59,7 @@ def test_a_rate_limited_readme_is_unread_when_there_is_no_contributing_file() ->
     _mock(
         **{
             "community/profile": httpx.Response(200, json={"files": {"readme": README}}),
-            "contents/README.md": _limited(),
+            "contents/README.md": rate_limited(),
         }
     )
     guide = GitHubClient().contribution_guide("acme/lib")

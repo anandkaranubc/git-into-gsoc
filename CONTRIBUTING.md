@@ -92,7 +92,7 @@ If `./install.sh` was used earlier, the same `.venv` is reused.
 
 ## After you open a pull request
 
-- CI runs lint, type checks, and the dependency audit, then the tests on Python 3.11, 3.13, and 3.14 on Linux and on Python 3.12 on macOS and Windows, then both installers. All checks must pass before merging.
+- CI runs lint, type checks, and the dependency audit, then the tests on several Python versions on Linux, macOS, and Windows (the matrix is in `.github/workflows/ci.yml`), then both installers. All checks must pass before merging.
 - A maintainer reviews the change. Reviews are conversations: ask questions, push follow-up commits to the same branch, and resolve each thread once it is addressed.
 - Pull requests are squash-merged: your commits become one commit on `main`, with the PR title as its message, so keep the title in Conventional Commits form. Your branch is deleted after merging.
 - [Release Please](https://github.com/googleapis/release-please) opens a release pull request when `main` has new `feat` or `fix` commits. Merging it tags a release and updates `CHANGELOG.md`. Nobody edits version numbers by hand. [Releasing](docs/releasing.md) has the details.
