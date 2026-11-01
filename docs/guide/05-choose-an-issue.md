@@ -33,7 +33,7 @@ Expect a grade from A to F, the evidence behind it, and setup hints. The signals
 
 ### What the grade means
 
-Each signal adds points, and the points add up to 100: A from 85, B from 72, C from 58, D from 45, and F below that. Two rules can hold a grade down whatever the total: the outside merge rate limits above, and a year without a push (a D at best). An archived repository is an F. Under the checks, "Where it lost points" names each signal that earned less than its most, and why. The last line names the command to run next: `orient` and `issues --repo` for an A or a B, `repos` to compare other repositories for anything lower. The advice follows the grade: "Strong candidate" for an A, "Promising, with caveats" for a B, "Risky" for a C or a D, and "Poor fit" for an F. [Sources and limitations](../sources.md#how-the-repository-grade-is-worked-out) has the point table.
+Each signal adds points, and the points add up to 100; the grade, the advice under it, and the command to run next all follow the score. Under the checks, "Where it lost points" names each signal that earned less than its most, and why. [Sources and limitations](../sources.md#how-the-repository-grade-is-worked-out) has the point table, the grade boundaries, and the two rules that can hold a grade down.
 
 "Getting set up" lists the toolchain files found in the repository root, whether a dev container exists (one click in Codespaces or VS Code gets you a working environment), the CONTRIBUTING link, and the chat channels it mentions. Read the README and CONTRIBUTING on GitHub before writing code. A high grade does not guarantee mentoring, and a missing file can mean the guide lives elsewhere. If the repository is archived, look for the project's current repository before continuing.
 
