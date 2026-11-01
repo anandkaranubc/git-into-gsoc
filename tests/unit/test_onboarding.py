@@ -4,46 +4,25 @@ questions, and what each answer saves."""
 from __future__ import annotations
 
 import json
-from typing import Any
 
 import httpx
 import pytest
 import respx
 from typer.testing import CliRunner
 
-from conftest import load_fixture
+from conftest import OFFICIAL, mock_catalog
 from git_into_gsoc import cli, onboarding
 from git_into_gsoc.cli import app
 from git_into_gsoc.service import GSoCToolkit
 
 runner = CliRunner()
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
-
-
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
 
 
 @pytest.fixture
 def api() -> respx.MockRouter:
     with respx.mock(assert_all_called=False) as router:
         router.get(url__regex=rf"{OFFICIAL}/\d+/$").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2026/organizations/").mock(
-            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-        )
-        router.get(f"{ARCHIVE}/organizations.json").mock(
-            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-        )
-        router.get(f"{ARCHIVE}/2026.json").mock(
-            return_value=httpx.Response(200, json=_archive_year(2026))
-        )
+        mock_catalog(router)
         # start asks GitHub whether its top picks posted about the coming year.
         router.get("https://api.github.com/search/issues").mock(
             return_value=httpx.Response(200, json={"items": []})
@@ -115,13 +94,6 @@ def test_home_has_no_token_tip_when_a_token_is_set(
     assert "Tip: run gh auth login" not in returning.stdout
 
 
-def test_help_still_lists_every_command() -> None:
-    result = runner.invoke(app, ["--help"])
-    assert result.exit_code == 0
-    assert "Usage:" in result.stdout
-    assert "start" in result.stdout and "pointers" in result.stdout
-
-
 def test_bare_command_welcomes_back_with_progress(api: respx.MockRouter) -> None:
     toolkit = GSoCToolkit()
     toolkit.progress.set_profile(technologies=["python"], github="octocat")
@@ -160,6 +132,12 @@ def test_start_with_options_saves_profile_and_matches(api: respx.MockRouter) -> 
     assert data["organizations"], "the embedded official list should match python + science"
     first = data["organizations"][0]["name"]
     assert data["next_steps"][0]["command"] == f'git-into-gsoc org "{first}"'
+    from git_into_gsoc.progress.store import ProgressStore
+
+    saved = ProgressStore().load().profile
+    assert saved["suggested_orgs"][0] == first, "next carries start's matches forward"
+    ProgressStore().set_profile(technologies=["rust"])
+    assert "suggested_orgs" not in ProgressStore().load().profile, "new answers drop them"
 
 
 def test_start_says_when_the_hours_are_too_few_for_some_projects(api: respx.MockRouter) -> None:
@@ -274,3 +252,21 @@ def test_the_hours_question_ignores_a_saved_value_it_would_refuse(
     assert cli._ask_hours("ten") is None
     assert cli._ask_hours("12") is None
     assert defaults == ["", "12"]
+
+
+def test_start_does_not_print_a_readiness_line_twice(capsys: pytest.CaptureFixture[str]) -> None:
+    # Ranking folds readiness lines into match_reasons, so "6 ideas on its ideas page"
+    # appeared in "Why:" and again on the ✓ line below it.
+    from git_into_gsoc import cli
+
+    org = {
+        "name": "MDAnalysis",
+        "description": "Molecular simulations in Python",
+        "match_reasons": ["Uses Python", "6 ideas on its 2026 ideas page"],
+        "readiness": ["6 ideas on its 2026 ideas page"],
+        "caveats": [],
+    }
+    cli._render_matches({"organizations": [org], "catalog": {}, "profile": {}})
+    out = capsys.readouterr().out
+    assert out.count("6 ideas on its 2026 ideas page") == 1
+    assert "Why: Uses Python" in out

@@ -10,38 +10,18 @@ import pytest
 import respx
 from typer.testing import CliRunner
 
-from conftest import load_fixture
+from conftest import mock_catalog
 from git_into_gsoc.cli import app
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.service import GSoCToolkit
 
 runner = CliRunner()
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
-
-
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
 
 
 @pytest.fixture
 def api() -> respx.MockRouter:
     with respx.mock(assert_all_called=False) as router:
-        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2026/organizations/").mock(
-            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-        )
-        router.get(f"{ARCHIVE}/organizations.json").mock(
-            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-        )
-        router.get(f"{ARCHIVE}/2026.json").mock(
-            return_value=httpx.Response(200, json=_archive_year(2026))
-        )
+        mock_catalog(router)
         router.get("https://api.github.com/search/issues").mock(
             return_value=httpx.Response(200, json={"items": []})
         )

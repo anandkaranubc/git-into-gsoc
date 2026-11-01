@@ -11,14 +11,12 @@ import pytest
 import respx
 from typer.testing import CliRunner
 
-from conftest import load_fixture
+from conftest import ARCHIVE, OFFICIAL, load_fixture
 from git_into_gsoc import __main__ as entry
 from git_into_gsoc.cli import app
 from git_into_gsoc.gsoc import snapshot
 
 runner = CliRunner()
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
 
 
 def test_python_m_dispatches_to_the_cli(monkeypatch: pytest.MonkeyPatch, capsys) -> None:  # type: ignore[no-untyped-def]

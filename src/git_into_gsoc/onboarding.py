@@ -190,6 +190,8 @@ def first_run(
             if (org.get("participation") or {}).get("status") == "not_taking_part"
         ]
         catalog = matched["catalog"]
+        # So `next` can carry these names forward until something is shortlisted.
+        toolkit.progress.set_profile(suggested_orgs=[org["name"] for org in organizations])
     shortlisted = toolkit.progress.load().shortlisted_orgs
     return {
         "profile": profile,
