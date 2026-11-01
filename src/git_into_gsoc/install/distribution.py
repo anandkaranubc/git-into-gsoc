@@ -26,7 +26,7 @@ from urllib.parse import quote, urlencode
 
 REPO = "anandkaranubc/git-into-gsoc"
 REPO_URL = f"https://github.com/{REPO}"
-SITE_URL = "https://anandkaranubc.github.io/git-into-gsoc/"
+SITE_URL = "https://gitintogsoc.me/"
 SERVER_NAME = "git-into-gsoc"
 REGISTRY_NAME = "io.github.anandkaranubc/git-into-gsoc"
 PYPI_PACKAGE = "git-into-gsoc"

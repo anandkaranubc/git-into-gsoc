@@ -10,29 +10,18 @@ import httpx
 import pytest
 import respx
 
-from conftest import load_fixture
+from conftest import OFFICIAL, mock_catalog
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.service import GSoCToolkit
 
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
 GH = "https://api.github.com"
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
 
 
 def _iso(days_ago: int) -> str:
     return (NOW - timedelta(days=days_ago)).isoformat().replace("+00:00", "Z")
-
-
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
 
 
 def _search_item(number: int, repo: str, days_ago: int = 2) -> dict[str, Any]:
@@ -56,16 +45,7 @@ def _search_item(number: int, repo: str, days_ago: int = 2) -> dict[str, Any]:
 def api() -> respx.MockRouter:
     with respx.mock(assert_all_called=False) as router:
         router.get(f"{OFFICIAL}/2027/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2026/organizations/").mock(
-            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-        )
-        router.get(f"{ARCHIVE}/organizations.json").mock(
-            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-        )
-        router.get(f"{ARCHIVE}/2026.json").mock(
-            return_value=httpx.Response(200, json=_archive_year(2026))
-        )
+        mock_catalog(router)
         # Shortlisted orgs' repositories, read for a wiki statement about GSoC.
         router.get(url__regex=r"https://api\.github\.com/orgs/[^/]+/repos").mock(
             return_value=httpx.Response(200, json=[])
@@ -91,7 +71,7 @@ def test_next_rechecks_tracked_issues_and_reports_changes(api: respx.MockRouter)
     store.shortlist_org("SymPy")
     store.track_repo("sympy/sympy")
     store.track_issue("https://github.com/sympy/sympy/issues/5")
-    store.set_issue_status("sympy/sympy#5", "available")
+    store.mark_checked({"sympy/sympy#5": "available"}, None)
     store.complete_phase(JourneyPhase.LEARN)
 
     api.get(f"{GH}/repos/sympy/sympy/issues/5").mock(
@@ -422,3 +402,22 @@ def test_the_repository_step_says_what_to_do_when_repos_points_to_ideas() -> Non
     actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
     pick = next(a for a in actions if a["title"].startswith("Pick the repository"))
     assert 'git-into-gsoc ideas "UC OSPO"' in pick["why"]
+
+
+def test_next_after_start_names_the_organizations_start_matched() -> None:
+    from git_into_gsoc.coach import plan_actions
+    from git_into_gsoc.models import ProgressState
+
+    # A fresh run (2026-11-01): `start` showed MDAnalysis, Open Science Labs and OSGeo,
+    # then `next` said "Shortlist 3 organizations" with a comment-style template.
+    state = ProgressState(
+        profile={"technologies": ["python"], "suggested_orgs": ["MDAnalysis", "OSGeo"]}
+    )
+    actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
+    shortlist = next(a for a in actions if a["title"].startswith("Shortlist"))
+    assert "MDAnalysis, OSGeo" in shortlist["title"]
+    assert shortlist["command"] == 'git-into-gsoc org "MDAnalysis" --shortlist'
+    # Once something is shortlisted the suggestion is no longer the next step.
+    state.shortlisted_orgs = ["MDAnalysis"]
+    actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
+    assert not any(a["title"].startswith("Shortlist") for a in actions)

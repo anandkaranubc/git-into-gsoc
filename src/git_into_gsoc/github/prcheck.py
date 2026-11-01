@@ -12,13 +12,12 @@ alone, without a clone.
 from __future__ import annotations
 
 import re
-from dataclasses import asdict, dataclass
-from typing import Any, Literal
+from dataclasses import asdict
+from typing import Any
 
 from git_into_gsoc.github.orientation import CONVENTIONAL_RE
 from git_into_gsoc.github.pulls import FAILED_CONCLUSIONS
-
-Status = Literal["pass", "warn", "fail"]
+from git_into_gsoc.proposal import Finding
 
 # Research behind the size check: first patches that land are small (Turzo,
 # Sultana and Bosu 2025). These are gentle limits, not rules.
@@ -48,14 +47,6 @@ _DOC_PATH_RE = re.compile(
     re.I,
 )
 _CHANGELOG_PATH_RE = re.compile(r"(?:^|/)(?:changelog|changes|news|history|whats_?new)", re.I)
-
-
-@dataclass
-class Finding:
-    id: str
-    status: Status
-    title: str
-    detail: str
 
 
 def _is_code(path: str) -> bool:
