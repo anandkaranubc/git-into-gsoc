@@ -91,7 +91,7 @@ def test_next_rechecks_tracked_issues_and_reports_changes(api: respx.MockRouter)
     store.shortlist_org("SymPy")
     store.track_repo("sympy/sympy")
     store.track_issue("https://github.com/sympy/sympy/issues/5")
-    store.set_issue_status("sympy/sympy#5", "available")
+    store.mark_checked({"sympy/sympy#5": "available"}, None)
     store.complete_phase(JourneyPhase.LEARN)
 
     api.get(f"{GH}/repos/sympy/sympy/issues/5").mock(
@@ -422,3 +422,22 @@ def test_the_repository_step_says_what_to_do_when_repos_points_to_ideas() -> Non
     actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
     pick = next(a for a in actions if a["title"].startswith("Pick the repository"))
     assert 'git-into-gsoc ideas "UC OSPO"' in pick["why"]
+
+
+def test_next_after_start_names_the_organizations_start_matched() -> None:
+    from git_into_gsoc.coach import plan_actions
+    from git_into_gsoc.models import ProgressState
+
+    # A fresh run (2026-11-01): `start` showed MDAnalysis, Open Science Labs and OSGeo,
+    # then `next` said "Shortlist 3 organizations" with a comment-style template.
+    state = ProgressState(
+        profile={"technologies": ["python"], "suggested_orgs": ["MDAnalysis", "OSGeo"]}
+    )
+    actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
+    shortlist = next(a for a in actions if a["title"].startswith("Shortlist"))
+    assert "MDAnalysis, OSGeo" in shortlist["title"]
+    assert shortlist["command"] == 'git-into-gsoc org "MDAnalysis" --shortlist'
+    # Once something is shortlisted the suggestion is no longer the next step.
+    state.shortlisted_orgs = ["MDAnalysis"]
+    actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
+    assert not any(a["title"].startswith("Shortlist") for a in actions)
