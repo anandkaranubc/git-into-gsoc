@@ -43,13 +43,13 @@ Put these in `.env` or export them in the process environment. Environment varia
 
 `doctor` prints the exact paths for your operating system:
 
-- **Cache:** API responses in an `http` subfolder. Fresh entries are served without a request. Stale entries are revalidated with the server; a "not modified" reply refreshes them without counting against your GitHub quota. If the network fails or you are rate limited, a stale entry up to a week old is served instead of an error. Once a day, entries not refreshed in 30 days are deleted, and the oldest go first when the cache passes 500 MiB. `git-into-gsoc cache` shows the size and the limits, `cache --prune` applies them now, and `cache --clear` deletes everything.
+- **Cache:** API responses in an `http` subfolder. Fresh entries are served without a request. Stale entries are revalidated with the server; a "not modified" reply refreshes them without counting against your GitHub quota. If the network fails, the server is down, or you are rate limited, a stale entry up to a week old is served instead of an error. A clear answer such as "not found" or "gone" is shown as it is. Once a day, entries not refreshed in 30 days are deleted, and the oldest go first when the cache passes 500 MiB. `git-into-gsoc cache` shows the size and the limits, `cache --prune` applies them now, and `cache --clear` deletes everything.
 - **Data:** `progress.json`, created when you save a phase, shortlist, tracked link, note, or inferred GitHub profile.
 
 Nothing in these folders is uploaded, and progress does not sync to another computer. [Privacy](privacy.md) lists every service the tool reads from and what your AI assistant sees. Avoid storing secrets in progress notes.
 
 To back up progress, copy `progress.json` somewhere you control. To correct entries, stop any assistant connection using the tool, back up the file, and edit the JSON carefully. A time without a timezone is read as UTC, and fields the tool does not know are kept. To start over, rename the file; the next save creates a new one.
 
-Most GitHub responses stay fresh for an hour, but issue checks refresh after 5 minutes and official program dates after 6 hours. `GIG_CACHE_TTL_SECONDS` changes only the one-hour default, so for a guaranteed fresh look run `git-into-gsoc cache --clear` first.
+`GIG_CACHE_TTL_SECONDS` changes only the one-hour default for GitHub responses; [caching](sources.md#caching) lists how long each kind of data stays fresh. For a guaranteed fresh look, run `git-into-gsoc cache --clear` first.
 
 [Guide contents](README.md) · [Troubleshooting](troubleshooting.md)

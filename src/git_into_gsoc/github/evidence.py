@@ -10,19 +10,9 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.models import ContributionItem
 from git_into_gsoc.text import clean_untrusted
-
-STRENGTH_ORDER = ("none", "starting", "developing", "strong")
-
-
-def _dt(value: str | None) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
 
 
 def _repo_of(item: dict[str, Any]) -> str:
@@ -52,8 +42,8 @@ def to_item(item: dict[str, Any], kind: str) -> ContributionItem | None:
         url=str(item.get("html_url") or ""),
         state=_state(item),
         author=(item.get("user") or {}).get("login"),
-        created_at=_dt(item.get("created_at")),
-        closed_at=_dt(item.get("closed_at")),
+        created_at=parse_iso(item.get("created_at")),
+        closed_at=parse_iso(item.get("closed_at")),
         comments=int(item.get("comments") or 0),
         labels=[str(lab.get("name")) for lab in item.get("labels") or [] if isinstance(lab, dict)],
     )
