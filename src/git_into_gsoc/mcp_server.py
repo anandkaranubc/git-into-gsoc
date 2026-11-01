@@ -303,7 +303,9 @@ def gsoc_evaluate_repo(full_name: str) -> str:
     `points` gives what each signal earned out of its most, and `capped_by` the rule that
     held the score down, so you can say where a grade came from. `notes` earn nothing.
 
-    full_name: owner/repo or a GitHub URL (e.g. sympy/sympy)
+    full_name: owner/repo or a GitHub URL (e.g. sympy/sympy), or a project link on a GitLab
+    host (https://gitlab.gnome.org/GNOME/gitg): graded from GitLab's public API, with
+    members and mergers as insiders and no first-reply times.
     """
     return _dump(toolkit().evaluate_repo(full_name))
 

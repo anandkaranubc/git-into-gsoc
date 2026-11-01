@@ -93,9 +93,11 @@ from git_into_gsoc.github.search import (
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
     gitlab_issue_status,
+    gitlab_repo_health,
     gitlab_repo_leads,
     gitlab_target,
     parse_gitlab_issue,
+    parse_gitlab_project,
     search_gitlab_issues,
 )
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
@@ -795,6 +797,9 @@ class GSoCToolkit:
         the grade. A read-only mirror, a person's fork, and a repository that takes no
         pull requests are not graded: their GitHub history says nothing about the
         project."""
+        on_gitlab = parse_gitlab_project(full_name)
+        if on_gitlab:
+            return self._evaluate_gitlab_project(*on_gitlab)
         owner, name = parse_repo(full_name)
         raw = self.github.get_repo(owner, name)
         source = mirror_source(raw)
@@ -853,6 +858,36 @@ class GSoCToolkit:
             "recommendation": recommendation,
             "next_step": _repo_next_step(health.full_name, health.grade),
             **({"fork_of": parent} if parent else {}),
+        }
+
+    def _evaluate_gitlab_project(self, host: str, path: str) -> dict[str, Any]:
+        """`repo` for a project link on a GitLab host (GNOME's gitg, QEMU), graded from
+        GitLab's public API. The next step names the GSoC organization whose code link
+        covers the project, so `issues --org` can follow."""
+        health, guide = gitlab_repo_health(self.http, host, path)
+        covering = [
+            (len(target[1]), org)
+            for org in self.gsoc.snapshot_organizations()
+            if (target := gitlab_target(org.source_code))
+            and target[0] == host
+            and f"{path.lower()}/".startswith(f"{target[1].lower().rstrip('/')}/")
+        ]
+        # GIMP's own listing (GNOME/gimp) wins over GNOME's whole group (GNOME).
+        org = max(covering, key=lambda pair: pair[0])[1] if covering else None
+        next_step = (
+            f'git-into-gsoc issues --org "{org.name}" for a free beginner issue, then '
+            "git-into-gsoc issue URL before you comment."
+            if org
+            else f"Find a beginner issue at {health.url}/-/issues and check it with "
+            "git-into-gsoc issue URL before you comment."
+        )
+        return {
+            "health": health.model_dump(mode="json"),
+            "contribution_guide": guide.model_dump(),
+            "recommendation": _repo_recommendation(health.grade, health.warnings),
+            "next_step": next_step,
+            # --track saves this: "gitlab.gnome.org/GNOME/gitg" would read as a GitHub name.
+            "track_as": health.url,
         }
 
     def gsoc_github_orgs(
