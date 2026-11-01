@@ -22,16 +22,26 @@ from git_into_gsoc.github.availability import (
     assess_issue,
     is_not_open_label,
 )
-from git_into_gsoc.github.repos import mentioned_repos, repo_lead_score
+from git_into_gsoc.github.repos import (
+    channels_in,
+    detect_toolchain,
+    mentioned_repos,
+    pull_stats,
+    readme_contributing_section,
+    repo_lead_score,
+)
 from git_into_gsoc.http_client import CachedHttpClient
 from git_into_gsoc.matching.profile import ContributorProfile
 from git_into_gsoc.models import (
     Availability,
+    ContributionGuide,
     IssueAssessment,
     IssueCandidate,
     LinkedPullRequest,
+    RepoHealth,
     RepoLead,
 )
+from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.text import clean_untrusted
 
@@ -532,3 +542,259 @@ def gitlab_repo_leads(
         rescored.append(lead(by_name[candidate.full_name], main))
     rescored.sort(key=lambda x: (-x.score, -x.stars))
     return rescored[:limit]
+
+
+_PROJECT_URL = re.compile(
+    r"^(?:https?://)?([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+[\w.-]+?)/?(?:/-/.*)?$"
+)
+
+
+def parse_gitlab_project(ref: str) -> tuple[str, str] | None:
+    """(host, project path) for a project link on a host other than GitHub, else None.
+
+    "sympy/sympy" has no host and stays a GitHub name; "gitlab.gnome.org/GNOME/gitg"
+    works with or without "https://" and with a "/-/issues" tail from the address bar.
+    """
+    # "-" fits the path class, so the "/-/issues/494" tail is cut before matching.
+    match = _PROJECT_URL.match((ref or "").strip().split("/-/", 1)[0])
+    if not match:
+        return None
+    host = match.group(1).lower().removeprefix("www.")
+    path = match.group(2).strip("/").removesuffix(".git")
+    if host == "github.com" or "/" not in path:
+        return None
+    return host, path
+
+
+def _gitlab_project(http: CachedHttpClient, host: str, path: str, **params: Any) -> dict[str, Any]:
+    """The project record, or NotFoundError with a hint: a project link is tried as GitLab
+    for every host, so codeberg.org used to end in a bare "HTTP 404"."""
+    try:
+        project = http.get_json(
+            f"https://{host}/api/v4/projects/{quote(path, safe='')}",
+            params=params or None,
+            ttl=3600,
+        )
+    except GigError as exc:
+        project = None if isinstance(exc, NotFoundError) else exc
+    if not isinstance(project, dict) or not project.get("web_url"):
+        raise NotFoundError(
+            f"{host}/{path} did not answer as a GitLab project",
+            hint="This command reads GitHub, and projects on GitLab hosts (gitlab.com, "
+            "gitlab.gnome.org, invent.kde.org). For code on another server, read its "
+            "contributing guide there.",
+            status_code=404,
+            url=f"https://{host}/{path}",
+        )
+    return project
+
+
+def gitlab_repo_health(
+    http: CachedHttpClient, host: str, path: str
+) -> tuple[RepoHealth, ContributionGuide]:
+    """The same grade `repo` gives a GitHub repository, from a GitLab project's public
+    API: its merge requests (members count as insiders), the files in its tree, its
+    license and languages, and open issues under a common beginner label. The time to
+    a first reply is not read (one request per merge request), so merge times stand
+    in for it, as they do on GitHub without comments.
+
+    Raises NotFoundError when `path` is not a project the host answers for.
+    """
+    base = f"https://{host}/api/v4"
+    pid = quote(path, safe="")
+    project = _gitlab_project(http, host, path, license="true")
+    web_url = str(project["web_url"])
+    branch = str(project.get("default_branch") or "main")
+    full = str(project.get("path_with_namespace") or path)
+    unread: list[str] = []
+
+    def read(url: str, *, what: str, params: dict[str, Any] | None = None) -> Any:
+        """None for a 404 (an answer) and for a failed read, which is also noted."""
+        try:
+            return http.get_json(url, params=params, ttl=3600)
+        except NotFoundError:
+            return None
+        except GigError:
+            unread.append(what)
+            return None
+
+    def read_text(url: str, *, what: str) -> str:
+        try:
+            return http.get_text(url, params={"ref": branch}, ttl=3600)
+        except NotFoundError:
+            return ""
+        except GigError:
+            unread.append(what)
+            return ""
+
+    tree = read(
+        f"{base}/projects/{pid}/repository/tree",
+        what="file listing",
+        params={"per_page": 100, "ref": branch},
+    )
+    entries = [e for e in (tree if isinstance(tree, list) else []) if isinstance(e, dict)]
+    names = [str(e.get("name") or "") for e in entries]
+    contributing = next((n for n in names if n.upper().startswith("CONTRIBUTING")), None)
+    readme = next((n for n in names if n.upper().startswith("README")), None)
+    issue_templates = mr_templates = False
+    if ".gitlab" in names:
+        sub = read(
+            f"{base}/projects/{pid}/repository/tree",
+            what="template listing",
+            params={"path": ".gitlab", "per_page": 100, "ref": branch},
+        )
+        sub_names = [
+            str(e.get("name") or "").lower()
+            for e in (sub if isinstance(sub, list) else [])
+            if isinstance(e, dict)
+        ]
+        issue_templates = any("issue" in n and "template" in n for n in sub_names)
+        mr_templates = any("merge" in n and "template" in n for n in sub_names)
+    raw_url = f"{base}/projects/{pid}/repository/files/{{}}/raw"
+    text = (
+        read_text(raw_url.format(quote(contributing, safe="")), what="contributing guide")
+        if contributing
+        else ""
+    )
+    readme_text = (
+        read_text(raw_url.format(quote(readme, safe="")), what="README")
+        if readme and not contributing
+        else ""
+    )
+    readme_guide = bool(readme_text) and readme_contributing_section(readme_text)
+    contributing_source = "file" if contributing else "readme" if readme_guide else None
+
+    users: list[Any] = []
+    for page in range(1, 6):  # GTK has a few hundred members; five pages cover it
+        found_users = read(
+            f"{base}/projects/{pid}/users", what="members", params={"per_page": 100, "page": page}
+        )
+        users.extend(found_users if isinstance(found_users, list) else [])
+        if not isinstance(found_users, list) or len(found_users) < 100:
+            break
+    insiders = frozenset(
+        str(u.get("username")) for u in users if isinstance(u, dict) and u.get("username")
+    )
+    pulls: list[dict[str, Any]] = []
+    for state in ("merged", "closed"):
+        found = read(
+            f"{base}/projects/{pid}/merge_requests",
+            what="merge requests",
+            params={"state": state, "order_by": "created_at", "sort": "desc", "per_page": 50},
+        )
+        for mr in found if isinstance(found, list) else []:
+            if not isinstance(mr, dict):
+                continue
+            login = str((mr.get("author") or {}).get("username") or "")
+            # Whoever merges has maintainer rights, and the member list misses people
+            # whose access comes from the group (GNOME grants it there, 2026-11-01).
+            merger = str((mr.get("merge_user") or mr.get("merged_by") or {}).get("username") or "")
+            if merger:
+                insiders = insiders | {merger}
+            pulls.append(
+                {
+                    "number": mr.get("iid"),
+                    "user": {"login": login, "type": "User"},
+                    "created_at": mr.get("created_at"),
+                    "merged_at": mr.get("merged_at"),
+                    "closed_at": mr.get("closed_at") or mr.get("merged_at"),
+                    "state": "closed",
+                }
+            )
+    for pull in pulls:
+        pull["author_association"] = "MEMBER" if pull["user"]["login"] in insiders else "NONE"
+    pulls.sort(key=lambda p: str(p.get("created_at") or ""), reverse=True)
+    stats = pull_stats(pulls[:60], insiders=insiders or None)
+
+    languages = read(f"{base}/projects/{pid}/languages", what="languages")
+    language = (
+        max(languages, key=lambda name: float(languages[name]))
+        if isinstance(languages, dict) and languages
+        else None
+    )
+
+    label: str | None = None
+    open_beginner: int | None = None
+    assigned_beginner: int | None = None
+    for candidate in GITLAB_BEGINNER_LABELS[:4]:
+        counts = read(
+            f"{base}/projects/{pid}/issues_statistics",
+            what="beginner issues",
+            params={"labels": candidate},
+        )
+        total = ((counts or {}).get("statistics") or {}).get("counts") or {}
+        if int(total.get("all") or 0):
+            label, open_beginner = candidate, int(total.get("opened") or 0)
+            assigned = read(
+                f"{base}/projects/{pid}/issues_statistics",
+                what="beginner issues",
+                params={"labels": candidate, "assignee_id": "Any"},
+            )
+            assigned_counts = ((assigned or {}).get("statistics") or {}).get("counts") or {}
+            assigned_beginner = int(assigned_counts.get("opened") or 0)
+            break
+
+    license_raw = project.get("license")
+    license_obj: dict[str, Any] = license_raw if isinstance(license_raw, dict) else {}
+    health = RepoHealth(
+        full_name=f"{host}/{full}",
+        url=web_url,
+        description=clean_untrusted(project.get("description"), limit=350) or None,
+        language=language,
+        stars=int(project.get("star_count") or 0),
+        forks=int(project.get("forks_count") or 0),
+        open_issues=int(project.get("open_issues_count") or 0),
+        archived=bool(project.get("archived")),
+        pushed_at=_dt(project.get("last_activity_at")),
+        license=str(license_obj.get("name") or license_obj.get("key") or "") or None,
+        topics=[str(t) for t in project.get("topics") or project.get("tag_list") or []],
+        has_contributing=contributing_source is not None,
+        contributing_source=contributing_source,
+        has_code_of_conduct=any(n.upper().startswith("CODE_OF_CONDUCT") for n in names),
+        has_issue_template=issue_templates,
+        has_pr_template=mr_templates,
+        has_ci=".gitlab-ci.yml" in names or bool(project.get("ci_config_path")),
+        unread=sorted(set(unread)),
+        prs_sampled=stats.sampled,
+        merge_rate=stats.merge_rate,
+        median_pr_hours=stats.median_hours,
+        outsider_prs_sampled=stats.outsider_sampled,
+        outsider_merge_rate=stats.outsider_merge_rate,
+        outside_authors_merged=stats.outside_authors_merged,
+        median_first_response_hours=stats.median_first_response_hours,
+        first_response_sampled=stats.first_response_sampled,
+        median_outsider_pr_size=stats.median_outsider_size,
+        insiders_known=stats.insiders_known,
+        pr_source="gitlab",
+        beginner_label=label,
+        open_beginner_issues=open_beginner,
+        assigned_beginner_issues=assigned_beginner,
+    )
+    toolchain, devcontainer = detect_toolchain([{"name": n} for n in names], language=language)
+    hints = list(toolchain)
+    if devcontainer:
+        hints.insert(0, "Dev container available: open in VS Code for a ready environment")
+    if not hints:
+        hints.append(
+            f"Read {readme or 'the README'} and {contributing} before coding"
+            if contributing
+            else f"Read the contributing section of {readme} before coding"
+            if readme_guide
+            else f"Read {readme or 'the README'} before coding"
+        )
+    guide_file = contributing or (readme if readme_guide else None)
+    guide = ContributionGuide(
+        repo=f"{host}/{full}",
+        contributing_url=f"{web_url}/-/blob/{branch}/{guide_file}" if guide_file else None,
+        contributing_excerpt=re.sub(
+            r"\s+", " ", clean_untrusted(text or readme_text, limit=1500)
+        ).strip(),
+        contributing_text=text or readme_text,
+        toolchain=toolchain,
+        devcontainer=devcontainer,
+        setup_hints=hints,
+        communication_channels=channels_in(text or readme_text),
+        beginner_issue_labels=[label] if label else ["good first issue"],
+        unread=sorted(set(unread)),
+    )
+    return score_repo_health(health), guide

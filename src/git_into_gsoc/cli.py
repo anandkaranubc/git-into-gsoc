@@ -1129,7 +1129,9 @@ def repos_cmd(
 @app.command("repo", rich_help_panel="Pick a repository and an issue")
 def repo_cmd(
     full_name: str = typer.Argument(
-        ..., help="Repository as owner/name or a GitHub URL, for example sympy/sympy"
+        ...,
+        help="Repository as owner/name, a GitHub URL, or a project link on a GitLab host, for "
+        "example sympy/sympy",
     ),
     track: bool = typer.Option(False, "--track", help="Also save this repo to your progress"),
     output: Output = OUTPUT_OPTION,
@@ -1140,7 +1142,7 @@ def repo_cmd(
     if track:
         # A person's fork has issues off, so `next` would find nothing new in it.
         saved = data["fork_of"] if data["health"] is None and data.get("fork_of") else None
-        saved = saved or (data["health"] or data)["full_name"]
+        saved = saved or data.get("track_as") or (data["health"] or data)["full_name"]
         toolkit.progress.track_repo(saved)
         data["tracked"] = saved
     if output == Output.json:

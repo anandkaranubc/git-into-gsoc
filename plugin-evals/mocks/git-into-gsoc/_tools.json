@@ -246,7 +246,7 @@
         "openWorldHint": true,
         "readOnlyHint": true
       },
-      "description": "Will a newcomer's PR land here? Health grade (A-F) with signals and warnings:\nactivity, CONTRIBUTING/CoC/templates, CI, open beginner issues, bot-free merge rate,\noutside-contributor merge rate, review speed; plus toolchain/dev-container setup hints.\n`points` gives what each signal earned out of its most, and `capped_by` the rule that\nheld the score down, so you can say where a grade came from. `notes` earn nothing.\n\nfull_name: owner/repo or a GitHub URL (e.g. sympy/sympy)",
+      "description": "Will a newcomer's PR land here? Health grade (A-F) with signals and warnings:\nactivity, CONTRIBUTING/CoC/templates, CI, open beginner issues, bot-free merge rate,\noutside-contributor merge rate, review speed; plus toolchain/dev-container setup hints.\n`points` gives what each signal earned out of its most, and `capped_by` the rule that\nheld the score down, so you can say where a grade came from. `notes` earn nothing.\n\nfull_name: owner/repo or a GitHub URL (e.g. sympy/sympy), or a project link on a GitLab\nhost (https://gitlab.gnome.org/GNOME/gitg): graded from GitLab's public API, with\nmembers and mergers as insiders and no first-reply times.",
       "inputSchema": {
         "properties": {
           "full_name": {
