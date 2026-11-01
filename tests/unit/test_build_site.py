@@ -39,6 +39,7 @@ def test_data_text_is_escaped_and_odd_slugs_are_refused(tmp_path: Path) -> None:
             "tech_tags": ["c++"],
             "topic_tags": [],
             "ideas_link": "https://example.org/ideas?a=1&b=2",
+            "website_url": "javascript:alert(1)",
         },
         {"name": "Escapee", "slug": "../escapee", "categories": [], "tech_tags": []},
     ]
@@ -56,6 +57,8 @@ def test_data_text_is_escaped_and_odd_slugs_are_refused(tmp_path: Path) -> None:
     page = (out / "orgs/ampersand-co/index.html").read_text(encoding="utf-8")
     assert "Ampersand &amp; &lt;Co&gt;" in page
     assert 'href="https://example.org/ideas?a=1&amp;b=2"' in page
+    # A link from the data is only a link when it is a web address.
+    assert "javascript:alert(1)" in page and 'href="javascript:' not in page
     assert "In GSoC since 2025, 1 year." in page
     assert not (tmp_path / "escapee").exists()
 

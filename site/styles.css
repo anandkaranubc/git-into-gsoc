@@ -142,7 +142,7 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 }
 .tabs [role="tab"]:hover { color: var(--gig-paper); }
 .tabs [role="tab"][aria-selected="true"] { color: var(--gig-paper); border-color: var(--gig-ink-3); background: var(--gig-ink); }
-.hero p code { background: rgba(21, 18, 30, 0.14); color: var(--gig-ink); }
+.hero p code { background: rgba(255, 255, 255, 0.4); color: var(--gig-ink); }
 
 /* first run: four questions */
 .first-run .two { align-items: center; }
@@ -271,3 +271,18 @@ p code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
 .org .links { padding-left: 0; list-style: none; margin: 0 0 20px; display: grid; gap: 6px; overflow-wrap: anywhere; }
 .org .term { max-width: none; }
 .org .fine { font-size: 0.9rem; color: var(--fg-2); margin-top: 12px; }
+
+/* --- docs pages (site/docs/, rendered from docs/ by scripts/build_docs.py) ------ */
+.doc { padding: 24px 0 72px; }
+.doc h1 { font-size: clamp(30px, 5vw, 42px); line-height: 1.15; margin: 0 0 24px; }
+.doc h2 { font-size: 1.45rem; margin: 2em 0 0.6em; }
+.doc h3 { margin: 1.6em 0 0.5em; }
+.doc p, .doc li { max-width: var(--measure); }
+.doc ul, .doc ol { padding-left: 1.4em; }
+.doc li { margin: 0.3em 0; }
+.doc li code, .doc td code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius: 4px; }
+.doc pre { background: var(--bg-2); padding: 14px 16px; border-radius: var(--gig-radius); overflow-x: auto; }
+.doc table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; margin: 1em 0; }
+.doc th, .doc td { border: 1px solid var(--line); padding: 8px 12px; text-align: left; vertical-align: top; }
+.doc img { max-width: 100%; height: auto; }
+.crumbs { font-size: 0.95rem; margin: 0 0 20px; }
