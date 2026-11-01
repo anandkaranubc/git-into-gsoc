@@ -1081,7 +1081,11 @@ def repo_cmd(
     if track:
         # A person's fork has issues off, so `next` would find nothing new in it.
         saved = data["fork_of"] if data["health"] is None and data.get("fork_of") else None
-        saved = saved or (data["health"] or data)["full_name"]
+        found = data["health"] or {}
+        if found.get("pr_source") == "gitlab":
+            # By its link: "gitlab.gnome.org/GNOME/gitg" would be saved as a GitHub name.
+            saved = saved or found["url"]
+        saved = saved or (found or data)["full_name"]
         _toolkit().progress.track_repo(saved)
         data["tracked"] = saved
     if output == Output.json:

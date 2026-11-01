@@ -14,9 +14,11 @@ from git_into_gsoc.errors import HttpError, NotFoundError
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
     gitlab_issue_status,
+    gitlab_repo_health,
     gitlab_repo_leads,
     gitlab_target,
     parse_gitlab_issue,
+    parse_gitlab_project,
     search_gitlab_issues,
 )
 from git_into_gsoc.http_client import CachedHttpClient
@@ -428,3 +430,151 @@ def test_a_project_path_gives_that_one_project() -> None:
     assert [lead.full_name for lead in leads] == ["GNOME/gimp"]
     assert leads[0].language == "C" and leads[0].stars == 305
     assert http.asked[0][0] == "https://gitlab.gnome.org/api/v4/groups/GNOME%2Fgimp/projects"
+
+
+# Grading a project, as `repo` does for a GitLab link.
+
+GITG_API = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgitg"
+
+
+class FakeProject:
+    """Answers by URL and the parameters that tell two reads of one URL apart."""
+
+    KEYS = ("labels", "state", "assignee_id", "path")
+
+    def __init__(self, routes: dict[str, Any], texts: dict[str, str] | None = None) -> None:
+        self.routes, self.texts = routes, texts or {}
+
+    @classmethod
+    def key(cls, url: str, **params: Any) -> str:
+        tail = "&".join(f"{k}={params[k]}" for k in cls.KEYS if k in params)
+        return f"{url}?{tail}" if tail else url
+
+    def get_json(self, url: str, *, params: dict[str, Any] | None = None, **kwargs: Any) -> Any:
+        key = self.key(url, **(params or {}))
+        if key not in self.routes:
+            raise NotFoundError("HTTP 404", status_code=404, url=url)
+        return self.routes[key]
+
+    def get_text(self, url: str, **kwargs: Any) -> str:
+        if url not in self.texts:
+            raise NotFoundError("HTTP 404", status_code=404, url=url)
+        return self.texts[url]
+
+
+def _merge_request(iid: int, author: str, *, merged: bool, days: int) -> dict[str, Any]:
+    return {
+        "iid": iid,
+        "author": {"username": author},
+        "merge_user": {"username": "maintainer"} if merged else None,
+        "created_at": _iso(days + 2),
+        "merged_at": _iso(days) if merged else None,
+        "closed_at": None if merged else _iso(days),
+    }
+
+
+def test_project_links_are_recognised() -> None:
+    assert parse_gitlab_project("https://gitlab.gnome.org/GNOME/gitg") == (
+        "gitlab.gnome.org",
+        "GNOME/gitg",
+    )
+    assert parse_gitlab_project("gitlab.gnome.org/GNOME/gitg/-/issues/494") == (
+        "gitlab.gnome.org",
+        "GNOME/gitg",
+    )
+    assert parse_gitlab_project("https://gitlab.com/qemu-project/qemu.git") == (
+        "gitlab.com",
+        "qemu-project/qemu",
+    )
+    assert parse_gitlab_project("sympy/sympy") is None
+    assert parse_gitlab_project("https://github.com/sympy/sympy") is None
+    assert parse_gitlab_project("https://gitlab.com/mailman") is None  # a group, not a project
+
+
+def test_a_gitlab_project_is_graded_from_its_merge_requests_and_tree() -> None:
+    k = FakeProject.key
+    tree = [
+        {"name": n, "type": "blob"}
+        for n in ("CONTRIBUTING.md", "README.md", ".gitlab-ci.yml", "meson.build", "COPYING")
+    ]
+    tree.append({"name": ".gitlab", "type": "tree"})
+    merged = [_merge_request(i, f"outsider{i}", merged=True, days=i) for i in range(1, 4)]
+    merged.append(_merge_request(9, "maintainer", merged=True, days=1))
+    closed = [_merge_request(5, "outsider5", merged=False, days=5)]
+    http = FakeProject(
+        {
+            k(GITG_API): {
+                "path_with_namespace": "GNOME/gitg",
+                "web_url": "https://gitlab.gnome.org/GNOME/gitg",
+                "default_branch": "master",
+                "description": "A git client",
+                "star_count": 61,
+                "forks_count": 97,
+                "last_activity_at": _iso(1),
+                "license": {"key": "gpl-2.0+", "name": "GNU General Public License v2.0 or later"},
+                "topics": ["git"],
+            },
+            k(f"{GITG_API}/repository/tree"): tree,
+            k(f"{GITG_API}/repository/tree", path=".gitlab"): [
+                {"name": "issue_templates", "type": "tree"}
+            ],
+            k(f"{GITG_API}/users"): [{"username": "maintainer"}, {"username": "root"}],
+            k(f"{GITG_API}/merge_requests", state="merged"): merged,
+            k(f"{GITG_API}/merge_requests", state="closed"): closed,
+            k(f"{GITG_API}/languages"): {"Vala": 80.0, "C": 20.0},
+            k(f"{GITG_API}/issues_statistics", labels="4. Newcomers"): {
+                "statistics": {"counts": {"all": 20, "opened": 5, "closed": 15}}
+            },
+            k(f"{GITG_API}/issues_statistics", labels="4. Newcomers", assignee_id="Any"): {
+                "statistics": {"counts": {"all": 6, "opened": 2, "closed": 4}}
+            },
+        },
+        texts={
+            f"{GITG_API}/repository/files/CONTRIBUTING.md/raw": "# Contributing\n\nAsk on Matrix in #gitg first.\n"
+        },
+    )
+    health, guide = gitlab_repo_health(http, "gitlab.gnome.org", "GNOME/gitg")  # type: ignore[arg-type]
+    assert health.full_name == "gitlab.gnome.org/GNOME/gitg" and health.pr_source == "gitlab"
+    assert health.has_contributing and health.contributing_source == "file"
+    assert health.has_ci and health.has_issue_template and not health.has_code_of_conduct
+    assert health.license == "GNU General Public License v2.0 or later"
+    assert health.language == "Vala" and health.topics == ["git"]
+    assert health.insiders_known and health.prs_sampled == 5
+    assert health.outsider_prs_sampled == 4 and health.outsider_merge_rate == 0.75
+    assert health.outside_authors_merged == 3
+    assert health.beginner_label == "4. Newcomers"
+    assert (health.open_beginner_issues, health.assigned_beginner_issues) == (5, 2)
+    assert health.unread == [] and health.grade in "ABCDEF" and health.health_score > 0
+    assert any("3 different outside author" in s for s in health.signals)
+    assert (
+        guide.contributing_url
+        == "https://gitlab.gnome.org/GNOME/gitg/-/blob/master/CONTRIBUTING.md"
+    )
+    assert "Matrix" in guide.communication_channels
+    assert guide.beginner_issue_labels == ["4. Newcomers"]
+    assert any("meson" in hint.lower() or "Build" in hint for hint in guide.setup_hints)
+
+
+def test_a_project_without_a_known_label_or_members_still_grades() -> None:
+    k = FakeProject.key
+    merged = [_merge_request(1, "someone", merged=True, days=3)]
+    http = FakeProject(
+        {
+            k(GITG_API): {"path_with_namespace": "a/b", "web_url": "https://gitlab.com/a/b"},
+            k(f"{GITG_API}/repository/tree"): [{"name": "README.md", "type": "blob"}],
+            k(f"{GITG_API}/merge_requests", state="merged"): merged,
+        },
+        texts={f"{GITG_API}/repository/files/README.md/raw": "# b\n\nSmall tool.\n"},
+    )
+    health, guide = gitlab_repo_health(http, "gitlab.gnome.org", "GNOME/gitg")  # type: ignore[arg-type]
+    # The person who merged is the one known insider, so the author counts as outside.
+    assert health.outsider_prs_sampled == 1 and health.outside_authors_merged == 1
+    assert health.beginner_label is None and health.open_beginner_issues is None
+    assert any(p.signal == "Open beginner issues" and p.why for p in health.points)
+    assert not health.has_contributing and guide.contributing_url is None
+    assert guide.setup_hints == ["Read README.md before coding"]
+
+
+def test_a_missing_project_raises() -> None:
+    with pytest.raises(NotFoundError):
+        gitlab_repo_health(FakeProject({}), "gitlab.gnome.org", "GNOME/nothing")  # type: ignore[arg-type]
