@@ -369,6 +369,10 @@ class Resolved:
     corrected_from: str | None = None  # set when a misspelling was read as a known term
 
 
+# Ranking resolves the same GitHub language names for every organization, and an
+# unknown one ("Makefile", "TeX") runs difflib over the whole index each time: that
+# was 27 of the benchmark's 31 seconds (a performance pass, 2026-11-01).
+@lru_cache(maxsize=4096)
 def resolve(term: str) -> Resolved:
     """Map one typed skill or interest to concepts, correcting an obvious misspelling.
 
