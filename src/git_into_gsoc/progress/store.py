@@ -283,6 +283,9 @@ class ProgressStore:
     @_mutating
     def set_profile(self, **fields: object) -> ProgressState:
         state = self.load()
+        if fields.get("technologies") or fields.get("interests"):
+            # `start` saves the organizations it matched; new answers make them stale.
+            state.profile.pop("suggested_orgs", None)
         state.profile.update({k: v for k, v in fields.items() if v is not None})
         return self.save(state)
 

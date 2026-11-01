@@ -271,7 +271,20 @@ def plan_actions(
             )
         )
 
-    if not orgs:
+    suggested = [str(name) for name in profile.get("suggested_orgs") or []]
+    if not orgs and suggested:
+        # The first `next` after `start` used to send people back to a fresh ranking,
+        # losing the three organizations `start` had just shown them.
+        actions.append(
+            _action(
+                f"Shortlist the organizations start matched: {', '.join(suggested)}",
+                f'git-into-gsoc org "{suggested[0]}" --shortlist',
+                'Read each one first with git-into-gsoc org "NAME", and shortlist the ones '
+                "that fit. Everything downstream (repos, issues, proposal) hangs off a "
+                "shortlist; git-into-gsoc recommend ranks more.",
+            )
+        )
+    elif not orgs:
         command = (
             "git-into-gsoc recommend" if (techs or github) else "git-into-gsoc orgs --tech python"
         )
