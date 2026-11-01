@@ -175,3 +175,11 @@ def test_a_project_on_another_site_is_named_as_such_without_its_scheme() -> None
         assert "`git-into-gsoc issue` does read" in (found.value.hint or "")
     assert parse_repo("github.com/sympy/sympy") == ("sympy", "sympy")
     assert parse_repo("sympy/sympy.github.io") == ("sympy", "sympy.github.io")
+
+
+def test_a_number_that_disagrees_with_the_link_is_an_error() -> None:
+    # `issue https://github.com/a/b/issues/5 7` quietly read issue 7.
+    with pytest.raises(InputError, match="issue 5, but the number given is 7"):
+        parse_issue_ref("https://github.com/a/b/issues/5", 7)
+    assert parse_issue_ref("https://github.com/a/b/issues/5", 5) == ("a", "b", 5)
+    assert parse_issue_ref("a/b", 5) == ("a", "b", 5)

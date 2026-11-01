@@ -2400,7 +2400,14 @@ class GSoCToolkit:
                     owner, repo, num = parse_issue_ref(raw)
                 except GigError:
                     if parse_gitlab_issue(raw):
-                        tracked.append(self._tracked_gitlab_issue(raw, state.issue_status))
+                        entry = self._tracked_gitlab_issue(raw, state.issue_status)
+                        tracked.append(entry)
+                        statuses[raw] = entry["availability"]  # else `changed` never fires
+                        if entry["changed"]:
+                            changes.append(
+                                f"{raw} went from {entry['previous']} to "
+                                f"{entry['availability']}: {entry['reason']}"
+                            )
                     elif other_host_link(raw):
                         tracked.append(_off_github_issue(raw))
                     continue
@@ -3634,13 +3641,15 @@ class GSoCToolkit:
         except GigError:
             return _off_github_issue(link)
         before = previous.get(link)
+        status = found["availability"]
         return {
             "ref": link,
             "url": found["url"],
-            "availability": found["availability"],
+            "availability": status,
             "reason": found["reason"],
             "previous": before,
-            "changed": bool(before and before != found["availability"]),
+            # "unknown" means the check could not tell, as on the GitHub path above.
+            "changed": bool(before and status != "unknown" and before != status),
             "off_github": True,
         }
 
