@@ -629,7 +629,11 @@ def orgs_cmd(
         None, "--tech", "-t", help="Technologies you know, comma-separated (python,javascript)"
     ),
     topics: str | None = typer.Option(
-        None, "--topics", help="Topics you care about, comma-separated (science,education)"
+        None,
+        "--topics",
+        "--interests",
+        help="Topics you care about, comma-separated (science,education). --interests, as "
+        "start, profile, and recommend call it, means the same",
     ),
     category: str | None = typer.Option(
         None, "--category", "-c", help="Organization category, for example 'Science and medicine'"

@@ -270,3 +270,9 @@ def test_start_does_not_print_a_readiness_line_twice(capsys: pytest.CaptureFixtu
     out = capsys.readouterr().out
     assert out.count("6 ideas on its 2026 ideas page") == 1
     assert "Why: Uses Python" in out
+
+
+def test_orgs_takes_interests_as_start_calls_it(api: respx.MockRouter) -> None:
+    # `start` and `recommend` say --interests; `orgs` said "No such option".
+    result = runner.invoke(app, ["orgs", "--tech", "python", "--interests", "science", "-n", "3"])
+    assert result.exit_code == 0, result.output
