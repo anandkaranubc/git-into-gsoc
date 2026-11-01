@@ -8,6 +8,7 @@
 <link rel="canonical" href="https://gitintogsoc.me/">
 <meta property="og:url" content="https://gitintogsoc.me/">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://gitintogsoc.me/">
 <meta property="og:title" content="git into gsoc">
 <meta property="og:description" content="Open source has a door. git in. Find the right org, the right issue, and land one real contribution before GSoC applications open.">
 <meta property="og:image" content="https://gitintogsoc.me/brand/social/social-preview.png">
@@ -46,6 +47,8 @@
 <link rel="preload" href="brand/font/GigPixel.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="brand/tokens.css">
 <link rel="stylesheet" href="styles.css">
+<noscript><style>#panel-unix, #panel-windows { display: block; }</style></noscript>
+<script src="scene.js" defer></script>
 <script>
   // Theme: honour a saved choice or ?theme= before first paint. Otherwise the system decides.
   (function () {
@@ -76,39 +79,44 @@
 
 <main>
   <section class="hero" aria-labelledby="hero-title">
+    <div class="scene" role="img" aria-label="A pixel G drawn as a lit doorway in a dark room, light spilling out of it, and a small lime cursor walking in.">
+      <svg class="mark" viewBox="-1 -1 23 22" aria-hidden="true">
+        <path class="g" d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z"/>
+        <path class="cursor" d="M18 7H21V11H18Z"/>
+      </svg>
+    </div>
     <div class="wrap grid">
-      <div>
+      <div class="hero-copy">
         <h1 id="hero-title" class="pixel">open source has a door.</h1>
-        <p class="lede">git into gsoc finds the organizations that fit you, the repositories where a newcomer's pull request actually gets merged, and the beginner issues nobody has claimed yet. It works in your terminal and inside your AI assistant. Land one real contribution before Google Summer of Code applications open.</p>
+        <p class="lede">git into gsoc finds the Google Summer of Code organizations that fit what you already know, the repositories where a newcomer's pull request gets merged, and the beginner issues nobody has claimed. In your browser, your terminal, or your AI assistant.</p>
 
         <div class="term" id="install">
           <div class="term-bar">
-            <div class="tabs" role="tablist" aria-label="Your computer">
-              <button type="button" role="tab" id="tab-unix" aria-selected="true" aria-controls="install-unix" data-tab="unix">macOS, Linux, WSL</button>
-              <button type="button" role="tab" id="tab-windows" aria-selected="false" aria-controls="install-windows" data-tab="windows" tabindex="-1">Windows</button>
+            <div class="tabs" role="tablist" aria-label="Where to run it">
+              <button type="button" role="tab" id="tab-web" aria-selected="true" aria-controls="panel-web" data-tab="web">in your browser</button>
+              <button type="button" role="tab" id="tab-unix" aria-selected="false" aria-controls="panel-unix" data-tab="unix" tabindex="-1">macOS, Linux, WSL</button>
+              <button type="button" role="tab" id="tab-windows" aria-selected="false" aria-controls="panel-windows" data-tab="windows" tabindex="-1">Windows</button>
             </div>
-            <button class="copy" type="button" data-copy aria-label="Copy the install commands"><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button>
+            <button class="copy" type="button" data-copy aria-label="Copy the install commands" hidden><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H3V1H11V7H8V10H0ZM2 4V9H6V4ZM5 2V3H8V6H9V2Z"/></svg><span>copy</span></button>
           </div>
-<pre id="install-unix" role="tabpanel" aria-labelledby="tab-unix" tabindex="0"><code class="copyable">curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
+          <div id="panel-web" role="tabpanel" aria-labelledby="tab-web" class="prompt">
+            <form class="ask" action="start/" method="get">
+              <p class="cmd"><span class="c">$</span> git-into-gsoc start</p>
+              <label for="know">1 of 4. Languages and tools you know?</label>
+              <p class="line"><span class="k" aria-hidden="true">&gt;</span><input id="know" name="know" type="text" placeholder="python, javascript, java, c++" autocomplete="off" autocapitalize="none" spellcheck="false"><button type="submit" class="go">next question</button></p>
+              <p class="c note">Three more questions, then three organizations with the reasons they fit. The ranking runs in your browser. Your answers stay on your computer.</p>
+            </form>
+          </div>
+<pre id="panel-unix" role="tabpanel" aria-labelledby="tab-unix" tabindex="0" hidden><code class="copyable">curl -fsSL https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.sh | bash
 # then, in a new terminal:
 git-into-gsoc start</code></pre>
-<pre id="install-windows" role="tabpanel" aria-labelledby="tab-windows" tabindex="0" hidden><code class="copyable">irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
+<pre id="panel-windows" role="tabpanel" aria-labelledby="tab-windows" tabindex="0" hidden><code class="copyable">irm https://raw.githubusercontent.com/anandkaranubc/git-into-gsoc/main/install.ps1 | iex
 # then, in a new PowerShell window:
 git-into-gsoc start</code></pre>
         </div>
 
-        <div class="after">
-          <a href="start/">Answer the four questions in your browser, no install</a>
-          <a href="orgs/">Browse every organization</a>
-          <a href="docs/">Read the beginner guide</a>
-          <p class="fine">You only need an internet connection. If Python is missing, the installer offers uv, a free tool that brings its own. It connects the AI assistants it finds and tells you exactly what it changed. No account or token needed to start. Already use uv or pipx? <code>uv tool install git-into-gsoc</code> installs the <a href="https://pypi.org/project/git-into-gsoc/">package from PyPI</a>. <a href="docs/guide/02-install/">Other ways to install</a>.</p>
-        </div>
+        <p class="fine">The install needs only an internet connection. If Python is missing, the installer offers <a href="https://docs.astral.sh/uv/">uv</a>, a free tool that brings its own. It connects the AI assistants it finds and says exactly what it changed. No account or token needed. Already use uv or pipx? <code>uv tool install git-into-gsoc</code> installs the <a href="https://pypi.org/project/git-into-gsoc/">package from PyPI</a>. <a href="docs/guide/02-install/">Other ways to install</a>.</p>
       </div>
-
-      <svg class="mark" viewBox="-1 -1 23 22" role="img" aria-label="The git into gsoc mark: a pixel G with a cursor stepping through its doorway">
-        <path class="g" d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z"/>
-        <path class="cursor" d="M18 7H21V11H18Z"/>
-      </svg>
     </div>
   </section>
 
@@ -117,18 +125,21 @@ git-into-gsoc start</code></pre>
       <div>
         <div class="section-head">
           <h2 id="start-title" class="pixel">four questions. two minutes.</h2>
-          <p><code>git-into-gsoc start</code> asks what you know, what you would enjoy working on, and how much time you have. Press Enter to skip any of them.</p>
+          <p>What you know, what you would enjoy working on, how much time you have, and how much open source you have done. Press Enter to skip any of them. Then you get:</p>
         </div>
         <ol class="steps">
-          <li><b>Organizations that fit you</b>, from the official list, each with the reasons it matched.</li>
-          <li><b>A shortlist</b> you build by typing numbers, saved on your computer.</li>
-          <li><b>Your next steps</b> with the exact commands, so you are never stuck on a blank prompt.</li>
+          <li><b>Organizations that fit you</b>, from the official list, each with the reasons it matched and what its ideas page offers.</li>
+          <li><b>A shortlist</b> you build by typing numbers, saved in a file on your computer.</li>
+          <li><b>Your next steps</b> with the exact commands, so you are never stuck at a blank prompt.</li>
         </ol>
-        <p>Later, run <code>git-into-gsoc</code> on its own to see your progress, or <code>git-into-gsoc next</code> for what to do today: deadlines, changes on issues you follow, and new beginner issues.</p>
+        <p>The <a href="start/">browser version</a> asks the same four questions and ranks with the same code. The terminal tool goes further: it reads live data to tell you which repositories merge newcomers' work and which beginner issues are still free. Later, run <code>git-into-gsoc next</code> for what to do today.</p>
       </div>
       <figure class="demo">
-        <img src="brand/readme/demo-start.svg" width="1043" height="1758" loading="lazy" alt="A terminal running git-into-gsoc start. It shows that GSoC 2027 is not announced yet, asks four questions (username skipped, Python, science and data, 8 hours a week), lists three organizations that fit, each with its reasons and what its ideas page offers, warns which project sizes fit 8 hours a week, shortlists the first one, and prints three next steps with the exact commands.">
-        <figcaption>A real run, recorded from the tool. Results change as organizations and issues change.</figcaption>
+        <div class="term-bar"><span>a real run, recorded from the tool</span><span class="c">scroll inside</span></div>
+        <div class="scroller" tabindex="0" role="region" aria-label="Recorded terminal session, scrollable">
+          <img src="brand/readme/demo-start.svg" width="1043" height="1758" loading="lazy" alt="A terminal running git-into-gsoc start. It shows that GSoC 2027 is not announced yet, asks four questions (username skipped, Python, science and data, 8 hours a week), lists three organizations that fit, each with its reasons and what its ideas page offers, warns which project sizes fit 8 hours a week, shortlists the first one, and prints three next steps with the exact commands.">
+        </div>
+        <figcaption>Results change as organizations and issues change. Nothing here is a mock-up.</figcaption>
       </figure>
     </div>
   </section>
@@ -137,11 +148,11 @@ git-into-gsoc start</code></pre>
     <div class="wrap">
       <div class="section-head">
         <h2 id="fail-title" class="pixel">the way in is hard to find.</h2>
-        <p>Every season, many first-timers end up in an inactive repository, under an issue five people already claimed, or with a proposal that reads like a hundred others. The information to avoid that is scattered. This tool gathers it.</p>
+        <p>Every season, many first-timers end up in an inactive repository, under an issue five people already claimed, or with a proposal that reads like a hundred others. The information to avoid that exists. It is just scattered. This tool gathers it and shows its sources.</p>
       </div>
       <div class="two">
         <div>
-          <p class="lede">git into gsoc reads the official program site, the organization archive, and GitHub, then shows you:</p>
+          <p class="lede">It reads the official program site, the organization archive, GitHub, and GitLab, then shows you:</p>
           <ul>
             <li>which organizations match your languages and interests, with how many projects they ran each year and past project titles</li>
             <li>which of their repositories mentors actually work in, and whether outside contributors' pull requests get merged there</li>
@@ -178,74 +189,81 @@ git-into-gsoc start</code></pre>
     </div>
   </section>
 
-  <section class="section" aria-labelledby="journey-title">
+  <section class="section path" aria-labelledby="journey-title">
     <div class="wrap">
       <div class="section-head">
         <h2 id="journey-title" class="pixel">ten steps. one contribution.</h2>
-        <p>Ten steps, explained in eight guide pages with real commands and expected output. Skip what you know. Loop when you need to.</p>
+        <p>The cursor is you. Scroll, and it walks the path from first read to merged pull request. Each step has a guide page with real commands and expected output. Skip what you know. Loop when you need to.</p>
       </div>
-      <ol class="journey">
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 2H1V1H5V2H7V1H11V2H12V10H11V11H1V10H0ZM2 2V9H5V3H4V2ZM7 3V9H10V2H8V3Z"/></svg>
-          <h3>Learn</h3>
-          <p>What GSoC is, what it isn't, and where you are in the year.</p>
-          <a href="docs/guide/01-understand-gsoc/">Understand GSoC</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H8V1H9V2H10V6H9V7H10V8H11V9H12V11H9V10H8V9H7V8H3V7H2V6H1ZM3 2V6H8V2Z"/></svg>
-          <h3>Discover</h3>
-          <p>A short list of organizations, each with a reason it fits you.</p>
-          <a href="docs/guide/04-find-organizations/">Find organizations</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 7H3V10H4V4H7V10H8V1H11V11H0Z"/></svg>
-          <h3>Evaluate</h3>
-          <p>One or two repositories that merge newcomers' work.</p>
-          <a href="docs/guide/05-choose-an-issue/#will-a-newcomers-pr-land-here">Pick a repository</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H9V1H10V2H11V7H10V9H9V10H8V11H7V12H5V11H4V10H3V9H2V7H1ZM3 3V7H4V8H5V9H7V8H8V7H9V3H8V2H4V3ZM5 4H7V6H5Z"/></svg>
-          <h3>Orient</h3>
-          <p>You know where a change would go and how to test it.</p>
-          <a href="docs/guide/05-choose-an-issue/#get-your-bearings-in-the-repository">Get your bearings</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V8H5V9H4V10H2V9H3V8H0ZM2 2V7H10V2ZM3 4H5V5H3ZM7 4H9V5H7Z"/></svg>
-          <h3>Community</h3>
-          <p>Mentors recognize your name from useful questions, before you claim anything.</p>
-          <a href="docs/guide/05-choose-an-issue/#introduce-yourself-to-the-community">Introduce yourself</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 4H1V2H2V1H4V0H8V1H10V2H11V4H12V8H11V10H10V11H8V12H4V11H2V10H1V8H0ZM2 4V8H3V9H4V10H8V9H9V8H10V4H9V3H8V2H4V3H3V4ZM4 5H5V4H7V5H8V7H7V8H5V7H4Z"/></svg>
-          <h3>Find an issue</h3>
-          <p>One available, well-specified issue you can reproduce.</p>
-          <a href="docs/guide/05-choose-an-issue/#find-an-issue-that-is-actually-free">Choose an issue</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 5H2V3H4V4H5V5H6V7H5V8H4V9H2V7H0ZM6 1H12V11H6V8H8V10H10V2H8V4H6Z"/></svg>
-          <h3>Contribute</h3>
-          <p>A focused pull request you can explain line by line.</p>
-          <a href="docs/guide/06-first-contribution/">First contribution</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H1V2H2V1H4V0H8V1H10V2H11V4H12V5H11V6H8V5H7V4H9V3H8V2H4V3H3V4H2V5H0ZM0 7H1V6H4V7H5V8H3V9H4V10H8V9H9V8H10V7H12V9H11V10H10V11H8V12H4V11H2V10H1V8H0Z"/></svg>
-          <h3>Iterate</h3>
-          <p>Every review comment answered, through to a merge or a clear no.</p>
-          <a href="docs/guide/06-first-contribution/#see-it-through-review">See it through review</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 0H8V1H9V2H10V3H11V4H12V12H0ZM2 1V11H10V4H6V1ZM3 5H8V6H3ZM3 7H8V8H3ZM3 9H8V10H3Z"/></svg>
-          <h3>Proposal</h3>
-          <p>An original draft shaped by the organization's template and feedback.</p>
-          <a href="docs/guide/07-prepare-a-proposal/">Prepare a proposal</a>
-        </li>
-        <li>
-          <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V11H0ZM2 2V10H10V4H9V5H8V7H7V8H6V9H5V8H4V7H3V5H5V6H6V5H7V4H8V3H10V2Z"/></svg>
-          <h3>Track</h3>
-          <p>A weekly log, a shortlist, and always one manageable next step.</p>
-          <a href="docs/guide/08-track-progress/">Track progress</a>
-        </li>
-      </ol>
+      <div class="track">
+        <span class="you" aria-hidden="true"></span>
+        <ol class="journey">
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 2H1V1H5V2H7V1H11V2H12V10H11V11H1V10H0ZM2 2V9H5V3H4V2ZM7 3V9H10V2H8V3Z"/></svg>
+            <h3>Learn</h3>
+            <p>What GSoC is, what it isn't, and where you are in the year.</p>
+            <a href="docs/guide/01-understand-gsoc/">Understand GSoC</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H8V1H9V2H10V6H9V7H10V8H11V9H12V11H9V10H8V9H7V8H3V7H2V6H1ZM3 2V6H8V2Z"/></svg>
+            <h3>Discover</h3>
+            <p>A short list of organizations, each with a reason it fits you.</p>
+            <a href="docs/guide/04-find-organizations/">Find organizations</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 7H3V10H4V4H7V10H8V1H11V11H0Z"/></svg>
+            <h3>Evaluate</h3>
+            <p>One or two repositories that merge newcomers' work.</p>
+            <a href="docs/guide/05-choose-an-issue/#will-a-newcomers-pr-land-here">Pick a repository</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M1 2H2V1H3V0H9V1H10V2H11V7H10V9H9V10H8V11H7V12H5V11H4V10H3V9H2V7H1ZM3 3V7H4V8H5V9H7V8H8V7H9V3H8V2H4V3ZM5 4H7V6H5Z"/></svg>
+            <h3>Orient</h3>
+            <p>You know where a change would go and how to test it.</p>
+            <a href="docs/guide/05-choose-an-issue/#get-your-bearings-in-the-repository">Get your bearings</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V8H5V9H4V10H2V9H3V8H0ZM2 2V7H10V2ZM3 4H5V5H3ZM7 4H9V5H7Z"/></svg>
+            <h3>Community</h3>
+            <p>Mentors recognize your name from useful questions, before you claim anything.</p>
+            <a href="docs/guide/05-choose-an-issue/#introduce-yourself-to-the-community">Introduce yourself</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 4H1V2H2V1H4V0H8V1H10V2H11V4H12V8H11V10H10V11H8V12H4V11H2V10H1V8H0ZM2 4V8H3V9H4V10H8V9H9V8H10V4H9V3H8V2H4V3H3V4ZM4 5H5V4H7V5H8V7H7V8H5V7H4Z"/></svg>
+            <h3>Find an issue</h3>
+            <p>One available, well-specified issue you can reproduce.</p>
+            <a href="docs/guide/05-choose-an-issue/#find-an-issue-that-is-actually-free">Choose an issue</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 5H2V3H4V4H5V5H6V7H5V8H4V9H2V7H0ZM6 1H12V11H6V8H8V10H10V2H8V4H6Z"/></svg>
+            <h3>Contribute</h3>
+            <p>A focused pull request you can explain line by line.</p>
+            <a href="docs/guide/06-first-contribution/">First contribution</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 3H1V2H2V1H4V0H8V1H10V2H11V4H12V5H11V6H8V5H7V4H9V3H8V2H4V3H3V4H2V5H0ZM0 7H1V6H4V7H5V8H3V9H4V10H8V9H9V8H10V7H12V9H11V10H10V11H8V12H4V11H2V10H1V8H0Z"/></svg>
+            <h3>Iterate</h3>
+            <p>Every review comment answered, through to a merge or a clear no.</p>
+            <a href="docs/guide/06-first-contribution/#see-it-through-review">See it through review</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 0H8V1H9V2H10V3H11V4H12V12H0ZM2 1V11H10V4H6V1ZM3 5H8V6H3ZM3 7H8V8H3ZM3 9H8V10H3Z"/></svg>
+            <h3>Proposal</h3>
+            <p>An original draft shaped by the organization's template and feedback.</p>
+            <a href="docs/guide/07-prepare-a-proposal/">Prepare a proposal</a>
+          </li>
+          <li>
+            <svg class="ico" viewBox="0 0 12 12" aria-hidden="true"><path d="M0 1H12V11H0ZM2 2V10H10V4H9V5H8V7H7V8H6V9H5V8H4V7H3V5H5V6H6V5H7V4H8V3H10V2Z"/></svg>
+            <h3>Track</h3>
+            <p>A weekly log, a shortlist, and always one manageable next step.</p>
+            <a href="docs/guide/08-track-progress/">Track progress</a>
+          </li>
+        </ol>
+        <p class="arrival">
+          <img class="only-light" src="brand/stamps/stamp-merged-ink.svg" alt="Stamp: merged." width="692" height="120">
+          <img class="only-dark" src="brand/stamps/stamp-merged-open.svg" alt="" width="692" height="120">
+        </p>
+      </div>
     </div>
   </section>
 
@@ -258,7 +276,7 @@ git-into-gsoc start</code></pre>
       <ul class="rules">
         <li class="rule">
           <img src="brand/stickers/sticker-evidence.svg" alt="Sticker: evidence > vibes" width="440" height="64">
-          <p>Every organization, repository, issue, and date comes from the official program site, the public archive, or GitHub. Scores are explained. When data is missing, the tool says so instead of guessing.</p>
+          <p>Every organization, repository, issue, and date comes from the official program site, the public archive, GitHub, or GitLab. Scores are explained. When data is missing, the tool says so instead of guessing.</p>
         </li>
         <li class="rule">
           <img src="brand/stickers/sticker-no-driveby.svg" alt="Sticker: no drive-by prs" width="440" height="64">
@@ -326,6 +344,8 @@ and like science. Where do I start?"</span></pre>
       <p>git into gsoc is an independent, MIT-licensed project. It is not affiliated with or endorsed by Google. Google Summer of Code and GSoC are trademarks of Google LLC. Verify dates, organizations, and rules on the <a href="https://summerofcode.withgoogle.com">official program site</a> and follow each organization's <a href="https://developers.google.com/open-source/gsoc/resources/ai_guidance">AI policy</a>.</p>
     </div>
     <ul>
+      <li><a href="start/">Four questions, in your browser</a></li>
+      <li><a href="orgs/">Every organization, in your browser</a></li>
       <li><a href="https://github.com/anandkaranubc/git-into-gsoc">Source on GitHub</a></li>
       <li><a href="https://pypi.org/project/git-into-gsoc/">Package on PyPI</a></li>
       <li><a href="start/">Four questions, in your browser</a></li>
@@ -361,9 +381,11 @@ and like science. Where do I start?"</span></pre>
     });
     paint();
 
-    // Install tabs: arrow keys move between them, as in any tab list. Windows visitors
-    // start on the PowerShell command.
+    // Hero tabs: arrow keys move between them, as in any tab list. The copy button
+    // belongs to the install commands, so it hides behind the browser tab. Windows
+    // visitors see the PowerShell command before the bash one.
     var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+    var heroCopy = document.querySelector("#install [data-copy]");
     function choose(tab, focus) {
       tabs.forEach(function (t) {
         var on = t === tab;
@@ -371,17 +393,33 @@ and like science. Where do I start?"</span></pre>
         t.tabIndex = on ? 0 : -1;
         document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
       });
+      heroCopy.hidden = tab.getAttribute("data-tab") === "web";
       if (focus) tab.focus();
     }
-    tabs.forEach(function (t, i) {
+    tabs.forEach(function (t) {
       t.addEventListener("click", function () { choose(t, false); });
       t.addEventListener("keydown", function (e) {
         if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
         e.preventDefault();
+        var i = tabs.indexOf(t);
         choose(tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length], true);
       });
     });
-    if (/Windows/i.test(navigator.userAgent)) choose(document.getElementById("tab-windows"), false);
+    if (/Windows/i.test(navigator.userAgent)) {
+      var win = document.getElementById("tab-windows");
+      win.parentNode.insertBefore(win, document.getElementById("tab-unix"));
+      tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+    }
+
+    // The first answer travels in the URL fragment, which browsers never send to a
+    // server, so "your answers stay on your computer" holds. Without JavaScript the
+    // form falls back to a query string.
+    var ask = document.querySelector(".ask");
+    ask.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = ask.elements.know.value.trim();
+      location.href = ask.getAttribute("action") + (v ? "#know=" + encodeURIComponent(v) : "");
+    });
 
     document.querySelectorAll("[data-copy]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -389,6 +427,7 @@ and like science. Where do I start?"</span></pre>
           b.closest(".term").querySelectorAll("code.copyable"),
           function (c) { return !c.closest("pre").hidden; }
         )[0];
+        if (!visible) return;
         var text = visible.textContent;
         var done = function () {
           b.setAttribute("data-done", "1");
