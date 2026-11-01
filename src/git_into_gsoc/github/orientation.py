@@ -14,6 +14,7 @@ from collections import Counter
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from git_into_gsoc.github.repos import is_bot
 from git_into_gsoc.text import clean_untrusted
 
 PURPOSES: dict[str, tuple[str, ...]] = {
@@ -89,7 +90,6 @@ ENTRY_FILE_RE = re.compile(
     r"(?:^|/)(?:__main__\.py|main\.py|cli\.py|app\.py|server\.py|manage\.py|main\.go|main\.rs|"
     r"Main\.java|index\.(?:js|ts)|main\.(?:js|ts|c|cpp|cc))$"
 )
-KNOWN_BOTS = {"dependabot", "renovate", "pre-commit-ci", "github-actions", "allcontributors"}
 # Files a project writes for AI coding assistants, most widely read first. sympy, Zulip,
 # JabRef and pandas state their AI-use policy in AGENTS.md and nowhere a CONTRIBUTING
 # reader looks, so orient lists these and reads the first ones for policy sentences.
@@ -944,7 +944,7 @@ def active_committers(commits: list[dict[str, Any]], *, limit: int = 8) -> list[
     for commit in commits:
         author = commit.get("author") or {}
         login = str(author.get("login") or "")
-        if author.get("type") == "Bot" or login.endswith("[bot]") or login.lower() in KNOWN_BOTS:
+        if is_bot(author):
             continue
         if not login:
             # A git author name is free text that anyone can set on a commit.
