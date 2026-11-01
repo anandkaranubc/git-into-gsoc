@@ -52,6 +52,7 @@ def _mock_repo(router: respx.MockRouter) -> None:
                 "tree": [
                     _tree_entry("README.md"),
                     _tree_entry("CONTRIBUTING.md"),
+                    _tree_entry("AGENTS.md"),
                     _tree_entry("pyproject.toml"),
                     _tree_entry(".github", "tree"),
                     _tree_entry(".github/CODEOWNERS"),
@@ -145,6 +146,10 @@ def _mock_repo(router: respx.MockRouter) -> None:
     )
     raw = {
         "CONTRIBUTING.md": "Join us on Zulip. We do not assign issues; open a PR. Sign your commits with git commit -s.",
+        "AGENTS.md": (
+            "# Instructions for AI agents\n\nThis project does not accept fully AI-generated "
+            "pull requests. Run the tests before you push.\n"
+        ),
         "pyproject.toml": '[project]\nname = "lib"\n[project.scripts]\nlib = "lib.core:app"\n',
         ".github/CODEOWNERS": "src/lib/ @maintainer @other\n",
         ".github/workflows/ci.yml": "jobs:\n  t:\n    steps:\n      - run: pip install -e .\n      - run: pytest -q\n",
@@ -187,6 +192,16 @@ def test_orient_repo_builds_facts_and_paths() -> None:
     assert not any("delet" in g or "force" in g for g in gates)
     assert data["test_commands"][0]["source"] == ".github/workflows/ci.yml"
     assert any(q["kind"] == "assignment" for q in data["policies"])
+    assert data["docs"]["agent_instructions"] == ["AGENTS.md"]
+    assert any(
+        q["kind"] == "ai" and q["source"] == "AGENTS.md" and "AI-generated" in q["text"]
+        for q in data["policies"]
+    )
+    assert [s["path"] for s in data["reading_plan"][:3]] == [
+        "README.md",
+        "CONTRIBUTING.md",
+        "AGENTS.md",
+    ]
     assert data["channels"] == ["Zulip"]
     assert data["example_pr"]["number"] == 7 and data["example_pr"]["touches_tests"]
     assert data["reading_plan"][0]["path"] == "README.md"
@@ -204,6 +219,7 @@ def test_cli_orient_renders_sections() -> None:
         "pytest -q",
         "Who writes the code",
         "Before you open a PR",
+        "AGENTS.md",
         "Read in this order",
     ):
         assert needle in result.stdout

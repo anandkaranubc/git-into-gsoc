@@ -90,6 +90,20 @@ ENTRY_FILE_RE = re.compile(
     r"Main\.java|index\.(?:js|ts)|main\.(?:js|ts|c|cpp|cc))$"
 )
 KNOWN_BOTS = {"dependabot", "renovate", "pre-commit-ci", "github-actions", "allcontributors"}
+# Files a project writes for AI coding assistants, most widely read first. sympy, Zulip,
+# JabRef and pandas state their AI-use policy in AGENTS.md and nowhere a CONTRIBUTING
+# reader looks, so orient lists these and reads the first ones for policy sentences.
+AGENT_INSTRUCTION_FILES = (
+    "AGENTS.md",
+    "CLAUDE.md",
+    "GEMINI.md",
+    ".github/copilot-instructions.md",
+    ".claude/CLAUDE.md",
+    ".cursorrules",
+    ".windsurfrules",
+    ".clinerules",
+)
+CURSOR_RULES_DIR = ".cursor/rules/"
 
 POLICY_PATTERNS: dict[str, re.Pattern[str]] = {
     "assignment": re.compile(
@@ -99,7 +113,7 @@ POLICY_PATTERNS: dict[str, re.Pattern[str]] = {
     ),
     "ai": re.compile(
         r"\b(ai[- ]generated|ai[- ]assist\w*|ai disclosure|generative ai|llm|chatgpt|copilot|"
-        r"no ai\b|ai tools?)\b",
+        r"no ai\b|ai tools?|ai agents?|coding (?:agents?|assistants?)|agent[- ]generated)\b",
         re.I,
     ),
     "pr_limit": re.compile(
@@ -232,12 +246,16 @@ def find_paths(tree: list[dict[str, Any]]) -> dict[str, Any]:
         for t in candidates
     }
     test_dirs = sorted(candidates, key=lambda t: (-weight[t], t.count("/"), t))
+    agent_files = [lower[n.lower()] for n in AGENT_INSTRUCTION_FILES if n.lower() in lower]
+    if any(p.startswith(CURSOR_RULES_DIR) for p in blobs):
+        agent_files.append(CURSOR_RULES_DIR)  # a folder of rule files: listed, never fetched
     return {
         "readme": first("README.md", "README.rst", "README.txt", "README", "readme.md"),
         "contributing": first(
             "CONTRIBUTING.md", ".github/CONTRIBUTING.md", "docs/CONTRIBUTING.md", "CONTRIBUTING.rst"
         ),
         "architecture_docs": sorted(arch)[:5],
+        "agent_instructions": agent_files,
         "codeowners": first("CODEOWNERS", ".github/CODEOWNERS", "docs/CODEOWNERS"),
         "pr_template": first(
             ".github/PULL_REQUEST_TEMPLATE.md",
@@ -737,16 +755,20 @@ def _plain(markdown: str) -> str:
     return _MD_ESCAPE.sub(r"\1", text)  # "work on it\*" -> "work on it*"
 
 
-def policy_quotes(texts: dict[str, str], *, limit: int = 8) -> list[dict[str, str]]:
+def policy_quotes(
+    texts: dict[str, str], *, limit: int = 8, per_source: int = 4
+) -> list[dict[str, str]]:
     """Sentences about assignment, AI use, PR limits, and newcomers, with sources.
 
     Words are the project's own; wrapped lines are joined and markdown links and
-    emphasis are reduced to their text.
+    emphasis are reduced to their text. Each source keeps at most `per_source` of each
+    kind: sympy's AGENTS.md alone has six AI sentences, which pushed CONTRIBUTING's out.
     """
     quotes: list[dict[str, str]] = []
     seen: set[str] = set()
     for source, text in texts.items():
         cleaned = re.sub(r"<!--.*?-->", " ", text or "", flags=re.S)
+        taken: dict[str, int] = {}
         for line in _logical_lines(cleaned):
             stripped = line.strip()
             if not stripped or stripped.startswith("#") or re.match(r"^[-*]\s*\[[ xX]\]", stripped):
@@ -758,8 +780,10 @@ def policy_quotes(texts: dict[str, str], *, limit: int = 8) -> list[dict[str, st
                     continue
                 for kind, pattern in POLICY_PATTERNS.items():
                     if pattern.search(clean):
-                        seen.add(clean)
-                        quotes.append({"kind": kind, "text": clean, "source": source})
+                        if taken.get(kind, 0) < per_source:
+                            seen.add(clean)
+                            quotes.append({"kind": kind, "text": clean, "source": source})
+                            taken[kind] = taken.get(kind, 0) + 1
                         break
     priority = {"assignment": 0, "ai": 1, "pr_limit": 2, "first_timer": 3}
     quotes.sort(key=lambda q: priority[q["kind"]])
@@ -957,6 +981,14 @@ def reading_plan(
         steps.append({"path": found["readme"], "why": "What the project is and how to run it"})
     if found.get("contributing"):
         steps.append({"path": found["contributing"], "why": "How this project wants changes made"})
+    for doc in (found.get("agent_instructions") or [])[:1]:
+        steps.append(
+            {
+                "path": doc,
+                "why": "The project's own rules for AI assistants, often with its AI-use policy; "
+                "read it, and have any assistant you use read it too",
+            }
+        )
     for doc in found.get("architecture_docs") or []:
         steps.append({"path": doc, "why": "How the code is organised, in the maintainers' words"})
     for point in points[:2]:

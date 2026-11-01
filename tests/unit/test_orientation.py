@@ -796,3 +796,35 @@ def test_orient_says_when_merged_work_goes_to_another_branch() -> None:
         + [{"base": {"ref": "main"}}] * 2
     )
     assert work_branch(even, default="main") is None
+
+
+def test_find_paths_lists_agent_instruction_files_most_read_first() -> None:
+    tree = [
+        {"path": ".cursor/rules/style.mdc", "type": "blob"},
+        {"path": ".github/copilot-instructions.md", "type": "blob"},
+        {"path": "claude.md", "type": "blob"},
+        {"path": "agents.md", "type": "blob"},
+    ]
+    found = find_paths(tree)
+    assert found["agent_instructions"] == [
+        "agents.md",
+        "claude.md",
+        ".github/copilot-instructions.md",
+        ".cursor/rules/",
+    ]
+    assert find_paths([{"path": "README.md", "type": "blob"}])["agent_instructions"] == []
+    plan = reading_plan(found=found, points=[], example_pr=None)
+    assert plan[0]["path"] == "agents.md" and "AI assistants" in plan[0]["why"]
+
+
+def test_policy_quotes_read_the_words_agent_files_use() -> None:
+    texts = {
+        "AGENTS.md": (
+            "We do not accept pull requests written entirely by coding assistants. "
+            "Disclose agent-generated text in the description. AI agents must run the tests."
+        )
+    }
+    assert [q["kind"] for q in policy_quotes(texts)] == ["ai", "ai", "ai"]
+    assert len(policy_quotes(texts, per_source=2)) == 2
+    texts["AGENTS.md"] += " We do not assign issues."
+    assert [q["kind"] for q in policy_quotes(texts, per_source=2)] == ["assignment", "ai", "ai"]

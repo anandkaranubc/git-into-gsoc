@@ -2327,6 +2327,8 @@ class GSoCToolkit:
             for key in ("contributing", "pr_template", "pyproject", "package_json", "codeowners")
             if found.get(key)
         }
+        agent_paths = [p for p in found.get("agent_instructions") or [] if not p.endswith("/")]
+        raw_wanted.update({path: path for path in agent_paths[:2]})
         texts: dict[str, str] = {}
         workflow_texts: dict[str, str] = {}
         with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -2365,6 +2367,7 @@ class GSoCToolkit:
             {
                 str(found.get("contributing") or "CONTRIBUTING"): texts.get("contributing", ""),
                 str(found.get("pr_template") or "PR template"): texts.get("pr_template", ""),
+                **{path: texts.get(path, "") for path in agent_paths[:2]},
             }
         )
         total_bytes = sum(langs.values()) or 1
@@ -2402,6 +2405,7 @@ class GSoCToolkit:
                 "readme": found.get("readme"),
                 "contributing": found.get("contributing"),
                 "architecture": found.get("architecture_docs") or [],
+                "agent_instructions": found.get("agent_instructions") or [],
                 "governance": found.get("governance"),
                 "test_dirs": found.get("test_dirs") or [],
             },
