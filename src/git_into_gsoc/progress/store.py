@@ -144,11 +144,13 @@ def other_host_link(value: str) -> str | None:
     if not raw.startswith(("https://", "http://")):
         return None
     parsed = urlparse(raw)
-    host = parsed.netloc.lower()
+    # hostname, not netloc: "github.com:443" is still GitHub.
+    host = (parsed.hostname or "").lower()
     path = [p for p in parsed.path.split("/") if p]
     if not host or "." not in host or host.removeprefix("www.") == "github.com" or len(path) < 2:
         return None
-    return raw.split("#", 1)[0].rstrip("/").removesuffix(".git")
+    # "?x=1" and "#note_5" name the same issue; the log links drop them the same way.
+    return re.split(r"[?#]", raw, maxsplit=1)[0].rstrip("/").removesuffix(".git")
 
 
 _OTHER_HOST_ISSUE = re.compile(r"/(?:-/)?(?:issues|merge_requests|pulls?|bugs?|tickets?)/\d+")
@@ -210,7 +212,7 @@ class ProgressStore:
         if not self.path.exists():
             return self._fresh()
         try:
-            text = _retry_busy(lambda: self.path.read_text(encoding="utf-8"))
+            raw = _retry_busy(self.path.read_bytes)
         except OSError as exc:
             # Unreadable is not damaged: moving the file aside would hide the person's
             # progress behind a fresh, empty one.
@@ -219,9 +221,9 @@ class ProgressStore:
                 hint="Check the file's permissions, or close other programs using it.",
             ) from exc
         try:
-            state = ProgressState.model_validate_json(text)
+            state = ProgressState.model_validate_json(raw)
         except (ValidationError, ValueError) as exc:
-            return self._recover(exc)
+            return self._recover(exc, raw)
         state.phases = {**DEFAULT_PHASES, **state.phases}  # files saved before a phase was added
         return state
 
@@ -232,12 +234,16 @@ class ProgressStore:
             updated_at=datetime.now(UTC),
         )
 
-    def _recover(self, exc: Exception) -> ProgressState:
+    def _recover(self, exc: Exception, raw: bytes) -> ProgressState:
         """Keep a damaged file for the user and carry on with a fresh one."""
-        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S")
+        # Microseconds: two recoveries in one second wrote the same backup name.
+        stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
         backup = self.path.with_name(f"{self.path.stem}.damaged-{stamp}{self.path.suffix}")
         with contextlib.suppress(OSError):
-            self.path.replace(backup)
+            # Reads run without the lock, so another process may have recovered and
+            # saved a good file since `raw` was read; moving that aside would lose it.
+            if self.path.read_bytes() == raw:
+                self.path.replace(backup)
         log.warning(
             "progress.json could not be read (%s); it was kept as %s and a fresh one "
             "will be saved. Copy entries back from the kept file if you need them.",
@@ -340,8 +346,13 @@ class ProgressStore:
     @_mutating
     def track_repo(self, full_name: str) -> ProgressState:
         link = other_host_link(_require(full_name, "repository"))
+        if link and _OTHER_HOST_ISSUE.search(link):
+            raise InputError(
+                f"That is an issue link, not a repository: {full_name!r}",
+                hint="Save it with track_issue instead.",
+            )
         if link:
-            full_name = link
+            full_name = _bounded(link, "link", MAX_LINK_CHARS)
         else:
             owner, repo = parse_repo(full_name)
             full_name = f"{owner}/{repo}"
@@ -355,6 +366,7 @@ class ProgressStore:
         issue_ref = _require(issue_ref, "issue reference")
         link = other_host_link(issue_ref)
         if link and _OTHER_HOST_ISSUE.search(link):
+            _bounded(link, "link", MAX_LINK_CHARS)
             state = self.load()
             if link.lower() not in {i.lower() for i in state.tracked_issues}:
                 state.tracked_issues.append(link)
@@ -389,9 +401,11 @@ class ProgressStore:
 
     def summary(self) -> dict[str, object]:
         state = self.load()
-        done = sum(1 for v in state.phases.values() if v)
-        total = len(state.phases)
-        next_phases = [k for k, v in state.phases.items() if not v]
+        # Known phases only: a phase from a newer version became `next_phase`, and the
+        # command printed for it was one this version's complete_phase refuses.
+        done = sum(1 for k in DEFAULT_PHASES if state.phases.get(k))
+        total = len(DEFAULT_PHASES)
+        next_phases = [k for k in DEFAULT_PHASES if not state.phases.get(k)]
         last_log = max((e.at for e in state.weekly_log), default=None)
         return {
             "log_entries": len(state.weekly_log),

@@ -53,7 +53,7 @@ How the parameters work:
 - `year=0` means the default target year, 2027. When that year's organizations are not announced yet, the latest official list is used and `catalog.note` says so.
 - `limit` and `max_results` take 1 or more; a smaller number is a tool error.
 - `full_name` and `repo` take `owner/name` or a GitHub URL.
-- `ref` takes `owner/name#123`, an issue URL, or `owner/name` together with `number`. Passing a pull request number is an error.
+- `ref` takes `owner/name#123`, an issue URL, or `owner/name` together with `number`; a `number` that disagrees with `ref` is an error. Passing a pull request number is an error.
 - Fit and `match_score` say how well an organization's work matches the person, never a chance of acceptance. Quote the `evidence` lines when explaining a recommendation, and say when the organizations are not confirmed for the coming year (`program.confirmed` is false). [How recommendations work](recommendations.md) explains the sources and the ranking.
 - `org` in `gsoc_find_issues` and `gsoc_discover_repos` is a GSoC organization name or a GitHub login. Given a GSoC name, `gsoc_find_issues` also searches the GitHub projects its ideas page names, such as `ros2` for Open Robotics, or the ones its project pages link to when the ideas page only lists those pages, as UC OSPO's does. An umbrella that lists no GitHub organization, such as the Python Software Foundation, is resolved through the GitHub projects its ideas page links to.
 - `scope="gsoc"` searches repositories of GSoC organizations that use the language. `scope="all"` searches every public repository. Giving `org` or `repo` narrows the search to that owner or repository.

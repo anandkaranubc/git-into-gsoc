@@ -400,3 +400,69 @@ def test_the_summary_shows_the_newest_notes(tmp_path: Path) -> None:
     summary = store.summary()
     assert summary["notes"] == 7
     assert summary["recent_notes"] == ["note 7", "note 6", "note 5", "note 4", "note 3"]
+
+
+def test_recovery_leaves_a_file_another_process_already_repaired(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Reads run without the lock. One process read the damaged text, a second one
+    # recovered and saved a good file, then the first moved that good file aside.
+    from git_into_gsoc.progress import store as store_module
+
+    path = tmp_path / "progress.json"
+    path.write_text('{"phases": {"learn": tr', encoding="utf-8")
+    real = store_module.ProgressState.model_validate_json
+    raced = False
+
+    def racing(raw: bytes) -> object:
+        nonlocal raced
+        if not raced:
+            raced = True
+            ProgressStore(path).add_note("from the other process")
+        return real(raw)
+
+    monkeypatch.setattr(store_module.ProgressState, "model_validate_json", racing)
+    ProgressStore(path).load()
+    assert ProgressStore(path).load().notes == ["from the other process"]
+    assert len(list(tmp_path.glob("progress.damaged-*.json"))) == 1
+
+
+def test_two_recoveries_in_one_second_keep_two_backups(tmp_path: Path) -> None:
+    path = tmp_path / "progress.json"
+    for text in ('{"phases": 1', '{"notes": 1'):
+        path.write_text(text, encoding="utf-8")
+        ProgressStore(path).load()
+    assert len(list(tmp_path.glob("progress.damaged-*.json"))) == 2
+
+
+def test_other_host_links_follow_the_same_rules_as_github_and_log_links(tmp_path: Path) -> None:
+    store = ProgressStore(tmp_path / "progress.json")
+    store.track_issue("https://gitlab.com/inkscape/inkscape/-/issues/5")
+    store.track_issue("https://gitlab.com/inkscape/inkscape/-/issues/5?x=1")
+    store.track_repo("sympy/sympy")
+    store.track_repo("https://github.com:443/sympy/sympy")
+    state = store.load()
+    assert state.tracked_issues == ["https://gitlab.com/inkscape/inkscape/-/issues/5"]
+    assert state.tracked_repos == ["sympy/sympy"]
+    with pytest.raises(InputError, match="limit is 500"):
+        store.track_repo("https://gitlab.com/x/" + "a" * 5000)
+    with pytest.raises(InputError, match="limit is 500"):
+        store.track_issue("https://gitlab.com/x/" + "a" * 5000 + "/-/issues/5")
+    with pytest.raises(InputError, match="issue link, not a repository"):
+        store.track_repo("https://gitlab.com/inkscape/inkscape/-/issues/5")
+
+
+def test_a_phase_from_a_newer_version_is_never_the_next_phase(tmp_path: Path) -> None:
+    import json
+
+    # `next_phase: zzz` led to a `complete_phase zzz` command this version refuses.
+    path = tmp_path / "progress.json"
+    store = ProgressStore(path)
+    for phase in JourneyPhase:
+        store.complete_phase(phase)
+    raw = json.loads(path.read_text())
+    raw["phases"]["zzz"] = False
+    path.write_text(json.dumps(raw))
+    summary = store.summary()
+    assert summary["next_phase"] is None
+    assert summary["completion"] == f"{len(JourneyPhase)}/{len(JourneyPhase)}"

@@ -2176,7 +2176,14 @@ class GSoCToolkit:
                     owner, repo, num = parse_issue_ref(raw)
                 except GigError:
                     if parse_gitlab_issue(raw):
-                        tracked.append(self._tracked_gitlab_issue(raw, state.issue_status))
+                        entry = self._tracked_gitlab_issue(raw, state.issue_status)
+                        tracked.append(entry)
+                        statuses[raw] = entry["availability"]  # else `changed` never fires
+                        if entry["changed"]:
+                            changes.append(
+                                f"{raw} went from {entry['previous']} to "
+                                f"{entry['availability']}: {entry['reason']}"
+                            )
                     elif other_host_link(raw):
                         tracked.append(_off_github_issue(raw))
                     continue
