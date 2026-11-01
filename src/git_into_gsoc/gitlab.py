@@ -845,20 +845,26 @@ _SERVICE_ITEM_RE = re.compile(
 
 def gitlab_ci_as_workflow(text: str) -> str:
     """A .gitlab-ci.yml rewritten so the GitHub Actions readers see its commands:
-    each `script:` list becomes a `run: |` block. Everything else stays as it is."""
+    each `script:` list becomes a `run: |` block. Everything else stays as it is.
+
+    YAML lets a list sit at the same indent as its key (`script:` then `- pytest`),
+    the common GitLab style; an item that is only `|` or `>` opens a block scalar
+    whose deeper lines are the commands."""
     out: list[str] = []
     script_indent: int | None = None
     for line in text.splitlines():
         indent = len(line) - len(line.lstrip())
         if script_indent is not None:
-            item = re.match(r"^\s*-\s+(.*)$", line)
+            item = re.match(r"^(\s*)-\s*(.*)$", line)
+            if item and len(item.group(1)) >= script_indent:
+                body = item.group(2).strip()
+                if body not in {"", "|", "|-", ">", ">-"}:
+                    out.append(" " * (script_indent + 2) + body)
+                continue
             if line.strip() and indent <= script_indent:
                 script_indent = None
-            elif item:
-                out.append(" " * (script_indent + 2) + item.group(1))
-                continue
             elif line.strip():
-                out.append(line)
+                out.append(" " * max(indent, script_indent + 2) + line.strip())
                 continue
         match = re.match(r"^(\s*)(?:before_|after_)?script:\s*(.*)$", line)
         if match:
@@ -931,13 +937,7 @@ def gitlab_orientation(
     """
     base = f"https://{host}/api/v4"
     pid = quote(path, safe="")
-    project = http.get_json(f"{base}/projects/{pid}", params={"license": "true"}, ttl=3600)
-    if not isinstance(project, dict) or not project.get("web_url"):
-        raise NotFoundError(
-            f"{host}/{path} did not answer as a GitLab project",
-            status_code=404,
-            url=f"https://{host}/{path}",
-        )
+    project = _gitlab_project(http, host, path, license="true")
     web_url = str(project["web_url"])
     branch = str(project.get("default_branch") or "main")
     full = str(project.get("path_with_namespace") or path)
@@ -1003,6 +1003,8 @@ def gitlab_orientation(
         if isinstance(langs, dict)
         else []
     )
+    # shortcut: one page of 100 commits, as the GitHub reader takes; page when a count
+    # above 100 matters to a reader.
     raw_commits = read(
         f"{base}/projects/{pid}/repository/commits", {"since": since_iso(90), "per_page": 100}
     )

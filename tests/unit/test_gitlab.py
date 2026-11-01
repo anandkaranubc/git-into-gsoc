@@ -633,6 +633,20 @@ def test_gitlab_ci_scripts_read_as_run_blocks() -> None:
     assert "pytest -q tests" in commands
 
 
+def test_gitlab_ci_lists_at_the_keys_indent_and_block_items_keep_their_commands() -> None:
+    # The two inputs from the review of this change (2026-11-01).
+    same_indent = gitlab_ci_as_workflow(
+        "test:\n  script:\n  - pytest\n  - ruff check\n  tags:\n  - docker\n"
+    )
+    assert same_indent == "test:\n  run: |\n    pytest\n    ruff check\n  tags:\n  - docker"
+    block = gitlab_ci_as_workflow("test:\n  script:\n    - |\n      pip install .\n      pytest\n")
+    assert block == "test:\n  run: |\n      pip install .\n      pytest"
+    from git_into_gsoc.github.orientation import ci_test_commands
+
+    commands = [c["command"] for c in ci_test_commands({".gitlab-ci.yml": same_indent + block})]
+    assert "pytest" in commands and "docker" not in commands
+
+
 def test_gitlab_ci_images_and_services_make_the_environment() -> None:
     env = gitlab_ci_environment(GITLAB_CI)
     assert env["runtimes"] == [
