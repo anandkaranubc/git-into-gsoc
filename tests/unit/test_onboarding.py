@@ -160,6 +160,12 @@ def test_start_with_options_saves_profile_and_matches(api: respx.MockRouter) -> 
     assert data["organizations"], "the embedded official list should match python + science"
     first = data["organizations"][0]["name"]
     assert data["next_steps"][0]["command"] == f'git-into-gsoc org "{first}"'
+    from git_into_gsoc.progress.store import ProgressStore
+
+    saved = ProgressStore().load().profile
+    assert saved["suggested_orgs"][0] == first, "next carries start's matches forward"
+    ProgressStore().set_profile(technologies=["rust"])
+    assert "suggested_orgs" not in ProgressStore().load().profile, "new answers drop them"
 
 
 def test_start_says_when_the_hours_are_too_few_for_some_projects(api: respx.MockRouter) -> None:
