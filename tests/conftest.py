@@ -65,6 +65,13 @@ class _NetworkBlocked(RuntimeError):
     pass
 
 
+def rate_limited() -> httpx.Response:
+    """GitHub's answer when the hourly quota is used up."""
+    return httpx.Response(
+        403, headers={"x-ratelimit-remaining": "0"}, json={"message": "API rate limit exceeded"}
+    )
+
+
 @pytest.fixture(autouse=True)
 def hermetic_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Isolate every test from the user's tokens, cache, data, and the network."""
