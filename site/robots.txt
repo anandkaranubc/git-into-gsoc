@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://anandkaranubc.github.io/git-into-gsoc/sitemap.xml
+Sitemap: https://gitintogsoc.me/sitemap.xml

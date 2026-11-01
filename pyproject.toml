@@ -68,7 +68,7 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://anandkaranubc.github.io/git-into-gsoc/"
+Homepage = "https://gitintogsoc.me/"
 Documentation = "https://github.com/anandkaranubc/git-into-gsoc/blob/main/docs/README.md"
 Repository = "https://github.com/anandkaranubc/git-into-gsoc"
 Issues = "https://github.com/anandkaranubc/git-into-gsoc/issues"
