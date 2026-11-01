@@ -210,6 +210,8 @@ def ideas_document_url(url: str) -> str | None:
     Returns None for pages that are really issue-tracker searches; callers
     should list the issues instead.
     """
+    if not _parses(url.strip()):
+        return None
     parsed = urlparse(url.strip())
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         return None
@@ -235,6 +237,8 @@ def ideas_document_url(url: str) -> str | None:
 
 def issues_page_target(url: str) -> tuple[str, str] | None:
     """(owner/repo, label) when an ideas link is really a GitHub issue search or label page."""
+    if not _parses(url.strip()):
+        return None
     parsed = urlparse(url.strip())
     host = parsed.netloc.lower().removeprefix("www.")
     parts = [p for p in parsed.path.split("/") if p]
@@ -396,7 +400,7 @@ class _LineParser(HTMLParser):
             if self.base_url and not href.startswith(("#", "mailto:", "javascript:")):
                 # ML4SCI links each project's ideas as "/gsoc/projects/2026/...": a
                 # relative link was dropped, so the umbrella page lost all of them.
-                href = urljoin(self.base_url, href)
+                href = urljoin(self.base_url, href) if _parses(href) else ""
             if href.startswith(("http://", "https://")):
                 self._buf.append(f" ({href})")
             self._href = None
@@ -999,6 +1003,16 @@ _PROGRAM_SITES = ("summerofcode.withgoogle.com", "developers.google.com/open-sou
 _POST_PATH_RE = re.compile(r"/(?:posts?|blogs?|news|reports?|authors?|tags?|categor(?:y|ies))/")
 
 
+def _parses(url: str) -> bool:
+    """False for a link urllib cannot split. "http://[::1/x" on an ideas page (a bracket
+    left open) raised ValueError and stopped `ideas` for the whole page."""
+    try:
+        urlparse(url)
+    except ValueError:
+        return False
+    return True
+
+
 def _is_post(url: str) -> bool:
     """A blog post, report, or author, tag or category page. One about ideas or projects
     ("/news/gsoc-2026-projects/") still counts."""
@@ -1009,7 +1023,7 @@ def _is_post(url: str) -> bool:
 def _links_to_post(heading: str) -> bool:
     """A heading that is a link to a post ("Final Report: ... (https://.../report/...)")."""
     urls = _URL_RE.findall(heading)
-    return bool(urls) and _is_post(urls[0])
+    return bool(urls) and _parses(urls[0]) and _is_post(urls[0])
 
 
 def _lead_name(line: str) -> str:
@@ -1050,6 +1064,8 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
             cleaned = url.rstrip(".,;:)")
             if cleaned in seen or any(site in cleaned for site in _PROGRAM_SITES):
                 continue
+            if not _parses(cleaned):
+                continue  # not followed, and the sort by host in service.py would raise on it
             if _is_post(cleaned):
                 continue
             if re.search(r"github\.com/[^/]+/[^/]+/edit/", cleaned):
@@ -1453,7 +1469,7 @@ class _TableParser(HTMLParser):
         elif tag == "a" and self._cell is not None and self._link is None:
             href = dict(attrs).get("href")
             if href and not href.startswith("#"):
-                self._link = urljoin(self.base_url, href)
+                self._link = urljoin(self.base_url, href) if _parses(href) else None
         elif tag == "br" and self._cell is not None:
             self._cell.append(", ")
 
