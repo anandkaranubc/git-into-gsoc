@@ -243,3 +243,30 @@ def test_start_sets_aside_an_organization_that_is_sitting_out(
     assert data["set_aside"][0]["name"] == top["name"]
     shown = runner.invoke(app, ["start", "--tech", "python", "--interests", "1"])
     assert "Left out:" in shown.stdout
+
+
+def test_start_shows_each_reason_once() -> None:
+    # The ✓ line repeated the ideas-page fact that "Why:" had just given, for every
+    # organization on the first screen a beginner sees.
+    from git_into_gsoc.cli import _render_matches, console
+
+    fact = "6 ideas on its 2026 ideas page"
+    data = {
+        "organizations": [
+            {"name": "Org", "match_reasons": ["Uses Python", fact], "readiness": [fact]}
+        ],
+        "catalog": {},
+        "profile": {},
+        "set_aside": [],
+    }
+    with console.capture() as captured:
+        _render_matches(data)
+    text = " ".join(captured.get().split())
+    assert text.count(fact) == 1
+    assert "Why: Uses Python" in text and f"✓ {fact}" in text
+
+
+def test_orgs_takes_interests_as_start_calls_it(api: respx.MockRouter) -> None:
+    # `start` and `recommend` say --interests; `orgs` said "No such option".
+    result = runner.invoke(app, ["orgs", "--tech", "python", "--interests", "science", "-n", "3"])
+    assert result.exit_code == 0, result.output

@@ -370,12 +370,19 @@ def _render_matches(data: dict[str, Any]) -> None:
         _say(f"[dim]{data['catalog']['note']}[/dim]")
     rows = []
     for org in orgs:
-        reasons = [r for r in org["match_reasons"] if not r.startswith("Accepted in")][:3]
+        # match_reasons ends with the readiness lines, and the ✓ line below shows the
+        # first of those, so "6 ideas on its 2026 ideas page" printed twice per org.
+        readiness = org.get("readiness") or []
+        reasons = [
+            r
+            for r in org["match_reasons"]
+            if not r.startswith("Accepted in") and r not in readiness
+        ][:3]
         row = f"[bold]{org['name']}[/bold]"
         if org.get("description"):
             row += f"\n{org['description']}"
         row += f"\n[dim]Why: {'; '.join(reasons)}[/dim]"
-        for line in (org.get("readiness") or [])[:1]:
+        for line in readiness[:1]:
             row += f"\n[green]✓[/green] {line}"
         for line in (org.get("caveats") or [])[:2]:
             row += f"\n[yellow]![/yellow] {line}"
@@ -591,7 +598,11 @@ def orgs_cmd(
         None, "--tech", "-t", help="Technologies you know, comma-separated (python,javascript)"
     ),
     topics: str | None = typer.Option(
-        None, "--topics", help="Topics you care about, comma-separated (science,education)"
+        None,
+        "--topics",
+        "--interests",
+        help="Topics you care about, comma-separated (science,education). --interests, as "
+        "start, profile, and recommend call it, means the same",
     ),
     category: str | None = typer.Option(
         None, "--category", "-c", help="Organization category, for example 'Science and medicine'"
