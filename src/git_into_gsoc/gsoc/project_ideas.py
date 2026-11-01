@@ -29,7 +29,13 @@ MIN_IDEAS_FOR_LAYOUT = 2
 _GDOC = re.compile(r"^/document/d/([A-Za-z0-9_-]+)")
 _URL_RE = re.compile(r"https?://[^\s<>()\"'\]]+")
 _MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
-_HOURS_RE = re.compile(r"\b(90|175|350)\s*(?:h\b|hr|hrs|hours|-hour|hour)?", re.I)
+# The unit, or nothing but GSoC numbers in the cell ("175", R's "175 or 350"): "1750
+# hours" read as 175 and "90%" as 90 (reviewer probe, 2026-11-01).
+_HOURS_RE = re.compile(
+    r"^\s*(90|175|350)(?:\s*(?:or|/|,|-|\u2013|to)\s*(?:90|175|350))*\s*$"
+    r"|\b(90|175|350)\s*(?:h\b|hrs?\b|hours?\b|-hours?\b)",
+    re.I,
+)
 _SIZE_WORD_RE = re.compile(r"\b(small|medium|large)\b", re.I)
 # Hours other than 90, 175, or 350 ("300 hours", "80 to 160 hours", "360 hrs"); not a
 # weekly load ("40 hours per week").
@@ -141,8 +147,11 @@ def _norm_label(text: str) -> str:
 _LABEL_LOOKUP = {
     _norm_label(alias): field for field, aliases in LABELS.items() for alias in aliases
 }
+# Each run of spaces belongs to one `\s*`: with two of them around an optional bold
+# marker, a label followed by 50,000 spaces was tried every way they could share the
+# run and took 5 seconds (probe, 2026-11-01).
 _LABEL_LINE_RE = re.compile(
-    r"^\s*(?:[-*+•]\s*)?(?:\*\*|__)?\s*(?P<label>[A-Za-z][A-Za-z()/ .-]{1,40}?)\s*(?:\*\*|__)?\s*:\s*(?P<value>.*)$"
+    r"^\s*(?:[-*+•]\s*)?(?:(?:\*\*|__)\s*)?(?P<label>[A-Za-z][A-Za-z()/ .-]{1,40}?)\s*(?:(?:\*\*|__)\s*)?:\s*(?P<value>.*)$"
 )
 _NON_IDEA_HEADINGS = (
     "how to apply",
@@ -502,7 +511,9 @@ def _heading(line: str) -> tuple[int, str] | None:
     match = re.match(r"^(#{1,6})\s+(.*?)\s*#*\s*$", line)
     if not match:
         return None
-    text = re.sub(r"[*_`]+", "", match.group(2)).strip()
+    # Idea titles are cut at 200 characters too; a 200 KB heading kept the title
+    # checks busy for seconds (probe, 2026-11-01).
+    text = re.sub(r"[*_`]+", "", match.group(2)).strip()[:200]
     return len(match.group(1)), text
 
 
@@ -644,7 +655,7 @@ def normalize_size(value: str) -> tuple[str | None, int | None]:
     175); (None, None) when neither a GSoC hour count nor a size word is found."""
     hours = _HOURS_RE.search(value or "")
     if hours:
-        number = int(hours.group(1))
+        number = int(hours.group(1) or hours.group(2))
         return {90: "small", 175: "medium", 350: "large"}[number], number
     # MetaBrainz's "300 hours" was dropped, so the idea had no size at all. Keep the
     # hours the page states (a range's upper end), with the nearest GSoC size.
@@ -767,10 +778,15 @@ def _labelled(idea: ProjectIdea) -> int:
     )
 
 
-# A page title such as "GNOME Project ideas for Google Summer of Code 2026".
-_PAGE_TITLE_RE = re.compile(
-    r"\bideas?\b.*\b(?:gsoc|summer of code)\b|\b(?:gsoc|summer of code)\b.*\bideas?\b"
-)
+# A page title such as "GNOME Project ideas for Google Summer of Code 2026". Two
+# searches, not one pattern with `.*` between the words: that was quadratic and spent
+# 22 seconds on a 200 KB heading (probe, 2026-11-01).
+_IDEAS_WORD_RE = re.compile(r"\bideas?\b")
+_GSOC_WORD_RE = re.compile(r"\b(?:gsoc|summer of code)\b")
+
+
+def _is_page_title(low: str) -> bool:
+    return bool(_IDEAS_WORD_RE.search(low) and _GSOC_WORD_RE.search(low))
 
 
 def _is_non_idea(title: str) -> bool:
@@ -780,7 +796,7 @@ def _is_non_idea(title: str) -> bool:
             low in (word, word + "s") or low.startswith(word + " ") or low.endswith(" " + word)
             for word in _NON_IDEA_HEADINGS
         )
-        or bool(_PAGE_TITLE_RE.search(low))
+        or _is_page_title(low)
         or len(low) < 3
     )
 
@@ -841,9 +857,9 @@ def _is_aside(section: str | None) -> bool:
 def _is_list_heading(section: str) -> bool:
     """A parent heading that only says "the ideas": "Ideas List", "Project Ideas"."""
     low = section.lower().strip(" :#")
-    return bool(re.fullmatch(r"(?:list of )?(?:the )?(?:project )?ideas?(?: list)?", low)) or bool(
-        _PAGE_TITLE_RE.search(low)
-    )
+    return bool(
+        re.fullmatch(r"(?:list of )?(?:the )?(?:project )?ideas?(?: list)?", low)
+    ) or _is_page_title(low)
 
 
 # A line that only states a project's size: "Full-time project 350h", "175 hours".

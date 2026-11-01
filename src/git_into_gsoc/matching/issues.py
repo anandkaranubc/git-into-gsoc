@@ -99,8 +99,15 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
     if is_not_code_repo(str(issue.get("repo") or "")):
         return "in a governance, test, or sandbox repository"
     body = str(issue.get("body_excerpt") or "")
+    # "Reserved for GSoC applicants" or "for first-time contributors" is kept for people
+    # like this one, the same carve-out as availability's _NOT_OPEN_RE; the plain rule
+    # screened out exactly those issues (reviewer probe, 2026-11-01).
     if re.search(
-        r"\breserved for\b|\bassigned to @|\bi(?:'m| am) working on (?:this|it)\b", body, re.I
+        r"(?<!not )\breserved for\b"
+        r"(?!\s+(?:[\w-]+\s+){0,2}(?:applicants?|aspirants?|newcomers?|first-?time|new contributors?|beginners?)\b)"
+        r"|\bassigned to @|\bi(?:'m| am) working on (?:this|it)\b",
+        body,
+        re.I,
     ):
         return "reserved for someone or already being worked on"
     if _NOT_A_TASK_RE.search(title) or labels & _NOT_A_TASK_LABELS:

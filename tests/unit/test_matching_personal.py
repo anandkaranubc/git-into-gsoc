@@ -675,3 +675,25 @@ def test_where_something_runs_is_not_a_skill_the_task_needs() -> None:
     # Unix-like systems alone still need a Unix shell, and so does Linux on its own.
     for unix in ("Add setup.sh for macOS and Linux", "Document the Linux/Unix install paths"):
         assert "Linux/Unix" in str(starter_problem(issue(unix, ""), person)), unix
+
+
+def test_an_issue_reserved_for_applicants_is_a_first_task_not_a_taken_one() -> None:
+    from git_into_gsoc.matching.issues import starter_problem
+
+    # "Reserved for GSoC applicants" is kept for people like this one, as availability
+    # already reads it; the starter screen excluded it (reviewer probe, 2026-11-01).
+    person = build_profile(technologies=["python"])
+    for body in (
+        "This issue is reserved for GSoC applicants.",
+        "Reserved for first-time contributors.",
+        "reserved for new contributors",
+        "This is not reserved for anyone, go ahead.",
+    ):
+        issue = {"title": "Fix the Python parser", "created_at": "2025-06-01", "body_excerpt": body}
+        assert starter_problem(issue, person) is None, body
+    taken = {
+        "title": "Fix the Python parser",
+        "created_at": "2025-06-01",
+        "body_excerpt": "Reserved for @bob.",
+    }
+    assert "reserved" in str(starter_problem(taken, person))

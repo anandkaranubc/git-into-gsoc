@@ -221,3 +221,17 @@ def test_title_words_that_spell_a_code_file_point_at_it() -> None:
     assert paths[0] == "lib/ProductOpener/KnowledgePanels.pm"
     assert "docs/api/explain-knowledge-panels.md" not in paths  # docs are not a starting point
     assert title_file_matches("Fix the button", tree) == []
+
+
+def test_a_body_of_dotted_text_is_scanned_in_linear_time() -> None:
+    import time
+
+    # "a.a.a. ... py" at 100 KB took 5 seconds: every position inside the run of path
+    # characters was tried as a start (reviewer probe, 2026-11-01).
+    start = time.perf_counter()
+    extract_mentions("a." * 100_000 + "py")
+    extract_mentions("-a" * 100_000 + ".py")
+    assert time.perf_counter() - start < 0.5
+    # Dots inside a file name are part of it now.
+    found = [m["text"] for m in extract_mentions("see webpack.config.js and src/a.py")]
+    assert "webpack.config.js" in found and "src/a.py" in found
