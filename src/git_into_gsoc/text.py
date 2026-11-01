@@ -14,13 +14,27 @@ from typing import Any
 
 _HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
 _TAG_RE = re.compile(r"</?(?:script|style|iframe|img|svg|object|embed)[^>]*>", re.I)
-# Text GitHub renders as nothing readable: an image shows its picture, not its alt text;
-# a link reference definition shows nothing at all. A 2026-11-01 review put instructions
-# in both, and they reached the model word for word. The character classes exclude the
-# opening bracket so a flood of "![" stays linear.
-_MARKDOWN_IMAGE_RE = re.compile(r"!\[[^\[\]]*\]\([^()]*\)")
-_LINK_REFERENCE_RE = re.compile(r"^[ \t]*\[[^\]\n]+\]:[ \t]*\S+.*$", re.M)
-_HIDDEN_OPEN_RE = re.compile(r"<(\w+)[^<>]*\b(?:hidden\b|display\s*:\s*none)[^<>]*>", re.I)
+# Text GitHub renders as nothing readable: an image shows its picture, not its alt text
+# (inline `![alt](url "title")` or reference-style `![alt][ref]`); a link reference
+# definition shows nothing at all. A 2026-11-01 review put instructions in both, and
+# they reached the model word for word. Each nesting group is unambiguous (a character
+# is either plain or opens one bracket pair), so a flood of "![" stays linear.
+# shortcut: one level of nested [] in alt text and () in a title, and no shortcut
+# reference `![alt]` with a matching definition; upgrade to a parser if a review finds
+# instructions getting through either way.
+_MARKDOWN_IMAGE_RE = re.compile(
+    r"!\[(?:[^\[\]]|\[[^\[\]]*\])*\](?:\((?:[^()]|\([^()]*\))*\)|\[[^\[\]]*\])"
+)
+# A GitHub footnote (`[^1]: ...`) is rendered at the foot of the page, so it stays.
+_LINK_REFERENCE_RE = re.compile(r"^[ \t]*\[[^\]\n^][^\]\n]*\]:[ \t]*\S+.*$", re.M)
+# The `hidden` attribute (not `class="visually-hidden"` or `hidden-xs`, which are visible
+# text on GitHub) and the two styles GitHub's sanitizer leaves in place. `\w++` is
+# possessive: with `\w+`, "<" followed by 20,000 letters and no ">" made the engine hand
+# letters back one at a time, 2.6 s there and 25 s on a 64 KB body (review of #426).
+_HIDDEN_OPEN_RE = re.compile(
+    r"<(\w++)[^<>]*(?:\shidden(?=[\s=/>])|display\s*:\s*none|visibility\s*:\s*hidden)[^<>]*>",
+    re.I,
+)
 _INVISIBLE = {
     "\u200b",  # zero width space
     "\u200c",
@@ -81,7 +95,8 @@ def straight_quotes(text: str) -> str:
 
 
 def _drop_hidden_elements(text: str) -> str:
-    """Remove elements with a `hidden` attribute or `display:none`, content included.
+    """Remove elements with a `hidden` attribute, `display:none` or `visibility:hidden`,
+    content included.
 
     A loop rather than one regex with a backreference: `<p hidden>` repeated 20,000
     times with no closing tag made that regex rescan the text from every opener.

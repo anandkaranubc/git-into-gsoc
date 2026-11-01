@@ -616,3 +616,8 @@ def test_html_tags_from_pull_request_templates_are_not_placeholders() -> None:
         f for f in check_message("pr", text)["findings"] if f["id"] == "placeholders"
     )
     assert placeholders["detail"].startswith("<short-branch-name>. ")
+    # A placeholder that starts with a tag name is still one (review of #426).
+    from git_into_gsoc.drafts import _ANGLE_PLACEHOLDER_RE
+
+    text = '<a short summary> <code to reproduce> <details open> <a href="x">y</a> <br/>'
+    assert _ANGLE_PLACEHOLDER_RE.findall(text) == ["<a short summary>", "<code to reproduce>"]
