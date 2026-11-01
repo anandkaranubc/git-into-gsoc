@@ -498,7 +498,10 @@ def gitlab_repo_leads(
     raws: list[dict[str, Any]] = [
         {
             "name": project.get("name"),
-            "full_name": project.get("path_with_namespace"),
+            # With the host, as issues and repo print it: a bare GNOME/gtk reads as a GitHub
+            # name and `repo GNOME/gtk` would grade the mirror there.
+            "full_name": f"{host}/{project.get('path_with_namespace')}",
+            "project": str(project.get("path_with_namespace")),
             "html_url": project.get("web_url"),
             "description": project.get("description"),
             "stargazers_count": project.get("star_count"),
@@ -516,7 +519,11 @@ def gitlab_repo_leads(
 
     def lead(raw: dict[str, Any], main_language: str | None) -> RepoLead:
         full = str(raw["full_name"])
-        in_ideas = full.lower() in mentioned or str(raw["html_url"]).lower() in ideas_lower
+        url = str(raw["html_url"]).lower()
+        # A whole link only: GNOME/gtk must not count because the page links GNOME/gtk-vnc.
+        in_ideas = full.lower() in mentioned or bool(
+            re.search(re.escape(url) + r"(?![\w.-])", ideas_lower)
+        )
         score, reasons = repo_lead_score(
             {**raw, "language": main_language},
             beginner_issues=0,
@@ -545,7 +552,8 @@ def gitlab_repo_leads(
     for candidate in first[: limit + 5]:
         try:
             languages = http.get_json(
-                f"{base}/projects/{quote(candidate.full_name, safe='')}/languages", ttl=3600
+                f"{base}/projects/{quote(by_name[candidate.full_name]['project'], safe='')}/languages",
+                ttl=3600,
             )
         except GigError:
             languages = {}
@@ -581,6 +589,29 @@ def parse_gitlab_project(ref: str) -> tuple[str, str] | None:
     return host, path
 
 
+def _gitlab_project(http: CachedHttpClient, host: str, path: str, **params: Any) -> dict[str, Any]:
+    """The project record, or NotFoundError with a hint: a project link is tried as GitLab
+    for every host, so codeberg.org used to end in a bare "HTTP 404"."""
+    try:
+        project = http.get_json(
+            f"https://{host}/api/v4/projects/{quote(path, safe='')}",
+            params=params or None,
+            ttl=3600,
+        )
+    except GigError as exc:
+        project = None if isinstance(exc, NotFoundError) else exc
+    if not isinstance(project, dict) or not project.get("web_url"):
+        raise NotFoundError(
+            f"{host}/{path} did not answer as a GitLab project",
+            hint="This command reads GitHub, and projects on GitLab hosts (gitlab.com, "
+            "gitlab.gnome.org, invent.kde.org). For code on another server, read its "
+            "contributing guide there.",
+            status_code=404,
+            url=f"https://{host}/{path}",
+        )
+    return project
+
+
 def gitlab_repo_health(
     http: CachedHttpClient, host: str, path: str
 ) -> tuple[RepoHealth, ContributionGuide]:
@@ -594,13 +625,7 @@ def gitlab_repo_health(
     """
     base = f"https://{host}/api/v4"
     pid = quote(path, safe="")
-    project = http.get_json(f"{base}/projects/{pid}", params={"license": "true"}, ttl=3600)
-    if not isinstance(project, dict) or not project.get("web_url"):
-        raise NotFoundError(
-            f"{host}/{path} did not answer as a GitLab project",
-            status_code=404,
-            url=f"https://{host}/{path}",
-        )
+    project = _gitlab_project(http, host, path, license="true")
     web_url = str(project["web_url"])
     branch = str(project.get("default_branch") or "main")
     full = str(project.get("path_with_namespace") or path)
@@ -634,18 +659,20 @@ def gitlab_repo_health(
     names = [str(e.get("name") or "") for e in entries]
     contributing = next((n for n in names if n.upper().startswith("CONTRIBUTING")), None)
     readme = next((n for n in names if n.upper().startswith("README")), None)
-    templates = False
+    issue_templates = mr_templates = False
     if ".gitlab" in names:
         sub = read(
             f"{base}/projects/{pid}/repository/tree",
             what="template listing",
             params={"path": ".gitlab", "per_page": 100, "ref": branch},
         )
-        templates = any(
-            "template" in str(e.get("name") or "").lower()
+        sub_names = [
+            str(e.get("name") or "").lower()
             for e in (sub if isinstance(sub, list) else [])
             if isinstance(e, dict)
-        )
+        ]
+        issue_templates = any("issue" in n and "template" in n for n in sub_names)
+        mr_templates = any("merge" in n and "template" in n for n in sub_names)
     raw_url = f"{base}/projects/{pid}/repository/files/{{}}/raw"
     text = (
         read_text(raw_url.format(quote(contributing, safe="")), what="contributing guide")
@@ -660,11 +687,16 @@ def gitlab_repo_health(
     readme_guide = bool(readme_text) and readme_contributing_section(readme_text)
     contributing_source = "file" if contributing else "readme" if readme_guide else None
 
-    users = read(f"{base}/projects/{pid}/users", what="members", params={"per_page": 100})
+    users: list[Any] = []
+    for page in range(1, 6):  # GTK has a few hundred members; five pages cover it
+        found_users = read(
+            f"{base}/projects/{pid}/users", what="members", params={"per_page": 100, "page": page}
+        )
+        users.extend(found_users if isinstance(found_users, list) else [])
+        if not isinstance(found_users, list) or len(found_users) < 100:
+            break
     insiders = frozenset(
-        str(u.get("username"))
-        for u in (users if isinstance(users, list) else [])
-        if isinstance(u, dict) and u.get("username")
+        str(u.get("username")) for u in users if isinstance(u, dict) and u.get("username")
     )
     pulls: list[dict[str, Any]] = []
     for state in ("merged", "closed"):
@@ -742,8 +774,8 @@ def gitlab_repo_health(
         has_contributing=contributing_source is not None,
         contributing_source=contributing_source,
         has_code_of_conduct=any(n.upper().startswith("CODE_OF_CONDUCT") for n in names),
-        has_issue_template=templates,
-        has_pr_template=templates,
+        has_issue_template=issue_templates,
+        has_pr_template=mr_templates,
         has_ci=".gitlab-ci.yml" in names or bool(project.get("ci_config_path")),
         unread=sorted(set(unread)),
         prs_sampled=stats.sampled,
