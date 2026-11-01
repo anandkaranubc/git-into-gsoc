@@ -6,6 +6,8 @@ on:
     paths:
       - "site/**"
       - "brand/**"
+      - "scripts/build_site.py"
+      - "src/git_into_gsoc/data/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -31,6 +33,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+
+      # One page per organization from the bundled snapshot; the output is not
+      # committed, so every deploy rebuilds it. Standard library only: no install.
+      - name: Build the organization explorer
+        run: python3 scripts/build_site.py
 
       # Pages builds from this workflow, so Jekyll never runs and no .nojekyll
       # file is needed (the upload step would leave dotfiles out anyway).

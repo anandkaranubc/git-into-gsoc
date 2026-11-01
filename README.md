@@ -108,11 +108,23 @@ Each step names the command that does it. The [beginner guide](docs/README.md) w
 - **Read-only and private.** It only reads public data and never posts anywhere. Your profile and progress stay in a file on your computer. There is no account, no tracking, and no telemetry. See [privacy](docs/privacy.md) and [sources and limitations](docs/sources.md).
 - **No shortcuts.** It will not mass-message maintainers, farm trivial pull requests, or write your proposal. It points you to each organization's [AI policy](https://developers.google.com/open-source/gsoc/resources/ai_guidance) and helps you do work you can explain.
 
+## How it compares
+
+| If you already use | What this adds |
+|---|---|
+| [GSoC Organizations](https://www.gsocorganizations.dev/), the community archive of past organizations | A ranking for your skills and interests, the repositories inside each organization that merge newcomers' work, and the beginner issues that are still free. The archive is one of this tool's sources |
+| Archives of accepted proposals | Links to them from `ideas`, next to each organization's own ideas page and its AI policy |
+| [goodfirstissue.dev](https://goodfirstissue.dev/), [up-for-grabs](https://up-for-grabs.net/), and other label feeds | A read of each issue's timeline (assignees, linked pull requests, "can I work on this?" comments), so you skip the issue three people already claimed |
+| An AI assistant on its own | Real organizations, issues, and dates in place of guesses. Connected, the assistant uses this tool's data and shows its sources |
+
+[What we learned from other tools](docs/research.md) has the full comparison, with sources.
+
 ## Where to go next
 
 | I want to... | Start here |
 |---|---|
 | Understand GSoC and open source first | [Beginner guide](docs/README.md) |
+| Browse every organization without installing anything | [Organization explorer](https://gitintogsoc.me/orgs/) |
 | Connect a specific AI assistant | [Assistant setup](docs/assistants.md) |
 | Look up a command | [Command reference](docs/cli.md) |
 | See the tools assistants get | [MCP reference](docs/mcp.md) |

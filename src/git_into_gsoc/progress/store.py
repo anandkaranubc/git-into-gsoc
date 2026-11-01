@@ -20,10 +20,12 @@ from pydantic import ValidationError
 from git_into_gsoc.config import DEFAULT_TARGET_YEAR, _private_dir, data_location
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
-from git_into_gsoc.validation import parse_issue_ref, parse_repo, validate_limit
+from git_into_gsoc.validation import parse_issue_ref, parse_repo, split_csv, validate_limit
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
-LOCK_TIMEOUT_SECONDS = 10.0
+# A save holds the lock for milliseconds, but the wait is unfair: eight writers on a
+# slow Windows CI runner starved one past 10 seconds (PR 408's Windows job, 2026-11-01).
+LOCK_TIMEOUT_SECONDS = 30.0
 STALE_LOCK_SECONDS = 60.0
 # Windows briefly denies access to a file another process is replacing or deleting
 # (a sharing violation, raised as PermissionError). A replace takes milliseconds.
@@ -193,8 +195,17 @@ class ProgressStore:
                     raise  # a folder we may not write to; waiting will not help
                 with contextlib.suppress(OSError):
                     if time.time() - lock.stat().st_mtime > STALE_LOCK_SECONDS:
-                        lock.unlink()  # left behind by a process that crashed
-                        continue
+                        # Left behind by a process that crashed. The CLI and the MCP
+                        # server can both see it stale, and unlink-then-create let the
+                        # slower one delete the other's fresh lock. Only one rename wins.
+                        claimed = lock.with_name(f"{lock.name}.stale-{os.getpid()}")
+                        os.rename(lock, claimed)
+                        if time.time() - claimed.stat().st_mtime > STALE_LOCK_SECONDS:
+                            claimed.unlink()
+                            continue
+                        # The other waiter took over between our check and our rename,
+                        # so the file we moved is its fresh lock: put it back.
+                        os.rename(claimed, lock)
                 if time.monotonic() > deadline:
                     raise InputError(
                         f"Another git-into-gsoc process is saving progress ({lock}).",
@@ -225,6 +236,11 @@ class ProgressStore:
         except (ValidationError, ValueError) as exc:
             return self._recover(exc, raw)
         state.phases = {**DEFAULT_PHASES, **state.phases}  # files saved before a phase was added
+        # docs/configuration.md invites hand edits, and "technologies": "python, rust"
+        # became ['p', 'y', ...] in every reader that calls list() on it.
+        for key in ("technologies", "interests"):
+            if isinstance(state.profile.get(key), str):
+                state.profile[key] = split_csv(state.profile[key])
         return state
 
     def _fresh(self) -> ProgressState:
@@ -265,6 +281,10 @@ class ProgressStore:
         try:
             with os.fdopen(fd, "w", encoding="utf-8") as handle:
                 handle.write(state.model_dump_json(indent=2))
+                # Without this a power loss right after the rename can leave an empty
+                # file, which load() then sets aside: the only copy of the journey log.
+                handle.flush()
+                os.fsync(handle.fileno())
             if os.name == "posix":
                 os.chmod(tmp, 0o600)
             _retry_busy(lambda: os.replace(tmp, self.path))
@@ -289,17 +309,14 @@ class ProgressStore:
     @_mutating
     def set_profile(self, **fields: object) -> ProgressState:
         state = self.load()
+        if fields.get("technologies") or fields.get("interests"):
+            # `start` saves the organizations it matched; new answers make them stale.
+            state.profile.pop("suggested_orgs", None)
         state.profile.update({k: v for k, v in fields.items() if v is not None})
         return self.save(state)
 
     def profile(self) -> dict[str, Any]:
         return dict(self.load().profile)
-
-    @_mutating
-    def set_issue_status(self, ref: str, status: str) -> ProgressState:
-        state = self.load()
-        state.issue_status[ref] = status
-        return self.save(state)
 
     @_mutating
     def mark_checked(self, statuses: dict[str, str], at: datetime | None) -> ProgressState:
