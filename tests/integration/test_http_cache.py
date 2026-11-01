@@ -100,15 +100,20 @@ def test_rate_limit_raises_with_reset_and_hint(tmp_path: Path) -> None:
 
 
 @respx.mock
-def test_short_retry_after_is_honoured(tmp_path: Path) -> None:
-    respx.get(URL).mock(
-        side_effect=[
-            httpx.Response(429, headers={"Retry-After": "3"}),
-            httpx.Response(200, json={"ok": True}),
-        ]
-    )
+def test_short_retry_after_is_honoured_for_the_configured_apis_only(tmp_path: Path) -> None:
+    for url in (GITHUB, URL):
+        respx.get(url).mock(
+            side_effect=[
+                httpx.Response(429, headers={"Retry-After": "3"}),
+                httpx.Response(200, json={"ok": True}),
+            ]
+        )
     client, sleeps = make_client(tmp_path)
-    assert client.get_json(URL, use_cache=False) == {"ok": True}
+    assert client.get_json(GITHUB, use_cache=False) == {"ok": True}
+    assert sleeps == [3.0]
+    # A stranger's page saying 429 is not waited for: `ideas` follows up to 30 of them.
+    with pytest.raises(RateLimitError):
+        client.get_json(URL, use_cache=False)
     assert sleeps == [3.0]
 
 
@@ -408,3 +413,88 @@ def test_a_server_that_drips_its_answer_is_cut_off(tmp_path: Path) -> None:
     with pytest.raises(HttpError, match="took longer than"):
         client.get_text(URL, use_cache=False)
     assert now[0] < 1000
+
+
+def test_a_redirect_body_is_never_read_so_it_cannot_dodge_the_cap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # httpx used to read a 302's whole body before following it, past the size cap.
+    import git_into_gsoc.http_client as http_module
+
+    monkeypatch.setattr(http_module, "MAX_RESPONSE_BYTES", 1000)
+    read = [0]
+
+    def big() -> Iterator[bytes]:
+        for _ in range(50):
+            read[0] += 100
+            yield b"x" * 100
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/start":
+            return httpx.Response(302, headers={"Location": "/final"}, content=big())
+        return httpx.Response(200, text="ok")
+
+    client = CachedHttpClient(
+        Settings(http_max_retries=0),
+        cache_root=tmp_path / "http",
+        transport=httpx.MockTransport(handler),
+    )
+    assert client.get_text("https://example.test/start", use_cache=False) == "ok"
+    assert read[0] < 1000  # the 5,000-byte redirect body was not read
+
+
+def test_a_plain_redirect_is_still_followed(tmp_path: Path) -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/start":
+            return httpx.Response(302, headers={"Location": "/final"})
+        return httpx.Response(200, json={"page": request.url.path})
+
+    client = CachedHttpClient(
+        Settings(), cache_root=tmp_path / "http", transport=httpx.MockTransport(handler)
+    )
+    assert client.get_json("https://example.test/start", use_cache=False) == {"page": "/final"}
+
+
+@respx.mock
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"Retry-After": "1e20"},
+        {"Retry-After": "inf"},
+        {"Retry-After": "nan"},
+        {"x-ratelimit-reset": "99999999999999999999"},
+        {"x-ratelimit-reset": "9999999999999"},
+    ],
+)
+def test_absurd_limit_headers_from_any_host_are_a_friendly_error(
+    tmp_path: Path, headers: dict[str, str]
+) -> None:
+    respx.get(URL).mock(return_value=httpx.Response(429, headers=headers))
+    client, sleeps = make_client(tmp_path)
+    with pytest.raises(RateLimitError):
+        client.get_json(URL, use_cache=False)
+    assert sleeps == []
+
+
+@respx.mock
+def test_a_304_without_a_cached_copy_is_not_an_empty_page(tmp_path: Path) -> None:
+    respx.get(URL).mock(return_value=httpx.Response(304))
+    client, _ = make_client(tmp_path)
+    with pytest.raises(HttpError, match="no copy"):
+        client.get_text(URL)
+    assert client.stats["cache_hits"] == 0
+
+
+@respx.mock
+def test_a_refused_token_is_not_hidden_behind_a_stale_copy(tmp_path: Path) -> None:
+    respx.get(GITHUB).mock(
+        side_effect=[
+            httpx.Response(200, json={"v": 1}),
+            httpx.Response(401, json={"message": "Bad credentials"}),
+        ]
+    )
+    client, _ = make_client(tmp_path)
+    assert client.get_json(GITHUB, headers={"Authorization": "Bearer old"}) == {"v": 1}
+    with pytest.raises(HttpError, match="401") as refused:
+        client.get_json(GITHUB, headers={"Authorization": "Bearer old"}, ttl=0)
+    assert "token" in (refused.value.hint or "")

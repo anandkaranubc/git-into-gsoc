@@ -36,6 +36,7 @@ __all__ = ["CachedHttpClient", "HttpError", "NotFoundError", "RateLimitError"]
 log = logging.getLogger(__name__)
 
 STALE_IF_ERROR_SECONDS = 7 * 86400
+MAX_RETRY_AFTER_SECONDS = 7 * 86400
 PRUNE_INTERVAL_SECONDS = 86400
 # The largest real response is the full organization list (about 15 MB). Pages that
 # strangers can edit are linked from ideas pages, so a body (after decompression)
@@ -174,6 +175,12 @@ class CachedHttpClient:
                 self.stats["requests"] += 1
                 response = self._client.send(follow, stream=True, follow_redirects=False)
             try:
+                if response.is_redirect:
+                    # A second hop would be followed as an empty log ("no output").
+                    raise HttpError(
+                        f"The log from {_host(url)} redirected twice, so it was not read.",
+                        url=url,
+                    )
                 if response.status_code >= 400:
                     response.read()
                     if _is_rate_limited(response):
@@ -294,11 +301,22 @@ class CachedHttpClient:
 
         try:
             response = self._send(url, request_headers, params, json_body=json_body)
+            if response.status_code == 304 and entry is None:
+                # Nothing was asked to be validated, so there is nothing to serve; read
+                # as text, the empty body was cached as an empty page for the whole TTL.
+                raise HttpError(
+                    f"{_host(url)} answered that nothing changed, but this tool has no "
+                    "copy of the page.",
+                    url=url,
+                    hint="Try again later; the server's cache may be confused.",
+                )
             # Parsed here, so a body that is not JSON falls back to the cache below.
-            revalidated = response.status_code == 304 and entry is not None
+            revalidated = response.status_code == 304
             data: Any = None if revalidated else _decode(response, url, kind)
         except (RateLimitError, HttpError) as exc:
-            if isinstance(exc, NotFoundError) or entry is None:
+            # A 401 means the token was refused: a week of cached answers would hide
+            # that from the person until they hit an uncached address.
+            if isinstance(exc, NotFoundError) or entry is None or exc.status_code == 401:
                 raise
             if time.time() - entry.get("ts", 0) > STALE_IF_ERROR_SECONDS:
                 raise
@@ -372,8 +390,13 @@ class CachedHttpClient:
 
             if _is_rate_limited(response):
                 wait = _retry_after_seconds(response)
+                # Only the configured APIs are worth waiting for: `ideas` follows up to 30
+                # pages of one site, and a stranger's page saying 429 with Retry-After: 20
+                # held the command for 20 minutes (an audit, 2026-11-01).
+                patient = _origin(httpx.URL(url)) in self._trusted_origins
                 if (
-                    wait is not None
+                    patient
+                    and wait is not None
                     and wait <= self.settings.http_max_retry_wait_seconds
                     and attempt + 1 < attempts
                 ):
@@ -425,7 +448,22 @@ class CachedHttpClient:
         seconds = RESPONSE_DEADLINE_TIMEOUTS * self.settings.http_timeout_seconds
         deadline = self._clock() + seconds
         try:
-            response = self._client.send(request, stream=True)
+            response = self._client.send(request, stream=True, follow_redirects=False)
+            # httpx reads a redirect's whole body before following it, so a 302 with an
+            # 80 MB body passed the cap below untouched (an audit, 2026-11-01). Each hop
+            # is sent here instead; httpx still drops Authorization when the host changes
+            # and the private-address hook still runs per hop.
+            hops = 0
+            while response.next_request is not None:
+                response.close()
+                hops += 1
+                if hops > self._client.max_redirects:
+                    raise httpx.TooManyRedirects(
+                        "Exceeded maximum allowed redirects.", request=response.next_request
+                    )
+                response = self._client.send(
+                    response.next_request, stream=True, follow_redirects=False
+                )
         except httpx.DecodingError as exc:
             raise HttpError(undecodable, url=url) from exc
         try:
@@ -621,19 +659,25 @@ def _is_rate_limited(response: httpx.Response) -> bool:
 
 
 def _retry_after_seconds(response: httpx.Response) -> float | None:
+    """Seconds the server asked us to wait, from 0 to a week; None when it said nothing
+    usable. Any host can send this header, and `1e20` overflowed `timedelta` into a
+    traceback (an audit, 2026-11-01)."""
     value = response.headers.get("Retry-After")
     if not value:
         return None
     try:
-        return max(0.0, float(value))
+        seconds = float(value)
     except ValueError:
         try:
             when = parsedate_to_datetime(value)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             return None
         if when.tzinfo is None:  # "-0000" means "zone unknown"; HTTP dates are UTC
             when = when.replace(tzinfo=UTC)
-        return max(0.0, (when - datetime.now(UTC)).total_seconds())
+        seconds = (when - datetime.now(UTC)).total_seconds()
+    if seconds != seconds:  # nan
+        return None
+    return min(max(0.0, seconds), MAX_RETRY_AFTER_SECONDS)
 
 
 def _rate_limit_error(
@@ -647,7 +691,10 @@ def _rate_limit_error(
         # an hour away; Retry-After says when to try again.
         reset_at = datetime.now(UTC) + timedelta(seconds=wait)
     elif reset and reset.isdigit():
-        reset_at = datetime.fromtimestamp(int(reset), tz=UTC)
+        # A stranger's server can send any digits here; too many for a timestamp raised
+        # OverflowError or ValueError past every friendly-error handler.
+        with contextlib.suppress(OverflowError, ValueError, OSError):
+            reset_at = datetime.fromtimestamp(int(reset), tz=UTC)
     when = f"; it {reset_phrase(reset_at)}" if reset_at else ""
     host = _host(url)
     github = {"github.com", _host(settings.github_api_url)}
