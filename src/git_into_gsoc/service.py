@@ -89,7 +89,13 @@ from git_into_gsoc.github.search import (
     language_family,
     or_group,
 )
-from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
+from git_into_gsoc.gitlab import (
+    GITLAB_BEGINNER_LABELS,
+    gitlab_issue_status,
+    gitlab_target,
+    parse_gitlab_issue,
+    search_gitlab_issues,
+)
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
@@ -126,6 +132,7 @@ from git_into_gsoc.models import (
     Availability,
     ContactChannel,
     IdeasDocument,
+    IssueCandidate,
     OrgSummary,
     ProgressState,
     ProjectIdea,
@@ -1266,6 +1273,92 @@ class GSoCToolkit:
             "proposal still work for this organization.",
         )
 
+    def _gitlab_candidates(
+        self, gsoc_org: OrgSummary, *, label: str | None, max_results: int
+    ) -> tuple[str, list[str], list[IssueCandidate]] | None:
+        """(where, labels used, issues) from the GitLab group or project an
+        organization's code link names. None when it names none, or the host does not
+        answer as GitLab does.
+
+        Only for a named organization: `--scope gsoc` would cost a group search per
+        organization, and the language filter has no counterpart on GitLab.
+        """
+        target = gitlab_target(gsoc_org.source_code)
+        if target is None:
+            return None
+        host, path = target
+        labels_used = [label] if label else list(GITLAB_BEGINNER_LABELS)
+        try:
+            issues = search_gitlab_issues(
+                self.http,
+                host,
+                path,
+                labels=labels_used,
+                max_results=max_results,
+                org_name=gsoc_org.name,
+            )
+        except GigError:
+            return None
+        return f"{host}/{path}", labels_used, issues
+
+    def _issues_on_gitlab(
+        self, name: str, *, label: str | None, max_results: int
+    ) -> dict[str, Any] | None:
+        """`issues --org` for an organization with nothing to search on GitHub whose code
+        link is a GitLab group or project (GNOME). None when it is not one."""
+        try:
+            gsoc_org = self.gsoc.get_organization(name)
+        except GigError:
+            return None
+        found = (
+            self._gitlab_candidates(gsoc_org, label=label, max_results=max_results)
+            if gsoc_org
+            else None
+        )
+        if gsoc_org is None or found is None:
+            return None
+        where, labels_used, issues = found
+        note = (
+            f"Searching {gsoc_org.name} on {where} through GitLab's public API, with no "
+            "language filter. Left out: issues with an assignee. Comments there need a "
+            "sign-in, so an issue with comments shows unknown until you read them. Check "
+            "one with git-into-gsoc issue URL."
+        )
+        person = self._saved_person()
+        listed = _with_cautions(
+            personalize([_issue_dict(i) for i in issues], person, reorder=False), person
+        )
+        chat = next(
+            (
+                channel
+                for kind in ("chat", "mailingList")
+                for channel in gsoc_org.channels
+                if channel.kind == kind and channel.value
+            ),
+            None,
+        )
+        steps = (
+            []
+            if issues
+            else [
+                f"Read the open issues at https://{where} yourself: a small bug, a "
+                "docs gap, or a missing test is a fine first contribution even without a "
+                "beginner label.",
+                f'Or start from its ideas: git-into-gsoc ideas "{gsoc_org.name}", and ask in '
+                "its public channel how newcomers start" + (f": {chat.value}" if chat else "."),
+            ]
+        )
+        return {
+            "scope": "custom",
+            "language_used": None,
+            "labels_used": labels_used,
+            "note": note,
+            "count": len(issues),
+            "issues": listed,
+            "before_you_comment": BEFORE_YOU_COMMENT,
+            "next_steps": steps,
+        }
+
     def _repos_named_on_page(
         self, text: str, searched: list[str], *, language: str | None, limit: int = 6
     ) -> list[RepoLead]:
@@ -1410,8 +1503,28 @@ class GSoCToolkit:
         gsoc_owners: list[str] = []
         own_owners: list[str] = []
         linked: list[str] = []
+        own_on_gitlab: tuple[str, list[str], list[IssueCandidate]] | None = None
         if org and not repo:
-            own_owners, linked, owners_note = self._gsoc_owners(org, language=language)
+            try:
+                own_owners, linked, owners_note = self._gsoc_owners(org, language=language)
+            except NotFoundError:
+                # GNOME, QEMU, and GNU Mailman keep their issues on GitLab; the error that
+                # names the host stands for everyone else.
+                on_gitlab = self._issues_on_gitlab(org, label=label, max_results=max_results)
+                if on_gitlab is None:
+                    raise
+                return on_gitlab
+            if linked and not own_owners:
+                # QEMU and ns-3 keep their own code on GitLab and name GitHub projects on
+                # their ideas pages; both belong in the list, their own first.
+                try:
+                    gsoc_org = self.gsoc.get_organization(org)
+                except GigError:
+                    gsoc_org = None
+                if gsoc_org is not None:
+                    own_on_gitlab = self._gitlab_candidates(
+                        gsoc_org, label=label, max_results=max_results
+                    )
             gsoc_owners = [*own_owners, *linked]
             if gsoc_owners:
                 shortlist, org = gsoc_owners, None
@@ -1466,6 +1579,14 @@ class GSoCToolkit:
             max_results=max_results,
             org_names=owner_names,
         )
+        if own_on_gitlab:
+            where, _, from_gitlab = own_on_gitlab
+            issues = [*from_gitlab, *issues]
+            note += (
+                f" Its own issues on {where} come from GitLab's public API."
+                if from_gitlab
+                else f" Its own code, at {where}, has no free issue with a common beginner label."
+            )
         if gsoc_owners and linked:
             # Free issues first; among them, the organization's own before linked projects.
             linked_owners = {o.lower() for o in linked}
@@ -1476,6 +1597,7 @@ class GSoCToolkit:
                     -i.beginner_score,
                 )
             )
+            issues = issues[:max_results]
             note += " Its own repositories come first, then the linked ones."
         if use_gsoc and narrowed and not gsoc_owners and len(issues) < 3:
             # Too few in the organizations that fit the interests: keep those first and
@@ -3427,7 +3549,8 @@ class GSoCToolkit:
         shown = ", ".join(names[:3]) + (f", and {len(names) - 3} more" if len(names) > 3 else "")
         return (
             f" Not searched, because their code is outside GitHub: {shown}. "
-            'See git-into-gsoc org "NAME" for where each one keeps its issues.'
+            'git-into-gsoc issues --org "NAME" searches one on GitLab; org "NAME" says '
+            "where the others keep their issues."
         )
 
     def _code_elsewhere(self, names: list[str]) -> dict[str, str]:

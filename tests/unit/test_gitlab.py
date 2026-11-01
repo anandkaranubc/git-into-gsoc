@@ -11,7 +11,13 @@ import pytest
 import respx
 
 from git_into_gsoc.errors import HttpError, NotFoundError
-from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
+from git_into_gsoc.gitlab import (
+    GITLAB_BEGINNER_LABELS,
+    gitlab_issue_status,
+    gitlab_target,
+    parse_gitlab_issue,
+    search_gitlab_issues,
+)
 from git_into_gsoc.http_client import CachedHttpClient
 
 API = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgitg/issues/494"
@@ -216,3 +222,133 @@ def test_a_redirect_to_another_host_does_not_carry_the_token(tmp_path: Path) -> 
     assert any("glpat-secret" in v for v in notes.calls.last.request.headers.values())
     assert other.called
     assert not any("glpat-secret" in v for v in other.calls.last.request.headers.values())
+
+
+# Searching a group or project, as `issues --org` does for GNOME, QEMU, or GNU Mailman.
+
+
+GIMP = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgimp/issues"
+
+
+class FakeGitLab:
+    """Answers by (url, label) so a test can see which labels were asked for, in order."""
+
+    def __init__(self, routes: dict[tuple[str, str | None], Any]) -> None:
+        self.routes = routes
+        self.asked: list[tuple[str, str | None]] = []
+
+    def get_json(self, url: str, *, params: dict[str, Any] | None = None, **kwargs: Any) -> Any:
+        key = (url, (params or {}).get("labels"))
+        self.asked.append(key)
+        if key not in self.routes:
+            raise NotFoundError("HTTP 404", status_code=404, url=url)
+        return self.routes[key]
+
+
+def _listed(iid: int, project: str = "GNOME/gimp", **extra: Any) -> dict[str, Any]:
+    return {
+        "id": 1000 + iid,
+        "iid": iid,
+        "title": f"Issue {iid}",
+        "description": "Steps: open the dialog, click apply.",
+        "state": "opened",
+        "assignees": [],
+        "author": {"username": "reporter"},
+        "labels": ["4. Newcomers", "1. Bug"],
+        "user_notes_count": 0,
+        "created_at": _iso(40),
+        "updated_at": _iso(5),
+        "web_url": f"https://gitlab.gnome.org/{project}/-/work_items/{iid}",
+        **extra,
+    }
+
+
+def test_the_code_link_says_where_to_search() -> None:
+    assert gitlab_target("https://gitlab.gnome.org/") == ("gitlab.gnome.org", "GNOME")
+    assert gitlab_target("https://gitlab.gnome.org/GNOME/gimp/") == (
+        "gitlab.gnome.org",
+        "GNOME/gimp",
+    )
+    assert gitlab_target("https://gitlab.com/qemu-project/qemu") == (
+        "gitlab.com",
+        "qemu-project/qemu",
+    )
+    assert gitlab_target("https://gitlab.com/mailman") == ("gitlab.com", "mailman")
+    assert gitlab_target("https://invent.kde.org") is None  # bugs.kde.org holds KDE's bugs
+    assert gitlab_target("https://github.com/sympy/sympy") is None
+    assert gitlab_target(None) is None and gitlab_target("not a link") is None
+
+
+def test_a_project_path_is_searched_when_it_is_not_a_group() -> None:
+    mr_api = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgimp/issues"
+    http = FakeGitLab(
+        {
+            (GIMP, "4. Newcomers"): [_listed(1), _listed(2, user_notes_count=3)],
+            (GIMP, "easy"): [_listed(3, labels=["easy"])],
+            (f"{mr_api}/1/related_merge_requests"): [_mr(7, "opened", project="GNOME/gimp")],
+            (f"{mr_api}/3/related_merge_requests"): [],
+        }
+    )
+    http.routes = {(k if isinstance(k, tuple) else (k, None)): v for k, v in http.routes.items()}
+    found = search_gitlab_issues(
+        http,  # type: ignore[arg-type]
+        "gitlab.gnome.org",
+        "GNOME/gimp",
+        labels=GITLAB_BEGINNER_LABELS,
+        max_results=5,
+        org_name="GNU Image Manipulation Program",
+    )
+    # The group endpoint 404s for a project path, so the project one is used from then on.
+    assert http.asked[0] == (
+        "https://gitlab.gnome.org/api/v4/groups/GNOME%2Fgimp/issues",
+        "4. Newcomers",
+    )
+    assert http.asked[1] == (GIMP, "4. Newcomers")
+    assert all(url == GIMP for url, _ in http.asked[1:11])
+    by_number = {c.number: c for c in found}
+    assert set(by_number) == {1, 2, 3}
+    assert by_number[1].availability.value == "likely_taken"  # the open merge request
+    assert by_number[1].assessment and by_number[1].assessment.linked_prs[0].number == 7
+    assert by_number[2].availability.value == "unknown"  # 3 comments nobody can read
+    assert by_number[3].availability.value == "available"
+    assert found[0].number == 3  # free first
+    assert by_number[1].repo == "gitlab.gnome.org/GNOME/gimp"
+    assert by_number[1].url == "https://gitlab.gnome.org/GNOME/gimp/-/issues/1"
+    assert by_number[1].gsoc_org == "GNU Image Manipulation Program"
+    assert by_number[1].beginner_score > 0 and by_number[1].signals
+
+
+def test_a_host_that_is_not_gitlab_raises() -> None:
+    http = FakeGitLab({})
+    with pytest.raises(NotFoundError):
+        search_gitlab_issues(
+            http,  # type: ignore[arg-type]
+            "cgit.freebsd.org",
+            "src",
+            labels=["good first issue"],
+            max_results=5,
+        )
+    assert len(http.asked) == 2  # groups, then projects, then give up
+
+
+def test_one_project_cannot_fill_the_list() -> None:
+    group = "https://gitlab.gnome.org/api/v4/groups/GNOME/issues"
+    page = [_listed(n) for n in range(1, 6)] + [_listed(9, project="GNOME/gitg")]
+    routes: dict[tuple[str, str | None], Any] = {(group, "4. Newcomers"): page}
+    for n in range(1, 10):
+        for project in ("GNOME%2Fgimp", "GNOME%2Fgitg"):
+            routes[
+                (
+                    f"https://gitlab.gnome.org/api/v4/projects/{project}/issues/{n}/related_merge_requests",
+                    None,
+                )
+            ] = []
+    found = search_gitlab_issues(
+        FakeGitLab(routes),  # type: ignore[arg-type]
+        "gitlab.gnome.org",
+        "GNOME",
+        labels=["4. Newcomers"],
+        max_results=10,
+    )
+    assert sum(c.repo.endswith("/gimp") for c in found) == 3
+    assert any(c.repo.endswith("/gitg") for c in found)
