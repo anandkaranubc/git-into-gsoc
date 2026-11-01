@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from git_into_gsoc.coach import PROJECT_HOURS
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.matching.concepts import (
     SKILL,
     find_concepts,
@@ -144,12 +145,8 @@ def summarize_repos(
     for repo in repos:
         if repo.get("archived") or repo.get("fork"):
             continue
-        pushed = str(repo.get("pushed_at") or "")
-        try:
-            when = datetime.fromisoformat(pushed.replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if when >= cutoff:
+        when = parse_iso(repo.get("pushed_at"))
+        if when is not None and when >= cutoff:
             active.append(repo)
     languages: Counter[str] = Counter()
     topics: Counter[str] = Counter()
