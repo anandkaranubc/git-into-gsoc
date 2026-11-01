@@ -104,6 +104,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <meta name="description" content="{escape(description)}">
 <link rel="canonical" href="{SITE_URL}{path}">
 <meta property="og:type" content="website">
+<meta property="og:url" content="{SITE_URL}{path}">
 <meta property="og:title" content="{escape(title)}">
 <meta property="og:description" content="{escape(description)}">
 <meta property="og:image" content="{SITE_URL}brand/social/social-preview.png">
@@ -113,7 +114,8 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <link rel="icon" href="{root}brand/favicon/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<link rel="preload" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap"></noscript>
 <link rel="stylesheet" href="{root}brand/tokens.css">
 <link rel="stylesheet" href="{root}styles.css">
 <script>
@@ -431,11 +433,13 @@ importScripts("PYODIDE_URLpyodide.js");
 var ready = (async function () {
   var py = await loadPyodide({ indexURL: "PYODIDE_URL" });
   await py.loadPackage(WHEEL_LIST);
-  var parts = await Promise.all([
-    fetch("pkg.zip").then(function (r) { return r.arrayBuffer(); }),
-    fetch("orgs.json").then(function (r) { return r.text(); }),
-    fetch("page.py").then(function (r) { return r.text(); })
-  ]);
+  function get(name, read) {
+    return fetch(name).then(function (r) {
+      if (!r.ok) throw new Error(name + " failed to load (" + r.status + ")");
+      return r[read]();
+    });
+  }
+  var parts = await Promise.all([get("pkg.zip", "arrayBuffer"), get("orgs.json", "text"), get("page.py", "text")]);
   py.unpackArchive(parts[0], "zip");
   py.FS.writeFile("orgs.json", parts[1]);
   py.runPython(parts[2]);
@@ -708,9 +712,9 @@ def build_start(out: Path, official: dict[str, Any], signals: dict[str, Any]) ->
 def sitemap(slugs: list[str]) -> str:
     urls = [
         SITE_URL,
+        f"{SITE_URL}brand.html",
         f"{SITE_URL}start/",
         f"{SITE_URL}orgs/",
-        f"{SITE_URL}brand.html",
         *(f"{SITE_URL}orgs/{s}/" for s in slugs),
     ]
     body = "".join(f"<url><loc>{escape(u)}</loc></url>" for u in urls)
