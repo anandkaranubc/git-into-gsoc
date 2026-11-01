@@ -160,6 +160,12 @@ def test_start_with_options_saves_profile_and_matches(api: respx.MockRouter) -> 
     assert data["organizations"], "the embedded official list should match python + science"
     first = data["organizations"][0]["name"]
     assert data["next_steps"][0]["command"] == f'git-into-gsoc org "{first}"'
+    from git_into_gsoc.progress.store import ProgressStore
+
+    saved = ProgressStore().load().profile
+    assert saved["suggested_orgs"][0] == first, "next carries start's matches forward"
+    ProgressStore().set_profile(technologies=["rust"])
+    assert "suggested_orgs" not in ProgressStore().load().profile, "new answers drop them"
 
 
 def test_start_says_when_the_hours_are_too_few_for_some_projects(api: respx.MockRouter) -> None:
@@ -243,3 +249,21 @@ def test_start_sets_aside_an_organization_that_is_sitting_out(
     assert data["set_aside"][0]["name"] == top["name"]
     shown = runner.invoke(app, ["start", "--tech", "python", "--interests", "1"])
     assert "Left out:" in shown.stdout
+
+
+def test_start_does_not_print_a_readiness_line_twice(capsys: pytest.CaptureFixture[str]) -> None:
+    # Ranking folds readiness lines into match_reasons, so "6 ideas on its ideas page"
+    # appeared in "Why:" and again on the ✓ line below it.
+    from git_into_gsoc import cli
+
+    org = {
+        "name": "MDAnalysis",
+        "description": "Molecular simulations in Python",
+        "match_reasons": ["Uses Python", "6 ideas on its 2026 ideas page"],
+        "readiness": ["6 ideas on its 2026 ideas page"],
+        "caveats": [],
+    }
+    cli._render_matches({"organizations": [org], "catalog": {}, "profile": {}})
+    out = capsys.readouterr().out
+    assert out.count("6 ideas on its 2026 ideas page") == 1
+    assert "Why: Uses Python" in out
