@@ -10,7 +10,7 @@ Everything in this folder is generated from one pixel grid by `scripts/brand/bui
 ```bash
 pip install fonttools brotli          # optional: builds the Gig Pixel font
 python -m scripts.brand.build --raster  # SVG + tokens + font + PNG/ICO (PNG needs rsvg-convert, ICO needs ImageMagick)
-python -m scripts.brand.preview         # stage site/ + brand/ and serve them locally
+cp -r site/. /tmp/gig-site && cp -r brand /tmp/gig-site/brand && python -m http.server -d /tmp/gig-site 8765   # preview the website the way Pages serves it
 ```
 
 ## The idea

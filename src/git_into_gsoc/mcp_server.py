@@ -522,8 +522,8 @@ async def gsoc_recommend_path(
             github_username = answer.data.github_username
             experience = answer.data.experience or experience
             hours_per_week = answer.data.hours_per_week or hours_per_week
-    tech = [t.strip() for t in technologies.split(",") if t.strip()]
-    interests_list = [t.strip() for t in interests.split(",") if t.strip()]
+    tech = split_csv(technologies)
+    interests_list = split_csv(interests)
     # The SDK runs sync tools in worker threads but async ones on the event loop. This
     # is the one async tool, and its tens of GitHub and ideas-page calls would otherwise
     # hold the stdio server for the whole run: no ping, no cancel, no other tool.

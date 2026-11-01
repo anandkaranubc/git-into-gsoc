@@ -50,6 +50,6 @@ Nothing in these folders is uploaded, and progress does not sync to another comp
 
 To back up progress, copy `progress.json` somewhere you control. To correct entries, stop any assistant connection using the tool, back up the file, and edit the JSON carefully. A time without a timezone is read as UTC, and fields the tool does not know are kept. To start over, rename the file; the next save creates a new one.
 
-Most GitHub responses stay fresh for an hour, but issue checks refresh after 5 minutes and official program dates after 6 hours. `GIG_CACHE_TTL_SECONDS` changes only the one-hour default, so for a guaranteed fresh look run `git-into-gsoc cache --clear` first.
+`GIG_CACHE_TTL_SECONDS` changes only the one-hour default for GitHub responses; [caching](sources.md#caching) lists how long each kind of data stays fresh. For a guaranteed fresh look, run `git-into-gsoc cache --clear` first.
 
 [Guide contents](README.md) · [Troubleshooting](troubleshooting.md)

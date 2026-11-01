@@ -10,7 +10,8 @@ import pytest
 import respx
 
 from conftest import load_fixture
-from git_into_gsoc.gsoc.client import GSoCClient, github_refs, normalize_name
+from git_into_gsoc.gsoc.client import GSoCClient, github_refs
+from git_into_gsoc.gsoc.names import normalize_name
 from git_into_gsoc.scoring.org_match import expand_terms
 
 OFFICIAL = "https://summerofcode.withgoogle.com/api/program"

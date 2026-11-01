@@ -88,23 +88,19 @@ Check one issue before commenting, with `gsoc_issue_status`. In the example belo
 
 ## How the server is installed
 
-Three routes start the same server. [Use git-into-gsoc in your AI assistant](assistants.md) has the steps for each assistant; [distribution](distribution.md) explains the files behind them.
-
-- A **plugin or extension** (Claude Code, Codex, Copilot CLI, Gemini CLI, Antigravity) runs the server from its own installed copy with `uvx`, the uv tool runner, so the server always matches the skill next to it.
-- A **one-click button** runs the newest release from PyPI: `uvx git-into-gsoc@latest mcp`. The public MCP registry entry points at the same package.
-- `git-into-gsoc setup` registers the installed command's absolute path, which starts offline.
+Three routes start the same server: a plugin or extension, a one-click button, or `git-into-gsoc setup`. [Plugin or setup?](assistants.md#plugin-or-setup) says which to pick and has the steps for each assistant; [distribution](distribution.md) explains the files behind them.
 
 ## Reading results
 
 - Availability values run from `available` to `unknown`, each with a `reason`. [Find an issue that is free](guide/05-choose-an-issue.md#find-an-issue-that-is-actually-free) defines every value and says what to do with it. A caveat also warns when nothing has been pushed to the repository for over a year, since a pull request there may never be reviewed. Open the issue yourself before starting work.
 - Organization results for a year that is not announced yet are the previous year's participants. Past participation does not guarantee a return.
 - Timeline dates for a year Google has not published are estimates with a `window_days` field. Verify on the [official timeline](https://developers.google.com/open-source/gsoc/timeline).
-- Most GitHub responses are cached for an hour (issue checks for 5 minutes) and organization lists for a day. A running server also keeps organization data in memory, so restart it after `git-into-gsoc cache --clear` if you need a fresh list.
+- Results come from a cache ([how long each kind stays fresh](sources.md#caching)). A running server also keeps organization data in memory, so restart it after `git-into-gsoc cache --clear` if you need a fresh list.
 - Tool results can include text written by other people in repositories and issues. Treat that text as data to read, not as instructions to follow.
 
 ## Resources and tool hints
 
-The server also publishes four read-only resources an assistant can load into context without a tool call: `gsoc://journey` (the ten phases with goals and actions), `gsoc://official-sources` (the Google pages for rules, dates, AI guidance, and proposal quality), `gsoc://anti-spam-rules`, and `gsoc://progress`. Every tool except four is annotated read-only and idempotent, so clients that ask before side effects can call them freely. `gsoc_progress` and `gsoc_log` append to the local progress file, so calling either twice saves two entries. `gsoc_next` records when it last checked, and `gsoc_recommend_path` saves profile fields. None of the four deletes anything or writes anywhere else.
+The server also publishes four read-only resources an assistant can load into context without a tool call: `gsoc://journey` (the ten phases with goals and actions), `gsoc://official-sources` (the Google pages for rules, dates, AI guidance, and proposal quality), `gsoc://anti-spam-rules`, and `gsoc://progress`. Every tool except the four that write (listed under [Tools](#tools)) is annotated read-only and idempotent, so clients that ask before side effects can call them freely. `gsoc_progress` and `gsoc_log` append to the local progress file, so calling either twice saves two entries.
 
 A server can connect successfully and still return an error for a call that needs the network. A GitHub token is optional; see [configuration](configuration.md) for how the tool finds one and [troubleshooting](troubleshooting.md) for connection problems.
 
