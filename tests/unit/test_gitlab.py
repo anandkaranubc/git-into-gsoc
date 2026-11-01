@@ -771,6 +771,7 @@ def test_pointers_resolve_paths_and_find_the_closing_merge_request() -> None:
                 "id": 1550,
                 "path_with_namespace": "GNOME/gitg",
                 "default_branch": "master",
+                "web_url": "https://gitlab.gnome.org/GNOME/gitg",
             },
             k(f"{GITG_API}/issues/494"): {
                 "iid": 494,
@@ -814,8 +815,12 @@ def test_pointers_resolve_paths_and_find_the_closing_merge_request() -> None:
     assert "merge requests" in data["next_step"] and "GITLAB_TOKEN" in data["next_step"]
 
 
-def test_pointers_for_a_missing_issue_raise() -> None:
+def test_pointers_for_a_missing_issue_raise_with_a_hint() -> None:
     k = FakeProject.key
-    http = FakeProject({k(GITG_API): {"id": 1, "default_branch": "master"}})
-    with pytest.raises(NotFoundError):
+    http = FakeProject({k(GITG_API): {"id": 1, "web_url": "https://gitlab.gnome.org/GNOME/gitg"}})
+    with pytest.raises(NotFoundError) as caught:
         gitlab_issue_pointers(http, "gitlab.gnome.org", "GNOME/gitg", 1)  # type: ignore[arg-type]
+    assert "merge request" in (caught.value.hint or "")
+    with pytest.raises(NotFoundError) as other:
+        gitlab_issue_pointers(FakeProject({}), "codeberg.org", "a/b", 1)  # type: ignore[arg-type]
+    assert "another server" in (other.value.hint or "")

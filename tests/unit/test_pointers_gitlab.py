@@ -13,7 +13,14 @@ API = "https://gitlab.gnome.org/api/v4/projects/GNOME%2Fgitg"
 def test_pointers_accept_a_gitlab_issue_link() -> None:
     with respx.mock(assert_all_called=False) as api:
         api.get(API).mock(
-            return_value=httpx.Response(200, json={"id": 1550, "default_branch": "master"})
+            return_value=httpx.Response(
+                200,
+                json={
+                    "id": 1550,
+                    "default_branch": "master",
+                    "web_url": "https://gitlab.gnome.org/GNOME/gitg",
+                },
+            )
         )
         api.get(f"{API}/issues/494").mock(
             return_value=httpx.Response(

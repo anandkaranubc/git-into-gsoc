@@ -1174,11 +1174,16 @@ def gitlab_issue_pointers(
     base = f"https://{host}/api/v4"
     pid = quote(path, safe="")
     repo = f"{host}/{path}"
-    project = http.get_json(f"{base}/projects/{pid}", ttl=3600)
-    issue = http.get_json(f"{base}/projects/{pid}/issues/{number}", ttl=300)
-    if not isinstance(project, dict) or not isinstance(issue, dict):
+    project = _gitlab_project(http, host, path)
+    try:
+        issue = http.get_json(f"{base}/projects/{pid}/issues/{number}", ttl=300)
+    except GigError as exc:
+        issue = None if isinstance(exc, NotFoundError) else exc
+    if not isinstance(issue, dict):
         raise NotFoundError(
             f"Could not read {repo} issue {number} through GitLab's public API",
+            hint="It may be private or deleted, or the number may belong to a merge request. "
+            "Open the link and check; `git-into-gsoc issue URL` checks a merge request's issue.",
             status_code=404,
             url=f"https://{host}/{path}/-/issues/{number}",
         )
@@ -1346,6 +1351,7 @@ def gitlab_issue_pointers(
     return {
         "issue": {
             "repo": repo,
+            "host": host,
             "number": number,
             "title": clean_untrusted(title, limit=200),
             "url": issue.get("web_url") or f"https://{host}/{path}/-/issues/{number}",

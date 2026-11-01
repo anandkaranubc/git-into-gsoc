@@ -1600,12 +1600,14 @@ def profile_cmd(
 
 @app.command("pointers", rich_help_panel="Pick a repository and an issue")
 def pointers_cmd(
-    ref: str = typer.Argument(..., help="owner/repo#123, an issue URL, or owner/repo"),
+    ref: str = typer.Argument(
+        ..., help="owner/repo#123, an issue URL on GitHub or a GitLab host, or owner/repo"
+    ),
     number: int | None = typer.Argument(None, help="Issue number if REF is owner/repo"),
     similar: int = typer.Option(
         5, "--similar", help="How many similar closed issues to learn from"
     ),
-    no_search: bool = typer.Option(False, "--no-search", help="Skip GitHub code search"),
+    no_search: bool = typer.Option(False, "--no-search", help="Skip code search"),
     output: Output = OUTPUT_OPTION,
 ) -> None:
     """Where to start reading for an issue: files it names, past fixes of similar issues."""
@@ -1643,8 +1645,8 @@ def pointers_cmd(
             "[yellow]The issue text names no file this tool could match in the tree.[/yellow]"
         )
     # A GitLab issue's repo starts with its host; its fixes are merge requests.
-    host = str(issue["repo"]).split("/", 1)[0]
-    on_gitlab = "." in host
+    host = issue.get("host")  # set for a GitLab issue; absent for GitHub
+    on_gitlab = bool(host)
     if data["search_links"]:
         console.print(f"\n[bold]Search these on {host if on_gitlab else 'GitHub'}[/bold]")
         for link in data["search_links"]:
