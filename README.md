@@ -113,6 +113,7 @@ Each step names the command that does it. The [beginner guide](docs/README.md) w
 | I want to... | Start here |
 |---|---|
 | Understand GSoC and open source first | [Beginner guide](docs/README.md) |
+| Get three organizations that fit me without installing anything | [Four questions in the browser](https://anandkaranubc.github.io/git-into-gsoc/start/) |
 | Browse every organization without installing anything | [Organization explorer](https://anandkaranubc.github.io/git-into-gsoc/orgs/) |
 | Connect a specific AI assistant | [Assistant setup](docs/assistants.md) |
 | Look up a command | [Command reference](docs/cli.md) |

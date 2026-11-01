@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import sys
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,7 +25,32 @@ def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
         assert (tmp_path / "orgs" / org["slug"] / "index.html").is_file()
         assert f'href="{org["slug"]}/"' in index
     sitemap = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
-    assert sitemap.count("<loc>") == len(slugs) + 2
+    assert sitemap.count("<loc>") == len(slugs) + 3
+
+
+def test_start_page_ships_the_package_and_asks_the_four_questions(tmp_path: Path) -> None:
+    build(tmp_path)
+    start = tmp_path / "start"
+    page = (start / "index.html").read_text(encoding="utf-8")
+    for question in ("1 of 4", "2 of 4", "3 of 4", "4 of 4"):
+        assert question in page
+    for level in ("new", "some", "experienced"):
+        assert f'value="{level}"' in page
+    assert 'data-topic="science"' in page
+    assert "../orgs/" in page
+    worker = (start / "worker.js").read_text(encoding="utf-8")
+    assert "cdn.jsdelivr.net/pyodide/v" in worker
+    assert "pydantic_settings-" in worker
+    assert (start / "page.py").read_text(encoding="utf-8") == (
+        ROOT / "scripts/start_page.py"
+    ).read_text(encoding="utf-8")
+    data = json.loads((start / "orgs.json").read_text(encoding="utf-8"))
+    assert data["year"] and len(data["orgs"]) == len(data["descriptions"])
+    with zipfile.ZipFile(start / "pkg.zip") as archive:
+        names = archive.namelist()
+    assert "git_into_gsoc/matching/rank.py" in names
+    assert "git_into_gsoc/models.py" in names
+    assert all(n.endswith(".py") or n.endswith("py.typed") for n in names)
 
 
 def test_data_text_is_escaped_and_odd_slugs_are_refused(tmp_path: Path) -> None:
