@@ -13,6 +13,7 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass
 from typing import Any, Literal
 
+from git_into_gsoc.config import OFFICIAL_SPAM_GUIDANCE
 from git_into_gsoc.text import straight_quotes
 
 Status = Literal["pass", "warn", "fail"]
@@ -121,7 +122,6 @@ BUZZWORDS = (
     "synerg",
     "holistic",
 )
-SPAM_GUIDANCE_URL = "https://developers.google.com/open-source/gsoc/resources/spam_proposals"
 PROPOSAL_GUIDE_URL = "https://google.github.io/gsocguides/student/writing-a-proposal"
 
 _URL_RE = re.compile(r"https?://[^\s)>\]]+")
@@ -382,7 +382,7 @@ def check_proposal(
                 "fail",
                 f"{len(leftovers)} template placeholder(s) left in",
                 ", ".join(leftovers[:5])
-                + f". Google's spam guidance lists leftover placeholders first ({SPAM_GUIDANCE_URL}).",
+                + f". Google's spam guidance lists leftover placeholders first ({OFFICIAL_SPAM_GUIDANCE}).",
             )
         )
     else:
@@ -397,7 +397,7 @@ def check_proposal(
                     "fail",
                     f"{share:.0%} of the text is copied from the ideas page",
                     "Orgs reject proposals that restate their own idea; explain your approach, "
-                    f"what you investigated, and your plan instead ({SPAM_GUIDANCE_URL}).",
+                    f"what you investigated, and your plan instead ({OFFICIAL_SPAM_GUIDANCE}).",
                 )
             )
         elif share >= 0.05:
@@ -584,7 +584,7 @@ def check_proposal(
                 f"{len(phrases)} generic phrase(s) or buzzword(s) that read as AI-written",
                 ", ".join(f"'{p}'" for p in phrases[:6])
                 + ". Replace with specifics about this project and your own experience "
-                f"({SPAM_GUIDANCE_URL}).",
+                f"({OFFICIAL_SPAM_GUIDANCE}).",
             )
         )
     else:

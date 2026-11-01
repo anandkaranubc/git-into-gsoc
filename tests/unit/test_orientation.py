@@ -34,6 +34,31 @@ def _tree(*paths: str) -> list[dict[str, Any]]:
     return out
 
 
+def test_a_contributing_guide_in_docs_is_not_also_an_architecture_doc() -> None:
+    # MDAnalysis mdacli (blind beginner test, 2026-10-22): docs/CONTRIBUTING.rst was
+    # listed twice under "Read first" and as steps 2 and 3 of the reading order.
+    found = find_paths(_tree("README.rst", "docs/", "docs/CONTRIBUTING.rst", "docs/index.rst"))
+    found["contributing"] = "docs/CONTRIBUTING.rst"  # as the community profile reports it
+    assert "docs/CONTRIBUTING.rst" not in found["architecture_docs"]
+    plan = reading_plan(found=found, points=[], example_pr=None)
+    paths = [step["path"] for step in plan]
+    assert paths.count("docs/CONTRIBUTING.rst") == 1
+
+
+def test_one_signed_commit_is_not_a_sign_off_rule() -> None:
+    def commit(message: str) -> dict[str, Any]:
+        return {"commit": {"message": message}}
+
+    signed = "Fix a typo\n\nSigned-off-by: A <a@example.com>"
+    few = conventions([commit(signed)], contributing="", pr_template="", check_names=[], found={})
+    assert not few["dco"]["required"]
+    many = conventions(
+        [commit(signed)] * 5, contributing="", pr_template="", check_names=[], found={}
+    )
+    assert many["dco"]["required"]
+    assert "5 of the last 5 commits carry Signed-off-by" in many["dco"]["evidence"]
+
+
 TREE = _tree(
     "README.md",
     "CONTRIBUTING.md",

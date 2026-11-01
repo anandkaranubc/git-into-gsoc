@@ -54,3 +54,7 @@ coverage.xml
 .agents/mcp_config.json
 .devin/
 *.bak
+
+# Written by scripts/build_site.py in the Pages workflow
+site/orgs/
+site/sitemap.xml

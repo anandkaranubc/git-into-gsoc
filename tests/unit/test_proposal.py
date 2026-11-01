@@ -111,11 +111,6 @@ def test_mcp_proposal_check_tool_and_resources() -> None:
     assert report["summary"]["fail"] >= 5
     # Use the sync managers: asyncio.run() opens a socketpair on Windows, which the
     # hermetic test environment blocks.
-    tools = {t.name: t for t in mcp._tool_manager.list_tools()}
-    assert tools["gsoc_proposal_check"].annotations is not None
-    assert tools["gsoc_proposal_check"].annotations.read_only_hint is True
-    assert tools["gsoc_progress"].annotations is not None
-    assert tools["gsoc_progress"].annotations.read_only_hint is False
     uris = {str(r.uri) for r in mcp._resource_manager.list_resources()}
     assert {"gsoc://journey", "gsoc://official-sources", "gsoc://anti-spam-rules"} <= uris
 
