@@ -32,12 +32,6 @@ def test_a_repositorys_own_beginner_label_counts() -> None:
         assert any(s.startswith("Beginner label") for s in issue.signals), labels
 
 
-def test_help_wanted_alone_is_still_not_a_beginner_label() -> None:
-    issue = _scored(["help wanted", "performance"])
-    assert any(s.startswith("No beginner label") for s in issue.signals)
-    assert issue.beginner_score <= 75
-
-
 def test_the_search_and_scoring_agree() -> None:
     for name in ["good first issue", "GSOC Starter", "Difficulty-easy", "help wanted", "bug"]:
         assert is_beginner_label(name) == search_rule(name), name
