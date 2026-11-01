@@ -1254,9 +1254,10 @@ class GSoCToolkit:
                 "are not read there."
             ),
             "next_step": (
-                f"Pick a project that holds code, such as {first.full_name}, then run "
-                f'git-into-gsoc issues --org "{gsoc_org.name}" for a free beginner issue '
-                "(repo and orient do not read GitLab yet)."
+                f"Pick a project that holds code, such as {first.full_name}: "
+                f"git-into-gsoc repo {first.url} grades it, git-into-gsoc orient {first.url} "
+                f'shows its layout, and git-into-gsoc issues --org "{gsoc_org.name}" finds a '
+                "free beginner issue."
                 if first
                 else f'Start from its ideas: git-into-gsoc ideas "{gsoc_org.name}".'
             ),

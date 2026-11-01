@@ -52,6 +52,7 @@ def test_repos_lists_a_gitlab_groups_projects(monkeypatch: pytest.MonkeyPatch) -
     assert data["repos"][0]["language"] == "C" and data["repos"][0]["url"].startswith("https://")
     assert "GitLab" in data["note"]
     assert 'issues --org "GNOME Foundation"' in data["next_step"]
+    assert "repo https://gitlab.gnome.org/GNOME/gtk grades it" in data["next_step"]
     assert data["main_code"] == "https://gitlab.gnome.org/"
 
 

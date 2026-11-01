@@ -85,7 +85,7 @@ def test_an_issue_on_another_site_gets_advice_that_is_true() -> None:
     assert "read the whole thread for claims" in (info.value.hint or "")
     with pytest.raises(InputError) as repo_info:
         parse_repo("https://codeberg.org/a/b")
-    assert (repo_info.value.hint or "").startswith("This command reads GitHub only")
+    assert (repo_info.value.hint or "").startswith("This command reads GitHub. repo, orient")
 
 
 def test_validate_login() -> None:

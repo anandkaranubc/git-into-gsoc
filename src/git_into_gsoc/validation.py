@@ -45,9 +45,10 @@ def _split_github_path(value: str) -> list[str]:
         if parsed.netloc.lower() not in _GITHUB_HOSTS:
             raise InputError(
                 f"Not a github.com URL: {value!r}",
-                hint="This command reads GitHub only. For a project on GitLab or its own "
-                "server, read its contributing guide there. `git-into-gsoc issue` does read "
-                "an issue link from any GitLab server.",
+                hint="This command reads GitHub. repo, orient, issue, and pointers also take a "
+                "project or issue link on a GitLab host (https://gitlab.gnome.org/GNOME/gitg); "
+                "a group link is not a project, so use `git-into-gsoc repos NAME` for its "
+                "projects. For code on another server, read its contributing guide there.",
             )
         return [p for p in parsed.path.split("/") if p]
     return [p for p in raw.split("/") if p]
