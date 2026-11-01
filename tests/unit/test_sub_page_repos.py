@@ -15,14 +15,12 @@ import httpx
 import respx
 from typer.testing import CliRunner
 
-from conftest import load_fixture
+from conftest import mock_catalog
 from git_into_gsoc.cli import app
 from git_into_gsoc.models import ProjectIdea
 from git_into_gsoc.service import GSoCToolkit, _idea_repo, _sub_page_github_repos
 
 runner = CliRunner()
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
 # SymPy's ideas page in the fixture data stands in for an index of project pages.
 SYMPY_RAW = "https://raw.githubusercontent.com/wiki/sympy/sympy/GSoC-Ideas.md"
 SITE = "https://projects.example.org/gsoc"
@@ -74,15 +72,6 @@ PAGES = {
 }
 
 
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
-
-
 def _repo(request: httpx.Request) -> httpx.Response:
     owner, name = request.url.path.split("/")[2:4]
     return httpx.Response(
@@ -103,14 +92,7 @@ def _repo(request: httpx.Request) -> httpx.Response:
 
 
 def _mock(api: respx.MockRouter) -> None:
-    api.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-    api.get(f"{OFFICIAL}/2026/organizations/").mock(
-        return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-    )
-    api.get(f"{ARCHIVE}/organizations.json").mock(
-        return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-    )
-    api.get(f"{ARCHIVE}/2026.json").mock(return_value=httpx.Response(200, json=_archive_year(2026)))
+    mock_catalog(api)
     api.get(SYMPY_RAW).mock(return_value=httpx.Response(200, text=INDEX))
     for name, page in PAGES.items():
         api.get(f"{SITE}/{name}/").mock(return_value=httpx.Response(200, text=page))
