@@ -35,7 +35,7 @@ The four questions: your GitHub username (optional; it reads the languages of yo
 
 | Command | Options | Result |
 |---|---|---|
-| `program` | `--year` (default 2027), `--size small\|medium\|large` | The current phase and what to do in it, the timeline with official or estimated dates, good contributor habits, and your next command. `--size` picks which evaluation deadlines to show, since they differ by project size |
+| `program` | `--year` (default: the target year, see [configuration](configuration.md)), `--size small\|medium\|large` | The current phase and what to do in it, the timeline with official or estimated dates, good contributor habits, and your next command. `--size` picks which evaluation deadlines to show, since they differ by project size |
 | `next` | `--year`, `--no-check` | What to do right now, with up to six actions and the exact command for each. See below |
 | `journey` | none | All ten phases with goals and actions |
 | `proposal [FILE]` | `--github`, `--verify` / `--no-verify`, `--ideas-file` | Without a file: the proposal checklist and a suggested structure. With a draft (`proposal check FILE` works too): pass, warn, and fail findings. See below |

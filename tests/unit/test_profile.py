@@ -182,3 +182,14 @@ def test_recommend_saves_plain_skill_names(api: respx.MockRouter) -> None:
     data = GSoCToolkit().recommend_path(technologies=["c++", "a little python"])
     assert data["technologies_used"] == ["c++", "python"]
     assert ProgressStore().profile()["technologies"] == ["c++", "python"]
+
+
+@pytest.mark.parametrize("hours", [0, -5, 81, 100000])
+def test_hours_outside_the_range_are_refused_by_the_service_too(hours: int) -> None:
+    # The 1 to 80 rule lived only in the CLI option, so an assistant could save -5, and
+    # `start` then could not get past the hours question.
+    from git_into_gsoc.errors import InputError
+
+    with pytest.raises(InputError, match="1 to 80"):
+        GSoCToolkit().save_profile(hours_per_week=hours)
+    assert "hours_per_week" not in ProgressStore().profile()

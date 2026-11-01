@@ -16,7 +16,7 @@ With a token, `repo` also reads each pull request's own timeline for the first h
 
 ## Settings reference
 
-Put these in `.env` or export them in the process environment. Environment variables take precedence over `.env`. Service addresses (the `GIG_..._API_URL` settings), `GIG_CACHE_DIR`, and `GIG_DATA_DIR` are read from the environment only. A `.env` in the current folder may belong to a repository you just cloned, and assistants start the MCP server inside the project folder. Such a file must never be able to send your token to another server or swap in someone else's progress file, so those settings are ignored there with a warning.
+Put these in `.env` or export them in the process environment. Environment variables take precedence over `.env`. Service addresses (the `GIG_..._API_URL` settings), `GIG_CACHE_DIR`, and `GIG_DATA_DIR` are read from the environment only. A `.env` in the current folder may belong to a repository you just cloned, and assistants start the MCP server inside the project folder. Such a file must never be able to send your token to another server or swap in someone else's progress file, so those settings are ignored there with a warning. A value outside its range, such as `GIG_MAX_CONCURRENCY=0` or a year GSoC never had, is refused with an error that names the variable.
 
 | Name | Default | Use |
 |---|---|---|
