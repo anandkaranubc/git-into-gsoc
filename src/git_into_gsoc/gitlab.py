@@ -21,8 +21,16 @@ from git_into_gsoc.github.availability import (
     assess_issue,
     is_not_open_label,
 )
+from git_into_gsoc.github.repos import mentioned_repos, repo_lead_score
 from git_into_gsoc.http_client import CachedHttpClient
-from git_into_gsoc.models import Availability, IssueAssessment, IssueCandidate, LinkedPullRequest
+from git_into_gsoc.matching.profile import ContributorProfile
+from git_into_gsoc.models import (
+    Availability,
+    IssueAssessment,
+    IssueCandidate,
+    LinkedPullRequest,
+    RepoLead,
+)
 from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.text import clean_untrusted
 
@@ -395,3 +403,107 @@ def search_gitlab_issues(
         score_issue(candidate)
     shortlist.sort(key=lambda c: (c.availability != Availability.AVAILABLE, -c.beginner_score))
     return shortlist[:wanted]
+
+
+def gitlab_repo_leads(
+    http: CachedHttpClient,
+    host: str,
+    path: str,
+    *,
+    ideas: str,
+    language: str | None,
+    person: ContributorProfile | None,
+    limit: int,
+) -> list[RepoLead]:
+    """The most recently active projects under a GitLab group, or the one project
+    `path` names, scored as GitHub repositories are: ideas-page mentions, activity,
+    stars, and language. Beginner-issue counts are not read: they cost one request
+    per project and label on GitLab.
+
+    Raises NotFoundError when `path` is neither a group nor a project the host's
+    public API answers for.
+    """
+    base = f"https://{host}/api/v4"
+    encoded = quote(path, safe="")
+    try:
+        listed = http.get_json(
+            f"{base}/groups/{encoded}/projects",
+            params={
+                "include_subgroups": "true",
+                "order_by": "last_activity_at",
+                "sort": "desc",
+                "per_page": 100,
+                "archived": "false",
+            },
+            ttl=3600,
+        )
+    except NotFoundError:
+        listed = [http.get_json(f"{base}/projects/{encoded}", ttl=3600)]
+    if not isinstance(listed, list) or not all(isinstance(p, dict) for p in listed):
+        raise NotFoundError(
+            f"{host}/{path} did not answer as GitLab does",
+            status_code=404,
+            url=f"https://{host}/{path}",
+        )
+    raws: list[dict[str, Any]] = [
+        {
+            "name": project.get("name"),
+            "full_name": project.get("path_with_namespace"),
+            "html_url": project.get("web_url"),
+            "description": project.get("description"),
+            "stargazers_count": project.get("star_count"),
+            "pushed_at": project.get("last_activity_at"),
+            "topics": project.get("topics") or project.get("tag_list") or [],
+        }
+        for project in listed
+        if project.get("web_url")
+        and project.get("path_with_namespace")
+        and not project.get("archived")
+        and not project.get("forked_from_project")
+    ]
+    mentioned = mentioned_repos(ideas, [], raws) if ideas else set()
+    ideas_lower = ideas.lower()
+
+    def lead(raw: dict[str, Any], main_language: str | None) -> RepoLead:
+        full = str(raw["full_name"])
+        in_ideas = full.lower() in mentioned or str(raw["html_url"]).lower() in ideas_lower
+        score, reasons = repo_lead_score(
+            {**raw, "language": main_language},
+            beginner_issues=0,
+            ideas_mention=in_ideas,
+            language=language,
+            person=person,
+        )
+        # last_activity_at moves on issues and merge requests too, not only on pushes.
+        reasons = [reason.replace("Pushed", "Active") for reason in reasons]
+        return RepoLead(
+            full_name=full,
+            url=str(raw["html_url"]),
+            description=clean_untrusted(raw.get("description"), limit=300) or None,
+            language=main_language,
+            stars=int(raw.get("stargazers_count") or 0),
+            pushed_at=_dt(raw.get("pushed_at")),
+            ideas_mention=in_ideas,
+            score=score,
+            reasons=reasons,
+        )
+
+    first = sorted((lead(raw, None) for raw in raws), key=lambda x: (-x.score, -x.stars))
+    by_name = {str(raw["full_name"]): raw for raw in raws}
+    # The main language costs one request per project, so only the likely top get it.
+    rescored: list[RepoLead] = []
+    for candidate in first[: limit + 5]:
+        try:
+            languages = http.get_json(
+                f"{base}/projects/{quote(candidate.full_name, safe='')}/languages", ttl=3600
+            )
+        except GigError:
+            languages = {}
+        main = (
+            max(languages, key=lambda name: float(languages[name]))
+            if isinstance(languages, dict) and languages
+            else None
+        )
+        rescored.append(lead(by_name[candidate.full_name], main))
+    rescored.sort(key=lambda x: (-x.score, -x.stars))
+    return rescored[:limit]

@@ -92,6 +92,7 @@ from git_into_gsoc.github.search import (
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
     gitlab_issue_status,
+    gitlab_repo_leads,
     gitlab_target,
     parse_gitlab_issue,
     search_gitlab_issues,
@@ -943,6 +944,11 @@ class GSoCToolkit:
         host = urlparse(source).netloc.lower().removeprefix("www.")
         main_code = source if source and not owners and host != "github.com" else None
         if gsoc_org is not None and not owners and not linked_owners:
+            on_gitlab = self._repos_on_gitlab(
+                gsoc_org, ideas=ideas or "", language=language, limit=limit
+            )
+            if on_gitlab is not None:
+                return on_gitlab
             raise NotFoundError(
                 f"{gsoc_org.name} lists no GitHub organization, and its ideas page links to "
                 "no GitHub projects. Its code may live on GitLab or its own servers.",
@@ -1175,6 +1181,64 @@ class GSoCToolkit:
                 "Score: points from its stars and recent activity plus the reasons listed, to "
                 "order this list. Not a grade or a chance of acceptance."
                 + (f" {order_note}" if order_note else "")
+            ),
+        }
+
+    def _repos_on_gitlab(
+        self, gsoc_org: OrgSummary, *, ideas: str, language: str | None, limit: int
+    ) -> dict[str, Any] | None:
+        """`repos` for an organization with nothing on GitHub whose code link is a GitLab
+        group or project (GNOME, GNU Mailman). None when it is not one, or the host does
+        not answer as GitLab does.
+
+        shortcut: an organization whose ideas page names GitHub projects (QEMU, ns-3)
+        still gets only those, because the GitHub list is checked for outside merges
+        and GitLab projects cannot be; add its own projects once `repo` reads GitLab.
+        """
+        target = gitlab_target(gsoc_org.source_code)
+        if target is None:
+            return None
+        host, path = target
+        person = self._saved_person(technologies=[language] if language else None)
+        try:
+            leads = gitlab_repo_leads(
+                self.http,
+                host,
+                path,
+                ideas=ideas,
+                language=language,
+                person=person,
+                limit=limit,
+            )
+        except GigError:
+            return None
+        where = f"{host}/{path}"
+        first = next((lead for lead in leads if repo_kind(lead.full_name) is None), None)
+        return {
+            "org": gsoc_org.name,
+            "github_owners": [where],
+            "linked_projects": [],
+            "ideas_url": gsoc_org.ideas_url,
+            "ideas_page_read": bool(ideas),
+            "count": len(leads),
+            "repos": [lead.model_dump(mode="json") for lead in leads],
+            "main_code": gsoc_org.source_code,
+            "note": (
+                f"{gsoc_org.name}'s code is on {where}, read through GitLab's public API: "
+                "its most recently active projects, ranked by ideas-page mentions, activity, "
+                "stars, and language. Beginner-issue counts and outside-contribution checks "
+                "are not read there."
+            ),
+            "next_step": (
+                f"Pick a project that holds code, such as {first.full_name}, then run "
+                f'git-into-gsoc issues --org "{gsoc_org.name}" for a free beginner issue '
+                "(repo and orient do not read GitLab yet)."
+                if first
+                else f'Start from its ideas: git-into-gsoc ideas "{gsoc_org.name}".'
+            ),
+            "score_meaning": (
+                "Score: points from its stars and recent activity plus the reasons listed, to "
+                "order this list. Not a grade or a chance of acceptance."
             ),
         }
 
