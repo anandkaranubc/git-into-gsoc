@@ -62,4 +62,4 @@ def test_a_bare_host_with_no_known_group_keeps_the_old_error(
     with pytest.raises(NotFoundError) as caught:
         toolkit.discover_repos("GNOME Foundation", limit=5)
     assert "lists no GitHub organization" in str(caught.value)
-    assert caught.value.hint and "https://invent.kde.org" in caught.value.hint
+    assert (caught.value.hint or "").startswith("Its code is at https://invent.kde.org;")
