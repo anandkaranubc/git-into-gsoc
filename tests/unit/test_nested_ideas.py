@@ -8,52 +8,29 @@ from Google's "how it works" page instead.
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from typing import Any
 
 import httpx
 import pytest
 import respx
 from typer.testing import CliRunner
 
-from conftest import load_fixture
+from conftest import mock_catalog, read_fixture
 from git_into_gsoc.cli import app
 from git_into_gsoc.gsoc.project_ideas import html_to_lines
 from git_into_gsoc.service import GSoCToolkit
 
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
-FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "ideas"
 PAGE = "https://wiki.postgresql.org/wiki/GSoC_2026"  # the fixture org's ideas page
 SITE = "https://wiki.postgresql.org"
 
 
 def _read(name: str) -> str:
-    return (FIXTURES / name).read_text(encoding="utf-8")
-
-
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
+    return read_fixture(f"ideas/{name}")
 
 
 @pytest.fixture
 def api() -> respx.MockRouter:
     with respx.mock(assert_all_called=False) as router:
-        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2026/organizations/").mock(
-            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-        )
-        router.get(f"{ARCHIVE}/organizations.json").mock(
-            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-        )
-        router.get(f"{ARCHIVE}/2026.json").mock(
-            return_value=httpx.Response(200, json=_archive_year(2026))
-        )
+        mock_catalog(router)
         router.get(url__regex=r"https://api\.github\.com/repos/.*/git/trees/HEAD.*").mock(
             return_value=httpx.Response(404)
         )

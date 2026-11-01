@@ -78,7 +78,7 @@ Pages link to other pages, and `ideas` follows some links on umbrella pages. The
 
 ## Caching
 
-Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source fails, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.
+Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source is down or rate limited, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.
 
 ## If a source is unavailable
 

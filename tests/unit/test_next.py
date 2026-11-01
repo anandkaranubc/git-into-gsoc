@@ -10,29 +10,18 @@ import httpx
 import pytest
 import respx
 
-from conftest import load_fixture
+from conftest import OFFICIAL, mock_catalog
 from git_into_gsoc.errors import InputError
 from git_into_gsoc.models import JourneyPhase
 from git_into_gsoc.progress.store import ProgressStore
 from git_into_gsoc.service import GSoCToolkit
 
-OFFICIAL = "https://summerofcode.withgoogle.com/api/program"
-ARCHIVE = "https://api.gsocorganizations.dev"
 GH = "https://api.github.com"
 NOW = datetime(2026, 10, 20, tzinfo=UTC)
 
 
 def _iso(days_ago: int) -> str:
     return (NOW - timedelta(days=days_ago)).isoformat().replace("+00:00", "Z")
-
-
-def _archive_year(year: int) -> dict[str, Any]:
-    orgs = []
-    for raw in load_fixture("archive_organizations.json"):
-        data = raw["years"].get(str(year))
-        if data:
-            orgs.append({**{k: v for k, v in raw.items() if k != "years"}, **data})
-    return {"year": year, "organizations": orgs}
 
 
 def _search_item(number: int, repo: str, days_ago: int = 2) -> dict[str, Any]:
@@ -56,16 +45,7 @@ def _search_item(number: int, repo: str, days_ago: int = 2) -> dict[str, Any]:
 def api() -> respx.MockRouter:
     with respx.mock(assert_all_called=False) as router:
         router.get(f"{OFFICIAL}/2027/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2027/organizations/").mock(return_value=httpx.Response(404))
-        router.get(f"{OFFICIAL}/2026/organizations/").mock(
-            return_value=httpx.Response(200, json=load_fixture("official_orgs_2026.json"))
-        )
-        router.get(f"{ARCHIVE}/organizations.json").mock(
-            return_value=httpx.Response(200, json=load_fixture("archive_organizations.json"))
-        )
-        router.get(f"{ARCHIVE}/2026.json").mock(
-            return_value=httpx.Response(200, json=_archive_year(2026))
-        )
+        mock_catalog(router)
         # Shortlisted orgs' repositories, read for a wiki statement about GSoC.
         router.get(url__regex=r"https://api\.github\.com/orgs/[^/]+/repos").mock(
             return_value=httpx.Response(200, json=[])
