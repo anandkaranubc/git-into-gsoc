@@ -54,7 +54,7 @@ def manifest(version: str, *, icon: bool = False) -> dict[str, object]:
             "url": "https://github.com/anandkaranubc/git-into-gsoc",
         },
         "repository": {"type": "git", "url": "https://github.com/anandkaranubc/git-into-gsoc"},
-        "homepage": "https://anandkaranubc.github.io/git-into-gsoc/",
+        "homepage": "https://gitintogsoc.me/",
         "documentation": f"{repo}/blob/main/docs/assistants.md",
         "support": f"{repo}/issues",
         # It reads public data and sends an optional GitHub token to GitHub only.
