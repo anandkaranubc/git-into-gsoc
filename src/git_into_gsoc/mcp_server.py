@@ -174,7 +174,8 @@ def gsoc_program_info(year: int = 0) -> str:
 def gsoc_journey_guide(phase: str | None = None) -> str:
     """Return journey phase guidance for GSoC contributors.
 
-    Phases: learn, discover, evaluate, find_issues, contribute, community, proposal, track.
+    Phases: learn, discover, evaluate, orient, community, find_issues, contribute, iterate,
+    proposal, track.
     Omit phase to get the full overview.
     """
     overview = journey_overview()
@@ -687,7 +688,8 @@ def gsoc_rate_limit() -> str:
 @mcp.resource("gsoc://progress", title="Your GSoC progress", mime_type="application/json")
 def progress_resource() -> str:
     """The contributor's saved profile, phases, shortlist, tracked links, and note counts."""
-    return json.dumps(toolkit().progress.summary(), indent=2, default=str)
+    # Tools pass through _dump; a resource must strip saved notes the same way.
+    return json.dumps(strip_hidden_all(toolkit().progress.summary()), indent=2, default=str)
 
 
 _PHASES = ", ".join(p.value for p in JourneyPhase)
@@ -851,7 +853,9 @@ def _tolerant_arguments(tool_name: str, model: type[_Model]) -> type[_Model]:
                         (
                             t
                             for t in _ARGUMENT_GUESSES.get(key, ())
-                            if t in fields and t not in data
+                            # `t not in out`: {"tech": "rust", "languages": "go"} once
+                            # mapped both to technologies and kept only "go".
+                            if t in fields and t not in data and t not in out
                         ),
                         "",
                     )

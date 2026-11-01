@@ -17,7 +17,7 @@ cp -r site/. /tmp/gig-site && cp -r brand /tmp/gig-site/brand && python -m http.
 
 The name is a pun on "get into". The mark takes it literally: the G is a doorway, the gap on its right side is the door, and the small block at the threshold is a terminal cursor stepping through. The cursor is always the person; the G is the community they are joining. It works for Git and for GSoC without borrowing either logo.
 
-The cursor is the only thing allowed to move. It blinks at one beat per second in the README banner and on the website. Everything else stays still.
+The cursor is the only thing allowed to move. It blinks at one beat per second in the README banner and on the website, and on the home page it walks through the door. The G itself never moves: the website's doorway scene (`site/scene.js`) draws light spilling out of it, dithered on the same grid, but the mark stays flat, still, and in its own colours.
 
 Both the mark and the typeface sit on a square grid with a thick stroke, so they are crisp at 16 px and still feel like one object on a T-shirt.
 
@@ -65,7 +65,7 @@ Both the mark and the typeface sit on a square grid with a thick stroke, so they
 
 `tokens.css` exposes these as `--gig-*` custom properties and maps them to roles (`--bg`, `--fg`, `--accent`, `--cursor`) that flip for dark mode.
 
-Neither ink (4.1:1) nor paper (4.0:1) is dark or light enough for body text on merge itself. Large display text is fine there. Where a violet surface carries sentences, like the website's hero, use `#8466F9`, a slightly lighter violet that gives ink text 4.6:1 and passes WCAG AA. Labels that must sit on true merge, like its colour swatch, go on an ink chip.
+Neither ink (4.1:1) nor paper (4.0:1) is dark or light enough for body text on merge itself. Large display text is fine there. Where a violet surface carries sentences, like the brand page's hero, use `#8466F9`, a slightly lighter violet that gives ink text 4.6:1 and passes WCAG AA. Labels that must sit on true merge, like its colour swatch, go on an ink chip.
 
 ## Type
 

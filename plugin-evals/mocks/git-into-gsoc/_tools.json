@@ -27,7 +27,7 @@
         "openWorldHint": true,
         "readOnlyHint": true
       },
-      "description": "Return journey phase guidance for GSoC contributors.\n\nPhases: learn, discover, evaluate, find_issues, contribute, community, proposal, track.\nOmit phase to get the full overview.",
+      "description": "Return journey phase guidance for GSoC contributors.\n\nPhases: learn, discover, evaluate, orient, community, find_issues, contribute, iterate,\nproposal, track.\nOmit phase to get the full overview.",
       "inputSchema": {
         "properties": {
           "phase": {
