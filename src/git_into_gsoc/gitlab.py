@@ -60,6 +60,7 @@ from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
 from git_into_gsoc.text import clean_untrusted
 
+_SHORT_REF = re.compile(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+[\w.-]+)#(\d+)$")
 _ISSUE_URL = re.compile(
     r"^https://([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+?[\w.-]+)/-/(?:issues|work_items)/(\d+)"
 )
@@ -70,6 +71,10 @@ def parse_gitlab_issue(url: str) -> tuple[str, str, int] | None:
     raw = (url or "").strip()
     if "://" not in raw and "/-/" in raw:
         raw = "https://" + raw  # copied from the address bar without "https://"
+    short = _SHORT_REF.match(raw)
+    if short:
+        # "gitlab.gnome.org/GNOME/gitg#494", as the issues table and footer print it.
+        raw = f"https://{short.group(1)}/{short.group(2)}/-/issues/{short.group(3)}"
     match = _ISSUE_URL.match(raw)
     if not match or match.group(1).lower().removeprefix("www.") == "github.com":
         return None
