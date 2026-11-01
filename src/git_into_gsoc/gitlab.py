@@ -447,7 +447,10 @@ def gitlab_repo_leads(
     raws: list[dict[str, Any]] = [
         {
             "name": project.get("name"),
-            "full_name": project.get("path_with_namespace"),
+            # With the host, as issues and repo print it: a bare GNOME/gtk reads as a GitHub
+            # name and `repo GNOME/gtk` would grade the mirror there.
+            "full_name": f"{host}/{project.get('path_with_namespace')}",
+            "project": str(project.get("path_with_namespace")),
             "html_url": project.get("web_url"),
             "description": project.get("description"),
             "stargazers_count": project.get("star_count"),
@@ -465,7 +468,11 @@ def gitlab_repo_leads(
 
     def lead(raw: dict[str, Any], main_language: str | None) -> RepoLead:
         full = str(raw["full_name"])
-        in_ideas = full.lower() in mentioned or str(raw["html_url"]).lower() in ideas_lower
+        url = str(raw["html_url"]).lower()
+        # A whole link only: GNOME/gtk must not count because the page links GNOME/gtk-vnc.
+        in_ideas = full.lower() in mentioned or bool(
+            re.search(re.escape(url) + r"(?![\w.-])", ideas_lower)
+        )
         score, reasons = repo_lead_score(
             {**raw, "language": main_language},
             beginner_issues=0,
@@ -494,7 +501,8 @@ def gitlab_repo_leads(
     for candidate in first[: limit + 5]:
         try:
             languages = http.get_json(
-                f"{base}/projects/{quote(candidate.full_name, safe='')}/languages", ttl=3600
+                f"{base}/projects/{quote(by_name[candidate.full_name]['project'], safe='')}/languages",
+                ttl=3600,
             )
         except GigError:
             languages = {}
