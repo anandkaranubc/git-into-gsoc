@@ -1,8 +1,0 @@
-{
-  "mcpServers": {
-    "git-into-gsoc": {
-      "command": "/absolute/path/to/git-into-gsoc/.venv/bin/git-into-gsoc",
-      "args": ["mcp"]
-    }
-  }
-}
