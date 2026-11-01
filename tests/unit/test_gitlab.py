@@ -68,6 +68,21 @@ def _mr(iid: int, state: str, project: str = "GNOME/gitg") -> dict[str, Any]:
     }
 
 
+def test_the_short_reference_the_table_prints_is_an_issue() -> None:
+    # `issues` prints GitLab results as host/path#N; `issue` must take that back.
+    assert parse_gitlab_issue("gitlab.gnome.org/GNOME/gitg#494") == (
+        "gitlab.gnome.org",
+        "GNOME/gitg",
+        494,
+    )
+    assert parse_gitlab_issue("gitlab.com/qemu-project/qemu#7") == (
+        "gitlab.com",
+        "qemu-project/qemu",
+        7,
+    )
+    assert parse_gitlab_issue("sympy/sympy#23161") is None  # a GitHub reference, no host
+
+
 def test_links_are_recognised() -> None:
     assert parse_gitlab_issue("https://gitlab.gnome.org/GNOME/gitg/-/issues/494") == (
         "gitlab.gnome.org",
