@@ -31,5 +31,8 @@
         "mcp"
       ]
     }
+  },
+  "experimental": {
+    "evals": "plugin-evals"
   }
 }
