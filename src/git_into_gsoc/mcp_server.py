@@ -323,8 +323,10 @@ def gsoc_orient_repo(full_name: str, codetour: bool = False) -> str:
     chat channels, one recently merged small outsider PR as a worked example, and an ordered
     reading plan. Use after gsoc_evaluate_repo, before the contributor reads code. Any
     narrative you write about the code must cite paths from this result.
-    full_name: owner/repo or a GitHub URL. codetour=True adds a CodeTour (VS Code) file as JSON
-    under "codetour" that walks the reading plan, pinned to the inspected commit.
+    full_name: owner/repo or a GitHub URL, or a project link on a GitLab host (read from its
+    public API; no worked-example merge request there). codetour=True adds a CodeTour (VS
+    Code) file as JSON under "codetour" that walks the reading plan, pinned to the inspected
+    commit.
     """
     return _call(toolkit().orient_repo, full_name, codetour=codetour)
 

@@ -93,6 +93,7 @@ from git_into_gsoc.github.search import (
 from git_into_gsoc.gitlab import (
     GITLAB_BEGINNER_LABELS,
     gitlab_issue_status,
+    gitlab_orientation,
     gitlab_repo_health,
     gitlab_repo_leads,
     gitlab_target,
@@ -2529,6 +2530,9 @@ class GSoCToolkit:
 
     def orient_repo(self, full_name: str, *, codetour: bool = False) -> dict[str, Any]:
         """A one-screen orientation sheet: facts and paths only, about 20 API calls."""
+        on_gitlab = parse_gitlab_project(full_name)
+        if on_gitlab:
+            return gitlab_orientation(self.http, *on_gitlab, codetour=codetour)
         owner, repo = parse_repo(full_name)
         raw = self.github.get_repo(owner, repo)
         owner, repo = (raw.get("full_name") or f"{owner}/{repo}").split("/", 1)
@@ -3727,8 +3731,9 @@ class GSoCToolkit:
             if org and org.github_orgs:
                 scope.append(f"org:{org.github_orgs[0]}")
         scope = list(dict.fromkeys(scope))
+        on_gitlab = self._new_gitlab_issues(state, since=since)
         if not scope:
-            return []
+            return on_gitlab[:10]
         repos_scope = [q.split(":", 1)[1] for q in scope if q.startswith("repo:")]
         orgs_scope = [q.split(":", 1)[1] for q in scope if q.startswith("org:")]
         query = build_issue_query(
@@ -3747,8 +3752,8 @@ class GSoCToolkit:
         try:
             items = self.github.search_issues(query, per_page=20, sort="created")
         except HttpError:
-            return None
-        out = []
+            return on_gitlab[:10] or None
+        out = list(on_gitlab)
         for item in items:
             if "pull_request" in item:
                 continue
@@ -3768,7 +3773,64 @@ class GSoCToolkit:
                     ],
                 }
             )
+        # Newest first across both hosts, not GitLab first; ISO stamps sort as text.
+        out.sort(key=lambda i: str(i.get("created_at") or ""), reverse=True)
         return out[:10]
+
+    def _new_gitlab_issues(self, state: ProgressState, *, since: datetime) -> list[dict[str, Any]]:
+        """Beginner issues opened since `since` in tracked GitLab projects and shortlisted
+        organizations whose code is on a GitLab host, in the shape of the GitHub ones.
+        A place that does not answer is skipped, not reported as a failed check."""
+        if since.tzinfo is None:
+            since = since.replace(tzinfo=UTC)
+        places: dict[tuple[str, str], str | None] = {}
+        for raw in state.tracked_repos[-RECHECK_LIMIT:]:
+            target = parse_gitlab_project(raw)
+            if target:
+                places.setdefault(target, None)
+        for name in state.shortlisted_orgs[:5]:
+            try:
+                org = self.gsoc.get_organization(name)
+            except GigError:
+                org = None
+            target = gitlab_target(org.source_code) if org and not org.github_orgs else None
+            if target:
+                places.setdefault(target, org.name if org else None)
+        out: list[dict[str, Any]] = []
+        seen: set[str] = set()  # gitg tracked and GNOME shortlisted list gitg's issues twice
+        # Three places at most: each costs up to a label query per common label plus
+        # a merge request check per candidate.
+        for (host, path), org_name in list(places.items())[:3]:
+            try:
+                issues = search_gitlab_issues(
+                    self.http,
+                    host,
+                    path,
+                    labels=GITLAB_BEGINNER_LABELS,
+                    max_results=5,
+                    org_name=org_name,
+                    created_after=since.isoformat(),
+                )
+            except GigError:
+                continue
+            for issue in issues:
+                # GitHub's search already leaves out assigned and PR-linked issues.
+                if issue.availability not in {Availability.AVAILABLE, Availability.UNKNOWN}:
+                    continue
+                if issue.created_at and issue.created_at >= since and issue.url not in seen:
+                    seen.add(issue.url)
+                    out.append(
+                        {
+                            "repo": issue.repo,
+                            "number": issue.number,
+                            "title": issue.title,
+                            "url": issue.url,
+                            "created_at": issue.created_at.isoformat(),
+                            "labels": issue.labels,
+                        }
+                    )
+        out.sort(key=lambda i: str(i["created_at"]), reverse=True)
+        return out
 
 
 def _not_checked(state: ProgressState) -> str | None:
