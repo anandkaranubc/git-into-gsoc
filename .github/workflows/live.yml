@@ -15,7 +15,7 @@ on:
         options: [release, main]
         default: release
   schedule:
-    - cron: "17 6 * * 1"
+    - cron: "37 6 * * 1"
   pull_request:
     paths:
       - "scripts/live_journeys.py"

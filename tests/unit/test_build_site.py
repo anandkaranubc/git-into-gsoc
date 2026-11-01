@@ -25,7 +25,7 @@ def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
         assert (tmp_path / "orgs" / org["slug"] / "index.html").is_file()
         assert f'href="{org["slug"]}/"' in index
     sitemap = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
-    assert sitemap.count("<loc>") == len(slugs) + 3
+    assert sitemap.count("<loc>") == len(slugs) + 4
 
 
 def test_start_page_ships_the_package_and_asks_the_four_questions(tmp_path: Path) -> None:

@@ -24,7 +24,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "src" / "git_into_gsoc" / "data"
-SITE_URL = "https://anandkaranubc.github.io/git-into-gsoc/"
+SITE_URL = "https://gitintogsoc.me/"
 REPO_URL = "https://github.com/anandkaranubc/git-into-gsoc"
 # Pinned so the page never changes under a visitor; bump both together after a run.
 PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.28.3/full/"
@@ -431,11 +431,13 @@ importScripts("PYODIDE_URLpyodide.js");
 var ready = (async function () {
   var py = await loadPyodide({ indexURL: "PYODIDE_URL" });
   await py.loadPackage(WHEEL_LIST);
-  var parts = await Promise.all([
-    fetch("pkg.zip").then(function (r) { return r.arrayBuffer(); }),
-    fetch("orgs.json").then(function (r) { return r.text(); }),
-    fetch("page.py").then(function (r) { return r.text(); })
-  ]);
+  function get(name, read) {
+    return fetch(name).then(function (r) {
+      if (!r.ok) throw new Error(name + " failed to load (" + r.status + ")");
+      return r[read]();
+    });
+  }
+  var parts = await Promise.all([get("pkg.zip", "arrayBuffer"), get("orgs.json", "text"), get("page.py", "text")]);
   py.unpackArchive(parts[0], "zip");
   py.FS.writeFile("orgs.json", parts[1]);
   py.runPython(parts[2]);
@@ -701,6 +703,7 @@ def build_start(out: Path, official: dict[str, Any], signals: dict[str, Any]) ->
 def sitemap(slugs: list[str]) -> str:
     urls = [
         SITE_URL,
+        f"{SITE_URL}brand.html",
         f"{SITE_URL}start/",
         f"{SITE_URL}orgs/",
         *(f"{SITE_URL}orgs/{s}/" for s in slugs),
