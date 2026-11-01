@@ -42,10 +42,16 @@ def test_every_docs_page_is_rendered_with_its_links_and_anchors(tmp_path: Path) 
                 )
         # Every relative Markdown link was rewritten to a page.
         assert not re.search(r'href="[^"h][^"]*\.md[#"]', text), page
+        # A two-space nested list and a fenced block inside a list item once rendered
+        # as literal "- " text and inline code; GitHub renders both as structure.
+        assert "<p>- " not in text and "<code>json" not in text, page
     guide = (tmp_path / "docs/guide/01-understand-gsoc/index.html").read_text(encoding="utf-8")
     assert "<title>Understand GSoC | git into gsoc</title>" in guide
     assert 'rel="canonical" href="https://gitintogsoc.me/docs/guide/01-understand-gsoc/"' in guide
-    assert 'content="Google Summer of Code (GSoC) is an online program' in guide
+    first_paragraph = (
+        (ROOT / "docs/guide/01-understand-gsoc.md").read_text("utf-8").split("\n\n")[1]
+    )
+    assert f'name="description" content="{first_paragraph.replace("**", "")[:40]}' in guide
     assert '"@type": "BreadcrumbList"' in guide
 
 

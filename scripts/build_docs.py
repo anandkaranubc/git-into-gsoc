@@ -18,8 +18,8 @@ import re
 from html import escape
 from pathlib import Path
 
-import markdown
 from build_site import FOOT, REPO_URL, SITE_URL, _head
+from markdown_it import MarkdownIt
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
@@ -30,10 +30,26 @@ SKIP_BLOCK = re.compile(r"^(?:#|\||```|>|[-*] |\d+\. )")
 DESCRIPTION_CHARS = 155
 
 
-def slugify(value: str, separator: str) -> str:
+def slugify(value: str) -> str:
     """GitHub's heading anchor, so links written for GitHub keep working on the site."""
     text = re.sub(r"[^\w\- ]", "", value.strip().lower())
-    return text.replace(" ", separator)
+    return text.replace(" ", "-")
+
+
+def to_html(text: str) -> str:
+    """Markdown to HTML by CommonMark rules with tables, as GitHub renders the docs.
+
+    Python-Markdown was tried first and follows older rules: a two-space nested list
+    flattened and a fenced block inside a list item became inline code.
+    """
+    md = MarkdownIt("commonmark").enable("table")
+    tokens = md.parse(text)
+    for i, token in enumerate(tokens):
+        if token.type == "heading_open":
+            children = tokens[i + 1].children or []
+            # shortcut: no dedupe of repeated headings, add GitHub's -1 suffix if a page gets one
+            token.attrSet("id", slugify("".join(c.content for c in children)))
+    return md.renderer.render(tokens, md.options, {})
 
 
 def page_path(source: Path) -> str:
@@ -83,11 +99,7 @@ def render(source: Path) -> str:
     title = re.sub(r"^\d+\. ", "", heading.group(1) if heading else source.stem)
     path = page_path(source)
     root = "../" * path.count("/")
-    converter = markdown.Markdown(
-        extensions=["fenced_code", "tables", "toc"],
-        extension_configs={"toc": {"slugify": slugify}},
-    )
-    body = converter.convert(rewrite_links(text, source, root))
+    body = to_html(rewrite_links(text, source, root))
     crumbs = [("git into gsoc", SITE_URL), ("Guide", f"{SITE_URL}docs/")]
     if path != "docs/":
         crumbs.append((title, f"{SITE_URL}{path}"))
