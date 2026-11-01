@@ -90,12 +90,6 @@ class RateLimitError(HttpError):
         self.reset_at = reset_at
         self.resource = resource
 
-    @property
-    def reset_in_seconds(self) -> int | None:
-        if self.reset_at is None:
-            return None
-        return max(0, int((self.reset_at - datetime.now(UTC)).total_seconds()))
-
 
 def reset_phrase(reset_at: datetime | None) -> str:
     """'resets in 22 minutes (03:56 UTC)': a countdown needs no time zone sum."""
