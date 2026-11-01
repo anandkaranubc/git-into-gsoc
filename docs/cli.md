@@ -159,7 +159,7 @@ git-into-gsoc log --goal "Reproduce #NUMBER" --done "Reproduced on main" --stuck
 
 Notes:
 
-- `contributions` runs four scoped GitHub searches: pull requests you authored, issues you opened, threads you commented in, pull requests you reviewed. Counts cover public activity, and the search index can lag by minutes.
+- `contributions` counts public activity only, through GitHub searches ([what it searches](sources.md#ideas-pages-orientation-pointers-and-evidence)).
 - `diagnose` knows these shapes: a missing module, a name missing from an installed module (a build left behind after a pull, or a dependency at another version), the wrong runtime version, a missing compiler or C headers, a service such as a database not running, a missing environment variable, a missing command, permissions, the network, a port in use, a lock-file mismatch, memory, a failed style or lint check, and failing tests. It reads logs copied from GitHub Actions or `gh run view --log` as they are.
 - `pr-check` looks for a merge conflict, failing checks (GitHub's check runs, and the commit statuses that CI such as Prow and Jenkins report instead, with a link to each failing log), a linked issue (a failure when a workflow closes pull requests without one), a description, the template checklist, AI disclosure when the template asks, commit sign-off when the project requires it, commit style, tests changed alongside code, a changelog entry when one is expected, and size.
 - `diagnose` given a GitHub Actions log also quotes what the failing step printed, its red lines first, because projects often explain their own checks there.
