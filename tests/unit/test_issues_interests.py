@@ -31,6 +31,20 @@ ORGS = [
 ]
 
 
+def test_scope_is_checked_before_any_search(monkeypatch: Any) -> None:
+    """MCP passes raw text: "GSoC" used to miss the exact match and search all of GitHub."""
+    import pytest
+
+    from git_into_gsoc.errors import InputError
+
+    toolkit, searched = _toolkit(monkeypatch, [[]])
+    with pytest.raises(InputError, match="scope must be"):
+        toolkit.find_issues(language="python", scope="gsoc_orgs")
+    assert searched == []
+    toolkit.find_issues(language="python", scope=" GSoC ")
+    assert searched
+
+
 def _issue(repo: str, number: int) -> IssueCandidate:
     url = f"https://github.com/{repo}/issues/{number}"
     return IssueCandidate(repo=repo, number=number, title="x", url=url)

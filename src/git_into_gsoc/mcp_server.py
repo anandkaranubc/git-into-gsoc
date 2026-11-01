@@ -15,6 +15,7 @@ import logging
 from collections.abc import Callable
 from typing import Any, TypeVar
 
+import anyio
 from mcp.server.mcpserver import Context, MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.types import ClientCapabilities, ElicitationCapability, Icon, ToolAnnotations
@@ -480,7 +481,9 @@ def _client_can_elicit(ctx: Any) -> bool:
                 ClientCapabilities(elicitation=ElicitationCapability())
             )
         )
-    except Exception:
+    except (AttributeError, TypeError):
+        # A test double or an older SDK session without the capability check; any
+        # other error is a real break and must not silently turn elicitation off.
         return False
 
 
@@ -523,15 +526,21 @@ async def gsoc_recommend_path(
             github_username = answer.data.github_username
             experience = answer.data.experience or experience
             hours_per_week = answer.data.hours_per_week or hours_per_week
-    tech = [t.strip() for t in technologies.split(",") if t.strip()]
-    interests_list = [t.strip() for t in interests.split(",") if t.strip()]
-    return _call(
-        toolkit().recommend_path,
-        username=github_username or None,
-        technologies=tech or None,
-        interests=interests_list or None,
-        experience=experience or None,
-        hours_per_week=hours_per_week if hours_per_week and hours_per_week > 0 else None,
+    tech = split_csv(technologies)
+    interests_list = split_csv(interests)
+    # The SDK runs sync tools in worker threads but async ones on the event loop. This
+    # is the one async tool, and its tens of GitHub and ideas-page calls would otherwise
+    # hold the stdio server for the whole run: no ping, no cancel, no other tool.
+    return await anyio.to_thread.run_sync(
+        functools.partial(
+            _call,
+            toolkit().recommend_path,
+            username=github_username or None,
+            technologies=tech or None,
+            interests=interests_list or None,
+            experience=experience or None,
+            hours_per_week=hours_per_week if hours_per_week and hours_per_week > 0 else None,
+        )
     )
 
 
@@ -594,23 +603,28 @@ def gsoc_progress(action: str = "summary", phase: str = "", value: str = "") -> 
     act = action.strip().lower()
     if act == "summary":
         return _dump(store.summary())
+    # Writes return the same bounded summary as "summary". Returning the whole state
+    # pushed every note and weekly log entry (up to 2,000 characters each) into the
+    # model's context on every write, hundreds of KB after a season of logging.
     if act == "complete_phase":
         if not phase:
             valid = ", ".join(p.value for p in JourneyPhase)
             raise ToolError(f"phase is required for complete_phase. Valid phases: {valid}")
-        return _dump(store.complete_phase(phase).model_dump(mode="json"))
-    if act == "shortlist_org":
-        return _dump(store.shortlist_org(value).model_dump(mode="json"))
-    if act == "track_repo":
-        return _dump(store.track_repo(value).model_dump(mode="json"))
-    if act == "track_issue":
-        return _dump(store.track_issue(value).model_dump(mode="json"))
-    if act == "note":
-        return _dump(store.add_note(value).model_dump(mode="json"))
-    raise ToolError(
-        f"Unknown action '{action}'. Valid actions: summary, complete_phase, shortlist_org, "
-        "track_repo, track_issue, note"
-    )
+        store.complete_phase(phase)
+    elif act == "shortlist_org":
+        store.shortlist_org(value)
+    elif act == "track_repo":
+        store.track_repo(value)
+    elif act == "track_issue":
+        store.track_issue(value)
+    elif act == "note":
+        store.add_note(value)
+    else:
+        raise ToolError(
+            f"Unknown action '{action}'. Valid actions: summary, complete_phase, "
+            "shortlist_org, track_repo, track_issue, note"
+        )
+    return _dump(store.summary())
 
 
 @mcp.tool(title="What to do next", annotations=CHECK_AND_RECORD, structured_output=False)

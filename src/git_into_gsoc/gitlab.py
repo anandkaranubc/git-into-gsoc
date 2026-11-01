@@ -14,6 +14,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import quote, urlparse
 
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.errors import GigError, NotFoundError
 from git_into_gsoc.github.availability import (
     RESERVED_LABELS,
@@ -61,12 +62,8 @@ def parse_gitlab_issue(url: str) -> tuple[str, str, int] | None:
 
 
 def _days(value: str | None, now: datetime) -> int | None:
-    if not value:
-        return None
-    try:
-        return (now - datetime.fromisoformat(value.replace("Z", "+00:00"))).days
-    except ValueError:
-        return None
+    when = parse_iso(value)
+    return None if when is None else (now - when).days
 
 
 def _status(
@@ -279,11 +276,8 @@ def gitlab_target(source_code: str | None) -> tuple[str, str] | None:
     return (host, path) if path else None
 
 
-def _dt(value: Any) -> datetime | None:
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")) if value else None
-    except ValueError:
-        return None
+# The shared parser, under the short name the field maps below use.
+_dt = parse_iso
 
 
 def _issues_page(
