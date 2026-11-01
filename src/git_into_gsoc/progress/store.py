@@ -23,7 +23,9 @@ from git_into_gsoc.models import JourneyPhase, LogEntry, ProgressState
 from git_into_gsoc.validation import parse_issue_ref, parse_repo, split_csv, validate_limit
 
 DEFAULT_PHASES = {phase.value: False for phase in JourneyPhase}
-LOCK_TIMEOUT_SECONDS = 10.0
+# A save holds the lock for milliseconds, but the wait is unfair: eight writers on a
+# slow Windows CI runner starved one past 10 seconds (PR 408's Windows job, 2026-11-01).
+LOCK_TIMEOUT_SECONDS = 30.0
 STALE_LOCK_SECONDS = 60.0
 # Windows briefly denies access to a file another process is replacing or deleting
 # (a sharing violation, raised as PermissionError). A replace takes milliseconds.
