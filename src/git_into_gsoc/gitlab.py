@@ -302,21 +302,26 @@ def _dt(value: Any) -> datetime | None:
 
 
 def _issues_page(
-    http: CachedHttpClient, url: str, label: str, *, since: str, per_page: int
+    http: CachedHttpClient,
+    url: str,
+    label: str,
+    *,
+    since: str,
+    per_page: int,
+    created_after: str | None = None,
 ) -> list[dict[str, Any]]:
-    found = http.get_json(
-        url,
-        params={
-            "state": "opened",
-            "labels": label,
-            "assignee_id": "None",
-            "scope": "all",
-            "updated_after": f"{since}T00:00:00Z",
-            "order_by": "updated_at",
-            "per_page": per_page,
-        },
-        ttl=300,
-    )
+    params: dict[str, Any] = {
+        "state": "opened",
+        "labels": label,
+        "assignee_id": "None",
+        "scope": "all",
+        "updated_after": f"{since}T00:00:00Z",
+        "order_by": "created_at" if created_after else "updated_at",
+        "per_page": per_page,
+    }
+    if created_after:
+        params["created_after"] = created_after
+    found = http.get_json(url, params=params, ttl=300)
     if not isinstance(found, list):  # a host that is not GitLab can answer with anything
         raise NotFoundError(f"{url} did not answer as GitLab does", status_code=404, url=url)
     return [item for item in found if isinstance(item, dict)]
@@ -330,9 +335,12 @@ def search_gitlab_issues(
     labels: Sequence[str],
     max_results: int,
     org_name: str | None = None,
+    created_after: str | None = None,
 ) -> list[IssueCandidate]:
     """Open, unassigned issues under a GitLab group or project that carry one of
-    `labels`, each checked for merge requests, free ones first.
+    `labels`, each checked for merge requests, free ones first. With `created_after`
+    (an ISO time), only issues opened since then, newest first: `next` wants what is
+    new, not what was touched lately.
 
     Raises NotFoundError when `path` is neither a group nor a project the host's
     public API answers for, and HttpError when the host does not answer as GitLab.
@@ -354,7 +362,16 @@ def search_gitlab_issues(
     for kind in ("groups", "projects"):
         url = f"{base}/{kind}/{quote(path, safe='')}/issues"
         try:
-            keep(_issues_page(http, url, labels[0], since=since, per_page=per_page))
+            keep(
+                _issues_page(
+                    http,
+                    url,
+                    labels[0],
+                    since=since,
+                    per_page=per_page,
+                    created_after=created_after,
+                )
+            )
         except NotFoundError:
             continue
         listing = url
@@ -369,7 +386,16 @@ def search_gitlab_issues(
         if len(items) >= wanted + 4:
             break
         try:
-            keep(_issues_page(http, listing, label, since=since, per_page=per_page))
+            keep(
+                _issues_page(
+                    http,
+                    listing,
+                    label,
+                    since=since,
+                    per_page=per_page,
+                    created_after=created_after,
+                )
+            )
         except GigError:
             continue
 

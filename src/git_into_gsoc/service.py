@@ -3783,6 +3783,7 @@ class GSoCToolkit:
                     labels=GITLAB_BEGINNER_LABELS,
                     max_results=5,
                     org_name=org_name,
+                    created_after=since.isoformat(),
                 )
             except GigError:
                 continue
