@@ -137,9 +137,24 @@ def test_damaged_progress_file_is_kept_and_replaced(tmp_path: Path, caplog) -> N
     assert state.phases["learn"] is False
     kept = list(tmp_path.glob("progress.damaged-*.json"))
     assert len(kept) == 1 and kept[0].read_text(encoding="utf-8").startswith('{"phases"')
-    assert "could not be read" in caplog.text
+    assert "could not be read" in caplog.text and "moved to" in caplog.text
     store.add_note("fresh start")
     assert store.load().notes == ["fresh start"]
+
+
+def test_a_mutating_call_recovers_a_damaged_file_while_holding_the_lock(tmp_path: Path) -> None:
+    # _recover takes the lock; add_note already holds it, and a lock that was not
+    # re-entrant would have waited for the 30-second timeout and then refused.
+    import time
+
+    path = tmp_path / "progress.json"
+    path.write_text('{"phases": {"learn": tr', encoding="utf-8")
+    started = time.monotonic()
+    ProgressStore(path).add_note("fresh start")
+    assert time.monotonic() - started < 5
+    assert len(list(tmp_path.glob("progress.damaged-*.json"))) == 1
+    assert ProgressStore(path).load().notes == ["fresh start"]
+    assert not path.with_name("progress.json.lock").exists()
 
 
 def test_wrong_shape_progress_file_is_recovered(tmp_path: Path) -> None:
@@ -448,7 +463,9 @@ def test_the_summary_shows_the_newest_notes(tmp_path: Path) -> None:
 
 
 def test_recovery_leaves_a_file_another_process_already_repaired(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog,  # type: ignore[no-untyped-def]
 ) -> None:
     # Reads run without the lock. One process read the damaged text, a second one
     # recovered and saved a good file, then the first moved that good file aside.
@@ -467,9 +484,14 @@ def test_recovery_leaves_a_file_another_process_already_repaired(
         return real(raw)
 
     monkeypatch.setattr(store_module.ProgressState, "model_validate_json", racing)
-    ProgressStore(path).load()
+    with caplog.at_level("WARNING"):
+        ProgressStore(path).load()
     assert ProgressStore(path).load().notes == ["from the other process"]
     assert len(list(tmp_path.glob("progress.damaged-*.json"))) == 1
+    # The second process moved the damaged file; the first moved nothing, and its
+    # warning (the last one) must not say it did.
+    assert "left in place" in caplog.records[-1].getMessage()
+    assert "moved to" not in caplog.records[-1].getMessage()
 
 
 def test_two_recoveries_in_one_second_keep_two_backups(tmp_path: Path) -> None:
@@ -495,6 +517,26 @@ def test_other_host_links_follow_the_same_rules_as_github_and_log_links(tmp_path
         store.track_issue("https://gitlab.com/x/" + "a" * 5000 + "/-/issues/5")
     with pytest.raises(InputError, match="issue link, not a repository"):
         store.track_repo("https://gitlab.com/inkscape/inkscape/-/issues/5")
+
+
+def test_bug_trackers_that_put_the_number_in_the_query_keep_it() -> None:
+    from git_into_gsoc.progress.store import other_host_link
+
+    # Cutting every query string turned two GCC bugs into one link (review of #425).
+    gcc = "https://gcc.gnu.org/bugzilla/show_bug.cgi?id="
+    assert other_host_link(gcc + "118000") == gcc + "118000"
+    assert other_host_link(gcc + "118001#c3") == gcc + "118001"
+    assert other_host_link("https://sourceware.org/bugzilla/show_bug.cgi?id=32000").endswith(
+        "?id=32000"
+    )
+    savannah = "https://savannah.gnu.org/bugs/index.php?66000"
+    assert other_host_link(savannah) == savannah
+    # Only after /issues/N does the query name the same issue.
+    gitlab = "https://gitlab.com/inkscape/inkscape/-/issues/5"
+    assert other_host_link(gitlab + "?x=1#note_2") == gitlab
+    assert other_host_link("https://gitlab.com/inkscape/inkscape/?x=1") == (
+        "https://gitlab.com/inkscape/inkscape/?x=1"
+    )
 
 
 def test_a_phase_from_a_newer_version_is_never_the_next_phase(tmp_path: Path) -> None:

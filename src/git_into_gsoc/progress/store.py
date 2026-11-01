@@ -151,8 +151,14 @@ def other_host_link(value: str) -> str | None:
     path = [p for p in parsed.path.split("/") if p]
     if not host or "." not in host or host.removeprefix("www.") == "github.com" or len(path) < 2:
         return None
-    # "?x=1" and "#note_5" name the same issue; the log links drop them the same way.
-    return re.split(r"[?#]", raw, maxsplit=1)[0].rstrip("/").removesuffix(".git")
+    # "#note_5" names the same issue, and so does "?x=1" after "/issues/5". The query is
+    # kept everywhere else: Bugzilla (gcc.gnu.org/bugzilla/show_bug.cgi?id=N) and
+    # Savannah (bugs/index.php?N) put the bug number there, and cutting it saved
+    # every GCC bug as one issue (review of #425, 2026-11-01).
+    link = raw.split("#", 1)[0]
+    if _OTHER_HOST_ISSUE.search(parsed.path):
+        link = link.split("?", 1)[0]
+    return link.rstrip("/").removesuffix(".git")
 
 
 _OTHER_HOST_ISSUE = re.compile(r"/(?:-/)?(?:issues|merge_requests|pulls?|bugs?|tickets?)/\d+")
@@ -178,10 +184,18 @@ class ProgressStore:
     def __init__(self, path: Path | None = None) -> None:
         # Created on the first save, so reading works where writing is not allowed.
         self.path = path or (data_location() / "progress.json")
+        self._held = False
 
     @contextlib.contextmanager
     def _lock(self) -> Iterator[None]:
-        """Cross-platform exclusive lock: a lock file created with O_EXCL."""
+        """Cross-platform exclusive lock: a lock file created with O_EXCL.
+
+        Re-entrant within one store: `_recover` locks too, and a mutating method
+        that meets a damaged file calls it while already holding the lock.
+        """
+        if self._held:
+            yield
+            return
         _private_dir(self.path.parent)
         lock = self.path.with_name(self.path.name + ".lock")
         deadline = time.monotonic() + LOCK_TIMEOUT_SECONDS
@@ -213,9 +227,11 @@ class ProgressStore:
                         "git-into-gsoc command is running.",
                     ) from None
                 time.sleep(0.05)
+        self._held = True
         try:
             yield
         finally:
+            self._held = False
             with contextlib.suppress(OSError):
                 lock.unlink()
 
@@ -255,17 +271,28 @@ class ProgressStore:
         # Microseconds: two recoveries in one second wrote the same backup name.
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
         backup = self.path.with_name(f"{self.path.stem}.damaged-{stamp}{self.path.suffix}")
-        with contextlib.suppress(OSError):
-            # Reads run without the lock, so another process may have recovered and
-            # saved a good file since `raw` was read; moving that aside would lose it.
+        moved = False
+        # load() runs without the lock, so another process may have recovered and saved
+        # a good file since `raw` was read; moving that aside lost it. The compare and
+        # the move happen under the lock, so no save can slip in between them. A folder
+        # that cannot be locked cannot be written either, so the file stays as it is.
+        with contextlib.suppress(OSError, InputError), self._lock():
             if self.path.read_bytes() == raw:
                 self.path.replace(backup)
-        log.warning(
-            "progress.json could not be read (%s); it was kept as %s and a fresh one "
-            "will be saved. Copy entries back from the kept file if you need them.",
-            type(exc).__name__,
-            backup,
-        )
+                moved = True
+        if moved:
+            log.warning(
+                "progress.json could not be read (%s); it was moved to %s and a fresh one "
+                "will be saved. Copy entries back from the moved file if you need them.",
+                type(exc).__name__,
+                backup,
+            )
+        else:
+            log.warning(
+                "progress.json could not be read (%s); it changed on disk meanwhile, so it "
+                "was left in place and this read starts from a fresh one.",
+                type(exc).__name__,
+            )
         return self._fresh()
 
     def save(self, state: ProgressState) -> ProgressState:

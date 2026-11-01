@@ -430,6 +430,18 @@ def test_next_saves_a_gitlab_issue_status_and_reports_its_change(
     data = GSoCToolkit().next_steps(now=NOW)
     assert data["tracked_issues"][0]["changed"] is True
     assert data["changes"] and "went from available to" in data["changes"][0]
+    saved = ProgressStore().load().issue_status[link]
+
+    # Comments this tool cannot read make the status "unknown": not a change, as on
+    # GitHub, and the earlier status stays saved (review of #425, 2026-11-01).
+    monkeypatch.setenv("GIG_CACHE_DIR", str(tmp_path / "cache3"))
+    config.get_settings.cache_clear()
+    api.get(gitlab).mock(return_value=httpx.Response(200, json={**issue, "user_notes_count": 3}))
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert data["tracked_issues"][0]["availability"] == "unknown"
+    assert data["tracked_issues"][0]["changed"] is False
+    assert data["changes"] == []
+    assert ProgressStore().load().issue_status[link] == saved
 
 
 def test_next_after_start_names_the_organizations_start_matched() -> None:

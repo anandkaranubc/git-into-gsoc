@@ -3405,13 +3405,15 @@ class GSoCToolkit:
         except GigError:
             return _off_github_issue(link)
         before = previous.get(link)
+        status = found["availability"]
         return {
             "ref": link,
             "url": found["url"],
-            "availability": found["availability"],
+            "availability": status,
             "reason": found["reason"],
             "previous": before,
-            "changed": bool(before and before != found["availability"]),
+            # "unknown" means the check could not tell, as on the GitHub path above.
+            "changed": bool(before and status != "unknown" and before != status),
             "off_github": True,
         }
 
