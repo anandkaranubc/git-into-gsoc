@@ -5,11 +5,12 @@ description: >
   understand the program, find mentoring organizations, pick a repository and a
   beginner issue, make a first contribution, take part in the community, prepare
   a proposal, and track progress. Use when someone mentions GSoC, Google Summer
-  of Code, mentoring organizations, good first issues, contributor proposals, or
-  asks how to get started in open source. Uses real data from the git-into-gsoc
-  CLI or MCP tools and official GSoC pages. Never fabricates organizations,
-  issues, mentors, or deadlines, and never encourages bulk or low-quality
-  contributions.
+  of Code, mentoring organizations, good first issues, or contributor proposals,
+  asks whether an issue is free or already claimed, wants to comment on an issue
+  or write to maintainers, or asks how to get started in open source. Uses real
+  data from the git-into-gsoc CLI or MCP tools and official GSoC pages. Never
+  fabricates organizations, issues, mentors, or deadlines, and never encourages
+  bulk or low-quality contributions.
 license: MIT
 compatibility: >
   Live data needs the git-into-gsoc MCP server or CLI and internet access. The
