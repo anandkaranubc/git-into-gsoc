@@ -142,7 +142,7 @@ def learning_path(
         "Pick the repository that fits your skills (its main code comes first in `repos`), "
         "set it up, and run the tests.",
         "Getting the project to build is the first real barrier; solve it before choosing an issue.",
-        f"git-into-gsoc repos {name}, then git-into-gsoc orient OWNER/REPO",
+        f"git-into-gsoc repos {name}, then git-into-gsoc orient OWNER/REPO (or a GitLab project link)",
     )
     if level in {"new", "some"} and top_has_starter is False:
         add(
