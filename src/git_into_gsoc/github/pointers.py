@@ -26,7 +26,12 @@ _BLOB_RE = re.compile(
 )
 _FRAME_RE = re.compile(r"File \"([^\"]+)\", line (\d+)")
 _FRAME_AT_RE = re.compile(r"\bat\s+(?:[\w.$<>]+\s+\()?((?:[\w.-]+/)+[\w.-]+):(\d+)")
-_PATH_RE = re.compile(rf"(?<![\w/@])((?:[\w.-]+/)*[\w-]+\.(?:{SOURCE_EXTENSIONS}))\b")
+# A match starts only where a path can start: inside a run of path characters every
+# position was a start, and "a.a.a...py" at 100 KB took 5 seconds (probe, 2026-11-01).
+# Dots inside the file name are allowed, so "webpack.config.js" is read whole.
+_PATH_RE = re.compile(
+    rf"(?<![\w/@.-])((?:[\w.-]+/)*[\w-]+(?:\.[\w-]+)*\.(?:{SOURCE_EXTENSIONS}))\b"
+)
 _BACKTICK_RE = re.compile(r"`(\S[^`\n]{1,78}\S)`")
 _IDENT_RE = re.compile(
     r"\b([A-Za-z_][A-Za-z0-9_]*(?:_[A-Za-z0-9]+)+|[a-z]+(?:[A-Z][a-z0-9]+){2,})\b"
