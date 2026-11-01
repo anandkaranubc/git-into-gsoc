@@ -249,3 +249,21 @@ def test_start_sets_aside_an_organization_that_is_sitting_out(
     assert data["set_aside"][0]["name"] == top["name"]
     shown = runner.invoke(app, ["start", "--tech", "python", "--interests", "1"])
     assert "Left out:" in shown.stdout
+
+
+def test_start_does_not_print_a_readiness_line_twice(capsys: pytest.CaptureFixture[str]) -> None:
+    # Ranking folds readiness lines into match_reasons, so "6 ideas on its ideas page"
+    # appeared in "Why:" and again on the ✓ line below it.
+    from git_into_gsoc import cli
+
+    org = {
+        "name": "MDAnalysis",
+        "description": "Molecular simulations in Python",
+        "match_reasons": ["Uses Python", "6 ideas on its 2026 ideas page"],
+        "readiness": ["6 ideas on its 2026 ideas page"],
+        "caveats": [],
+    }
+    cli._render_matches({"organizations": [org], "catalog": {}, "profile": {}})
+    out = capsys.readouterr().out
+    assert out.count("6 ideas on its 2026 ideas page") == 1
+    assert "Why: Uses Python" in out
