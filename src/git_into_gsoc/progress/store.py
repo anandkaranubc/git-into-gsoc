@@ -301,17 +301,14 @@ class ProgressStore:
     @_mutating
     def set_profile(self, **fields: object) -> ProgressState:
         state = self.load()
+        if fields.get("technologies") or fields.get("interests"):
+            # `start` saves the organizations it matched; new answers make them stale.
+            state.profile.pop("suggested_orgs", None)
         state.profile.update({k: v for k, v in fields.items() if v is not None})
         return self.save(state)
 
     def profile(self) -> dict[str, Any]:
         return dict(self.load().profile)
-
-    @_mutating
-    def set_issue_status(self, ref: str, status: str) -> ProgressState:
-        state = self.load()
-        state.issue_status[ref] = status
-        return self.save(state)
 
     @_mutating
     def mark_checked(self, statuses: dict[str, str], at: datetime | None) -> ProgressState:

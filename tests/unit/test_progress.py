@@ -63,6 +63,21 @@ def test_mcp_progress_raises_tool_errors_with_hints(tmp_path: Path) -> None:
         gsoc_progress(action="dance")
 
 
+def test_mcp_progress_writes_return_the_bounded_summary(tmp_path: Path) -> None:
+    """The whole state after a write put every note into the model's context each time."""
+    import json
+
+    from git_into_gsoc.mcp_server import gsoc_progress
+
+    for i in range(12):
+        out = json.loads(gsoc_progress(action="note", value=f"note {i}"))
+    assert out["notes"] == 12 and len(out["recent_notes"]) == 5
+    assert "weekly_log" not in out
+    assert json.loads(gsoc_progress(action="shortlist_org", value="SymPy"))["shortlisted_orgs"] == [
+        "SymPy"
+    ]
+
+
 def test_old_progress_files_gain_new_phases(tmp_path: Path) -> None:
     path = tmp_path / "progress.json"
     path.write_text(
