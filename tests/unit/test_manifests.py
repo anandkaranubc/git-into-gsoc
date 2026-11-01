@@ -57,8 +57,8 @@ def test_the_registry_entry_follows_the_official_schema() -> None:
     jsonschema.validate(server, schema)
     # The registry only takes https icons, and the site must keep serving them.
     for icon in server["icons"]:
-        assert icon["src"].startswith("https://anandkaranubc.github.io/git-into-gsoc/brand/")
-        assert (ROOT / icon["src"].split("/git-into-gsoc/", 1)[1]).is_file()
+        assert icon["src"].startswith("https://gitintogsoc.me/brand/")
+        assert (ROOT / icon["src"].removeprefix("https://gitintogsoc.me/")).is_file()
 
 
 def test_release_please_bumps_every_versioned_manifest() -> None:
