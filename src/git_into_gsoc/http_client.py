@@ -84,6 +84,8 @@ class CachedHttpClient:
                 self.settings.gsoc_orgs_api_url,
                 self.settings.gsoc_official_api_url,
                 self.settings.ecosystems_commits_api_url,
+                # The GitLab host is configured too; a 429 there is worth the wait.
+                f"https://{self.settings.gitlab_host}",
             )
         }
         self._client = httpx.Client(

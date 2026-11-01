@@ -483,3 +483,12 @@ def test_a_304_without_a_cached_copy_is_not_an_empty_page(tmp_path: Path) -> Non
     with pytest.raises(HttpError, match="no copy"):
         client.get_text(URL)
     assert client.stats["cache_hits"] == 0
+
+
+def test_the_configured_gitlab_host_is_patient_too(tmp_path: Path) -> None:
+    # The patient set is built from the configured service addresses; GitLab was
+    # missing, so a gitlab.com 429 with Retry-After: 3 failed at once (review, 2026-11-01).
+    from git_into_gsoc.http_client import _origin
+
+    client = _client_for(tmp_path)
+    assert _origin(httpx.URL("https://gitlab.com/api/v4/projects")) in client._trusted_origins
