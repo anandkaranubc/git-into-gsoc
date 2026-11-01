@@ -85,6 +85,14 @@
 
   scene.appendChild(canvas);
   scene.classList.add("live");
+  var lost = false;
+  // Mobile Safari drops WebGL contexts under memory pressure; the still mark comes back.
+  canvas.addEventListener("webglcontextlost", function (e) {
+    e.preventDefault();
+    lost = true;
+    scene.classList.remove("live");
+    canvas.remove();
+  });
 
   var UNIT = 3;                       // cells per grid unit; the G is 20 units = 60 cells tall
   var cols = 0, rows = 0, cell = 6, g = { x: 0, y: 0 };
@@ -96,7 +104,7 @@
   var copy = hero.querySelector(".hero-copy");
   function size() {
     var W = scene.clientWidth, H = scene.clientHeight;
-    if (!W || !H) return;
+    if (lost || !W || !H) return;
     // Beside the copy on wide screens, in a band above it on narrow ones (see styles.css).
     var band = getComputedStyle(scene).position !== "absolute";
     var copyRight = band ? 0 : copy.getBoundingClientRect().right - scene.getBoundingClientRect().left + 40;
@@ -162,7 +170,7 @@
   }
   function loop() {
     raf = 0;
-    if (!visible || still || document.hidden) return;
+    if (lost || !visible || still || document.hidden) return;
     draw();
     raf = requestAnimationFrame(loop);
   }
@@ -170,7 +178,7 @@
 
   // The pointer moves the cursor, one cell step at a time; idle resumes a moment after it leaves.
   function point(e) {
-    if (still || (e.target.closest && e.target.closest(".hero-copy"))) return;
+    if (lost || still || (e.target.closest && e.target.closest(".hero-copy"))) return;
     var r = canvas.getBoundingClientRect();
     var x = (e.clientX - r.left) / cell, y = (e.clientY - r.top) / cell;
     target = { x: Math.round((x - g.x) / UNIT - 1.5), y: Math.round((y - g.y) / UNIT - 2) };

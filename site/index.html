@@ -46,6 +46,7 @@
 <link rel="preload" href="brand/font/GigPixel.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="brand/tokens.css">
 <link rel="stylesheet" href="styles.css">
+<noscript><style>#panel-unix, #panel-windows { display: block; }</style></noscript>
 <script src="scene.js" defer></script>
 <script>
   // Theme: honour a saved choice or ?theme= before first paint. Otherwise the system decides.
@@ -391,11 +392,12 @@ and like science. Where do I start?"</span></pre>
       heroCopy.hidden = tab.getAttribute("data-tab") === "web";
       if (focus) tab.focus();
     }
-    tabs.forEach(function (t, i) {
+    tabs.forEach(function (t) {
       t.addEventListener("click", function () { choose(t, false); });
       t.addEventListener("keydown", function (e) {
         if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
         e.preventDefault();
+        var i = tabs.indexOf(t);
         choose(tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length], true);
       });
     });
@@ -404,6 +406,16 @@ and like science. Where do I start?"</span></pre>
       win.parentNode.insertBefore(win, document.getElementById("tab-unix"));
       tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
     }
+
+    // The first answer travels in the URL fragment, which browsers never send to a
+    // server, so "your answers stay on your computer" holds. Without JavaScript the
+    // form falls back to a query string.
+    var ask = document.querySelector(".ask");
+    ask.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var v = ask.elements.know.value.trim();
+      location.href = ask.getAttribute("action") + (v ? "#know=" + encodeURIComponent(v) : "");
+    });
 
     document.querySelectorAll("[data-copy]").forEach(function (b) {
       b.addEventListener("click", function () {

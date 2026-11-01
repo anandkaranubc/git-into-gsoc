@@ -576,9 +576,10 @@ START_SCRIPT = """<script>
     }
     form.addEventListener("focusin", boot, { once: true });
     form.addEventListener("pointerdown", boot, { once: true });
-    // The home page asks question one and hands the answer over as ?know=, so the
-    // matcher starts loading before the visitor reads question two.
-    var known = new URLSearchParams(location.search).get("know");
+    // The home page asks question one and hands the answer over as #know= (a query
+    // string when it had no JavaScript), so the matcher starts loading before the
+    // visitor reads question two.
+    var known = new URLSearchParams(location.hash.slice(1)).get("know") || new URLSearchParams(location.search).get("know");
     if (known) {
       form.elements.technologies.value = known.slice(0, 200);
       boot();
