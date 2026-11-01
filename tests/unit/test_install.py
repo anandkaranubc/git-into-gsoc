@@ -786,3 +786,40 @@ def test_doctor_finds_a_registration_claude_mcp_add_made(tmp_path: Path) -> None
         encoding="utf-8",
     )
     assert ("Claude Code", tmp_path / ".claude.json") in registered_servers(tmp_path)
+
+
+def test_a_failed_claude_mcp_add_after_remove_leaves_a_manual_step(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The stale-entry path runs `claude mcp remove` then `add`; when `add` failed (an
+    # older Claude Code, a trust prompt), the person had no server and no command.
+    import git_into_gsoc.install.plan as plan_module
+
+    home = tmp_path / "home"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", classmethod(lambda cls: home))
+    monkeypatch.setattr(plan_module, "find_program", lambda name: f"/fake/bin/{name}")
+
+    def cli(exe: str, argv: list[str], **kw: object) -> tuple[bool, str]:
+        return (False, "boom") if argv[1] == "add" else (True, "")
+
+    monkeypatch.setattr(plan_module, "register_via_cli", cli)
+    stale = {"type": "stdio", "command": "/old/pipx/bin/git-into-gsoc", "args": ["mcp"]}
+    (home / ".claude.json").write_text(json.dumps({"mcpServers": {SERVER_NAME: stale}}))
+    plan = plan_setup(
+        scope="user", assistants=["claude-code"], home=home, project=None, command=CMD
+    )
+    plan.install_skill = False
+    run_setup(plan)
+    assert plan.changes[0].action == "skipped" and "add failed" in plan.changes[0].note
+    assert len(plan.manual) == 1 and " ".join(CMD) in plan.manual[0]
+
+
+def test_register_json_keeps_a_copilot_tool_list_the_person_narrowed(tmp_path: Path) -> None:
+    path = tmp_path / "mcp-config.json"
+    mine = {"type": "local", "command": CMD[0], "args": CMD[1:], "tools": ["gsoc_search_orgs"]}
+    path.write_text(json.dumps({"mcpServers": {SERVER_NAME: mine}}), encoding="utf-8")
+    entry = server_entry(CMD, "json-mcpServers", "copilot")
+    assert register_json(path, "mcpServers", entry) == ("unchanged", "")
+    saved = json.loads(path.read_text(encoding="utf-8"))["mcpServers"][SERVER_NAME]
+    assert saved["tools"] == ["gsoc_search_orgs"]

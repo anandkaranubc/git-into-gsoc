@@ -223,6 +223,37 @@ def test_start_sets_aside_an_organization_that_is_sitting_out(
     assert "Left out:" in shown.stdout
 
 
+def test_a_superscript_digit_is_a_word_not_a_menu_number() -> None:
+    # "²" passes str.isdigit, and int("²") then raised a traceback out of `start`.
+    from git_into_gsoc.onboarding import TOPIC_CHOICES, parse_topics
+
+    assert parse_topics("²") == ["²"]
+    assert parse_topics("1, ²") == [TOPIC_CHOICES[0][0], "²"]
+
+
+def test_start_without_standard_input_explains_instead_of_crashing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # Sandboxed assistants and schedulers run with stdin closed, so sys.stdin is None.
+    from git_into_gsoc import cli
+
+    monkeypatch.setattr(cli.sys, "stdin", None)
+    assert cli._stdin_is_interactive() is False
+
+
+def test_the_hours_question_ignores_a_saved_value_it_would_refuse(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # A hand-edited progress.json held "ten": Enter kept that default and failed forever.
+    from git_into_gsoc import cli
+
+    defaults: list[str] = []
+    monkeypatch.setattr(cli, "_ask", lambda question, default="": defaults.append(default) or "")
+    assert cli._ask_hours("ten") is None
+    assert cli._ask_hours("12") is None
+    assert defaults == ["", "12"]
+
+
 def test_start_does_not_print_a_readiness_line_twice(capsys: pytest.CaptureFixture[str]) -> None:
     # Ranking folds readiness lines into match_reasons, so "6 ideas on its ideas page"
     # appeared in "Why:" and again on the ✓ line below it.
@@ -239,3 +270,9 @@ def test_start_does_not_print_a_readiness_line_twice(capsys: pytest.CaptureFixtu
     out = capsys.readouterr().out
     assert out.count("6 ideas on its 2026 ideas page") == 1
     assert "Why: Uses Python" in out
+
+
+def test_orgs_takes_interests_as_start_calls_it(api: respx.MockRouter) -> None:
+    # `start` and `recommend` say --interests; `orgs` said "No such option".
+    result = runner.invoke(app, ["orgs", "--tech", "python", "--interests", "science", "-n", "3"])
+    assert result.exit_code == 0, result.output
