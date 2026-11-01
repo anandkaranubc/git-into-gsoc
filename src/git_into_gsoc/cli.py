@@ -1425,10 +1425,7 @@ def issues_cmd(
         cells = [f"{issue['beginner_score']:.0f}", shown, ref]
         table.add_row(*cells, *([] if narrow else [issue["title"]]))
     console.print(table)
-    # A GitLab result's repo starts with its host; `issue` takes the link for those.
-    on_gitlab = any("." in str(i["repo"]).split("/", 1)[0] for i in data["issues"])
-    ref_form = "URL" if on_gitlab else "owner/repo#N"
-    console.print(f"[dim]Next: git-into-gsoc issue {ref_form} before you comment.[/dim]")
+    console.print("[dim]Next: git-into-gsoc issue owner/repo#N before you comment.[/dim]")
 
 
 @app.command("issue", rich_help_panel="Pick a repository and an issue")
