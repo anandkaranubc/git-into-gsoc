@@ -258,11 +258,8 @@ def gitlab_target(source_code: str | None) -> tuple[str, str] | None:
     return (host, path) if path else None
 
 
-def _dt(value: Any) -> datetime | None:
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")) if value else None
-    except ValueError:
-        return None
+# The shared parser, under the short name the field maps below use.
+_dt = parse_iso
 
 
 def _issues_page(
