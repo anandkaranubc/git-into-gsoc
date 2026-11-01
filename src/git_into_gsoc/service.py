@@ -3709,7 +3709,7 @@ class GSoCToolkit:
         scope = list(dict.fromkeys(scope))
         on_gitlab = self._new_gitlab_issues(state, since=since)
         if not scope:
-            return on_gitlab
+            return on_gitlab[:10]
         repos_scope = [q.split(":", 1)[1] for q in scope if q.startswith("repo:")]
         orgs_scope = [q.split(":", 1)[1] for q in scope if q.startswith("org:")]
         query = build_issue_query(
@@ -3728,7 +3728,7 @@ class GSoCToolkit:
         try:
             items = self.github.search_issues(query, per_page=20, sort="created")
         except HttpError:
-            return on_gitlab or None
+            return on_gitlab[:10] or None
         out = list(on_gitlab)
         for item in items:
             if "pull_request" in item:
@@ -3749,6 +3749,8 @@ class GSoCToolkit:
                     ],
                 }
             )
+        # Newest first across both hosts, not GitLab first; ISO stamps sort as text.
+        out.sort(key=lambda i: str(i.get("created_at") or ""), reverse=True)
         return out[:10]
 
     def _new_gitlab_issues(self, state: ProgressState, *, since: datetime) -> list[dict[str, Any]]:
@@ -3771,6 +3773,7 @@ class GSoCToolkit:
             if target:
                 places.setdefault(target, org.name if org else None)
         out: list[dict[str, Any]] = []
+        seen: set[str] = set()  # gitg tracked and GNOME shortlisted list gitg's issues twice
         # Three places at most: each costs up to a label query per common label plus
         # a merge request check per candidate.
         for (host, path), org_name in list(places.items())[:3]:
@@ -3787,7 +3790,11 @@ class GSoCToolkit:
             except GigError:
                 continue
             for issue in issues:
-                if issue.created_at and issue.created_at >= since:
+                # GitHub's search already leaves out assigned and PR-linked issues.
+                if issue.availability not in {Availability.AVAILABLE, Availability.UNKNOWN}:
+                    continue
+                if issue.created_at and issue.created_at >= since and issue.url not in seen:
+                    seen.add(issue.url)
                     out.append(
                         {
                             "repo": issue.repo,
