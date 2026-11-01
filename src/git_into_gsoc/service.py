@@ -24,10 +24,11 @@ from git_into_gsoc.config import (
     get_settings,
     latest_program_year,
 )
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.drafts import DRAFT_KINDS, claim_convention, manifest_commands, render_draft
 from git_into_gsoc.errors import GigError, InputError, RateLimitError, reset_phrase
 from git_into_gsoc.github.availability import CONTESTED_MIN_CLAIMANTS
-from git_into_gsoc.github.client import GitHubClient
+from git_into_gsoc.github.client import GitHubClient, license_name
 from git_into_gsoc.github.orientation import (
     active_committers,
     branch_gates,
@@ -93,6 +94,7 @@ from git_into_gsoc.gitlab import gitlab_issue_status, parse_gitlab_issue
 from git_into_gsoc.gsoc.archive import ArchiveClient, proposal_folders, summarize_mentors
 from git_into_gsoc.gsoc.client import GSoCClient
 from git_into_gsoc.gsoc.ideas import fetch_ideas_text
+from git_into_gsoc.gsoc.names import GITHUB_RESERVED
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
@@ -143,16 +145,6 @@ from git_into_gsoc.validation import (
     validate_login,
     validate_year,
 )
-
-
-def _parse_iso(value: Any) -> datetime | None:
-    if not value:
-        return None
-    try:
-        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).astimezone(UTC)
-    except ValueError:
-        return None
-
 
 BEFORE_YOU_COMMENT = [
     "Read the whole thread and any linked PRs first.",
@@ -231,7 +223,7 @@ def _unlinked_caveat(pull: dict[str, Any]) -> str:
 
 def _dormant_days(raw: dict[str, Any]) -> int | None:
     """Days since anything was pushed to the repository, when that is over DORMANT_DAYS."""
-    pushed = _parse_iso(raw.get("pushed_at"))
+    pushed = parse_iso(raw.get("pushed_at"))
     days = (datetime.now(UTC) - pushed).days if pushed else 0
     return days if days > DORMANT_DAYS else None
 
@@ -409,11 +401,8 @@ def _other_active_repos(repos: list[dict[str, Any]], repo: str) -> int:
     for item in repos:
         if str(item.get("name") or "").lower() == name or item.get("fork") or item.get("archived"):
             continue
-        try:
-            pushed = datetime.fromisoformat(str(item.get("pushed_at") or "").replace("Z", "+00:00"))
-        except ValueError:
-            continue
-        if pushed >= cutoff:
+        pushed = parse_iso(item.get("pushed_at"))
+        if pushed is not None and pushed >= cutoff:
             count += 1
     return count
 
@@ -969,7 +958,7 @@ class GSoCToolkit:
                 for r in listed
                 if not r.get("fork")
                 and not _retired_repo(r)
-                and (_parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
+                and (parse_iso(r.get("pushed_at")) or cutoff) >= cutoff
             ]
             ranked_by_stars = sorted(
                 (r for r in repos if repo_kind(str(r.get("full_name"))) is None),
@@ -1004,7 +993,7 @@ class GSoCToolkit:
                         description=clean_untrusted(repo.get("description"), limit=300) or None,
                         language=repo.get("language"),
                         stars=int(repo.get("stargazers_count") or 0),
-                        pushed_at=_parse_iso(repo.get("pushed_at")),
+                        pushed_at=parse_iso(repo.get("pushed_at")),
                         open_beginner_issues=beginner,
                         ideas_mention=in_ideas,
                         score=score,
@@ -1275,7 +1264,7 @@ class GSoCToolkit:
         outside its own openrobotics and osrf owners. A link to a person's repository
         is usually a reference or a mentor's profile, so only organizations count.
         """
-        skip = {o.lower() for o in searched} | _NOT_OWNERS  # already listed in full
+        skip = {o.lower() for o in searched} | GITHUB_RESERVED  # already listed in full
         named: list[str] = []
         for match in _GITHUB_PROJECT_RE.finditer(text):
             owner, repo = match.group(1), match.group(2)
@@ -1357,7 +1346,7 @@ class GSoCToolkit:
             description=clean_untrusted(raw.get("description"), limit=300) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
-            pushed_at=_parse_iso(raw.get("pushed_at")),
+            pushed_at=parse_iso(raw.get("pushed_at")),
             open_beginner_issues=0,
             ideas_mention=True,
             score=score,
@@ -2276,7 +2265,7 @@ class GSoCToolkit:
                 "source": program["source"],
             },
             "deadlines": upcoming_deadlines(program),
-            "time_budget": time_budget(state, program, now=now),
+            "time_budget": time_budget(state, program),
             "hours_note": hours_note((state.profile or {}).get("hours_per_week")),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
@@ -2390,7 +2379,7 @@ class GSoCToolkit:
             "as_of_commit": tree.get("sha"),
             "tree_truncated": bool(tree.get("truncated")),
             "stars": int(raw.get("stargazers_count") or 0),
-            "license": _license_label(raw.get("license")),
+            "license": license_name(raw.get("license")),
             "pushed_days_ago": days_since(raw.get("pushed_at")),
             "languages": languages,
             "code_map": code_map(entries, repo_name=repo),
@@ -3544,15 +3533,6 @@ def _not_checked(state: ProgressState) -> str | None:
     )
 
 
-def _license_label(license_obj: Any) -> str | None:
-    if not isinstance(license_obj, dict):
-        return None
-    spdx = str(license_obj.get("spdx_id") or "")
-    if spdx and spdx != "NOASSERTION":
-        return spdx
-    return str(license_obj.get("name") or "") or None
-
-
 # Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18, UC OSPO 22.
 MAX_FOLLOWED_PAGES = 30
 _YEAR_RE = re.compile(r"(?<!\d)(20\d\d)(?!\d)")
@@ -3610,23 +3590,6 @@ _GITHUB_PROJECT_RE = re.compile(
 )
 # GitHub's own pages, never a project's owner. A pasted image (user-attachments/assets)
 # made a one-project ideas page look like several (a post-merge audit, 2026-10-23).
-_NOT_OWNERS = {
-    "orgs",
-    "topics",
-    "search",
-    "features",
-    "apps",
-    "settings",
-    "marketplace",
-    "user-attachments",
-    "sponsors",
-    "users",
-    "collections",
-    "codespaces",
-    "readme",
-    "explore",
-    "notifications",
-}
 _NOT_REPOS = {"wiki", "issues", "blob", "tree", "pulls", "discussions", "projects"}
 _DISCUSSIONS_RE = re.compile(r"github\.com/([A-Za-z0-9_.-]+)/([A-Za-z0-9_.-]+)/discussions\b")
 _CHANGE_LINK_RE = re.compile(r"/(?:pull|pulls|commit|commits|compare)\b")
@@ -3664,7 +3627,7 @@ def _linked_github_projects(
         if not any_link and not _looks_like_ideas_page(page):
             continue
         match = _GITHUB_PROJECT_RE.match(str(page.get("url") or ""))
-        if not match or match.group(1).lower() in _NOT_OWNERS:
+        if not match or match.group(1).lower() in GITHUB_RESERVED:
             continue
         owner, repo = match.group(1), match.group(2)
         if repo and repo.lower() not in _NOT_REPOS:
@@ -3685,7 +3648,7 @@ def _linked_repo(link: str) -> tuple[str, bool] | None:
     if not match or not match.group(2) or _CHANGE_LINK_RE.match(link, match.end()):
         return None
     owner, repo = match.group(1), match.group(2).removesuffix(".git")
-    if owner.lower() in _NOT_OWNERS or repo.lower() in _NOT_REPOS:
+    if owner.lower() in GITHUB_RESERVED or repo.lower() in _NOT_REPOS:
         return None
     return f"{owner}/{repo}", link[match.end() :].startswith("/issues/")
 
@@ -3810,13 +3773,8 @@ _OPEN_TO_NEWCOMERS = frozenset({Availability.AVAILABLE.value, Availability.UNKNO
 
 def _after(stamp: object, when: datetime) -> bool:
     """True when an ISO timestamp from GitHub is later than `when`."""
-    try:
-        moment = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
-    except ValueError:
-        return False
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=UTC)
-    return moment > when
+    moment = parse_iso(stamp)
+    return moment is not None and moment > when
 
 
 def _open(issue: dict[str, Any]) -> bool:

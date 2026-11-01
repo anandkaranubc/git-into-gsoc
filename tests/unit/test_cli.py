@@ -479,3 +479,39 @@ def test_issue_marks_closed_prs_that_only_mention_it(monkeypatch) -> None:  # ty
     assert "PR #6 (merged) by @dev" in lines  # it says it fixes this one
     assert "PR #8 (open) by @dev" in lines  # an open PR may be the work itself
     assert "PR #9 (closed) by @dev" in lines  # a closed one that said it fixes this tried it
+
+
+def test_the_issues_table_stays_inside_a_100_column_terminal(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    # Rich shrinks the Title column, then grows the Issue column back to its minimum
+    # width: at 100 columns a 43-character reference lost the table's right border.
+    from git_into_gsoc import cli
+
+    issues = [
+        _listed("likely_taken", repo="numfocus/disc-unconference-2023-projects", number=25),
+        _listed("available", title="Collaborative translation infrastructure?"),
+    ]
+
+    class Fake:
+        def find_issues(self, **k):  # type: ignore[no-untyped-def]
+            return {"issues": issues, "note": "Searching", "next_steps": []}
+
+    monkeypatch.setattr(cli, "_toolkit", lambda: Fake())
+    for columns in ("100", "80", "60"):
+        result = runner.invoke(app, ["issues", "--org", "NumFOCUS"], env={"COLUMNS": columns})
+        assert result.exit_code == 0, result.output
+        table = [line for line in result.output.splitlines() if line.startswith(("┏", "┃", "│"))]
+        assert table and all(len(line) <= int(columns) for line in table), columns
+        assert all(line.rstrip().endswith(("┓", "┃", "│")) for line in table), columns
+    # The footer names the first free issue, so the next command is a paste, not a template.
+    assert "git-into-gsoc issue acme/lib#7 --track" in result.output
+
+
+def test_a_missing_argument_shows_an_example_to_type() -> None:
+    # A beginner who typed `git-into-gsoc org` got "Missing argument 'name'." and no idea
+    # what a name looks like.
+    result = runner.invoke(app, ["org"])
+    assert result.exit_code == 2
+    text = " ".join(result.output.split())
+    assert "Missing argument 'name'. Example: git-into-gsoc org \"SymPy\"" in text
+    result = runner.invoke(app, ["issue"])
+    assert "Example: git-into-gsoc issue owner/repo#123" in " ".join(result.output.split())
