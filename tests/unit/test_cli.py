@@ -128,6 +128,8 @@ def test_doctor_reachability_reports_each_source() -> None:
 def test_help_groups_commands_for_beginners() -> None:
     result = runner.invoke(app, ["--help"])
     assert result.exit_code == 0
+    assert "Usage:" in result.output
+    assert "start" in result.output and "pointers" in result.output
     for panel in (
         "Start here",
         "Find an organization",
