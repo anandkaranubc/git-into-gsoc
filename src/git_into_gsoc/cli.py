@@ -900,13 +900,14 @@ def _first_few(items: list[str], count: int, *, width: int = 48) -> str:
     """The first few of a list, each cut at a word boundary, then how many more. A
     60-character cut of the joined list left "migration fro" and "Fam" in GNOME's
     skills column, and its skills are whole sentences (2026-11-01)."""
+    kept = [str(item) for item in items if str(item).strip()]
     shown = []
-    for item in items[:count]:
-        text = str(item)
+    for text in kept[:count]:
         if len(text) > width:
-            text = text[:width].rsplit(" ", 1)[0].rstrip(",;:") + "…"
+            # One more character, so a word that ends exactly at the width survives.
+            text = text[: width + 1].rsplit(" ", 1)[0].rstrip(",;:") + "…"
         shown.append(escape(text))
-    more = len(items) - len(shown)
+    more = len(kept) - len(shown)
     return ", ".join(shown) + (f", +{more} more" if more > 0 else "")
 
 

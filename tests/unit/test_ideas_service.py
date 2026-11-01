@@ -142,6 +142,8 @@ def test_ideas_cells_cut_at_words_and_count_the_rest() -> None:
     assert "…, C, Vala, +1 more" in cell
     assert "fro" not in cell.replace("from", "")
     assert _first_few(["Alberto Fanjul"], 3) == "Alberto Fanjul"
+    assert _first_few(["aaaa bbbb cccc"], 1, width=9) == "aaaa bbbb…"  # a word ends at the width
+    assert _first_few(["", "C", " "], 4) == "C"
     assert _first_few([], 3) == ""
 
 
