@@ -604,6 +604,26 @@ def test_a_claim_draft_asks_whoever_asked_before(monkeypatch) -> None:  # type: 
     assert "I'd like to work on this." in draft["template"] and "warning" not in draft
 
 
+def test_html_tags_from_pull_request_templates_are_not_placeholders() -> None:
+    from git_into_gsoc.drafts import check_message
+
+    # `draft pr --check` flagged <details> and <summary>, which GitHub templates use to
+    # fold test output, as placeholders. A real placeholder is still caught.
+    text = (
+        "Fixes #12. <details><summary>Test output</summary>\n\n```\n3 passed\n```\n</details>\n"
+        "Tested with pytest tests/test_parser.py. <kbd>Ctrl</kbd> is <short-branch-name>."
+    )
+    placeholders = next(
+        f for f in check_message("pr", text)["findings"] if f["id"] == "placeholders"
+    )
+    assert placeholders["detail"].startswith("<short-branch-name>. ")
+    # A placeholder that starts with a tag name is still one (review of #426).
+    from git_into_gsoc.drafts import _ANGLE_PLACEHOLDER_RE
+
+    text = '<a short summary> <code to reproduce> <details open> <a href="x">y</a> <br/>'
+    assert _ANGLE_PLACEHOLDER_RE.findall(text) == ["<a short summary>", "<code to reproduce>"]
+
+
 def test_a_draft_for_an_unknown_organization_says_so(monkeypatch: pytest.MonkeyPatch) -> None:
     # A typo in --org quietly gave a generic intro with "<public channel>" unfilled.
     from git_into_gsoc.errors import InputError
