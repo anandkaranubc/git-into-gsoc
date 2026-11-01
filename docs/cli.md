@@ -180,7 +180,7 @@ git-into-gsoc progress note --value "Next: read the contribution guide."
 | `summary` (default) | none | The phases as a checklist with the next one marked, your shortlist, tracked repositories and issues, how recent your weekly notes are, and your five newest notes |
 | `complete_phase` | `--phase NAME` | Mark a phase complete. Names: `learn`, `discover`, `evaluate`, `orient`, `community`, `find_issues`, `contribute`, `iterate`, `proposal`, `track` |
 | `shortlist_org` | `--value "NAME"` | Save an organization name |
-| `track_repo` | `--value OWNER/REPO` | Save a repository as `owner/repo`, once whatever the spelling. A project link on GitLab or another host is saved as it is |
+| `track_repo` | `--value OWNER/REPO` | Save a repository as `owner/repo`, once whatever the spelling. A project link on GitLab or another host is saved as it is; `next` lists new beginner issues in a GitLab project, as it does for a shortlisted organization whose code is on GitLab |
 | `track_issue` | `--value URL` | Save an issue or pull request as one GitHub link; `owner/repo#123` works too. An issue link on GitLab or another host is saved as it is; `next` re-checks a GitLab issue through GitLab's public API and lists others without re-checking them |
 | `note` | `--value "TEXT"` | Append a note of up to 2,000 characters |
 
