@@ -806,7 +806,7 @@ def test_pointers_resolve_paths_and_find_the_closing_merge_request() -> None:
     assert data["similar_label"] == "4. Newcomers" and data["similar_shares_title_words"]
     fix = data["similar_fixes"][0]
     assert fix["issue"]["number"] == 300 and fix["pull_request"]["number"] == 77
-    assert fix["pull_request"]["confidence"] == "closing PR" and fix["days_to_merge"] == 3
+    assert fix["pull_request"]["confidence"] == "closing MR" and fix["days_to_merge"] == 3
     assert fix["files"] == [] and data["fix_norm"] == {"sample": 0}
     assert "merge requests" in data["next_step"] and "GITLAB_TOKEN" in data["next_step"]
 

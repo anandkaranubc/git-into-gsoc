@@ -1265,6 +1265,7 @@ def gitlab_issue_pointers(
                 closer = closing_pull_request(item, events, repo=repo)
                 if not closer:
                     continue
+                closer["confidence"] = str(closer["confidence"]).replace("PR", "MR")
                 files: list[str] = []
                 if signed_in:
                     diffs = read(
