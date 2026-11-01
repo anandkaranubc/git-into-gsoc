@@ -29,7 +29,7 @@ Committer counts come from [commits.ecosyste.ms](https://commits.ecosyste.ms/), 
 
 Issue searches ask GitHub for open, unassigned issues without linked PRs in non-archived repositories, updated in the last year, with the chosen label. A search returns at most 30 issues and keeps at most two per repository. With `--scope gsoc`, it covers the first GitHub organization of up to 12 top-ranked GSoC organizations for the language, fewer when the search query would get too long. The top candidates' timelines are read (up to 500 events each) for linked PRs, claims matching common phrasings ("can I work on this", "assign me"), maintainer approvals, and engagement. Claims phrased unusually, coordination in chat, and very long threads are not visible to the tool. Read the discussion yourself.
 
-Organization scoping uses the GitHub organizations linked from each GSoC organization's official listing. Organizations whose code lives outside GitHub, or under a personal account, are not covered by `issues --scope gsoc`. `repos` reads up to 100 repositories from each of the first three GitHub owners linked to an organization and skips forks, archived repositories, repositories with issues disabled, and anything not pushed in the last year.
+Organization scoping uses the GitHub organizations linked from each GSoC organization's official listing. Organizations whose code lives outside GitHub, or under a personal account, are not covered by `issues --scope gsoc`; `issues --org NAME` reaches one whose code link is a GitLab group or project through GitLab's public API ([command reference](cli.md)). `repos` reads up to 100 repositories from each of the first three GitHub owners linked to an organization and skips forks, archived repositories, repositories with issues disabled, and anything not pushed in the last year; on a GitLab host it reads the group's 100 most recently active projects.
 
 ### How the repository grade is worked out
 
@@ -78,7 +78,7 @@ Pages link to other pages, and `ideas` follows some links on umbrella pages. The
 
 ## Caching
 
-Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source is down or rate limited, a cached copy up to a week old is served and a warning is logged. See [configuration](configuration.md) for refreshing results.
+Most GitHub responses are cached for an hour and revalidated with the server afterwards. Issue details and timelines are cached for 5 minutes, beginner-issue counts for 15 minutes, and official program dates for 6 hours. Organization lists, archives, and ideas pages are cached for a day. When a source is down or rate limited, a cached copy up to a week old is served and a warning is logged. A page that does not exist (a 404) is remembered for up to an hour, so it is not asked for again on every command. See [configuration](configuration.md) for refreshing results.
 
 ## If a source is unavailable
 

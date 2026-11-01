@@ -331,10 +331,11 @@ def gsoc_orient_repo(full_name: str, codetour: bool = False) -> str:
 )
 @guarded
 def gsoc_discover_repos(org: str, language: str = "", limit: int = 10) -> str:
-    """Rank a mentoring org's GitHub repositories for a first contribution.
+    """Rank a mentoring org's repositories for a first contribution.
 
     org: GSoC org name ("GNU Radio") or GitHub login. Repos named on the org's ideas page,
     with open good-first-issues, recent pushes, and the preferred `language` rank highest.
+    An org whose code is on a GitLab host (GNOME) gets its group's active projects instead.
     """
     return _dump(toolkit().discover_repos(org, language=language or None, limit=limit))
 
@@ -352,7 +353,8 @@ def gsoc_find_issues(
     """Find beginner issues that are genuinely free to pick up.
 
     org: a GSoC organization's name (its GitHub owners plus organizations whose repositories
-    its ideas page names) or a GitHub login.
+    its ideas page names; one whose code is on a GitLab host, such as GNOME or QEMU, is
+    searched there, and its comments cannot be read) or a GitHub login.
     scope="gsoc" (default) searches only repos owned by GSoC mentoring orgs that use `language`;
     scope="all" searches all of GitHub. Excludes assigned, PR-linked, and archived-repo issues,
     then checks the top candidates' timelines for claims ("can I work on this?"), contested
