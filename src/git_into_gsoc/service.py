@@ -1919,6 +1919,12 @@ class GSoCToolkit:
                 f"Unknown experience level '{experience}'.",
                 hint="Use one of: " + ", ".join(EXPERIENCE_LEVELS) + f" ({EXPERIENCE_HELP}).",
             )
+        # The CLI's 1 to 80 rule, here too so an assistant cannot save -5 or 100000.
+        if hours_per_week is not None and not 1 <= hours_per_week <= 80:
+            raise InputError(
+                f"Hours a week must be from 1 to 80, got {hours_per_week}.",
+                hint="Give the hours you can really spend on it each week.",
+            )
         if github:
             login = validate_login(github)
             try:
@@ -2510,6 +2516,8 @@ class GSoCToolkit:
             for key in ("contributing", "pr_template", "pyproject", "package_json", "codeowners")
             if found.get(key)
         }
+        agent_paths = [p for p in found.get("agent_instructions") or [] if not p.endswith("/")]
+        raw_wanted.update({path: path for path in agent_paths[:2]})
         texts: dict[str, str] = {}
         workflow_texts: dict[str, str] = {}
         with ThreadPoolExecutor(max_workers=workers) as pool:
@@ -2548,6 +2556,7 @@ class GSoCToolkit:
             {
                 str(found.get("contributing") or "CONTRIBUTING"): texts.get("contributing", ""),
                 str(found.get("pr_template") or "PR template"): texts.get("pr_template", ""),
+                **{path: texts.get(path, "") for path in agent_paths[:2]},
             }
         )
         total_bytes = sum(langs.values()) or 1
@@ -2585,6 +2594,7 @@ class GSoCToolkit:
                 "readme": found.get("readme"),
                 "contributing": found.get("contributing"),
                 "architecture": found.get("architecture_docs") or [],
+                "agent_instructions": found.get("agent_instructions") or [],
                 "governance": found.get("governance"),
                 "test_dirs": found.get("test_dirs") or [],
             },
@@ -2873,6 +2883,10 @@ class GSoCToolkit:
             context["handle"] = profile["github"]
         if org:
             found = self.gsoc.get_organization(org)
+            if found is None:
+                # A typo quietly gave a generic draft without the channels it exists for.
+                missing = self._org_not_found(org)
+                raise InputError(missing["error"], hint=missing["hint"])
             if found:
                 context["org"] = found.name
                 if not found.github_orgs and found.source_code:
@@ -3092,6 +3106,7 @@ class GSoCToolkit:
     def org_mentors(self, name: str, *, years: int = 3, limit: int = 25) -> dict[str, Any]:
         """Who mentored this org's completed projects in recent years, from the archive."""
         validate_limit(limit)
+        validate_limit(years, name="years")  # 0 read no year and said "found" with nobody
         org = self.gsoc.get_organization(name)
         if org is None:
             return self._org_not_found(name)

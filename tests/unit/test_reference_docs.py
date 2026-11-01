@@ -11,7 +11,7 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import typer
-from typer.core import TyperCommand, TyperGroup, TyperOption
+from typer.core import TyperArgument, TyperCommand, TyperGroup, TyperOption
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -34,8 +34,11 @@ def _commands() -> Iterator[tuple[str, TyperCommand | TyperGroup]]:
                 stack.append((f"{full} ", command))
 
 
-def _options(command: TyperCommand | TyperGroup) -> Iterator[TyperOption]:
+def _options(command: TyperCommand | TyperGroup) -> Iterator[TyperOption | TyperArgument]:
+    # Arguments too: `orient FULL_NAME` shipped with no help text while only options were checked.
     for param in command.params:
+        if isinstance(param, TyperArgument) and not param.hidden:
+            yield param
         if isinstance(param, TyperOption) and not param.hidden and "--help" not in param.opts:
             yield param
 
