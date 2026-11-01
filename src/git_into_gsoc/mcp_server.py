@@ -330,10 +330,11 @@ def gsoc_orient_repo(full_name: str, codetour: bool = False) -> str:
 )
 @guarded
 def gsoc_discover_repos(org: str, language: str = "", limit: int = 10) -> str:
-    """Rank a mentoring org's GitHub repositories for a first contribution.
+    """Rank a mentoring org's repositories for a first contribution.
 
     org: GSoC org name ("GNU Radio") or GitHub login. Repos named on the org's ideas page,
     with open good-first-issues, recent pushes, and the preferred `language` rank highest.
+    An org whose code is on a GitLab host (GNOME) gets its group's active projects instead.
     """
     return _dump(toolkit().discover_repos(org, language=language or None, limit=limit))
 
