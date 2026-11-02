@@ -494,12 +494,29 @@ def test_recovery_leaves_a_file_another_process_already_repaired(
     assert "moved to" not in caplog.records[-1].getMessage()
 
 
-def test_two_recoveries_in_one_second_keep_two_backups(tmp_path: Path) -> None:
+def test_two_recoveries_in_one_clock_tick_keep_two_backups(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from datetime import tzinfo
+
+    from git_into_gsoc.progress import store as store_module
+
+    class FrozenClock(store_module.datetime):
+        @classmethod
+        def now(cls, tz: tzinfo | None = None) -> FrozenClock:
+            return cls(2026, 11, 2, 21, 34, 5, 139046, tzinfo=tz)
+
+    # Windows clocks tick in milliseconds, so a real second recovery often lands in the
+    # same microsecond as the first; freezing the clock makes that the case every time.
+    monkeypatch.setattr(store_module, "datetime", FrozenClock)
     path = tmp_path / "progress.json"
     for text in ('{"phases": 1', '{"notes": 1'):
         path.write_text(text, encoding="utf-8")
         ProgressStore(path).load()
-    assert len(list(tmp_path.glob("progress.damaged-*.json"))) == 2
+    assert sorted(p.name for p in tmp_path.glob("progress.damaged-*.json")) == [
+        "progress.damaged-20261102T213405139046-1.json",
+        "progress.damaged-20261102T213405139046.json",
+    ]
 
 
 def test_other_host_links_follow_the_same_rules_as_github_and_log_links(tmp_path: Path) -> None:
