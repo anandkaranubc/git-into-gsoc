@@ -183,7 +183,14 @@
         else if (inRoomUnit(ux, uy)) L = 0.35 * fill;
       }
       if (v === WALL) c = MERGE;
-      else if (sand(v)) c = ((entered || cheering) && inRoomUnit(ux, uy)) || L > 0.6 ? PAPER : v === SAND ? OPEN : PAPER;
+      else if (sand(v)) {
+        var inside = inRoomUnit(ux, uy), b = BAYER[(y & 3) * 4 + (x & 3)];
+        // inside the room the crowd reads as light, not paint: lime dithered with the deep
+        // tone, brighter as the room fills, paper for a moment when it is full
+        if ((entered || cheering) && inside) c = PAPER;
+        else if (inside) c = v === SAND2 ? PAPER : b < 4 + 10 * fill ? OPEN : ODEEP;
+        else c = L > 0.6 ? PAPER : v === SAND ? OPEN : PAPER;
+      }
       else {
         // light from grains next to this cell, dithered into the two dark tones
         var n = 0;
