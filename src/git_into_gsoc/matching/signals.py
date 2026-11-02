@@ -24,6 +24,7 @@ import re
 import sys
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import suppress
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from importlib import resources
@@ -209,6 +210,7 @@ BEGINNER_SEARCH_LABELS = (
 
 
 CANARY_SHARE = 0.8
+LISTING_PAGE = 100  # `list_owner_repos` reads one page of this many
 
 
 def search_trustworthy(toolkit: Any, previous: dict[str, dict[str, Any]] | None = None) -> bool:
@@ -245,14 +247,23 @@ def _github_for(
 
     if not owners:
         return None
+    since = (now - timedelta(days=365)).date().isoformat()
     repos: list[dict[str, Any]] = []
     listed = 0
     for owner in owners[:3]:
         try:
-            repos.extend(toolkit.github.list_owner_repos(owner))
+            found = toolkit.github.list_owner_repos(owner)
             listed += 1
         except GigError:
             continue
+        if searches and len(found) >= LISTING_PAGE:
+            # A full page is the newest pushes only: stdlib-js's hundred (of 6,356) were
+            # all pushed within 18 hours, so its languages swung month to month
+            # (mathematics 85 to 38, Python 0 to 15). Its hundred most starred active
+            # repositories are the same ones each month.
+            with suppress(GigError):  # a failed search: the newest pushes stand
+                found = toolkit.github.most_starred_repos(owner, since=since) or found
+        repos.extend(found)
     if not listed:
         return None
     summary = summarize_repos(repos, owners[:3], now=now)
@@ -261,9 +272,7 @@ def _github_for(
     # Over the first three owners only (as the listing above), so for an organization
     # with more it is a lower bound; "N issues opened" stays true.
     labelled = toolkit.github.beginner_issues_opened(
-        owners[:3],
-        since=(now - timedelta(days=365)).date().isoformat(),
-        labels=list(BEGINNER_SEARCH_LABELS),
+        owners[:3], since=since, labels=list(BEGINNER_SEARCH_LABELS)
     )
     if labelled is not None:
         summary["beginner_issues_year"] = labelled

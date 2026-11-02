@@ -251,3 +251,62 @@ def test_stated_hours_reach_the_time_fit() -> None:
     usual = fit_idea(person, skill_keys=["c"], domain_keys=[], size="large")
     assert stated.too_big and "large (500 hours)" in stated.notes
     assert not usual.too_big
+
+
+@respx.mock
+def test_a_full_first_page_is_replaced_by_the_most_starred_active_repositories() -> None:
+    from types import SimpleNamespace
+
+    from tests.conftest import load_fixture
+
+    from git_into_gsoc.github.client import GitHubClient
+    from git_into_gsoc.matching.signals import _github_for
+
+    def pushed_today(owner: str, n: int) -> list[dict[str, Any]]:
+        # stdlib-js's newest pushes: benchmark scripts make GitHub call them Python
+        return [
+            {
+                "full_name": f"{owner}/math-base-special-{i}",
+                "language": "Python",
+                "pushed_at": "2026-11-01T00:00:00Z",
+            }
+            for i in range(n)
+        ]
+
+    api = "https://api.github.com/"
+    respx.get(f"{api}orgs/stdlib-js/repos").mock(
+        return_value=httpx.Response(200, json=pushed_today("stdlib-js", 100))
+    )
+    respx.get(f"{api}orgs/lab/repos").mock(
+        return_value=httpx.Response(200, json=pushed_today("lab", 3))
+    )
+    respx.get(f"{api}orgs/giant/repos").mock(
+        return_value=httpx.Response(200, json=pushed_today("giant", 100))
+    )
+    search = respx.get(f"{api}search/repositories").mock(
+        return_value=httpx.Response(200, json=load_fixture("github_search_repos_stdlib.json"))
+    )
+    respx.get(f"{api}search/issues").mock(return_value=httpx.Response(200, json={"total_count": 4}))
+    toolkit = SimpleNamespace(github=GitHubClient())
+    now = datetime(2026, 11, 2, tzinfo=UTC)
+
+    summary = _github_for(toolkit, ["stdlib-js"], now, searches=True)
+    assert summary is not None
+    assert summary["languages"] == {"JavaScript": 2, "C": 1}  # the sample, not the day
+    assert summary["active_repos"] == 3 and summary["concepts"]["mathematics"] == 2
+    assert summary["beginner_issues_year"] == 4
+    query = search.calls.last.request.url.params
+    assert query["sort"] == "stars" and query["per_page"] == "100"
+    assert "org:stdlib-js" in query["q"] and "pushed:>=2025-11-02" in query["q"]
+
+    # A short first page is the whole owner: no search.
+    short = _github_for(toolkit, ["lab"], now, searches=True)
+    assert short is not None and short["languages"] == {"Python": 3}
+    assert search.call_count == 1
+
+    # Without a trustworthy search, or when the search fails, the newest pushes stand.
+    untrusted = _github_for(toolkit, ["stdlib-js"], now, searches=False)
+    assert untrusted is not None and untrusted["languages"] == {"Python": 100}
+    search.mock(return_value=httpx.Response(503))
+    failed = _github_for(toolkit, ["giant"], now, searches=True)
+    assert failed is not None and failed["languages"] == {"Python": 100}

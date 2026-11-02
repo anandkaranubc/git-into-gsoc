@@ -35,7 +35,7 @@ Three public sources describe each organization:
 |---|---|---|
 | Its official GSoC listing (tags, categories, tagline, description) | What the organization says it works on and with | The latest official list, embedded and refreshed weekly |
 | Its ideas page | How many ideas, the difficulty and size each states, and the skills and subjects they name | Read for every organization once a month and shipped as `data/org_signals.json` |
-| Its GitHub repositories | How many were pushed to in the last year, and their languages and topics | Same monthly refresh |
+| Its GitHub repositories | How many were pushed to in the last year, and their languages and topics; for an owner with more than 100 repositories, its 100 most starred | Same monthly refresh |
 
 A tag the organization chose counts most. A word in its description, ideas page, or repositories counts less, and more when several sources agree. A subject that tags, ideas, and code all mention is central to an organization; a single tag may be a side interest. The ideas evidence always names its year ("listed as a skill in 9 of 12 2026 ideas"), because last year's page says what an organization works on even before the new one appears.
 

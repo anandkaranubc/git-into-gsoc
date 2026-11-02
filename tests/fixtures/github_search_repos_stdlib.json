@@ -1,0 +1,36 @@
+{
+  "total_count": 6067,
+  "incomplete_results": false,
+  "items": [
+    {
+      "full_name": "stdlib-js/stdlib",
+      "description": "Standard library for JavaScript and Node.js.",
+      "language": "JavaScript",
+      "topics": ["javascript", "mathematics", "nodejs", "numerical-computing", "statistics", "stdlib"],
+      "stargazers_count": 6011,
+      "pushed_at": "2026-10-30T12:00:00Z",
+      "archived": false,
+      "fork": false
+    },
+    {
+      "full_name": "stdlib-js/google-summer-of-code",
+      "description": "Google Summer of Code resources.",
+      "language": "JavaScript",
+      "topics": ["gsoc", "javascript", "mathematics", "nodejs", "statistics"],
+      "stargazers_count": 86,
+      "pushed_at": "2026-10-21T08:00:00Z",
+      "archived": false,
+      "fork": false
+    },
+    {
+      "full_name": "stdlib-js/ndarray",
+      "description": "Multidimensional arrays.",
+      "language": "C",
+      "topics": ["array", "javascript", "matrix", "ndarray", "nodejs", "tensor"],
+      "stargazers_count": 16,
+      "pushed_at": "2026-10-29T03:00:00Z",
+      "archived": false,
+      "fork": false
+    }
+  ]
+}
