@@ -94,6 +94,28 @@ def ideas_line(ideas: dict[str, Any], year: int | None) -> str:
     return line + "."
 
 
+NAV = (("start/", "git in"), ("orgs/", "organizations"), ("docs/", "guide"))
+
+
+def _nav(root: str, path: str) -> str:
+    """The shared navigation; the page the visitor is on is marked for assistive tech."""
+    items = []
+    for href, label in NAV:
+        current = ' aria-current="page"' if path == href or path.startswith(href) else ""
+        cls = ' class="cta"' if href == "start/" else ' class="optional"' if href == "docs/" else ""
+        name = (
+            ' aria-label="Start: answer four questions in your browser"' if href == "start/" else ""
+        )
+        items.append(f'<li{cls}><a href="{root}{href}"{current}{name}>{label}</a></li>')
+    items.append(f'<li><a href="{REPO_URL}">github</a></li>')
+    items.append(
+        '<li><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">dark</button></li>'
+    )
+    # the call to action sits last, as on the home page
+    items.append(items.pop(0))
+    return "".join(items)
+
+
 def _head(title: str, description: str, root: str, path: str) -> str:
     return f"""<!doctype html>
 <html lang="en">
@@ -121,6 +143,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <link rel="stylesheet" href="{root}styles.css">
 <script>
   (function () {{
+    document.documentElement.classList.add("js");
     var q = new URLSearchParams(location.search).get("theme");
     var t = q || (function () {{ try {{ return localStorage.getItem("gig-theme"); }} catch (e) {{ return null; }} }})();
     if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
@@ -128,6 +151,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 </script>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 
 <header class="wrap">
   <nav class="nav" aria-label="Main">
@@ -135,17 +159,11 @@ def _head(title: str, description: str, root: str, path: str) -> str:
       <svg class="tile" viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="4.5" fill="#15121E"/><g transform="translate(1,2)"><path d="M0 2H1V1H2V0H18V1H19V2H20V6H16V4H5V5H4V15H5V16H10V12H20V18H19V19H18V20H2V19H1V18H0Z" fill="#7A5AF8"/><path d="M18 7H21V11H18Z" fill="#C6F432"/></g></svg>
       <span class="name pixel">git into gsoc</span>
     </a>
-    <ul class="nav-links">
-      <li><a href="{root}start/">start</a></li>
-      <li><a href="{root}orgs/">organizations</a></li>
-      <li class="optional"><a href="{root}docs/">guide</a></li>
-      <li><a href="{REPO_URL}">github</a></li>
-      <li><button class="theme-toggle" type="button" data-theme-toggle aria-pressed="false">dark</button></li>
-    </ul>
+    <ul class="nav-links">{_nav(root, path)}</ul>
   </nav>
 </header>
 
-<main>
+<main id="main">
 """
 
 
@@ -158,10 +176,12 @@ FOOT = """</main>
       <p>git into gsoc is an independent, MIT-licensed project. It is not affiliated with or endorsed by Google. Google Summer of Code and GSoC are trademarks of Google LLC. Verify dates, organizations, and rules on the <a href="https://summerofcode.withgoogle.com">official program site</a> and follow each organization's <a href="https://developers.google.com/open-source/gsoc/resources/ai_guidance">AI policy</a>.</p>
     </div>
     <ul>
-      <li><a href="REPO/">Source on GitHub</a></li>
-      <li><a href="https://pypi.org/project/git-into-gsoc/">Package on PyPI</a></li>
+      <li><a href="SITE/start/">Four questions, in your browser</a></li>
+      <li><a href="SITE/orgs/">Every organization, in your browser</a></li>
       <li><a href="SITE/docs/">Beginner guide</a></li>
       <li><a href="SITE/docs/sources/">Sources and limitations</a></li>
+      <li><a href="REPO/">Source on GitHub</a></li>
+      <li><a href="https://pypi.org/project/git-into-gsoc/">Package on PyPI</a></li>
       <li><a href="REPO/issues/new?template=feedback.yml">Tell us how it went</a> (a public GitHub issue)</li>
     </ul>
   </div>
@@ -196,6 +216,9 @@ FOOT = """</main>
 FILTER_SCRIPT = """<script>
   (function () {
     var cards = Array.prototype.slice.call(document.querySelectorAll(".org-card"));
+    var doors = {};
+    Array.prototype.forEach.call(document.querySelectorAll(".door"), function (d) { doors[d.getAttribute("data-slug")] = d; });
+    var note = document.querySelector("[data-wall-note]");
     var search = document.getElementById("org-search");
     var category = document.getElementById("org-category");
     var chips = Array.prototype.slice.call(document.querySelectorAll("[data-tech-chip]"));
@@ -213,10 +236,25 @@ FILTER_SCRIPT = """<script>
           && (!cat || card.getAttribute("data-categories").split("|").indexOf(cat) !== -1)
           && tech.every(function (t) { return card.getAttribute("data-tech").split("|").indexOf(t) !== -1; });
         card.hidden = !ok;
+        var door = doors[card.getAttribute("data-slug")];
+        if (door) door.classList.toggle("off", !ok);
         if (ok) shown += 1;
       });
       count.textContent = shown === total ? "all " + total + " organizations" : shown + " of " + total + " organizations";
     }
+    // A door names its organization while the pointer or focus is on it, and lights its card.
+    Object.keys(doors).forEach(function (slug) {
+      var d = doors[slug];
+      var card = document.querySelector('.org-card[data-slug="' + slug + '"]');
+      function on() {
+        if (note) note.innerHTML = "<b></b> " + d.getAttribute("data-fact");
+        if (note) note.firstChild.textContent = d.getAttribute("data-name");
+        if (card) card.classList.add("lit");
+      }
+      function off() { if (note) note.textContent = note.getAttribute("data-idle"); if (card) card.classList.remove("lit"); }
+      d.addEventListener("mouseenter", on); d.addEventListener("focus", on);
+      d.addEventListener("mouseleave", off); d.addEventListener("blur", off);
+    });
     search.addEventListener("input", apply);
     category.addEventListener("change", apply);
     chips.forEach(function (c) {
@@ -312,6 +350,17 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
 
     meta = f"GSoC {year} organization. {tagline}".strip()
     html = _head(f"{name}: GSoC {year} organization", meta, "../../", f"orgs/{org['slug']}/")
+    bars = ""
+    if years:
+        top = max(years.values()) or 1
+        bars = (
+            '<p class="years" aria-hidden="true">'
+            + "".join(
+                f'<i data-n="{n}" style="height: {max(3, round(44 * n / top))}px" title="{y}: {n}"></i>'
+                for y, n in sorted(years.items())
+            )
+            + "</p>"
+        )
     html += f"""  <section class="section org" aria-labelledby="org-title">
     <div class="wrap">
       <p class="crumb"><a href="../">All organizations</a> · GSoC {year} · {escape(", ".join(org.get("categories") or []))}</p>
@@ -325,7 +374,7 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
           <h2>Project ideas</h2>
           {ideas_block}
           <h2>History</h2>
-          <p>{escape(_years_line(years))}</p>
+          {bars}<p>{escape(_years_line(years))}</p>
           <h2>On GitHub</h2>
           {gh_block}
         </div>
@@ -368,6 +417,8 @@ def index_page(
     options = "".join(f'<option value="{escape(c)}">{escape(c)}</option>' for c in categories)
 
     cards = []
+    lanes: dict[str, list[tuple[int, str]]] = {}
+    longest = max((len(history_for(str(o["name"]), history)) for o in orgs), default=1) or 1
     for org in orgs:
         slug = str(org["slug"])
         ideas = (signals.get(slug) or {}).get("ideas") or {}
@@ -396,7 +447,7 @@ def index_page(
             ]
         ).lower()
         cards.append(
-            f'<li class="org-card" data-search="{escape(search)}" '
+            f'<li class="org-card" data-slug="{escape(slug)}" data-search="{escape(search)}" '
             f'data-categories="{escape("|".join(org.get("categories") or []))}" '
             f'data-tech="{escape("|".join(org.get("tech_tags") or []))}">'
             f'<h2><a href="{escape(slug)}/">{escape(str(org["name"]))}</a></h2>'
@@ -405,25 +456,51 @@ def index_page(
             f'<p class="facts">{escape(" · ".join(facts))}</p>'
             "</li>"
         )
+        # one door per organization on the wall, in the lane of its first category
+        lane = (org.get("categories") or ["Other"])[0]
+        tenure = len(years) / longest
+        fact = (
+            f"{len(years)} year{'s' if len(years) != 1 else ''} in GSoC" if years else "first year"
+        )
+        if count:
+            fact += f", {count} idea{'s' if count != 1 else ''}"
+        lanes.setdefault(lane, []).append(
+            (
+                -len(years),
+                f'<a class="door" href="{escape(slug)}/" style="--tenure: {tenure:.2f}" '
+                f'data-slug="{escape(slug)}" data-name="{escape(str(org["name"]))}" '
+                f'data-fact="{escape(fact)}" aria-label="{escape(str(org["name"]))}, {escape(fact)}"></a>',
+            )
+        )
+    wall = "".join(
+        f'<li class="lane"><span class="cat">{escape(cat)}<small>{len(doors)}</small></span>'
+        f'<span class="doors">{"".join(d for _, d in sorted(doors))}</span></li>'
+        for cat, doors in sorted(lanes.items(), key=lambda kv: -len(kv[1]))
+    )
 
     title = f"GSoC {year} organizations: find yours"
     description = (
         f"Every Google Summer of Code {year} mentoring organization, with its project ideas, "
         "difficulty, sizes, history, and channels. Filter by what you know. No install needed."
     )
+    idle = f"{len(cards)} doors, one per organization, by category. Brighter doors have taken part longer. Hover one."
     html = _head(title, description, "../", "orgs/")
     html += f"""  <section class="section org-index" aria-labelledby="orgs-title">
     <div class="wrap">
-      <div class="section-head">
+      <div class="section-head page-head">
         <h1 id="orgs-title" class="pixel">which door is yours?</h1>
-        <p>Every GSoC {year} mentoring organization from the <a href="https://summerofcode.withgoogle.com/programs/{year}/organizations">official list</a>, with what its ideas page offers and how long it has taken part. {year + 1} organizations are not announced yet; {year} participants are the best predictor of who returns. Snapshot of {escape(generated)}. Pick a few, then let the <a href="../#install">terminal tool</a> or your assistant check which repositories merge newcomers' work.</p>
+        <p>Every GSoC {year} mentoring organization from the <a href="https://summerofcode.withgoogle.com/programs/{year}/organizations">official list</a>, with what its ideas page offers and how long it has taken part. <b>{year + 1} organizations are not announced yet; {year} participants are the best predictor of who returns.</b> Snapshot of {escape(generated)}. Pick a few, then let the <a href="../#install">terminal tool</a> or your assistant check which repositories merge newcomers' work.</p>
       </div>
       <form class="filters" role="search" aria-label="Filter organizations" onsubmit="return false">
-        <label>Search <input id="org-search" type="search" placeholder="name, language, topic" autocomplete="off"></label>
-        <label>Category <select id="org-category"><option value="">any</option>{options}</select></label>
+        <div class="row">
+          <label>Search <input id="org-search" type="search" placeholder="name, language, topic" autocomplete="off"></label>
+          <label>Category <select id="org-category"><option value="">any</option>{options}</select></label>
+        </div>
         <div class="chips" aria-label="Technologies">{chips}</div>
         <p class="fine" aria-live="polite">Showing <span id="org-count">all {len(cards)} organizations</span>.</p>
       </form>
+      <ul class="wall" aria-label="Every organization as a door, by category">{wall}</ul>
+      <p class="wall-note" data-wall-note data-idle="{escape(idle)}" aria-live="polite">{escape(idle)}</p>
       <ul class="orgs">{"".join(cards)}</ul>
     </div>
   </section>
@@ -471,7 +548,19 @@ START_SCRIPT = """<script>
     var out = document.getElementById("start-results");
     var worker = null, ready = false, pending = false;
     var SLUG = /^[a-z0-9][a-z0-9-]*$/;
-    function say(text) { status.textContent = text; }
+    var statusText = status.querySelector("[data-status-text]");
+    var loading = status.querySelector("[data-loading]");
+    function say(text, busy) { statusText.textContent = text; loading.hidden = !busy; loading.classList.toggle("on", !!busy); }
+    // A question's number lights once it has an answer, so the visitor sees what is left.
+    Array.prototype.forEach.call(form.querySelectorAll("[data-q]"), function (q) {
+      function mark() {
+        var filled = Array.prototype.some.call(q.querySelectorAll("input"), function (i) {
+          return i.type === "radio" ? i.checked : i.value.trim() !== "";
+        }) || q.querySelector("[data-topic][aria-pressed='true']");
+        q.classList.toggle("answered", !!filled);
+      }
+      q.addEventListener("input", mark); q.addEventListener("change", mark); q.addEventListener("click", function () { setTimeout(mark, 0); });
+    });
     function el(tag, cls, text) {
       var node = document.createElement(tag);
       if (cls) node.className = cls;
@@ -480,11 +569,11 @@ START_SCRIPT = """<script>
     }
     function boot() {
       if (worker) return;
-      say("Loading the matcher (about DOWNLOAD_MB MB the first time; your browser keeps it).");
+      say("Loading the matcher (about DOWNLOAD_MB MB the first time; your browser keeps it).", true);
       worker = new Worker("worker.js");
       worker.onmessage = function (event) {
         var data = event.data;
-        if (data.ready) { ready = true; say(pending ? "Matching..." : "Ready."); return; }
+        if (data.ready) { ready = true; say(pending ? "Matching..." : "Ready.", pending); return; }
         if (data.failed) { say("The matcher could not load here: " + data.failed + " Run git-into-gsoc start in a terminal instead."); return; }
         pending = false;
         say("");
@@ -517,7 +606,7 @@ START_SCRIPT = """<script>
         out.appendChild(el("p", "", "No organizations matched those answers yet. Try broader words, or browse by topic."));
         return;
       }
-      out.appendChild(el("h2", "", "Organizations that fit you"));
+      out.appendChild(el("h2", "pixel", "organizations that fit you"));
       result.read_as.forEach(function (note) { out.appendChild(el("p", "fine", note)); });
       var list = el("ol", "matches");
       result.organizations.forEach(function (org) {
@@ -554,7 +643,7 @@ START_SCRIPT = """<script>
         out.appendChild(el("p", "fine", "Left out: " + org.name + " says it will not take part this year (" + org.url + ")."));
       });
       if (result.hours_note) out.appendChild(el("p", "warn", "! " + result.hours_note));
-      out.appendChild(el("h2", "", "Your next steps"));
+      out.appendChild(el("h2", "pixel", "your next steps"));
       var steps = el("ol", "steps");
       result.next_steps.forEach(function (step) {
         var item = el("li", "", step.title + " ");
@@ -603,7 +692,7 @@ START_SCRIPT = """<script>
       }
       boot();
       pending = true;
-      say(ready ? "Matching..." : "Still loading the matcher; your answers run as soon as it is ready.");
+      say(ready ? "Matching..." : "Still loading the matcher; your answers run as soon as it is ready.", true);
       worker.postMessage(given);
     });
   })();
@@ -635,28 +724,47 @@ def start_page(year: int, generated: str, *, download_mb: int = DOWNLOAD_MB) -> 
     html = _head(title, description, "../", "start/")
     html += f"""  <section class="section start" aria-labelledby="start-title">
     <div class="wrap">
-      <div class="section-head">
+      <div class="section-head page-head">
         <h1 id="start-title" class="pixel">where would you fit?</h1>
-        <p>The four questions <code>git-into-gsoc start</code> asks, answered here. The ranking is the terminal tool's own code, run in your browser by <a href="https://pyodide.org">Pyodide</a>: the same matcher, the same reasons, the same caveats. Your answers never leave this page. Organizations are the official GSoC {year} list, snapshot of {escape(generated)}. The matcher downloads when you start typing: about {download_mb} MB the first time, kept by your browser after that.</p>
+        <p>The four questions <code>git-into-gsoc start</code> asks, answered here. <b>The ranking is the terminal tool's own code</b>, run in your browser by <a href="https://pyodide.org">Pyodide</a>: the same matcher, the same reasons, the same caveats. Your answers never leave this page. Organizations are the official GSoC {year} list, snapshot of {escape(generated)}. The matcher downloads when you start typing: about {download_mb} MB the first time, kept by your browser after that.</p>
       </div>
       <form id="start-form" class="filters questions" aria-label="Four questions">
-        <label>1 of 4. Languages and tools you know? For example: {escape(TECH_EXAMPLES)}
-          <input name="technologies" type="text" placeholder="{escape(TECH_EXAMPLES)}" autocomplete="off" autocapitalize="none"></label>
-        <fieldset>
-          <legend>2 of 4. What would you enjoy working on? Pick any, or type your own words.</legend>
-          <div class="chips">{chips}</div>
-          <label class="visually-hidden" for="start-interests">Your own words</label>
-          <input id="start-interests" name="interests" type="text" placeholder="your own words, comma separated" autocomplete="off" autocapitalize="none">
-        </fieldset>
-        <label>3 of 4. About how many hours a week can you give?
-          <input name="hours" type="number" min="1" max="80" inputmode="numeric" placeholder="for example 10"></label>
-        <fieldset>
-          <legend>4 of 4. Your open source experience? Leave it blank if unsure.</legend>
-          {levels}
-        </fieldset>
-        <div class="actions">
-          <button type="submit" class="go">Show organizations that fit me</button>
-          <p id="start-status" class="fine" role="status" aria-live="polite"></p>
+        <div class="q" data-q>
+          <span class="n" aria-hidden="true">01</span>
+          <div>
+            <label>1 of 4. Languages and tools you know? <span class="hint">For example: {escape(TECH_EXAMPLES)}</span>
+              <input name="technologies" type="text" placeholder="{escape(TECH_EXAMPLES)}" autocomplete="off" autocapitalize="none"></label>
+          </div>
+        </div>
+        <div class="q" data-q>
+          <span class="n" aria-hidden="true">02</span>
+          <fieldset>
+            <legend>2 of 4. What would you enjoy working on? <span class="hint">Pick any, or type your own words.</span></legend>
+            <div class="chips">{chips}</div>
+            <label class="visually-hidden" for="start-interests">Your own words</label>
+            <input id="start-interests" name="interests" type="text" placeholder="your own words, comma separated" autocomplete="off" autocapitalize="none">
+          </fieldset>
+        </div>
+        <div class="q" data-q>
+          <span class="n" aria-hidden="true">03</span>
+          <div>
+            <label>3 of 4. About how many hours a week can you give?
+              <input name="hours" type="number" min="1" max="80" inputmode="numeric" placeholder="for example 10"></label>
+          </div>
+        </div>
+        <div class="q" data-q>
+          <span class="n" aria-hidden="true">04</span>
+          <fieldset>
+            <legend>4 of 4. Your open source experience? <span class="hint">Leave it blank if unsure.</span></legend>
+            {levels}
+          </fieldset>
+        </div>
+        <div class="q">
+          <span class="n" aria-hidden="true"></span>
+          <div class="actions">
+            <button type="submit" class="go">Show organizations that fit me</button>
+            <p id="start-status" class="fine" role="status" aria-live="polite"><span class="loading" aria-hidden="true" data-loading hidden><i></i><i></i><i></i><i></i></span><span data-status-text></span></p>
+          </div>
         </div>
       </form>
       <noscript><p>This page needs JavaScript. Without it, run <code>git-into-gsoc start</code> in a terminal.</p></noscript>

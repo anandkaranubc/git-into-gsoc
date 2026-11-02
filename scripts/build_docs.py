@@ -36,20 +36,36 @@ def slugify(value: str) -> str:
     return text.replace(" ", "-")
 
 
-def to_html(text: str) -> str:
+def to_html(text: str) -> tuple[str, list[tuple[str, str]]]:
     """Markdown to HTML by CommonMark rules with tables, as GitHub renders the docs.
 
+    Also returns the page's second-level headings (anchor, text) for a table of contents.
     Python-Markdown was tried first and follows older rules: a two-space nested list
     flattened and a fenced block inside a list item became inline code.
     """
     md = MarkdownIt("commonmark").enable("table")
     tokens = md.parse(text)
+    sections: list[tuple[str, str]] = []
     for i, token in enumerate(tokens):
         if token.type == "heading_open":
             children = tokens[i + 1].children or []
             # shortcut: no dedupe of repeated headings, add GitHub's -1 suffix if a page gets one
-            token.attrSet("id", slugify("".join(c.content for c in children)))
-    return md.renderer.render(tokens, md.options, {})
+            heading = "".join(c.content for c in children)
+            token.attrSet("id", slugify(heading))
+            if token.tag == "h2":
+                sections.append((slugify(heading), heading))
+    return md.renderer.render(tokens, md.options, {}), sections
+
+
+# A page with fewer sections than this reads faster without a table of contents.
+TOC_MIN = 3
+
+
+def toc(sections: list[tuple[str, str]]) -> str:
+    if len(sections) < TOC_MIN:
+        return ""
+    items = "".join(f'<li><a href="#{escape(a)}">{escape(t)}</a></li>' for a, t in sections)
+    return f'<nav class="toc" aria-label="On this page"><p>On this page</p><ol>{items}</ol></nav>\n'
 
 
 def page_path(source: Path) -> str:
@@ -99,7 +115,7 @@ def render(source: Path) -> str:
     title = re.sub(r"^\d+\. ", "", heading.group(1) if heading else source.stem)
     path = page_path(source)
     root = "../" * path.count("/")
-    body = to_html(rewrite_links(text, source, root))
+    body, sections = to_html(rewrite_links(text, source, root))
     crumbs = [("git into gsoc", SITE_URL), ("Guide", f"{SITE_URL}docs/")]
     if path != "docs/":
         crumbs.append((title, f"{SITE_URL}{path}"))
@@ -116,10 +132,11 @@ def render(source: Path) -> str:
     return (
         _head(f"{title} | git into gsoc", description(text), root, path)
         + f'<script type="application/ld+json">{json.dumps(breadcrumbs)}</script>\n'
-        + f'<article class="wrap doc">\n<nav class="crumbs" aria-label="Breadcrumb">{trail}</nav>\n'
+        + f'<div class="wrap doc-grid">\n{toc(sections)}<article class="doc">\n'
+        + f'<nav class="crumbs" aria-label="Breadcrumb">{trail}</nav>\n'
         + body
         + f'\n<p class="fine">Source: <a href="{REPO_URL}/blob/main/{source_rel}">{source_rel}</a>'
-        " on GitHub. Corrections are welcome.</p>\n</article>\n" + FOOT
+        " on GitHub. Corrections are welcome.</p>\n</article>\n</div>\n" + FOOT
     )
 
 

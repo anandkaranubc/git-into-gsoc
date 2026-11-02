@@ -100,6 +100,8 @@
   var cur = { x: THRESHOLD.x, y: THRESHOLD.y }, alpha = 1, target = null;
   var start = performance.now() / 1000, idleStart = start, followUntil = 0, lastStep = 0;
   var visible = true, raf = 0;
+  // Typing in the hero prompt walks the cursor to the threshold; Enter steps it through.
+  var typedUntil = 0, typedX = OUTSIDE.x, entering = false, entered = false;
 
   var copy = hero.querySelector(".hero-copy");
   function size() {
@@ -157,14 +159,16 @@
   function draw() {
     var now = performance.now() / 1000;
     var t = now - start;
-    if (still) { cur = { x: THRESHOLD.x, y: THRESHOLD.y }; alpha = 1; }
+    if (still) { cur = { x: entered ? IN.x : THRESHOLD.x, y: THRESHOLD.y }; alpha = 1; }
+    else if (entering || entered) { alpha = 1; if (now - lastStep > 0.06 && cur.x > IN.x) { lastStep = now; cur.x -= 1; } cur.y = THRESHOLD.y; if (cur.x <= IN.x) { entering = false; entered = true; } }
+    else if (now < typedUntil) { alpha = 1; cur.x = typedX; cur.y = THRESHOLD.y; }
     else if (now < followUntil) follow(now);
     else idle(now - idleStart);
     gl.uniform1f(U.u_time, t);
     gl.uniform2f(U.u_cursor, cur.x, cur.y);
     gl.uniform1f(U.u_alpha, alpha);
     gl.uniform1f(U.u_in, isIn(cur) ? 1 : 0);
-    gl.uniform1f(U.u_power, power(t));
+    gl.uniform1f(U.u_power, entered ? 1.25 : power(t));
     gl.uniform1f(U.u_motion, still ? 0 : 1);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
@@ -178,10 +182,15 @@
 
   // The pointer moves the cursor, one cell step at a time; idle resumes a moment after it leaves.
   function point(e) {
-    if (lost || still || (e.target.closest && e.target.closest(".hero-copy"))) return;
+    if (lost || still || entering || entered || (e.target.closest && e.target.closest(".hero-copy"))) return;
     var r = canvas.getBoundingClientRect();
     var x = (e.clientX - r.left) / cell, y = (e.clientY - r.top) / cell;
     target = { x: Math.round((x - g.x) / UNIT - 1.5), y: Math.round((y - g.y) / UNIT - 2) };
+    // Only the corridor through the door gap is walkable: rows 6 to 8 clear the G's
+    // walls, and from the room's inside wall out to the dark. Anywhere else the cursor
+    // would be drawn over the G, which reads as a glitch.
+    target.x = Math.max(4, Math.min(44, target.x));
+    target.y = Math.max(6, Math.min(8, target.y));
     var now = performance.now() / 1000;
     if (now >= followUntil) { alpha = 1; }
     followUntil = now + 2.5;
@@ -201,4 +210,26 @@
   else window.addEventListener("resize", size);
   size();
   wake();
+
+  // What the hero prompt drives (home.js): a fraction typed walks the cursor from outside
+  // to the threshold, and enter() steps it through before the page moves on.
+  window.gigScene = {
+    walk: function (fraction) {
+      if (lost || entering || entered) return;
+      typedX = OUTSIDE.x - Math.round(Math.max(0, Math.min(1, fraction)) * (OUTSIDE.x - THRESHOLD.x));
+      typedUntil = performance.now() / 1000 + 6;
+      idleStart = typedUntil;
+      wake();
+    },
+    enter: function (done) {
+      if (lost || entered) { done(); return; }
+      entering = true;
+      if (!still) { cur.x = Math.min(cur.x, typedUntil > performance.now() / 1000 ? typedX : cur.x); }
+      lastStep = 0;
+      wake();
+      if (still) draw();
+      setTimeout(done, still ? 80 : 720);
+    },
+    still: still
+  };
 })();
