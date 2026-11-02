@@ -60,5 +60,6 @@ plugin-evals/results/
 # Written by scripts/build_site.py and scripts/build_docs.py in the Pages workflow
 site/orgs/
 site/start/
+site/doors.json
 site/docs/
 site/sitemap.xml

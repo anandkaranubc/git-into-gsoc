@@ -823,6 +823,29 @@ def build_start(out: Path, official: dict[str, Any], signals: dict[str, Any]) ->
     package_zip(start / "pkg.zip")
 
 
+def doors(orgs: list[dict[str, Any]], history: dict[str, Any]) -> dict[str, Any]:
+    """What the home page's hall of doors needs: one record per organization, veterans first.
+
+    `t` holds the lowercased tech and topic tags from the official listing, which is
+    what a typed language is matched against; `y` is the years in the archive.
+    """
+    records = []
+    for org in orgs:
+        tags = sorted(
+            {t.lower() for t in (org.get("tech_tags") or []) + (org.get("topic_tags") or [])}
+        )
+        records.append(
+            {
+                "n": str(org["name"]),
+                "s": str(org["slug"]),
+                "t": tags,
+                "y": len(history_for(str(org["name"]), history)),
+            }
+        )
+    records.sort(key=lambda r: (-r["y"], r["n"].lower()))
+    return {"doors": records}
+
+
 def sitemap(slugs: list[str]) -> str:
     urls = [
         SITE_URL,
@@ -865,6 +888,9 @@ def build(out: Path, data: Path = DATA) -> list[str]:
         index_page(orgs, by_slug, history, year, generated), encoding="utf-8"
     )
     (out / "sitemap.xml").write_text(sitemap(slugs), encoding="utf-8")
+    (out / "doors.json").write_text(
+        json.dumps(doors(orgs, history), separators=(",", ":")), encoding="utf-8"
+    )
     build_start(out, official, signals)
     return slugs
 
