@@ -17,11 +17,15 @@
   if (!ctx) return;
 
   var EMPTY = 0, WALL = 1, SAND = 2, SAND2 = 3, YOU = 4;   // two sand tones for texture; you, a 3 by 4 block
+  function sand(v) { return v === SAND || v === SAND2; }   // you are not sand: nothing moves or removes you but you
   var cols = 0, rows = 0, cell = 4, band = false, UNIT = 4;
   var grid, next, img, g = { x: 0, y: 0 };
   var gravity = "left", flow = 3, grains = 0, stir = null, entered = false, enterAt = 0;
   var start = performance.now() / 1000, last = start, visible = true, raf = 0, burst = 0;
-  var roomCells = 0, inRoom = 0, you = { x: 0, y: 0, tx: 0, at: 0 }, cheer = 0, listeners = [], told = -1;
+  // With gravity pointing left, the room's lower pocket and its top strip are out of
+  // the crowd's reach, so about two thirds of the room is what a full room holds.
+  var FULL = 0.6;
+  var roomCells = 0, inRoom = 0, you = { x: 0, y: 0, tx: 0, ty: 0, at: 0 }, cheer = 0, listeners = [], told = -1;
   function doorX() { return g.x + 20 * UNIT; }
   function doorY() { return g.y + 9 * UNIT; }
 
@@ -63,7 +67,7 @@
     }
     grains = 0; inRoom = 0; entered = false; gravity = "left"; cheer = 0;
     // you wait outside the door, in the stream's path, until typing walks you to it
-    you.x = Math.min(cols - 4 * UNIT, doorX() + 7 * UNIT); you.tx = you.x; you.y = doorY() - 2 * UNIT;
+    you.x = Math.min(cols - 4 * UNIT, doorX() + 7 * UNIT); you.tx = you.x; you.y = doorY() + 4 * UNIT; you.ty = you.y;
     placeYou();
     if (still) { for (var i = 0; i < 900; i++) { emit(flow); step(); } countRoom(); }   // a settled pile for a still frame
     draw();
@@ -76,14 +80,15 @@
     for (var yy = you.y; yy < you.y + 4 * UNIT; yy++) for (var xx = you.x; xx < you.x + 3 * UNIT; xx++) {
       if (xx < 0 || yy < 0 || xx >= cols || yy >= rows) continue;
       var k = yy * cols + xx;
-      if (grid[k] >= SAND) grains -= 1;
+      if (sand(grid[k])) grains -= 1;
       if (grid[k] !== WALL) grid[k] = YOU;
     }
   }
   function moveYou(now) {
-    if (you.x === you.tx || now - you.at < (entered ? 0.01 : 0.03)) return;
+    if ((you.x === you.tx && you.y === you.ty) || now - you.at < (entered ? 0.01 : 0.03)) return;
     you.at = now;
-    you.x += you.tx > you.x ? 1 : -1;
+    if (you.y !== you.ty) you.y += you.ty > you.y ? 1 : -1;   // into the lane first
+    else you.x += you.tx > you.x ? 1 : -1;
     placeYou();
   }
   // A handful of grains around a point: what a tap or click drops into the field.
@@ -96,7 +101,7 @@
     }
   }
   function emit(n) {
-    var tries = n * 3, mid = g.y + 9 * UNIT, half = 11 * UNIT;
+    var tries = n * 3, mid = g.y + 9 * UNIT, half = 7 * UNIT;
     while (n > 0 && tries-- > 0) {
       var y = mid + Math.floor((Math.random() + Math.random() - 1) * half), x = cols - 1 - Math.floor(Math.random() * 3);
       if (y < 0 || y >= rows) continue;
@@ -107,15 +112,16 @@
   // One pass of the automaton. Gravity left: a grain moves left, else diagonally left,
   // else stays. Gravity down (after Enter): the same, turned a quarter.
   function step() {
-    var dx = gravity === "left" ? -1 : 0, dy = gravity === "left" ? 0 : 1;
+    var dx = gravity === "left" ? -1 : 0, dy = gravity === "left" ? 0 : 1, dX = doorX();
     var sx = gravity === "left" ? 1 : 0, sy = gravity === "left" ? 0 : 1;   // the sideways axis
     next.set(grid);
     var flip = (Math.random() < 0.5) ? 1 : -1;
     for (var y = 0; y < rows; y++) {
       for (var x = 0; x < cols; x++) {
         var i = y * cols + x, v = grid[i];
-        if (v < SAND) continue;
+        if (!sand(v)) continue;
         if (Math.random() < 0.18) continue;          // a crowd does not march in step
+        if (gravity === "left" && x >= dX - UNIT && x <= dX + UNIT && Math.random() < 0.55) continue;   // the threshold is narrow: a queue forms
         var tx = x + dx, ty = y + dy;
         if (tx < 0 || ty >= rows) { next[i] = EMPTY; grains -= 1; continue; }   // out of the field
         var ti = ty * cols + tx;
@@ -127,7 +133,7 @@
     }
     var t = grid; grid = next; next = t;
     // grains past the copy's edge on wide screens leave the field
-    if (!band) { var edge = Math.max(0, g.x - 14 * UNIT); for (var yy = 0; yy < rows; yy++) for (var xx = 0; xx < edge; xx++) { var k = yy * cols + xx; if (grid[k] >= SAND) { grid[k] = EMPTY; grains -= 1; } } }
+    if (!band) { var edge = Math.max(0, g.x - 14 * UNIT); for (var yy = 0; yy < rows; yy++) for (var xx = 0; xx < edge; xx++) { var k = yy * cols + xx; if (sand(grid[k])) { grid[k] = EMPTY; grains -= 1; } } }
   }
   // The pointer pushes grains away, so a visitor can dig through a pile.
   function stirAt() {
@@ -136,7 +142,7 @@
     for (var y = cy - R; y <= cy + R; y++) for (var x = cx - R; x <= cx + R; x++) {
       if (x < 0 || y < 0 || x >= cols || y >= rows) continue;
       var i = y * cols + x;
-      if (grid[i] < SAND) continue;
+      if (!sand(grid[i])) continue;
       var ddx = x - cx, ddy = y - cy, d = Math.sqrt(ddx * ddx + ddy * ddy);
       if (d > R || d === 0) continue;
       var nx = x + Math.round(ddx / d * 2), ny = y + Math.round(ddy / d * 2);
@@ -149,24 +155,33 @@
     var n = Math.round(inRoom / 4) * 4;
     if (n === told) return;
     told = n;
-    listeners.forEach(function (fn) { fn({ inside: inRoom, full: inRoom >= roomCells * 0.97, entered: entered }); });
+    listeners.forEach(function (fn) { fn({ inside: inRoom, full: inRoom >= roomCells * FULL, entered: entered }); });
+  }
+  // One grain outside gives up and leaves, another arrives: the crowd at a full door
+  // never quite stands still.
+  function churn(n) {
+    for (var k = 0; k < 20 * n && n > 0; k++) {
+      var x = doorX() + Math.floor(Math.random() * (cols - doorX())), y = Math.floor(Math.random() * rows);
+      var i = y * cols + x;
+      if (sand(grid[i])) { grid[i] = EMPTY; grains -= 1; n -= 1; }
+    }
   }
   function countRoom() {
     var n = 0;
     for (var y = g.y; y < g.y + 20 * UNIT; y++) for (var x = g.x; x < g.x + 20 * UNIT; x++) {
       var ux = Math.floor((x - g.x) / UNIT), uy = Math.floor((y - g.y) / UNIT);
-      if (inRoomUnit(ux, uy) && grid[y * cols + x] >= SAND) n += 1;
+      if (inRoomUnit(ux, uy) && sand(grid[y * cols + x])) n += 1;
     }
     inRoom = n;
   }
 
   // Dithered glow of the sand on the dark: a cell near many grains brightens a tone.
   var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-  var INK = [21, 18, 30], INK2 = [33, 28, 46], INK3 = [51, 44, 71], MERGE = [122, 90, 248], OPEN = [198, 244, 50], ODEEP = [63, 106, 0], PAPER = [244, 241, 250], OMID = [125, 179, 15];
+  var INK = [21, 18, 30], INK2 = [33, 28, 46], INK3 = [51, 44, 71], MERGE = [122, 90, 248], MDEEP = [76, 47, 217], OPEN = [198, 244, 50], ODEEP = [63, 106, 0], PAPER = [244, 241, 250];
   function nearYou(x, y) { return x >= you.x - 1 && x <= you.x + 3 * UNIT && y >= you.y - 1 && y <= you.y + 4 * UNIT; }
   function draw() {
     var d = img.data, now = performance.now() / 1000, t = now - start;
-    var fill = roomCells ? Math.min(1, inRoom / (roomCells * 0.97)) : 0;
+    var fill = roomCells ? Math.min(1, inRoom / (roomCells * FULL)) : 0;
     var cheering = cheer && now - cheer < 0.7, blink = still || Math.floor(t / 0.55) % 2 === 0;
     var dx0 = doorX(), dy0 = doorY();
     for (var y = 0; y < rows; y++) for (var x = 0; x < cols; x++) {
@@ -182,14 +197,14 @@
       if (v === WALL) c = MERGE;
       else if (v === YOU) c = blink ? OPEN : PAPER;
       else if (nearYou(x, y)) c = INK;                      // a little room around you, so you read in the crowd
-      else if (v >= SAND) c = ((entered || cheering) && inRoomUnit(ux, uy)) || L > 0.45 ? PAPER : v === SAND ? OPEN : PAPER;
+      else if (sand(v)) c = ((entered || cheering) && inRoomUnit(ux, uy)) || L > 0.6 ? PAPER : v === SAND ? OPEN : PAPER;
       else {
         // light from grains next to this cell, dithered into the two dark tones
         var n = 0;
-        if (x > 0 && grid[i - 1] >= SAND) n += 1;
-        if (x < cols - 1 && grid[i + 1] >= SAND) n += 1;
-        if (y > 0 && grid[i - cols] >= SAND) n += 1;
-        if (y < rows - 1 && grid[i + cols] >= SAND) n += 1;
+        if (x > 0 && sand(grid[i - 1])) n += 1;
+        if (x < cols - 1 && sand(grid[i + 1])) n += 1;
+        if (y > 0 && sand(grid[i - cols])) n += 1;
+        if (y < rows - 1 && sand(grid[i + cols])) n += 1;
         if (n) c = n > 1 ? ODEEP : (BAYER[(y & 3) * 4 + (x & 3)] < 8 ? ODEEP : INK3);
         else if (L > 0) { var lv = Math.floor(L * 4 + BAYER[(y & 3) * 4 + (x & 3)] / 16); c = lv >= 4 ? MERGE : lv === 3 ? MDEEP : lv === 2 ? INK3 : lv === 1 ? INK2 : INK; }
       }
@@ -201,10 +216,13 @@
     var now = performance.now() / 1000, dt = Math.min(0.05, now - last);
     last = now;
     if (!still) {
-      var full = inRoom >= roomCells * 0.97;
+      var full = inRoom >= roomCells * FULL;
       var rate = entered ? 0 : full ? 0 : flow + burst;
       burst = Math.max(0, burst - dt * 60);
-      if (grains < 4500) emit(Math.round(rate));
+      emit(Math.round(rate));
+      // the crowd outside stays a crowd: when it grows past a few hundred, some give up and go
+      if (!entered && grains - inRoom > 600) churn(3);
+      else if (full && !entered && Math.random() < 0.35) churn(1);
       stirAt();
       step(); step();
       moveYou(now);
@@ -256,20 +274,21 @@
       burst = 30 + 90 * fraction;
       var f = Math.max(0, Math.min(1, fraction));
       you.tx = Math.round(Math.min(cols - 4 * UNIT, doorX() + 7 * UNIT) - f * 7 * UNIT) + 1;
+      you.ty = f > 0 ? doorY() - 2 * UNIT : doorY() + 4 * UNIT;
       wake();
     },
     enter: function (done) {
       if (entered) { done(); return; }
       entered = true; enterAt = performance.now() / 1000;
-      you.tx = doorX() - 12 * UNIT;   // through the door, into the room, first
+      you.tx = doorX() - 12 * UNIT; you.ty = doorY() - 2 * UNIT;   // through the door, into the room, first
       you.at = 0;
-      if (still) { you.x = you.tx; placeYou(); gravity = "down"; draw(); setTimeout(done, 80); return; }
+      if (still) { you.x = you.tx; you.y = you.ty; placeYou(); gravity = "down"; draw(); setTimeout(done, 80); return; }
       wake();
       setTimeout(done, 1900);
     },
     onCount: function (fn) { listeners.push(fn); },
     // runs the automaton ahead: what a still frame uses, and what a check can call
-    advance: function (n) { for (var i = 0; i < n; i++) { if (!entered && grains < 4500 && inRoom < roomCells * 0.97) emit(flow); step(); if (i % 60 === 0) countRoom(); } countRoom(); draw(); var youCells = 0; for (var k = 0; k < grid.length; k++) if (grid[k] === YOU) youCells += 1; return { grains: grains, inRoom: inRoom, roomCells: roomCells, band: band, cols: cols, rows: rows, gx: g.x, gy: g.y, unit: UNIT, you: [you.x, you.y, you.tx, youCells] }; },
+    advance: function (n) { for (var i = 0; i < n; i++) { if (!entered && inRoom < roomCells * FULL) emit(flow); if (grains - inRoom > 600) churn(3); step(); if (i % 60 === 0) countRoom(); } countRoom(); draw(); var youCells = 0; for (var k = 0; k < grid.length; k++) if (grid[k] === YOU) youCells += 1; return { grains: grains, inRoom: inRoom, roomCells: roomCells, band: band, cols: cols, rows: rows, gx: g.x, gy: g.y, unit: UNIT, you: [you.x, you.y, you.tx, youCells] }; },
     still: still
   };
 })();

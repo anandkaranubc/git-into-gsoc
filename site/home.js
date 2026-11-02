@@ -15,7 +15,8 @@
     function scene() { return window.gigScene; }
     function say(html) { if (invite) invite.innerHTML = html; }
     if (scene()) {
-      var base = scene().still ? "Every grain is a contributor looking for the way in; the lime block is you." : "Every grain is a contributor looking for the way in; the lime block is you. Type, and you walk to the door. <b>Enter</b> steps in.";
+      var touch = window.matchMedia("(pointer: coarse)").matches;
+      var base = scene().still ? "Every grain is a contributor looking for the way in; the lime block is you." : "Every grain is a contributor looking for the way in; the lime block is you. " + (touch ? "Tap the field to add people. " : "") + "Type, and you walk to the door. <b>Enter</b> steps in.";
       say(base);
       // the count inside, as the room fills: honest grains, not people
       scene().onCount(function (info) {
