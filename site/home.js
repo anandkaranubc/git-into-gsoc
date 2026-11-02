@@ -14,11 +14,11 @@
     var input = ask.elements.know;
     function scene() { return window.gigScene; }
     function say(html) { if (invite) invite.innerHTML = html; }
-    if (scene() && !scene().still) say("Type, and the cursor walks to the door. <b>Enter</b> steps in.");
+    if (scene() && !scene().still) say("Every grain is a contributor looking for the way in. Type, and more arrive; drag through a pile to move it. <b>Enter</b> opens the floor.");
     input.addEventListener("input", function () {
       var n = input.value.trim().length;
       if (scene()) scene().walk(n / STEPS_TO_DOOR);
-      if (n >= STEPS_TO_DOOR && scene() && !scene().still) say("At the door. <b>Enter</b> to git in.");
+      if (n >= STEPS_TO_DOOR && scene() && !scene().still) say("<b>Enter</b> to git in.");
     });
     // The first answer travels in the URL fragment, which browsers never send to a
     // server, so "your answers stay on your computer" holds. Without JavaScript the
