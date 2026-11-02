@@ -2,6 +2,54 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.25.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.8...v0.25.0) (2026-11-01)
+
+
+### Features
+
+* **gitlab:** orient reads a project on a GitLab host and next lists its new beginner issues ([#432](https://github.com/anandkaranubc/git-into-gsoc/issues/432)) ([6e12c3f](https://github.com/anandkaranubc/git-into-gsoc/commit/6e12c3f2ea17c8a8196b40a253d0c3cdcccef135))
+* **gitlab:** search GitLab-hosted organizations with issues --org and rank a group's projects with repos ([#414](https://github.com/anandkaranubc/git-into-gsoc/issues/414)) ([b49c3c0](https://github.com/anandkaranubc/git-into-gsoc/commit/b49c3c0f8d79811de1e6fd7fd21617c494ca024b))
+* orient lists and reads a repository's instruction files for AI assistants ([#408](https://github.com/anandkaranubc/git-into-gsoc/issues/408)) ([db3ebd1](https://github.com/anandkaranubc/git-into-gsoc/commit/db3ebd10529f6399b6393cd045e0762bdfe436e6))
+* **pointers:** read an issue on a GitLab host ([#434](https://github.com/anandkaranubc/git-into-gsoc/issues/434)) ([5335eed](https://github.com/anandkaranubc/git-into-gsoc/commit/5335eed078adb3e1e092e22fab27249e7fb3a629))
+* **repo:** grade a project on a GitLab host from its merge requests ([#429](https://github.com/anandkaranubc/git-into-gsoc/issues/429)) ([f34fefd](https://github.com/anandkaranubc/git-into-gsoc/commit/f34fefd8b19e9e3e13af90ae97cad4c1d963bc93))
+* **site:** answer the four start questions in the browser with the real ranker ([#427](https://github.com/anandkaranubc/git-into-gsoc/issues/427)) ([26664d8](https://github.com/anandkaranubc/git-into-gsoc/commit/26664d8259e9a019aba08830c2af2dd113c6a47d))
+* **site:** browse every organization in the browser, no install ([#406](https://github.com/anandkaranubc/git-into-gsoc/issues/406)) ([8e62424](https://github.com/anandkaranubc/git-into-gsoc/commit/8e6242403c621a35ee9dc7ddf7dedb7705dd8986))
+* **site:** publish the docs as pages on gitintogsoc.me, with technical SEO fixes ([#438](https://github.com/anandkaranubc/git-into-gsoc/issues/438)) ([65e85b0](https://github.com/anandkaranubc/git-into-gsoc/commit/65e85b0703a2c80a148681b31778262d8f5b9964))
+* **site:** redesign the home page around a lit pixel doorway ([#439](https://github.com/anandkaranubc/git-into-gsoc/issues/439)) ([c82ac8d](https://github.com/anandkaranubc/git-into-gsoc/commit/c82ac8d742e8a0d1bbc1c2ff303078607264e1f5))
+
+
+### Bug Fixes
+
+* cap redirect bodies, survive absurd limit headers, and stop guessing when GitLab fails ([#422](https://github.com/anandkaranubc/git-into-gsoc/issues/422)) ([17885c7](https://github.com/anandkaranubc/git-into-gsoc/commit/17885c7a65c656d0f8b3465e49bf174186de485d))
+* **cli:** let orgs take --interests, as start calls it ([#404](https://github.com/anandkaranubc/git-into-gsoc/issues/404)) ([a8b8d11](https://github.com/anandkaranubc/git-into-gsoc/commit/a8b8d11bbf997de8ad790406db8d0fb49695a463))
+* grant a claim only when a maintainer means it, and defuse slow regexes on hostile pages ([#428](https://github.com/anandkaranubc/git-into-gsoc/issues/428)) ([0a75bc1](https://github.com/anandkaranubc/git-into-gsoc/commit/0a75bc1cdf59fbf9881340ef1820af66c64e9eff))
+* hide more text strangers hide, and stop flagging links and HTML as placeholders ([#426](https://github.com/anandkaranubc/git-into-gsoc/issues/426)) ([115e0b6](https://github.com/anandkaranubc/git-into-gsoc/commit/115e0b648369e1d13774b1d212e366120c7578f9))
+* honor the configured target year, quote labels once, and use one bot rule ([#417](https://github.com/anandkaranubc/git-into-gsoc/issues/417)) ([d3202cc](https://github.com/anandkaranubc/git-into-gsoc/commit/d3202ccca7747a9f5e1a96f82146f191af15b8bf))
+* **ideas:** show whole words in the mentors and skills columns ([#436](https://github.com/anandkaranubc/git-into-gsoc/issues/436)) ([e2eb227](https://github.com/anandkaranubc/git-into-gsoc/commit/e2eb2275c7a83aa2b2808605c0028be7fef59787))
+* **issue:** a GitLab issue whose merge requests cannot be read is unknown, not free ([#440](https://github.com/anandkaranubc/git-into-gsoc/issues/440)) ([6258041](https://github.com/anandkaranubc/git-into-gsoc/commit/62580410bd6396e194d499c361c979e3e73d7e7f))
+* keep progress safe from a recovery race and report GitLab issue changes in next ([#425](https://github.com/anandkaranubc/git-into-gsoc/issues/425)) ([38c5390](https://github.com/anandkaranubc/git-into-gsoc/commit/38c5390ff9f6380eeb9c61e834e3a5d3eb53c3fd))
+* keep progress.json durable and read hand-edited profiles safely ([#412](https://github.com/anandkaranubc/git-into-gsoc/issues/412)) ([78f5250](https://github.com/anandkaranubc/git-into-gsoc/commit/78f5250de7c4e1df9b58944ce7a0d423664fd6bb))
+* keep the MCP server responsive and strict about tool input and output ([#410](https://github.com/anandkaranubc/git-into-gsoc/issues/410)) ([b0b0b1e](https://github.com/anandkaranubc/git-into-gsoc/commit/b0b0b1ebc6105aaf3e89ab02a13ba03abc90e89a))
+* leave a manual step when claude mcp add fails, and keep a narrowed Copilot tool list ([#424](https://github.com/anandkaranubc/git-into-gsoc/issues/424)) ([234f2ea](https://github.com/anandkaranubc/git-into-gsoc/commit/234f2ea75082fe3afa40f5b80fc68842db4861cc))
+* let next carry forward the organizations start matched ([#413](https://github.com/anandkaranubc/git-into-gsoc/issues/413)) ([b8c420f](https://github.com/anandkaranubc/git-into-gsoc/commit/b8c420f76d870d600bfe1bec3faea43ae501dcd4))
+* name what to type on missing arguments, and keep the issues table inside the terminal ([#409](https://github.com/anandkaranubc/git-into-gsoc/issues/409)) ([19c89d5](https://github.com/anandkaranubc/git-into-gsoc/commit/19c89d5a31e46431da8e98dbae8351308ec5176a))
+* **progress:** wait up to 30 seconds for the progress lock ([#437](https://github.com/anandkaranubc/git-into-gsoc/issues/437)) ([bef5471](https://github.com/anandkaranubc/git-into-gsoc/commit/bef547123e41b898aa4c09762d5b9c4d62eac7ca))
+* refuse bad web addresses, drop stale cache after 4xx, retry short search limits ([#415](https://github.com/anandkaranubc/git-into-gsoc/issues/415)) ([f227ef9](https://github.com/anandkaranubc/git-into-gsoc/commit/f227ef9fcbe0a46181629570b09d70c1b45675a4))
+* refuse settings out of range with a named variable, and keep start alive without a terminal ([#423](https://github.com/anandkaranubc/git-into-gsoc/issues/423)) ([fcdf830](https://github.com/anandkaranubc/git-into-gsoc/commit/fcdf8302ec273f3cf04e56793cfc25515827a463))
+* **skill:** trigger on issue-free questions and messages to maintainers ([#435](https://github.com/anandkaranubc/git-into-gsoc/issues/435)) ([a2228d2](https://github.com/anandkaranubc/git-into-gsoc/commit/a2228d2e50acb60a54fbf07160ea9b5b298e7234))
+
+
+### Performance Improvements
+
+* scan descriptions for concepts with a first-letter grouped pattern ([#420](https://github.com/anandkaranubc/git-into-gsoc/issues/420)) ([0a2788c](https://github.com/anandkaranubc/git-into-gsoc/commit/0a2788c44e1a2f6aceaa4cffcc78f68a05221404))
+* stop recomputing skill terms and re-asking for missing pages ([#405](https://github.com/anandkaranubc/git-into-gsoc/issues/405)) ([155bc45](https://github.com/anandkaranubc/git-into-gsoc/commit/155bc458c765ec2d532f821d00ab7ffb0e47f9c5))
+
+
+### Documentation
+
+* give each repeated fact one home and drop three dead files ([#411](https://github.com/anandkaranubc/git-into-gsoc/issues/411)) ([fa0847f](https://github.com/anandkaranubc/git-into-gsoc/commit/fa0847ff0ea88e2f6a9db6ed716b960cc66ab9c1))
+* make the project findable from search, topics, and GSoC lists ([#403](https://github.com/anandkaranubc/git-into-gsoc/issues/403)) ([1072c8c](https://github.com/anandkaranubc/git-into-gsoc/commit/1072c8c42b70c3c7adaf97f44e1224062175c2f8))
+
 ## [0.24.8](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.7...v0.24.8) (2026-10-30)
 
 
