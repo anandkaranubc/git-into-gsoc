@@ -153,10 +153,11 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 .hero .hud a { color: var(--gig-paper); text-decoration-color: var(--gig-ink-3); }
 .hero .hud a:hover { text-decoration-color: var(--gig-open); }
 .hero .hud[hidden] { display: none; }
-/* Keeps the copy readable where the door's light reaches it on narrower desktops. */
-.hero .wrap::before {
+/* Keeps the copy readable over the hall: a scrim across the whole left half of the hero,
+   painted above the scene and below the copy. */
+.hero::after {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(21, 18, 30, 0.96) 0, rgba(21, 18, 30, 0.9) 46%, rgba(21, 18, 30, 0.4) 58%, rgba(21, 18, 30, 0) 68%);
+  background: linear-gradient(90deg, rgba(21, 18, 30, 0.97) 0, rgba(21, 18, 30, 0.92) 46%, rgba(21, 18, 30, 0.45) 57%, rgba(21, 18, 30, 0) 67%);
 }
 .hero .wrap { position: relative; }
 .hero .grid { display: grid; min-width: 0; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(24px, 5vw, 72px); align-items: start; }
@@ -176,7 +177,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
   .hero .scene .mark { left: 28%; width: 130px; }
   .hero .hud { right: var(--gutter); left: var(--gutter); text-align: left; max-width: none; bottom: 10px; font-size: 0.75rem; }
   .hero .scene .you { left: 50%; }
-  .hero .wrap::before { display: none; }
+  .hero::after { display: none; }
   .hero .grid { grid-template-columns: minmax(0, 1fr); }
 }
 
