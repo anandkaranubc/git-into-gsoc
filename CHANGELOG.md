@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.26.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.25.0...v0.26.0) (2026-11-02)
+
+
+### Features
+
+* **site:** count page views with GoatCounter ([#445](https://github.com/anandkaranubc/git-into-gsoc/issues/445)) ([3fe2923](https://github.com/anandkaranubc/git-into-gsoc/commit/3fe29237c5e33035edab1e9d64590fdf86a06f80))
+* **site:** count the clicks that show whether the site works ([#446](https://github.com/anandkaranubc/git-into-gsoc/issues/446)) ([673eb0b](https://github.com/anandkaranubc/git-into-gsoc/commit/673eb0b00b9d1dad7b8ab2d4db5be6c193480355))
+* **site:** real runs in every terminal, a driveable door, and a wall of doors ([#442](https://github.com/anandkaranubc/git-into-gsoc/issues/442)) ([1a650ca](https://github.com/anandkaranubc/git-into-gsoc/commit/1a650cae4f080034f33f37a1821cfb3ed130ea4e))
+* **site:** the doorway as a crowd of grains finding the way in ([#444](https://github.com/anandkaranubc/git-into-gsoc/issues/444)) ([6044d39](https://github.com/anandkaranubc/git-into-gsoc/commit/6044d39aed0445041d6ba2c2c987cb0a697306b5))
+
+
+### Bug Fixes
+
+* **progress:** keep both backups when two recoveries share a clock tick ([#447](https://github.com/anandkaranubc/git-into-gsoc/issues/447)) ([54b7274](https://github.com/anandkaranubc/git-into-gsoc/commit/54b7274ba690b029ce19226fbbddd917bdd3f252))
+
 ## [0.25.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.24.8...v0.25.0) (2026-11-01)
 
 
