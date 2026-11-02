@@ -14,28 +14,28 @@
     var input = ask.elements.know;
     function scene() { return window.gigScene; }
     function say(html) { if (invite) invite.innerHTML = html; }
+    var STEPS_TO_DOOR = 12;   // characters typed before the cursor reaches the threshold
     if (scene()) {
-      say(scene().still ? "Type a language, and the houses that name it light up." : "Type a language, and the lights come on in the houses that name it. <b>Enter</b> runs to the gate.");
-      // The doors are the official organizations, written by the site build beside the page.
+      say(scene().still ? "Type a language, and the organizations that name it light up." : "Type a language, and the organizations that name it light up. <b>Enter</b> walks you in.");
+      // The names are the official organizations, written by the site build beside the page.
       fetch("doors.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-        if (j && j.doors) { scene().doors(j.doors); scene().light(input.value); }
+        if (j && j.doors) { scene().doors(j.doors); if (input.value) scene().light(input.value); }
       }).catch(function () {});
-      // The house you are passing is named under the town; its name opens the organization.
+      // The caption under the scene counts what lit up and names the lit organization passing you.
       function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
       scene().onDoor(function (info) {
         if (!hud || !info.count) return;
         hud.hidden = false;
-        var line = info.lit ? "<b>" + info.lit + "</b> of " + info.count + " doors lit for what you typed" : info.count + " doors, one per organization";
-        if (info.entered) line = "through the gate";
-        var near = info.near ? '<br>at the door of <a href="orgs/' + encodeURIComponent(info.near.s) + '/">' + esc(info.near.n) + "</a>" + (info.near.y ? ' <span class="c">' + info.near.y + " year" + (info.near.y === 1 ? "" : "s") + " in GSoC</span>" : "") : "";
+        var line = info.lit ? "<b>" + info.lit + "</b> of " + info.count + " organizations name what you typed" : info.count + " organizations, from the official list";
+        var near = info.near ? '<br>passing <a href="orgs/' + encodeURIComponent(info.near.s) + '/">' + esc(info.near.n) + "</a>" + (info.near.y ? ' <span class="c">' + info.near.y + " year" + (info.near.y === 1 ? "" : "s") + " in GSoC</span>" : "") : "";
         hud.innerHTML = '<span class="c">' + line + "</span>" + near;
       });
     }
     input.addEventListener("input", function () {
       if (!scene()) return;
       var n = scene().light(input.value);
-      scene().step();
-      if (!scene().still) say(n ? "<b>" + n + "</b> house" + (n === 1 ? "" : "s") + " lit for that. The cursor walks to the nearest. <b>Enter</b> runs to the gate." : "Type a language, and the lights come on in the houses that name it. <b>Enter</b> runs to the gate.");
+      scene().walk(input.value.trim().length / STEPS_TO_DOOR);
+      if (!scene().still) say(n ? "<b>" + n + "</b> light up for that. <b>Enter</b> walks you in." : "Type a language, and the organizations that name it light up. <b>Enter</b> walks you in.");
     });
     // The first answer travels in the URL fragment, which browsers never send to a
     // server, so "your answers stay on your computer" holds. Without JavaScript the
