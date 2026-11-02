@@ -52,7 +52,7 @@
   // the bottom one.
   function layout() {
     var small = rows < 205 || band;
-    TW = 7; COLP = 9; ROWP = band ? 7 : small ? 10 : 12;
+    TW = 7; COLP = 9; ROWP = band ? 6 : small ? 10 : 12;
     gateScale = small ? 1 : 2;
     doors.forEach(function (d, n) {
       d.a = n % SIDE; d.b = Math.floor(n / SIDE);
