@@ -268,7 +268,6 @@ class ProgressStore:
 
     def _recover(self, exc: Exception, raw: bytes) -> ProgressState:
         """Keep a damaged file for the user and carry on with a fresh one."""
-        # Microseconds: two recoveries in one second wrote the same backup name.
         stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%S%f")
         backup = self.path.with_name(f"{self.path.stem}.damaged-{stamp}{self.path.suffix}")
         moved = False
@@ -277,6 +276,15 @@ class ProgressStore:
         # the move happen under the lock, so no save can slip in between them. A folder
         # that cannot be locked cannot be written either, so the file stays as it is.
         with contextlib.suppress(OSError, InputError), self._lock():
+            # Windows clocks tick in milliseconds, so two recoveries in one tick got the
+            # same microsecond name and the second overwrote the first (Windows CI on the
+            # 0.26.0 release PR, 2026-11-02). A taken name gets a counter instead.
+            n = 0
+            while backup.exists():
+                n += 1
+                backup = self.path.with_name(
+                    f"{self.path.stem}.damaged-{stamp}-{n}{self.path.suffix}"
+                )
             if self.path.read_bytes() == raw:
                 self.path.replace(backup)
                 moved = True
