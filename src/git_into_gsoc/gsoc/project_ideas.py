@@ -35,10 +35,15 @@ _MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
 # 350", "~175", "90-175 hours"): "1750 hours" read as 175 and "90%" as 90. The first
 # count of a cell wins, as it did before the unit rule; without the trailing unit in
 # the anchored branch, "175 or 350 hours" read as 350 (review of #428, 2026-11-01).
+# A list of counts is also unambiguous when prose follows it: stdlib writes "175/350
+# hours. Can be scoped accordingly." and "90/175/350. Scope can be tailored", which
+# the unit branch read as 350 and as nothing, so the 2026-11-02 snapshot called all
+# of its ideas large.
+_COUNT_LIST = r"(90|175|350)(?:\s*(?:or|/|,|-|\u2013|to)\s*(?:90|175|350))"
 _HOURS_RE = re.compile(
-    r"^\s*(?:~|\u2248|about |approx\.? )?(90|175|350)(?:\s*(?:or|/|,|-|\u2013|to)\s*(?:90|175|350))*"
-    r"(?:\s*(?:h|hrs?|hours?))?\s*$"
-    r"|\b(90|175|350)\s*(?:h\b|hrs?\b|hours?\b|-hours?\b)",
+    r"^\s*(?:~|\u2248|about |approx\.? )?" + _COUNT_LIST + r"*(?:\s*(?:h|hrs?|hours?))?\s*$"
+    r"|^\s*" + _COUNT_LIST + r"+\b"
+    r"|\b" + _COUNT_LIST + r"*\s*(?:h\b|hrs?\b|hours?\b|-hours?\b)",
     re.I,
 )
 _SIZE_WORD_RE = re.compile(r"\b(small|medium|large)\b", re.I)
@@ -664,7 +669,7 @@ def normalize_size(value: str) -> tuple[str | None, int | None]:
     175); (None, None) when neither a GSoC hour count nor a size word is found."""
     hours = _HOURS_RE.search(value or "")
     if hours:
-        number = int(hours.group(1) or hours.group(2))
+        number = int(next(g for g in hours.groups() if g))
         return {90: "small", 175: "medium", 350: "large"}[number], number
     # MetaBrainz's "300 hours" was dropped, so the idea had no size at all. Keep the
     # hours the page states (a range's upper end), with the nearest GSoC size.

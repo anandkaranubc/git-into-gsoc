@@ -1278,3 +1278,7 @@ def test_a_size_needs_a_unit_or_a_cell_of_nothing_but_hours() -> None:
     assert normalize_size("175/350 hours") == ("medium", 175)
     assert normalize_size("90-175 hours") == ("small", 90)
     assert normalize_size("~175") == ("medium", 175)
+    # stdlib writes a list and then a sentence; the unit branch read these as large and
+    # as no size, so the 2026-11-02 snapshot called all 33 of its sized ideas large.
+    assert normalize_size("175/350 hours. Can be scoped accordingly.") == ("medium", 175)
+    assert normalize_size("90/175/350. Scope can be tailored accordingly.") == ("small", 90)
