@@ -1,10 +1,9 @@
-// The hall of doors on the home page: a first-person pixel corridor, drawn by a
-// raycaster in a fragment shader on the brand's own grid (every cell is one fragment).
-// One door per Google Summer of Code organization lines the walls, veterans first,
-// and the pixel G at the far end is the lit doorway out. Typing languages in the
-// hero prompt lights the doors whose official listing names them; Enter runs through
-// the G. The cursor is the visitor: a lime block at the bottom of the view. The G
-// itself never moves. No WebGL means the still SVG mark stays in place.
+// The town on the home page: every Google Summer of Code organization is a small pixel
+// house at night, in rows of streets, with the pixel G as the gate at the top of the hill.
+// Typing languages in the hero prompt turns on the lights of the houses whose official
+// listing names them, and the cursor (you) walks the streets to the lit houses that fit,
+// then up to the gate. Drawn on a canvas at the brand's cell size, so every edge is a
+// whole pixel; the G itself never moves. Without a canvas the still SVG mark stays.
 (function () {
   "use strict";
   var scene = document.querySelector(".scene");
@@ -12,169 +11,87 @@
   if (!scene || !hero) return;
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canvas = document.createElement("canvas");
-  var gl = canvas.getContext("webgl", { antialias: false, alpha: false, depth: false, powerPreference: "low-power" });
-  if (!gl) return;
+  var ctx = canvas.getContext("2d", { alpha: false });
+  if (!ctx) return;
+  var buffer = document.createElement("canvas");
+  var g = buffer.getContext("2d", { alpha: false });
 
-  var VERT = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
-  var FRAG = [
-    "precision mediump float;",
-    "uniform vec2 u_res;uniform float u_time;uniform vec3 u_cam;uniform float u_bob;",
-    "uniform sampler2D u_doors;uniform float u_count;uniform float u_spacing;uniform float u_zend;",
-    "uniform float u_in;uniform float u_power;",
-    "const vec3 INK=vec3(.082,.071,.118),INK2=vec3(.129,.110,.180),INK3=vec3(.200,.173,.278);",
-    "const vec3 MDEEP=vec3(.298,.184,.851),MERGE=vec3(.478,.353,.973),MSOFT=vec3(.761,.710,1.);",
-    "const vec3 PAPER=vec3(.957,.945,.980),ODEEP=vec3(.247,.416,0.),OPEN=vec3(.776,.957,.196),OMID=vec3(.49,.70,.06);",
-    "bool rect(vec2 p,float x0,float y0,float x1,float y1){return p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1;}",
-    // The G from scripts/brand/build.py: six bars, four softened corners, two added cells.
-    "bool isG(vec2 q){if(q.x<0.||q.y<0.||q.x>19.||q.y>19.)return false;",
-    " bool g=rect(q,0.,0.,3.,19.)||rect(q,0.,0.,19.,3.)||rect(q,16.,4.,19.,5.)||rect(q,10.,12.,19.,15.)||rect(q,16.,12.,19.,19.)||rect(q,0.,16.,19.,19.);",
-    " if((q.x<=1.&&q.y==0.)||(q.x==0.&&q.y<=1.))g=false;if((q.x>=18.&&q.y==0.)||(q.x==19.&&q.y<=1.))g=false;",
-    " if((q.x<=1.&&q.y==19.)||(q.x==0.&&q.y>=18.))g=false;if((q.x>=18.&&q.y==19.)||(q.x==19.&&q.y>=18.))g=false;",
-    " if((q.x==4.&&q.y==4.)||(q.x==4.&&q.y==15.))g=true;return g;}",
-    // 4x4 ordered dither: M2(x,y)=2x+3y-4xy, M4 = 4*M2(x%2,y%2) + M2(x/2%2,y/2%2).
-    "float m2(vec2 p){return 2.*p.x+3.*p.y-4.*p.x*p.y;}",
-    "float bayer(vec2 c){return (4.*m2(mod(c,2.))+m2(mod(floor(c/2.),2.)))/16.;}",
-    "vec3 ramp(float i,float h){",
-    " vec3 v=i<.5?INK:i<1.5?INK2:i<2.5?INK3:i<3.5?MDEEP:i<4.5?MERGE:i<5.5?MSOFT:PAPER;",
-    " vec3 l=i<.5?INK:i<1.5?INK2:i<2.5?INK3:i<3.5?ODEEP:i<4.5?OMID:i<5.5?OPEN:PAPER;",
-    " return mix(v,l,h);}",
-    // One texel per door: r = lit by the typed languages, g = years in the program.
-    "vec2 door(float i){return texture2D(u_doors,vec2((i+.5)/256.,.5)).rg;}",
-    "void main(){",
-    " vec2 cell=floor(gl_FragCoord.xy);",
-    " vec2 uv=(cell+.5-u_res*.5)/(u_res.y*.5);",
-    " vec3 rd=normalize(vec3(uv.x,uv.y,1.5));",
-    " float cy=cos(u_cam.y),sy=sin(u_cam.y);rd=vec3(rd.x*cy+rd.z*sy,rd.y,-rd.x*sy+rd.z*cy);",
-    " vec3 ro=vec3(u_cam.x,u_bob,u_cam.z);const float W=1.,H=1.;",
-    // The nearest of the two walls, the floor, the ceiling, and the end wall.
-    " float t=1e9;int side=0;float tt;",
-    " if(rd.x<0.){tt=(-W-ro.x)/rd.x;if(tt<t){t=tt;side=1;}}",
-    " if(rd.x>0.){tt=(W-ro.x)/rd.x;if(tt<t){t=tt;side=2;}}",
-    " if(rd.y<0.){tt=(-H-ro.y)/rd.y;if(tt<t){t=tt;side=3;}}",
-    " if(rd.y>0.){tt=(H-ro.y)/rd.y;if(tt<t){t=tt;side=4;}}",
-    " if(rd.z>0.){tt=(u_zend-ro.z)/rd.z;if(tt<t){t=tt;side=5;}}",
-    " vec3 p=ro+rd*t;float L=0.,h=0.;bool mark=false,frame=false;",
-    " float fog=exp(-t*.075);",
-    " if(side==1||side==2){",
-    "  float slot=floor(p.z/u_spacing);float i=slot*2.+float(side-1);float zl=fract(p.z/u_spacing);",
-    "  bool inZ=zl>.22&&zl<.78&&i>=0.&&i<u_count;",
-    "  vec2 d=door(i);",
-    "  if(inZ&&p.y<.5){frame=zl<.3||zl>.7||p.y>.42;",
-    "   if(!frame){L=.12+.08*d.g;if(p.y<-.92)L+=.25*d.g;if(d.r>.5){L=.92;h=1.;}}",
-    "  }else{L=.2+.04*step(.5,fract(p.y*3.+.5*step(.5,fract(p.z*1.5))));}",
-    "  if(side==1)L*=.85;",
-    " }else if(side==3){L=.2;if(fract(p.z)<.06||fract(p.x+.5)<.06)L+=.1;}",
-    " else if(side==4){L=.1;}",
-    " else{vec2 q=floor((vec2(p.x,-p.y)+vec2(W,H))/(2.*W)*26.-vec2(3.,3.));",
-    "  if(isG(q))mark=true;else{bool room=rect(q,4.,4.,19.,11.)||rect(q,4.,12.,9.,15.);L=room?.95:.12;h=room?u_in:0.;}",
-    "  fog=exp(-t*.02);}",
-    // Light from the doorway at the end reaches down the hall, lime once you are through.
-    " float E=exp(-(u_zend-p.z)*.09);L+=.55*E;h+=u_in*E*1.5;",
-    // Lit doors spill onto the floor and the opposite wall.
-    " float spill=0.;float near=floor(p.z/u_spacing);",
-    " for(int k=-2;k<=2;k++){float slot=near+float(k);for(int s=0;s<2;s++){float i=slot*2.+float(s);",
-    "  if(i<0.||i>=u_count)continue;vec2 dd=door(i);if(dd.r>.5){vec3 dp=vec3(s==0?-W:W,-.2,(slot+.5)*u_spacing);float r=length(p-dp);spill+=.4*exp(-r*1.3);}}}",
-    " L+=spill;h+=spill*1.6;",
-    // A wall right against the camera would fill the view with one flat block; it fades
-    // out instead, as if too close to focus on.
-    " L*=fog*u_power*smoothstep(.25,1.1,t);",
-    " float idx=floor(clamp(L,0.,1.)*6.+bayer(cell));vec3 col=ramp(idx,clamp(h,0.,1.));",
-    " if(frame)col=MERGE*(.3+.7*fog*u_power)*smoothstep(.25,1.1,t);",
-    " if(mark)col=MERGE;",
-    " gl_FragColor=vec4(col,1.);}"
-  ].join("\n");
+  var C = {
+    ink: "#15121E", ink2: "#211C2E", ink3: "#332C47", mdeep: "#4C2FD9", merge: "#7A5AF8", msoft: "#C2B5FF",
+    paper: "#F4F1FA", odeep: "#3F6A00", omid: "#7DB30F", open: "#C6F432", mute: "#67607A"
+  };
+  // The G from scripts/brand/build.py: six bars, four softened corners, two added cells.
+  var G = [];
+  (function () {
+    function rect(q, x0, y0, x1, y1) { return q[0] >= x0 && q[0] <= x1 && q[1] >= y0 && q[1] <= y1; }
+    for (var y = 0; y < 20; y++) for (var x = 0; x < 20; x++) {
+      var q = [x, y];
+      var on = rect(q, 0, 0, 3, 19) || rect(q, 0, 0, 19, 3) || rect(q, 16, 4, 19, 5) || rect(q, 10, 12, 19, 15) || rect(q, 16, 12, 19, 19) || rect(q, 0, 16, 19, 19);
+      if ((x <= 1 && y === 0) || (x === 0 && y <= 1) || (x >= 18 && y === 0) || (x === 19 && y <= 1)) on = false;
+      if ((x <= 1 && y === 19) || (x === 0 && y >= 18) || (x >= 18 && y === 19) || (x === 19 && y >= 18)) on = false;
+      if ((x === 4 && y === 4) || (x === 4 && y === 15)) on = true;
+      var room = !on && (rect(q, 4, 4, 19, 11) || rect(q, 4, 12, 9, 15));
+      G.push(on ? 1 : room ? 2 : 0);
+    }
+  })();
+  // 4x4 ordered dither, the same matrix as the brand's light.
+  var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 
-  function shader(type, src) {
-    var s = gl.createShader(type);
-    gl.shaderSource(s, src);
-    gl.compileShader(s);
-    return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
-  }
-  var vs = shader(gl.VERTEX_SHADER, VERT), fs = shader(gl.FRAGMENT_SHADER, FRAG);
-  if (!vs || !fs) return;
-  var prog = gl.createProgram();
-  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
-  gl.useProgram(prog);
-  var buf = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  var a = gl.getAttribLocation(prog, "a");
-  gl.enableVertexAttribArray(a);
-  gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
-  var U = {};
-  ["u_res", "u_time", "u_cam", "u_bob", "u_doors", "u_count", "u_spacing", "u_zend", "u_in", "u_power"].forEach(function (n) {
-    U[n] = gl.getUniformLocation(prog, n);
-  });
-  var tex = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  var texels = new Uint8Array(256 * 4);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, texels);
-  gl.uniform1i(U.u_doors, 0);
-
-  scene.appendChild(canvas);
-  scene.classList.add("live");
-  var lost = false;
-  // Mobile Safari drops WebGL contexts under memory pressure; the still mark comes back.
-  canvas.addEventListener("webglcontextlost", function (e) {
-    e.preventDefault();
-    lost = true;
-    scene.classList.remove("live");
-    canvas.remove();
-  });
-
-  var SPACING = 1.4;                 // hall units between door slots; doors sit on both sides
-  var doors = [], count = 0, zend = 12, longest = 1, lit = 0;
-  var cam = { x: 0, yaw: 0, z: 0 }, lookX = 0, lookYaw = 0, cell = 4, cols = 0, rows = 0, band = false;
-  var sprint = 0, inside = 0, entered = false, lastSlot = -1;
-  var start = performance.now() / 1000, last = start, visible = true, raf = 0, cut = 0;
+  var TW = 7, TH = 4, COLP = 9, ROWP = 12;   // a house is 7 cells wide; the pitch between houses
+  var SIDE = 14;                                 // houses per row
+  var doors = [], count = 0, lit = 0, longest = 1;
+  var cell = 4, cols = 0, rows = 0, band = false, gateScale = 2;
+  var cur = { x: 0, y: 0 }, home = { x: 0, y: 0 }, path = [], walkAt = 0, speed = 14;   // cells per second
+  var lookX = 0, lookY = 0, sprint = false, entered = false, inside = 0;
+  var start = performance.now() / 1000, last = start, visible = true, raf = 0;
   var listeners = [];
+  var GATE = { x: 0, y: 0 };
+
+  // Town coordinates: house (a, b) stands at column a, row b; streets run between rows and
+  // in the two-cell gaps between columns. The gate is above the top row, you start below
+  // the bottom one.
+  function layout() {
+    var small = rows < 205 || band;
+    TW = 7; COLP = 9; ROWP = band ? 7 : small ? 10 : 12;
+    gateScale = small ? 1 : 2;
+    doors.forEach(function (d, n) {
+      d.a = n % SIDE; d.b = Math.floor(n / SIDE);
+      d.sx = d.a * COLP + Math.floor(TW / 2); d.sy = d.b * ROWP;
+      d.h = 3 + Math.round(3 * (d.y || 0) / longest);
+    });
+    var rowsUsed = Math.ceil(count / SIDE) || 14;
+    GATE.x = Math.round((SIDE * COLP - 2) / 2); GATE.y = -gateScale * 20 - 8;
+    home.x = GATE.x; home.y = rowsUsed * ROWP + 2;
+    if (!path.length && !entered) { cur.x = home.x; cur.y = home.y; }
+  }
+  function townWidth() { return SIDE * COLP - 2; }
+  function townHeight() { return (Math.ceil(count / SIDE) || 14) * ROWP + 6 - GATE.y; }
 
   function size() {
     var W = scene.clientWidth, H = scene.clientHeight;
-    if (lost || !W || !H) return;
-    // Beside the copy on wide screens (the camera hugs the left wall so the hall opens on
-    // the right), in a band above it on narrow ones (see styles.css).
+    if (!W || !H) return;
     band = getComputedStyle(scene).position !== "absolute";
     cell = band ? 3 : 4;
     cols = Math.ceil(W / cell); rows = Math.ceil(H / cell);
-    canvas.width = cols; canvas.height = rows;
+    canvas.width = cols * cell; canvas.height = rows * cell;
     canvas.style.width = cols * cell + "px"; canvas.style.height = rows * cell + "px";
-    cam.x = band ? 0 : -0.38;
-    gl.viewport(0, 0, cols, rows);
-    gl.uniform2f(U.u_res, cols, rows);
-    draw();                           // a frame even in a background tab, so nothing is ever blank
+    buffer.width = cols; buffer.height = rows;
+    ctx.imageSmoothingEnabled = false;
+    layout();
+    draw(true);
   }
 
-  function upload() {
-    for (var i = 0; i < 256; i++) {
-      var d = doors[i];
-      texels[i * 4] = d && d.lit ? 255 : 0;
-      texels[i * 4 + 1] = d ? Math.round(255 * d.y / longest) : 0;
-    }
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 256, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, texels);
-    lastSlot = -1;
-  }
   function setDoors(list) {
-    doors = list.slice(0, 256);
+    doors = list.slice(0, SIDE * 14);
     count = doors.length;
     longest = Math.max(1, Math.max.apply(null, doors.map(function (d) { return d.y || 0; })));
-    zend = (Math.ceil(count / 2) + 1) * SPACING;
-    gl.uniform1f(U.u_count, count);
-    gl.uniform1f(U.u_zend, zend);
-    upload();
-    wake();
+    doors.forEach(function (d, n) { d.win = (n * 7919) % 3; });   // which house shows a late light
+    layout();
+    draw(true); wake();
+    tellNear(null);
   }
-  gl.uniform1f(U.u_spacing, SPACING);
-  gl.uniform1f(U.u_count, 0);
-  gl.uniform1f(U.u_zend, zend);
 
-  // A door opens for a typed word when its official listing names that word.
+  // A house lights for a typed word when its official listing names that word.
   function light(text) {
     var words = String(text || "").toLowerCase().split(/[,\s]+/).filter(function (w) { return w.length > 1; });
     lit = 0;
@@ -184,68 +101,164 @@
       });
       if (d.lit) lit += 1;
     });
-    upload();
-    wake();
+    if (!entered && !sprint) plan(false);
+    draw(true); wake();
     return lit;
   }
 
-  function power(t) {
-    if (still) return 1;
-    if (cut > 0 && t - cut < 0.14) return 0;
-    return Math.min(1, t / 0.5);
+  // The cursor walks the streets: along its row to the gap beside the target column, up
+  // or down that gap to the target's street, then along it to the door. It visits up to
+  // three lit houses, nearest first; the gate only when you press Enter.
+  function route(from, to) {
+    var steps = [], x = from.x, y = from.y;
+    var gap = Math.round((to.x + 1) / COLP) * COLP - 1;   // the gap right of the target column
+    while (x !== gap) { x += gap > x ? 1 : -1; steps.push({ x: x, y: y }); }
+    while (y !== to.y) { y += to.y > y ? 1 : -1; steps.push({ x: x, y: y }); }
+    while (x !== to.x) { x += to.x > x ? 1 : -1; steps.push({ x: x, y: y }); }
+    return steps;
   }
-  function tell() {
-    var slot = Math.floor(cam.z / SPACING);
-    if (slot === lastSlot) return;
-    lastSlot = slot;
-    var info = { slot: slot, left: doors[slot * 2] || null, right: doors[slot * 2 + 1] || null, lit: lit, count: count, entered: entered };
-    listeners.forEach(function (fn) { fn(info); });
+  function plan(toGate) {
+    var stops = [], at = { x: cur.x, y: cur.y };
+    var pool = doors.filter(function (d) { return d.lit; });
+    for (var n = 0; n < 3 && pool.length; n++) {
+      pool.sort(function (p, q) { return (Math.abs(p.sx - at.x) + Math.abs(p.sy + 2 - at.y)) - (Math.abs(q.sx - at.x) + Math.abs(q.sy + 2 - at.y)); });
+      var d = pool.shift();
+      stops.push({ x: d.sx, y: d.sy + 2, door: d });
+      at = { x: d.sx, y: d.sy + 2 };
+    }
+    if (toGate) stops.push({ x: GATE.x, y: GATE.y + gateScale * 20 + 1, gate: true });
+    path = [];
+    var here = { x: cur.x, y: cur.y };
+    stops.forEach(function (st) {
+      var legs = route(here, st);
+      if (legs.length) legs[legs.length - 1].stop = st;
+      path = path.concat(legs);
+      here = { x: st.x, y: st.y };
+    });
+    walkAt = performance.now() / 1000;
   }
-  function draw() {
+
+  function fillCells(x, y, w, h, color) { g.fillStyle = color; g.fillRect(x, y, w, h); }
+  // Scanline fill of an integer polygon, so edges stay whole cells.
+  function poly(points, color) {
+    var minY = Infinity, maxY = -Infinity;
+    points.forEach(function (p) { minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); });
+    g.fillStyle = color;
+    for (var y = minY; y < maxY; y++) {
+      var xs = [];
+      for (var k = 0; k < points.length; k++) {
+        var a = points[k], b = points[(k + 1) % points.length];
+        if ((a[1] <= y && b[1] > y) || (b[1] <= y && a[1] > y)) xs.push(a[0] + (y + 0.5 - a[1]) * (b[0] - a[0]) / (b[1] - a[1]));
+      }
+      xs.sort(function (p, q) { return p - q; });
+      for (var m = 0; m + 1 < xs.length; m += 2) g.fillRect(Math.round(xs[m]), y, Math.max(1, Math.round(xs[m + 1]) - Math.round(xs[m])), 1);
+    }
+  }
+  function dither(x, y, amount) { return amount * 16 > BAYER[(y & 3) * 4 + (x & 3)]; }
+
+  function house(d, ox, oy, t) {
+    var x = d.sx + ox, y = d.sy + oy, h = d.h;   // x: centre column, y: the ground line
+    if (x < -TW || x > cols + TW || y < -h - 5 || y > rows + 2) return;
+    // ground glow for a lit house, dithered into the dark
+    if (d.lit) {
+      for (var gy = -1; gy <= 3; gy++) for (var gx = -7; gx <= 7; gx++) {
+        var r = Math.abs(gx) / 8 + Math.abs(gy - 1) / 3;
+        if (r < 1 && dither(x + gx, y + gy, (1 - r) * 0.8)) fillCells(x + gx, y + gy, 1, 1, C.odeep);
+      }
+    }
+    var body = d.lit ? C.ink3 : C.ink2, roof = d.lit ? C.merge : C.ink3, edge = d.lit ? C.mdeep : C.mute;
+    fillCells(x - 3, y - h, 7, h, body);                       // walls
+    fillCells(x - 3, y - h, 1, h, edge);                       // the lit edge of the wall
+    for (var r = 0; r < 4; r++) fillCells(x - r, y - h - 4 + r, 2 * r + 1, 1, roof);   // the roof, point first
+    if (d.win === 0) fillCells(x + 2, y - h - 3, 1, 2, roof);  // a chimney on some
+    fillCells(x, y - 2, 1, 2, d.lit ? C.open : C.ink);        // the door
+    var late = !d.lit && ((t * 0.5 + d.win) % 9 < 1);        // somebody still up
+    fillCells(x - 2, y - h + 1, 2, 1, d.lit ? C.open : late ? C.msoft : C.ink);   // the window
+  }
+
+  function gate(ox, oy) {
+    var k = gateScale, x = GATE.x + ox, Y = GATE.y + oy, X = x - 10 * k;
+    for (var yy = 0; yy < 20; yy++) for (var xx = 0; xx < 20; xx++) {
+      var v = G[yy * 20 + xx];
+      if (!v) continue;
+      fillCells(X + xx * k, Y + yy * k, k, k, v === 1 ? C.merge : inside > 0 ? C.open : C.paper);
+    }
+    // light on the ground in front of the gate
+    var gy0 = Y + 20 * k;
+    for (var gy = 0; gy <= 12; gy++) for (var gx = -12 - gy; gx <= 12 + gy; gx++) {
+      var r = Math.abs(gx) / (12 + gy) * 0.5 + gy / 12;
+      if (r < 1 && dither(x + gx, gy0 + gy, (1 - r) * 0.6)) fillCells(x + gx, gy0 + gy, 1, 1, inside > 0 ? C.odeep : C.mdeep);
+    }
+  }
+
+  function draw(force) {
     var now = performance.now() / 1000, t = now - start, dt = Math.min(0.05, now - last);
     last = now;
-    if (still) {
-      cam.z = Math.min(cam.z, zend - 2.5);
-      cam.yaw = 0;
-    } else if (sprint) {
-      // Run to the doorway in about a second and a half, whatever the distance.
-      var k = Math.min(1, (now - sprint) / 1.5), e = k * k * (3 - 2 * k);
-      cam.z = sprintFrom + (zend - 0.9 - sprintFrom) * e;
-      cam.yaw += (0 - cam.yaw) * Math.min(1, dt * 6);
-      if (k >= 1) { entered = true; inside = Math.min(1, inside + dt * 4); }
-    } else {
-      cam.z += 0.8 * dt;
-      cam.yaw += (lookYaw - cam.yaw) * Math.min(1, dt * 5);
-      if (cam.z > zend - 2.2) { cam.z = 0; cut = t; }
+    if (!still) {
+      // walk the planned path, a cell per step; a sprint takes the whole road at once
+      var rate = sprint ? 70 : speed;
+      while (path.length && now - walkAt > 1 / rate) {
+        var step = path.shift();
+        cur.x = step.x; cur.y = step.y;
+        walkAt += 1 / rate;
+        if (step.stop) {
+          if (step.stop.gate) entered = true;
+          else { walkAt += sprint ? 0 : 0.6; tellNear(step.stop.door); }
+        }
+      }
+      if (entered) inside = Math.min(1, inside + dt * 3);
     }
-    gl.uniform1f(U.u_time, t);
-    gl.uniform3f(U.u_cam, cam.x, cam.yaw, cam.z);
-    gl.uniform1f(U.u_bob, still || sprint ? 0 : 0.03 * Math.sin(cam.z * 4));
-    gl.uniform1f(U.u_in, inside);
-    gl.uniform1f(U.u_power, power(t));
-    gl.drawArrays(gl.TRIANGLES, 0, 3);
-    tell();
+    // framing: the whole town, centred in the right part on wide screens; the pointer leans it
+    var ox = Math.round(cols * (band ? 0.5 : 0.64) - townWidth() / 2 + lookX * 5);
+    var oy = Math.round((rows - townHeight()) / 2 - GATE.y + lookY * 3);
+
+    fillCells(0, 0, cols, rows, C.ink);
+    // the ground: a faint dither so the town reads as a hill
+    for (var yy = 0; yy < rows; yy++) for (var xx = 0; xx < cols; xx++) {
+      var tx = xx - ox, ty = yy - oy;
+      if (tx > -6 && tx < townWidth() + 6 && ty > -4 && ty < home.y + 6 && dither(xx, yy, 0.08)) fillCells(xx, yy, 1, 1, C.ink2);
+    }
+    gate(ox, oy);
+    for (var n = 0; n < doors.length; n++) house(doors[n], ox, oy, t);   // rows top to bottom: back to front
+    // the road ahead, dotted lime
+    for (var k = 0; k < path.length; k += 2) {
+      if (dither(path[k].x + ox, path[k].y + oy, 0.5)) fillCells(path[k].x + ox, path[k].y + oy, 1, 1, C.omid);
+    }
+    // you
+    var blink = still || Math.floor(t / 0.55) % 2 === 0 || path.length;
+    if (blink) fillCells(cur.x + ox - 1, cur.y + oy - 3, 3, 4, inside > 0 ? C.paper : C.open);
+    if (inside > 0) {
+      // through the gate: the town goes lime from the top down
+      var line = Math.round(rows * inside * 1.2);
+      for (var y2 = 0; y2 < Math.min(rows, line); y2++) for (var x2 = 0; x2 < cols; x2++) if (dither(x2, y2, inside * 0.9)) fillCells(x2, y2, 1, 1, C.open);
+    }
+    ctx.drawImage(buffer, 0, 0, cols, rows, 0, 0, cols * cell, rows * cell);
+    if (entered && !told) { told = true; tellNear(null); }
   }
-  var sprintFrom = 0;
+  var told = false;
+  function tellNear(door) {
+    listeners.forEach(function (fn) { fn({ count: count, lit: lit, near: door, entered: entered }); });
+  }
   function loop() {
     raf = 0;
-    if (lost || !visible || still || document.hidden) return;
-    draw();
+    if (!visible || still || document.hidden) return;
+    draw(false);
     raf = requestAnimationFrame(loop);
   }
-  function wake() { if (!raf) raf = requestAnimationFrame(loop); if (still) draw(); }
+  function wake() { if (!raf) raf = requestAnimationFrame(loop); if (still) draw(true); }
 
-  // The pointer turns your head; the hero copy is not part of the hall.
+  // The pointer leans the camera a little; the hero copy is not part of the town.
   function point(e) {
-    if (lost || still || sprint || (e.target.closest && e.target.closest(".hero-copy"))) return;
+    if (still || (e.target.closest && e.target.closest(".hero-copy"))) return;
     var r = canvas.getBoundingClientRect();
-    var x = (e.clientX - r.left) / r.width;
-    lookYaw = (0.5 - x) * (band ? 0.9 : 0.7) + (band ? 0 : -0.18);
+    lookX = ((e.clientX - r.left) / r.width - 0.5) * -2;
+    lookY = ((e.clientY - r.top) / r.height - 0.5) * -2;
   }
   hero.addEventListener("pointermove", point);
-  hero.addEventListener("pointerleave", function () { lookYaw = band ? 0 : -0.18; });
-  lookYaw = -0.18;
+  hero.addEventListener("pointerleave", function () { lookX = 0; lookY = 0; });
 
+  scene.appendChild(canvas);
+  scene.classList.add("live");
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(function (entries) {
       visible = entries[0].isIntersecting;
@@ -262,11 +275,12 @@
   window.gigScene = {
     doors: setDoors,
     light: light,
-    step: function () { if (!lost && !sprint && !still) { cam.z += 0.6; wake(); } },
+    step: function () { if (!still && !sprint && path.length) { walkAt -= 2 / speed; wake(); } },
     enter: function (done) {
-      if (lost || entered) { done(); return; }
-      if (still) { entered = true; inside = 1; draw(); setTimeout(done, 80); return; }
-      sprint = performance.now() / 1000; sprintFrom = cam.z;
+      if (entered) { done(); return; }
+      if (still) { entered = true; inside = 1; draw(true); setTimeout(done, 80); return; }
+      sprint = true;
+      plan(true);
       wake();
       setTimeout(done, 1900);
     },

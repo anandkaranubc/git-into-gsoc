@@ -173,7 +173,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 .hero .invite b { color: var(--gig-open); font-weight: 600; }
 @media (max-width: 860px) {
   .hero { display: block; min-height: 0; padding-top: 0; }
-  .hero .scene { position: relative; inset: auto; height: 340px; z-index: 0; margin-bottom: 24px; }
+  .hero .scene { position: relative; inset: auto; height: 400px; z-index: 0; margin-bottom: 24px; }
   .hero .scene .mark { left: 28%; width: 130px; }
   .hero .hud { right: var(--gutter); left: var(--gutter); text-align: left; max-width: none; bottom: 10px; }
   .hero .scene .you { left: 50%; bottom: 30%; }
