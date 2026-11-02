@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from scripts.build_site import build, ideas_line  # noqa: E402
+from scripts.build_site import ANALYTICS, build, ideas_line  # noqa: E402
 
 
 def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
@@ -26,6 +26,14 @@ def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
         assert f'href="{org["slug"]}/"' in index
     sitemap = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
     assert sitemap.count("<loc>") == len(slugs) + 4
+
+
+def test_every_page_carries_the_same_page_view_counter(tmp_path: Path) -> None:
+    build(tmp_path)
+    pages = [tmp_path / "orgs/index.html", tmp_path / "start/index.html"]
+    pages += [ROOT / "site" / name for name in ("index.html", "brand.html", "404.html")]
+    for page in pages:
+        assert page.read_text(encoding="utf-8").count(ANALYTICS) == 1, page
 
 
 def test_start_page_ships_the_package_and_asks_the_four_questions(tmp_path: Path) -> None:
