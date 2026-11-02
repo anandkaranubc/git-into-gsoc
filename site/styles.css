@@ -156,7 +156,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 /* Keeps the copy readable where the door's light reaches it on narrower desktops. */
 .hero .wrap::before {
   content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
-  background: linear-gradient(90deg, rgba(21, 18, 30, 0.94) 0, rgba(21, 18, 30, 0.86) 44%, rgba(21, 18, 30, 0) 62%);
+  background: linear-gradient(90deg, rgba(21, 18, 30, 0.96) 0, rgba(21, 18, 30, 0.9) 46%, rgba(21, 18, 30, 0.4) 58%, rgba(21, 18, 30, 0) 68%);
 }
 .hero .wrap { position: relative; }
 .hero .grid { display: grid; min-width: 0; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(24px, 5vw, 72px); align-items: start; }

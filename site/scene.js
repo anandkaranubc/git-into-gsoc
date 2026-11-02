@@ -75,9 +75,11 @@
     " for(int k=-2;k<=2;k++){float slot=near+float(k);for(int s=0;s<2;s++){float i=slot*2.+float(s);",
     "  if(i<0.||i>=u_count)continue;vec2 dd=door(i);if(dd.r>.5){vec3 dp=vec3(s==0?-W:W,-.2,(slot+.5)*u_spacing);float r=length(p-dp);spill+=.4*exp(-r*1.3);}}}",
     " L+=spill;h+=spill*1.6;",
-    " L*=fog*u_power;",
+    // A wall right against the camera would fill the view with one flat block; it fades
+    // out instead, as if too close to focus on.
+    " L*=fog*u_power*smoothstep(.25,1.1,t);",
     " float idx=floor(clamp(L,0.,1.)*6.+bayer(cell));vec3 col=ramp(idx,clamp(h,0.,1.));",
-    " if(frame)col=MERGE*(.3+.7*fog*u_power);",
+    " if(frame)col=MERGE*(.3+.7*fog*u_power)*smoothstep(.25,1.1,t);",
     " if(mark)col=MERGE;",
     " gl_FragColor=vec4(col,1.);}"
   ].join("\n");
@@ -142,7 +144,7 @@
     cols = Math.ceil(W / cell); rows = Math.ceil(H / cell);
     canvas.width = cols; canvas.height = rows;
     canvas.style.width = cols * cell + "px"; canvas.style.height = rows * cell + "px";
-    cam.x = band ? 0 : -0.55;
+    cam.x = band ? 0 : -0.38;
     gl.viewport(0, 0, cols, rows);
     gl.uniform2f(U.u_res, cols, rows);
     draw();                           // a frame even in a background tab, so nothing is ever blank
@@ -238,11 +240,11 @@
     if (lost || still || sprint || (e.target.closest && e.target.closest(".hero-copy"))) return;
     var r = canvas.getBoundingClientRect();
     var x = (e.clientX - r.left) / r.width;
-    lookYaw = (0.5 - x) * (band ? 0.9 : 0.7) + (band ? 0 : -0.12);
+    lookYaw = (0.5 - x) * (band ? 0.9 : 0.7) + (band ? 0 : -0.18);
   }
   hero.addEventListener("pointermove", point);
-  hero.addEventListener("pointerleave", function () { lookYaw = band ? 0 : -0.12; });
-  lookYaw = -0.12;
+  hero.addEventListener("pointerleave", function () { lookYaw = band ? 0 : -0.18; });
+  lookYaw = -0.18;
 
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(function (entries) {
