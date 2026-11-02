@@ -14,11 +14,21 @@
     var input = ask.elements.know;
     function scene() { return window.gigScene; }
     function say(html) { if (invite) invite.innerHTML = html; }
-    if (scene() && !scene().still) say("Type, and the cursor walks to the door. <b>Enter</b> steps in.");
+    if (scene()) {
+      var touch = window.matchMedia("(pointer: coarse)").matches;
+      var base = scene().still ? "Every grain is a contributor looking for the way in." : "Every grain is a contributor looking for the way in. " + (touch ? "Tap the field to add people. " : "Drag through a pile to move it. ") + "Type, and more arrive. <b>Enter</b> opens the floor.";
+      say(base);
+      // the count inside, as the room fills: honest grains, not people
+      scene().onCount(function (info) {
+        if (info.entered) return;
+        var n = info.inside.toLocaleString();
+        say(info.full ? "<b>" + n + "</b> in. The door is open. <b>Enter</b> steps in." : (info.inside ? "<b>" + n + "</b> in so far. " : "") + base);
+      });
+    }
     input.addEventListener("input", function () {
       var n = input.value.trim().length;
       if (scene()) scene().walk(n / STEPS_TO_DOOR);
-      if (n >= STEPS_TO_DOOR && scene() && !scene().still) say("At the door. <b>Enter</b> to git in.");
+      if (n >= STEPS_TO_DOOR && scene() && !scene().still) say("<b>Enter</b> to git in.");
     });
     // The first answer travels in the URL fragment, which browsers never send to a
     // server, so "your answers stay on your computer" holds. Without JavaScript the
