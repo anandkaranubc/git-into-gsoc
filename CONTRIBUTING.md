@@ -155,6 +155,20 @@ Never commit tokens or personal data. `.env` is ignored by Git for that reason.
 
 You are welcome to use AI assistants while contributing. You are responsible for every line you submit: understand it, test it, and be able to explain it in review. If an AI tool wrote a substantial part of a change, say so in the pull request so reviewers know where to look closely. No special commit trailers or badges are needed. Assistants that open this repository read [AGENTS.md](AGENTS.md), which points them back here.
 
+### Measuring the site
+
+The site counts page views and a few named clicks with GoatCounter; [docs/privacy.md](docs/privacy.md) says what it keeps. `site/track.js` sends the clicks, each named after the question it answers:
+
+| Event | Question |
+|---|---|
+| `copy/unix`, `copy/windows`, `copy/setup` | Which install commands get copied? |
+| `install/<app>` | Which one-click assistant install is used? |
+| `start/submit`, `start/results` | How often does the start page get as far as results? |
+| `org-link/<kind>` | Which links do visitors follow off an organization page (ideas, website, guide, source, contact)? |
+| `out/<host>` | Where else do visitors leave to? |
+
+Add an event only with a question beside it, and never send anything a visitor typed. Local previews are not counted. To keep your own visits out, open https://gitintogsoc.me/#toggle-goatcounter once in each browser. The numbers live in the owner's GoatCounter account.
+
 ## Where things live
 
 | Path | What is there |

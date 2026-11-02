@@ -153,6 +153,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
   }})();
 </script>
 {ANALYTICS}
+<script src="{root}track.js" defer></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -273,10 +274,15 @@ FILTER_SCRIPT = """<script>
 """
 
 
-def _link(url: str, text: str | None = None) -> str:
-    """An anchor for a web address from the data; anything else (javascript:, mailto:) is shown as text."""
+def _link(url: str, text: str | None = None, out: str | None = None) -> str:
+    """An anchor for a web address from the data; anything else (javascript:, mailto:) is shown as text.
+
+    `out` names the click for site/track.js ("org-link/ideas"), so the dashboard can say
+    which kind of link visitors follow off an organization page.
+    """
     if url.startswith(("https://", "http://")):
-        return f'<a href="{escape(url)}">{escape(text or url)}</a>'
+        attr = f' data-out="{escape(out)}"' if out else ""
+        return f'<a href="{escape(url)}"{attr}>{escape(text or url)}</a>'
     return escape(text or url)
 
 
@@ -305,21 +311,21 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
     quoted = name.replace('"', '\\"')
 
     links = []
-    for label, url in (
-        ("Website", org.get("website_url")),
-        ("Ideas page", org.get("ideas_link")),
-        ("Contributor guide", org.get("contributor_guidance_url")),
-        ("Source code", org.get("source_code")),
+    for label, kind, url in (
+        ("Website", "website", org.get("website_url")),
+        ("Ideas page", "ideas", org.get("ideas_link")),
+        ("Contributor guide", "guide", org.get("contributor_guidance_url")),
+        ("Source code", "source", org.get("source_code")),
     ):
         if url:
-            links.append(f"<li>{label}: {_link(str(url))}</li>")
+            links.append(f"<li>{label}: {_link(str(url), out=f'org-link/{kind}')}</li>")
     for method in org.get("direct_comm_methods") or []:
         kind = str(method.get("name") or "")
         value = str(method.get("value") or "")
         if not value:
             continue
         label = CHANNEL_LABELS.get(kind, kind.capitalize() or "Contact")
-        links.append(f"<li>{escape(label)}: {_link(value)}</li>")
+        links.append(f"<li>{escape(label)}: {_link(value, out='org-link/contact')}</li>")
 
     idea_items = "".join(
         "<li>"
@@ -335,7 +341,7 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
         ideas_block += f'<ol class="ideas">{idea_items}</ol>'
     if ideas.get("url"):
         ideas_block += (
-            f"<p>{_link(str(ideas['url']), 'Read the ideas page')}. "
+            f"<p>{_link(str(ideas['url']), 'Read the ideas page', 'org-link/ideas')}. "
             "Ideas are for scope reference; never copy one into a proposal.</p>"
         )
 
