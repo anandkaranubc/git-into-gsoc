@@ -1011,6 +1011,22 @@ class GitHubClient:
             found.extend(more)
         return found
 
+    def most_starred_repos(self, owner: str, *, since: str) -> list[dict[str, Any]]:
+        """Up to 100 of an owner's public repositories pushed since `since` (YYYY-MM-DD),
+        most starred first, through one search; forks and archived ones left out."""
+        owner = validate_login(owner, kind="GitHub org/user")
+        data = self._api(
+            "search/repositories",
+            params={
+                "q": f"org:{owner} archived:false fork:false pushed:>={since}",
+                "sort": "stars",
+                "order": "desc",
+                "per_page": 100,
+            },
+        )
+        items = data.get("items") if isinstance(data, dict) else None
+        return list(items) if isinstance(items, list) else []
+
     def beginner_issue_counts(self, owner: str) -> dict[str, int]:
         """Open, unassigned beginner issues per repo for one GitHub owner (1 search call)."""
         owner = validate_login(owner, kind="GitHub org/user")
