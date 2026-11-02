@@ -40,6 +40,8 @@
     if (!W || !H) return;
     band = getComputedStyle(scene).position !== "absolute";
     cell = band ? 3 : 4;
+    // a resize notice with the same size (the pane scaling, a scrollbar) keeps the field
+    if (Math.ceil(W / cell) === cols && Math.ceil(H / cell) === rows && grid) return;
     cols = Math.ceil(W / cell); rows = Math.ceil(H / cell);
     canvas.width = cols; canvas.height = rows;
     canvas.style.width = cols * cell + "px"; canvas.style.height = rows * cell + "px";
@@ -202,7 +204,7 @@
       setTimeout(done, 1700);
     },
     // runs the automaton ahead: what a still frame uses, and what a check can call
-    advance: function (n) { for (var i = 0; i < n; i++) { if (!entered && grains < 4500 && inRoom < roomCells * 0.97) emit(flow); step(); if (i % 60 === 0) countRoom(); } countRoom(); draw(); },
+    advance: function (n) { for (var i = 0; i < n; i++) { if (!entered && grains < 4500 && inRoom < roomCells * 0.97) emit(flow); step(); if (i % 60 === 0) countRoom(); } countRoom(); draw(); return { grains: grains, inRoom: inRoom, roomCells: roomCells, band: band, cols: cols, rows: rows, gx: g.x, gy: g.y, unit: UNIT }; },
     still: still
   };
 })();
