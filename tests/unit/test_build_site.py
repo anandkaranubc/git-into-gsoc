@@ -33,7 +33,9 @@ def test_every_page_carries_the_same_page_view_counter(tmp_path: Path) -> None:
     pages = [tmp_path / "orgs/index.html", tmp_path / "start/index.html"]
     pages += [ROOT / "site" / name for name in ("index.html", "brand.html", "404.html")]
     for page in pages:
-        assert page.read_text(encoding="utf-8").count(ANALYTICS) == 1, page
+        text = page.read_text(encoding="utf-8")
+        assert text.count(ANALYTICS) == 1, page
+        assert text.count('track.js" defer') == 1, page
 
 
 def test_start_page_ships_the_package_and_asks_the_four_questions(tmp_path: Path) -> None:
@@ -90,7 +92,7 @@ def test_data_text_is_escaped_and_odd_slugs_are_refused(tmp_path: Path) -> None:
     assert build(out, data) == ["ampersand-co"]
     page = (out / "orgs/ampersand-co/index.html").read_text(encoding="utf-8")
     assert "Ampersand &amp; &lt;Co&gt;" in page
-    assert 'href="https://example.org/ideas?a=1&amp;b=2"' in page
+    assert 'href="https://example.org/ideas?a=1&amp;b=2" data-out="org-link/ideas"' in page
     # A link from the data is only a link when it is a web address.
     assert "javascript:alert(1)" in page and 'href="javascript:' not in page
     assert "In GSoC since 2025, 1 year." in page
