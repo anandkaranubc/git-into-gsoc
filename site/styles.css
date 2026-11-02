@@ -157,8 +157,6 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 .hero .fine { font-size: 0.9rem; color: var(--gig-mute-on-ink); margin: 16px 0 0; max-width: 56ch; }
 .hero .fine a { color: var(--gig-paper); font-weight: 600; }
 .hero p code { background: var(--gig-ink-2); color: var(--gig-paper); }
-.hero .facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 28px 0 0; padding: 0; list-style: none; font-size: 0.85rem; color: var(--gig-mute-on-ink); max-width: none; }
-.hero .facts li::before { content: ""; display: inline-block; width: 6px; height: 10px; background: var(--gig-open); margin-right: 8px; vertical-align: -1px; }
 /* The door's invitation: written by the script, because it describes what the script does. */
 .hero .invite { font-size: 0.85rem; color: var(--gig-mute-on-ink); margin: 10px 0 0; min-height: 1.5em; }
 .hero .invite b { color: var(--gig-open); font-weight: 600; }
