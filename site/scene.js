@@ -186,6 +186,11 @@
     var r = canvas.getBoundingClientRect();
     var x = (e.clientX - r.left) / cell, y = (e.clientY - r.top) / cell;
     target = { x: Math.round((x - g.x) / UNIT - 1.5), y: Math.round((y - g.y) / UNIT - 2) };
+    // Only the corridor through the door gap is walkable: rows 6 to 8 clear the G's
+    // walls, and from the room's inside wall out to the dark. Anywhere else the cursor
+    // would be drawn over the G, which reads as a glitch.
+    target.x = Math.max(4, Math.min(44, target.x));
+    target.y = Math.max(6, Math.min(8, target.y));
     var now = performance.now() / 1000;
     if (now >= followUntil) { alpha = 1; }
     followUntil = now + 2.5;
