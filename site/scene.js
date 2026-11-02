@@ -22,9 +22,9 @@
   var grid, next, img, g = { x: 0, y: 0 };
   var gravity = "left", flow = 3, grains = 0, stir = null, entered = false, enterAt = 0;
   var start = performance.now() / 1000, last = start, visible = true, raf = 0, burst = 0;
-  // With gravity pointing left, the room's lower pocket and its top strip are out of
-  // the crowd's reach, so about two thirds of the room is what a full room holds.
-  var FULL = 0.6;
+  // The crowd mills sideways when blocked, so it reaches the room's corners; a few
+  // cells always stay open where grains jostle.
+  var FULL = 0.9;
   var roomCells = 0, inRoom = 0, you = { x: 0, y: 0, tx: 0, ty: 0, at: 0 }, cheer = 0, listeners = [], told = -1;
   function doorX() { return g.x + 20 * UNIT; }
   function doorY() { return g.y + 9 * UNIT; }
@@ -66,8 +66,9 @@
       else if (inRoomUnit(ux, uy)) roomCells += 1;
     }
     grains = 0; inRoom = 0; entered = false; gravity = "left"; cheer = 0;
-    // you wait outside the door, in the stream's path, until typing walks you to it
-    you.x = Math.min(cols - 4 * UNIT, doorX() + 7 * UNIT); you.tx = you.x; you.y = doorY() + 4 * UNIT; you.ty = you.y;
+    // you stand in the doorway, where the mark draws its cursor; the crowd squeezes past
+    // you through the gap above and below, and typing walks you in
+    you.x = g.x + 18 * UNIT; you.tx = you.x; you.y = g.y + 6 * UNIT; you.ty = you.y;
     placeYou();
     if (still) { for (var i = 0; i < 900; i++) { emit(flow); step(); } countRoom(); }   // a settled pile for a still frame
     draw();
@@ -112,8 +113,8 @@
   // One pass of the automaton. Gravity left: a grain moves left, else diagonally left,
   // else stays. Gravity down (after Enter): the same, turned a quarter.
   function step() {
-    var dx = gravity === "left" ? -1 : 0, dy = gravity === "left" ? 0 : 1, dX = doorX();
-    var sx = gravity === "left" ? 1 : 0, sy = gravity === "left" ? 0 : 1;   // the sideways axis
+    var dx = gravity === "left" ? -1 : 0, dy = gravity === "left" ? 0 : 1;
+    var sx = gravity === "left" ? 0 : 1, sy = gravity === "left" ? 1 : 0;   // the sideways axis, across gravity
     next.set(grid);
     var flip = (Math.random() < 0.5) ? 1 : -1;
     for (var y = 0; y < rows; y++) {
@@ -121,7 +122,6 @@
         var i = y * cols + x, v = grid[i];
         if (!sand(v)) continue;
         if (Math.random() < 0.18) continue;          // a crowd does not march in step
-        if (gravity === "left" && x >= dX - UNIT && x <= dX + UNIT && Math.random() < 0.55) continue;   // the threshold is narrow: a queue forms
         var tx = x + dx, ty = y + dy;
         if (tx < 0 || ty >= rows) { next[i] = EMPTY; grains -= 1; continue; }   // out of the field
         var ti = ty * cols + tx;
@@ -129,6 +129,14 @@
         var ax = x + dx + sx * flip, ay = y + dy + sy * flip, bx = x + dx - sx * flip, by = y + dy - sy * flip;
         if (ax >= 0 && ax < cols && ay >= 0 && ay < rows) { var ai = ay * cols + ax; if (next[ai] === EMPTY && grid[ai] === EMPTY) { next[ai] = v; next[i] = EMPTY; continue; } }
         if (bx >= 0 && bx < cols && by >= 0 && by < rows) { var bi = by * cols + bx; if (next[bi] === EMPTY && grid[bi] === EMPTY) { next[bi] = v; next[i] = EMPTY; continue; } }
+        // blocked all the way: a crowd mills sideways, so a pile spreads along a wall and
+        // the room fills past the slit beside you (pure sand would jam there)
+        if (Math.random() < 0.5) {
+          var cx = x + sx * flip, cy = y + sy * flip;
+          if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) { var ci = cy * cols + cx; if (next[ci] === EMPTY && grid[ci] === EMPTY) { next[ci] = v; next[i] = EMPTY; continue; } }
+          cx = x - sx * flip; cy = y - sy * flip;
+          if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) { var di = cy * cols + cx; if (next[di] === EMPTY && grid[di] === EMPTY) { next[di] = v; next[i] = EMPTY; continue; } }
+        }
       }
     }
     var t = grid; grid = next; next = t;
@@ -222,7 +230,7 @@
       emit(Math.round(rate));
       // the crowd outside stays a crowd: when it grows past a few hundred, some give up and go
       if (!entered && grains - inRoom > 600) churn(3);
-      else if (full && !entered && Math.random() < 0.35) churn(1);
+      else if (full && !entered && Math.random() < 0.35) { churn(1); emit(1); }   // one leaves, one arrives
       stirAt();
       step(); step();
       moveYou(now);
@@ -273,14 +281,13 @@
     walk: function (fraction) {
       burst = 30 + 90 * fraction;
       var f = Math.max(0, Math.min(1, fraction));
-      you.tx = Math.round(Math.min(cols - 4 * UNIT, doorX() + 7 * UNIT) - f * 7 * UNIT) + 1;
-      you.ty = f > 0 ? doorY() - 2 * UNIT : doorY() + 4 * UNIT;
+      you.tx = Math.round(g.x + 18 * UNIT - f * 8 * UNIT);   // typing walks you in, as far as the room's middle
       wake();
     },
     enter: function (done) {
       if (entered) { done(); return; }
       entered = true; enterAt = performance.now() / 1000;
-      you.tx = doorX() - 12 * UNIT; you.ty = doorY() - 2 * UNIT;   // through the door, into the room, first
+      you.tx = g.x + 6 * UNIT;   // all the way in, first
       you.at = 0;
       if (still) { you.x = you.tx; you.y = you.ty; placeYou(); gravity = "down"; draw(); setTimeout(done, 80); return; }
       wake();
