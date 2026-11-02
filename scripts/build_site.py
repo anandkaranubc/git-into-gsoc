@@ -104,7 +104,7 @@ def _nav(root: str, path: str) -> str:
         current = ' aria-current="page"' if path == href or path.startswith(href) else ""
         cls = ' class="cta"' if href == "start/" else ' class="optional"' if href == "docs/" else ""
         name = (
-            ' aria-label="git in: answer four questions in your browser"' if href == "start/" else ""
+            ' aria-label="Start: answer four questions in your browser"' if href == "start/" else ""
         )
         items.append(f'<li{cls}><a href="{root}{href}"{current}{name}>{label}</a></li>')
     items.append(f'<li><a href="{REPO_URL}">github</a></li>')
@@ -823,29 +823,6 @@ def build_start(out: Path, official: dict[str, Any], signals: dict[str, Any]) ->
     package_zip(start / "pkg.zip")
 
 
-def doors(orgs: list[dict[str, Any]], history: dict[str, Any]) -> dict[str, Any]:
-    """What the home page's hall of doors needs: one record per organization, veterans first.
-
-    `t` holds the lowercased tech and topic tags from the official listing, which is
-    what a typed language is matched against; `y` is the years in the archive.
-    """
-    records = []
-    for org in orgs:
-        tags = sorted(
-            {t.lower() for t in (org.get("tech_tags") or []) + (org.get("topic_tags") or [])}
-        )
-        records.append(
-            {
-                "n": str(org["name"]),
-                "s": str(org["slug"]),
-                "t": tags,
-                "y": len(history_for(str(org["name"]), history)),
-            }
-        )
-    records.sort(key=lambda r: (-r["y"], r["n"].lower()))
-    return {"doors": records}
-
-
 def sitemap(slugs: list[str]) -> str:
     urls = [
         SITE_URL,
@@ -888,9 +865,6 @@ def build(out: Path, data: Path = DATA) -> list[str]:
         index_page(orgs, by_slug, history, year, generated), encoding="utf-8"
     )
     (out / "sitemap.xml").write_text(sitemap(slugs), encoding="utf-8")
-    (out / "doors.json").write_text(
-        json.dumps(doors(orgs, history), separators=(",", ":")), encoding="utf-8"
-    )
     build_start(out, official, signals)
     return slugs
 

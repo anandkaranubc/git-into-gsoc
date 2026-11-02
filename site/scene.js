@@ -1,62 +1,84 @@
-// The doorway on the home page: the pixel G as a lit door in a dark room, drawn by a
-// fragment shader on the brand's own grid. Every cell is one fragment, so a hero
-// of 200 by 130 cells costs the GPU almost nothing. The lime cursor is the visitor:
-// it walks in on its own, follows the pointer when there is one, and the room turns
-// lime when it is through. No WebGL means the static SVG mark stays in place.
+// The doorway on the home page, in three dimensions: the pixel G stands as a monument in
+// a dark field, a lit room behind its open front and its door gap, light pouring out
+// across the floor and through the air. Drawn by a raymarcher in a fragment shader on
+// the brand's grid, so every cell is one fragment and the light is dithered into the
+// seven brand tones, as the flat scene was. The camera drifts and follows the pointer.
+// The lime cursor is the visitor: it walks to the threshold on its own, walks as you
+// type, and steps in on Enter, when the camera follows it through. The G never moves.
+// No WebGL means the still SVG mark stays in place.
 (function () {
   "use strict";
+  // Compiling the shader is synchronous and would delay the first paint of the copy, so
+  // the scene starts once the page has loaded.
+  if (document.readyState !== "complete") { window.addEventListener("load", arguments.callee); return; }
   var scene = document.querySelector(".scene");
   var hero = document.querySelector(".hero");
   if (!scene || !hero) return;
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canvas = document.createElement("canvas");
-  var gl = canvas.getContext("webgl", { antialias: false, alpha: false, depth: false, powerPreference: "low-power" });
+  var gl = canvas.getContext("webgl", { antialias: false, alpha: false, depth: false, powerPreference: "high-performance" });
   if (!gl) return;
 
   var VERT = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
   var FRAG = [
-    "precision mediump float;",
-    "uniform vec2 u_res;uniform float u_time;uniform vec2 u_g;uniform float u_unit;",
-    "uniform vec2 u_cursor;uniform float u_alpha;uniform float u_in;uniform float u_power;uniform float u_motion;",
+    "precision highp float;",
+    "uniform vec2 u_res;uniform float u_time;uniform vec3 u_eye;uniform vec3 u_at;",
+    "uniform vec3 u_cursor;uniform float u_alpha;uniform float u_in;uniform float u_power;uniform float u_motion;",
     "const vec3 INK=vec3(.082,.071,.118),INK2=vec3(.129,.110,.180),INK3=vec3(.200,.173,.278);",
     "const vec3 MDEEP=vec3(.298,.184,.851),MERGE=vec3(.478,.353,.973),MSOFT=vec3(.761,.710,1.);",
     "const vec3 PAPER=vec3(.957,.945,.980),ODEEP=vec3(.247,.416,0.),OPEN=vec3(.776,.957,.196),OMID=vec3(.49,.70,.06);",
-    "bool rect(vec2 p,float x0,float y0,float x1,float y1){return p.x>=x0&&p.x<=x1&&p.y>=y0&&p.y<=y1;}",
-    // The G from scripts/brand/build.py: six bars, four softened corners, two added cells.
-    "bool isG(vec2 q){if(q.x<0.||q.y<0.||q.x>19.||q.y>19.)return false;",
-    " bool g=rect(q,0.,0.,3.,19.)||rect(q,0.,0.,19.,3.)||rect(q,16.,4.,19.,5.)||rect(q,10.,12.,19.,15.)||rect(q,16.,12.,19.,19.)||rect(q,0.,16.,19.,19.);",
-    " if((q.x<=1.&&q.y==0.)||(q.x==0.&&q.y<=1.))g=false;if((q.x>=18.&&q.y==0.)||(q.x==19.&&q.y<=1.))g=false;",
-    " if((q.x<=1.&&q.y==19.)||(q.x==0.&&q.y>=18.))g=false;if((q.x>=18.&&q.y==19.)||(q.x==19.&&q.y>=18.))g=false;",
-    " if((q.x==4.&&q.y==4.)||(q.x==4.&&q.y==15.))g=true;return g;}",
-    "bool inside(vec2 q){return !isG(q)&&(rect(q,4.,4.,19.,11.)||rect(q,4.,12.,9.,15.));}",
-    // 4x4 ordered dither: M2(x,y)=2x+3y-4xy, M4 = 4*M2(x%2,y%2) + M2(x/2%2,y/2%2).
     "float m2(vec2 p){return 2.*p.x+3.*p.y-4.*p.x*p.y;}",
     "float bayer(vec2 c){return (4.*m2(mod(c,2.))+m2(mod(floor(c/2.),2.)))/16.;}",
-    "float hash(float n){return fract(sin(n*127.1)*43758.5453);}",
     "vec3 ramp(float i,float h){",
     " vec3 v=i<.5?INK:i<1.5?INK2:i<2.5?INK3:i<3.5?MDEEP:i<4.5?MERGE:i<5.5?MSOFT:PAPER;",
     " vec3 l=i<.5?INK:i<1.5?INK2:i<2.5?INK3:i<3.5?ODEEP:i<4.5?OMID:i<5.5?OPEN:PAPER;",
     " return mix(v,l,h);}",
+    "float sdBox(vec3 p,vec3 c,vec3 b){vec3 d=abs(p-c)-b;return length(max(d,0.))+min(max(d.x,max(d.y,d.z)),0.);}",
+    // The G from scripts/brand/build.py as six bars, 20 units tall, 6 deep, standing on the floor.
+    "float bar(vec3 p,float x0,float y0,float x1,float y1){return sdBox(p,vec3((x0+x1)*.5,16.-(y0+y1)*.5,0.),vec3((x1-x0)*.5,(y1-y0)*.5,3.));}",
+    "float sdG(vec3 p){float d=bar(p,0.,0.,4.,20.);d=min(d,bar(p,0.,0.,20.,4.));d=min(d,bar(p,16.,4.,20.,6.));",
+    " d=min(d,bar(p,10.,12.,20.,16.));d=min(d,bar(p,16.,12.,20.,20.));return min(d,bar(p,0.,16.,20.,20.));}",
+    "float sdPlate(vec3 p){return sdBox(p,vec3(10.,6.,-3.6),vec3(10.,10.,.6));}",
+    "float sdCursor(vec3 p){return sdBox(p,u_cursor,vec3(1.5,2.,1.5));}",
+    // 1 the G, 2 the back wall of the room, 3 the floor, 4 the cursor
+    "float map(vec3 p,out int m){float d=sdG(p);m=1;float e=sdPlate(p);if(e<d){d=e;m=2;}e=p.y;if(e<d){d=e;m=3;}",
+    " if(u_alpha>.01){e=sdCursor(p);if(e<d){d=e;m=4;}}return d;}",
+    "float mapd(vec3 p){int m;return map(p,m);}",
+    "vec3 normal(vec3 p){vec2 e=vec2(.02,0.);return normalize(vec3(mapd(p+e.xyy)-mapd(p-e.xyy),mapd(p+e.yxy)-mapd(p-e.yxy),mapd(p+e.yyx)-mapd(p-e.yyx)));}",
+    "float shadow(vec3 o,vec3 l,float k){vec3 d=l-o;float L=length(d);d/=L;float t=.3,r=1.;",
+    " for(int i=0;i<24;i++){float h=sdG(o+d*t);h=min(h,sdPlate(o+d*t));if(h<.01)return 0.;r=min(r,k*h/t);t+=max(h,.15);if(t>L)break;}return clamp(r,0.,1.);}",
+    "const vec3 LAMP=vec3(9.,7.,-1.);",
+    "float lamp(vec3 p,vec3 n){vec3 d=LAMP-p;float L=length(d);d/=L;return max(dot(n,d),0.)*95./(L*L+30.)*shadow(p+n*.1,LAMP,10.);}",
     "void main(){",
-    " vec2 cell=floor(gl_FragCoord.xy);cell.y=u_res.y-1.-cell.y;",
-    " vec2 p=(cell-u_g)/u_unit;vec2 q=floor(p);float t=u_time;",
-    " float flick=1.+u_motion*(.035*sin(t*1.3)+.025*sin(t*3.7+1.)+.015*sin(t*9.1));",
-    " float power=u_power*flick;",
-    " vec2 d=p-vec2(20.,9.);float L=.2*exp(-length(d)/13.)*power;float h=0.;",
-    " if(d.x>0.){float w=3.+.62*d.x;float across=1.-smoothstep(w*.45,w,abs(d.y));L+=across*1.05/(1.+d.x*.085)*power;}",
-    " bool room=inside(q);",
-    " if(room){L=(.72+.33*smoothstep(3.,19.,p.x))*power;h+=u_in*.9;}",
-    // Dust in the beam: a few dozen cells drifting out of the door.
-    " for(int i=0;i<28;i++){float f=float(i);float sp=.35+.55*hash(f+.3);",
-    "  float x=21.+mod(hash(f)*30.+t*sp*u_motion,30.);float y=9.+(hash(f+.7)-.5)*(3.+.62*(x-20.))*1.3;",
-    "  if(q.x==floor(x)&&q.y==floor(y)&&hash(f+.9)<power){L=max(L,.62+.3*hash(f+.5));}}",
-    // The cursor's own faint light, lime.
-    " vec2 cc=u_cursor+vec2(1.5,2.);float cd=length(p-cc);",
-    " L+=u_alpha*.32*exp(-cd/2.6);h+=u_alpha*.9*exp(-cd/2.6);",
+    " vec2 cell=floor(gl_FragCoord.xy);vec2 uv=(cell+.5-u_res*.5)/u_res.y;",
+    " vec3 f=normalize(u_at-u_eye),r=normalize(cross(f,vec3(0.,1.,0.))),u=cross(r,f);",
+    " vec3 rd=normalize(f*1.35+uv.x*r+uv.y*u);vec3 ro=u_eye;",
+    " float t=0.;int m=0;bool hit=false;",
+    " for(int i=0;i<72;i++){int mm;float h=map(ro+rd*t,mm);if(h<.02){m=mm;hit=true;break;}t+=h;if(t>140.)break;}",
+    " float L=0.,h=0.;vec3 col;vec3 p=ro+rd*t;",
+    " if(hit&&m==4){col=OPEN;gl_FragColor=vec4(mix(col,PAPER,u_in*.3),1.);return;}",
+    " if(hit){vec3 n=normal(p);",
+    "  if(m==1&&n.z>.7){col=MERGE;gl_FragColor=vec4(col,1.);return;}",    // the face of the mark, flat, in its own colour
+    "  if(m==1){col=MDEEP*(.35+.65*lamp(p,n)*u_power);gl_FragColor=vec4(col,1.);return;}",
+    "  L=.03+lamp(p,n)*u_power;",
+    "  if(m==2)L+=.25*u_power;",   // the room's back wall is close to the lamp
+    // the cursor's own small lime light on the floor
+    "  float cd=length(p-u_cursor);L+=u_alpha*.9*exp(-cd/3.);h+=u_alpha*1.2*exp(-cd/3.);",
+    " }else{L=0.;}",
+    // light in the air: the room's open front and its door gap throw beams, so air inside
+    // those two volumes glows with the lamp's falloff (no shadow march, which cost 2 fps)
+    " float glow=0.;float tmax=min(t,80.);float step=tmax/12.;",
+    " for(int i=0;i<12;i++){float ti=(float(i)+.5+.5*bayer(cell))*step;vec3 q=ro+rd*ti;",
+    "  float front=step*0.;",
+    "  bool room=q.x>4.&&q.x<16.&&q.y>0.&&q.y<12.&&abs(q.z)<3.;",
+    "  float f=q.z-3.;bool beamF=f>0.&&q.x>4.-f*.35&&q.x<16.+f*.35&&q.y>-.5&&q.y<12.+f*.3;",
+    "  float g=q.x-20.;bool beamG=g>0.&&q.y>2.-g*.25&&q.y<8.+g*.35&&abs(q.z)<3.+g*.45;",
+    "  if(!(room||beamF||beamG))continue;float d=length(LAMP-q);glow+=step*(beamG?14.:9.)/(d*d+40.);}",
+    " L+=glow*u_power;h+=glow*u_in*2.;",
+    " h+=u_in*.9;",
+    " L*=1.+u_motion*(.03*sin(u_time*1.3)+.02*sin(u_time*3.7+1.));",
     " float idx=floor(clamp(L,0.,1.)*6.+bayer(cell));",
-    " vec3 col=ramp(idx,clamp(h,0.,1.));",
-    " if(isG(q))col=MERGE;",
-    " if(rect(p,u_cursor.x,u_cursor.y,u_cursor.x+2.999,u_cursor.y+3.999))col=mix(col,OPEN,u_alpha);",
+    " col=ramp(idx,clamp(h,0.,1.));",
     " gl_FragColor=vec4(col,1.);}"
   ].join("\n");
 
@@ -79,7 +101,7 @@
   gl.enableVertexAttribArray(a);
   gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
   var U = {};
-  ["u_res", "u_time", "u_g", "u_unit", "u_cursor", "u_alpha", "u_in", "u_power", "u_motion"].forEach(function (n) {
+  ["u_res", "u_time", "u_eye", "u_at", "u_cursor", "u_alpha", "u_in", "u_power", "u_motion"].forEach(function (n) {
     U[n] = gl.getUniformLocation(prog, n);
   });
 
@@ -94,40 +116,29 @@
     canvas.remove();
   });
 
-  var UNIT = 3;                       // cells per grid unit; the G is 20 units = 60 cells tall
-  var cols = 0, rows = 0, cell = 6, g = { x: 0, y: 0 };
-  var THRESHOLD = { x: 18, y: 7 }, OUTSIDE = { x: 36, y: 7 }, IN = { x: 10, y: 7 };
-  var cur = { x: THRESHOLD.x, y: THRESHOLD.y }, alpha = 1, target = null;
+  var cols = 0, rows = 0, cell = 4, band = false;
+  // World units are the G's own cells; the door gap is at x = 20, y 8..14. Outside, the
+  // threshold, and inside, along the floor in front of the gap.
+  var OUTSIDE = 40, THRESHOLD = 23, IN = 10;
+  var cur = { x: THRESHOLD, z: 0 }, alpha = 1, target = null;
   var start = performance.now() / 1000, idleStart = start, followUntil = 0, lastStep = 0;
-  var visible = true, raf = 0, band = false;
-  // Typing in the hero prompt walks the cursor to the threshold; Enter steps it through.
-  var typedUntil = 0, typedX = OUTSIDE.x, entering = false, entered = false;
+  var typedUntil = 0, typedX = OUTSIDE, entering = false, entered = false, enterAt = 0;
+  var visible = true, raf = 0;
+  var lookX = 0, lookY = 0, yaw = 0, pitch = 0;
 
-  var copy = hero.querySelector(".hero-copy");
   function size() {
     var W = scene.clientWidth, H = scene.clientHeight;
     if (lost || !W || !H) return;
-    // Beside the copy on wide screens, in a band above it on narrow ones (see styles.css).
     band = getComputedStyle(scene).position !== "absolute";
-    var copyRight = band ? 0 : copy.getBoundingClientRect().right - scene.getBoundingClientRect().left + 40;
-    var room = band ? W : W - copyRight;
-    cell = Math.max(band ? 3 : 4, Math.min(6, Math.round(H * (band ? 0.3 : 0.42) / 60), Math.floor(room / 72)));
+    cell = band ? 3 : 4;
     cols = Math.ceil(W / cell); rows = Math.ceil(H / cell);
     canvas.width = cols; canvas.height = rows;
     canvas.style.width = cols * cell + "px"; canvas.style.height = rows * cell + "px";
-    g.x = band ? Math.round(cols * 0.18) : Math.min(cols - 64, Math.max(Math.round(cols * 0.56), Math.round(copyRight / cell)));
-    g.y = Math.round((rows - 60) / 2);
     gl.viewport(0, 0, cols, rows);
     gl.uniform2f(U.u_res, cols, rows);
-    gl.uniform2f(U.u_g, g.x, g.y);
-    gl.uniform1f(U.u_unit, UNIT);
     draw();                           // a frame even in a background tab, so nothing is ever blank
   }
 
-  function isIn(c) {
-    var x = c.x + 1.5, y = c.y + 2;
-    return (x >= 4 && x < 20 && y >= 4 && y < 12) || (x >= 4 && x < 10 && y >= 12 && y < 16);
-  }
   // Switching the light on: dark, a stutter, then steady.
   function power(t) {
     if (still) return 1;
@@ -141,34 +152,55 @@
     var s = t % 12;
     alpha = s < 0.5 ? s / 0.5 : s > 11.2 ? Math.max(0, (12 - s) / 0.8) : 1;
     var x;
-    if (s < 1.8) x = OUTSIDE.x;
-    else if (s < 5.2) x = OUTSIDE.x - Math.floor((s - 1.8) / 3.4 * (OUTSIDE.x - THRESHOLD.x));
-    else if (s < 6.6) x = THRESHOLD.x;
-    else if (s < 7.8) x = THRESHOLD.x - Math.floor((s - 6.6) / 1.2 * (THRESHOLD.x - IN.x));
-    else x = IN.x;
-    cur.x = x; cur.y = THRESHOLD.y;
+    if (s < 1.8) x = OUTSIDE;
+    else if (s < 5.2) x = OUTSIDE - Math.floor((s - 1.8) / 3.4 * (OUTSIDE - THRESHOLD));
+    else if (s < 6.6) x = THRESHOLD;
+    else if (s < 7.8) x = THRESHOLD - Math.floor((s - 6.6) / 1.2 * (THRESHOLD - IN));
+    else x = IN;
+    cur.x = x;
   }
   function follow(now) {
     alpha = 1;
-    if (!target || now - lastStep < 0.04) return;
+    if (!target || now - lastStep < 0.05) return;
     lastStep = now;
-    cur.x += Math.sign(target.x - cur.x);
-    cur.y += Math.sign(target.y - cur.y);
+    cur.x += Math.sign(target - cur.x);
   }
 
   function draw() {
-    var now = performance.now() / 1000;
-    var t = now - start;
-    if (still) { cur = { x: entered ? IN.x : THRESHOLD.x, y: THRESHOLD.y }; alpha = 1; }
-    else if (entering || entered) { alpha = 1; if (now - lastStep > 0.06 && cur.x > IN.x) { lastStep = now; cur.x -= 1; } cur.y = THRESHOLD.y; if (cur.x <= IN.x) { entering = false; entered = true; } }
-    else if (now < typedUntil) { alpha = 1; cur.x = typedX; cur.y = THRESHOLD.y; }
+    var now = performance.now() / 1000, t = now - start;
+    if (still) { cur.x = entered ? IN : THRESHOLD; alpha = 1; }
+    else if (entering || entered) { alpha = 1; if (now - lastStep > 0.06 && cur.x > IN) { lastStep = now; cur.x -= 1; } if (cur.x <= IN) { entering = false; entered = true; } }
+    else if (now < typedUntil) { alpha = 1; cur.x = typedX; }
     else if (now < followUntil) follow(now);
     else idle(now - idleStart);
+
+    // The camera: front and to the right of the G, drifting, leaning with the pointer. On
+    // Enter it flies to the gap and through into the room.
+    var drift = 0;   // the mark holds still; only the pointer leans the view and Enter moves it
+    yaw += ((band ? 0.55 : 0.42) + lookX * 0.18 + drift - yaw) * 0.06;
+    pitch += (0.3 + lookY * 0.1 - pitch) * 0.06;
+    // the look-at point sits left of the G on wide screens, so the G stands in the open
+    // right half beside the copy
+    var R = band ? 66 : 54;
+    var at = [band ? 10 : -3, 8, 0], eye = [at[0] + R * Math.sin(yaw) * Math.cos(pitch), at[1] + R * Math.sin(pitch), at[2] + R * Math.cos(yaw) * Math.cos(pitch)];
+    var inside = 0;
+    if (entering || entered) {
+      var k = Math.min(1, (now - enterAt) / 1.7), e = k * k * (3 - 2 * k);
+      var gap = [24, 5, 0], room = [12, 5, -1];
+      var dest = e < 0.6 ? gap : room;
+      var ee = e < 0.6 ? e / 0.6 : (e - 0.6) / 0.4;
+      var from = e < 0.6 ? eye : gap;
+      eye = [from[0] + (dest[0] - from[0]) * ee, from[1] + (dest[1] - from[1]) * ee, from[2] + (dest[2] - from[2]) * ee];
+      at = [room[0] - 4, 5, -1];
+      inside = Math.max(0, (e - 0.55) / 0.45);
+    }
     gl.uniform1f(U.u_time, t);
-    gl.uniform2f(U.u_cursor, cur.x, cur.y);
+    gl.uniform3f(U.u_eye, eye[0], eye[1], eye[2]);
+    gl.uniform3f(U.u_at, at[0], at[1], at[2]);
+    gl.uniform3f(U.u_cursor, cur.x, 2, cur.z);
     gl.uniform1f(U.u_alpha, alpha);
-    gl.uniform1f(U.u_in, isIn(cur) ? 1 : 0);
-    gl.uniform1f(U.u_power, entered ? 1.25 : power(t));
+    gl.uniform1f(U.u_in, inside);
+    gl.uniform1f(U.u_power, power(t));
     gl.uniform1f(U.u_motion, still ? 0 : 1);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
@@ -178,27 +210,20 @@
     draw();
     raf = requestAnimationFrame(loop);
   }
-  // draw is reassigned below once the names layer exists; loop() calls through the variable
   function wake() { if (!raf) raf = requestAnimationFrame(loop); }
 
-  // The pointer moves the cursor, one cell step at a time; idle resumes a moment after it leaves.
+  // The pointer leans the camera; over the copy it does nothing.
   function point(e) {
     if (lost || still || entering || entered || (e.target.closest && e.target.closest(".hero-copy"))) return;
     var r = canvas.getBoundingClientRect();
-    var x = (e.clientX - r.left) / cell, y = (e.clientY - r.top) / cell;
-    target = { x: Math.round((x - g.x) / UNIT - 1.5), y: Math.round((y - g.y) / UNIT - 2) };
-    // Only the corridor through the door gap is walkable: rows 6 to 8 clear the G's
-    // walls, and from the room's inside wall out to the dark. Anywhere else the cursor
-    // would be drawn over the G, which reads as a glitch.
-    target.x = Math.max(4, Math.min(44, target.x));
-    target.y = Math.max(6, Math.min(8, target.y));
-    var now = performance.now() / 1000;
-    if (now >= followUntil) { alpha = 1; }
-    followUntil = now + 2.5;
-    idleStart = followUntil;
+    lookX = ((e.clientX - r.left) / r.width - 0.5) * 2;
+    lookY = ((e.clientY - r.top) / r.height - 0.5) * -2;
+    // a pointer in the field also calls the cursor over, a step at a time
+    var x = (e.clientX - r.left) / r.width;
+    if (x > 0.55) { target = Math.round(THRESHOLD + (x - 0.55) / 0.45 * (OUTSIDE - THRESHOLD)); var now = performance.now() / 1000; if (now >= followUntil) alpha = 1; followUntil = now + 2.5; idleStart = followUntil; }
   }
   hero.addEventListener("pointermove", point);
-  hero.addEventListener("pointerdown", point);
+  hero.addEventListener("pointerleave", function () { lookX = 0; lookY = 0; });
 
   if ("IntersectionObserver" in window) {
     new IntersectionObserver(function (entries) {
@@ -212,103 +237,12 @@
   size();
   wake();
 
-  // --- the names: every organization drifts out of the door toward you ------------------
-  // A second canvas at device resolution over the pixel scene, because readable text needs
-  // real pixels. Names spawn in the doorway and come forward in perspective; the ones that
-  // name what you typed turn lime and come first; Enter sends them back through the door.
-  var names = document.createElement("canvas");
-  names.className = "names";
-  var nctx = names.getContext("2d");
-  var field = [], litCount = 0, typed = false, flow = 1, listeners = [], lastPass = null, dpr = 1;
-  var MONO = '"SF Mono", Menlo, Consolas, "Liberation Mono", monospace';
-  function door() { return { x: (g.x + 20 * UNIT) * cell, y: (g.y + 9 * UNIT) * cell }; }
-  function spawn(f, fresh) {
-    var a;
-    // never toward the copy on wide screens: the door opens to the right
-    do { a = Math.random() * Math.PI * 2; } while (!band && Math.cos(a) < -0.2);
-    f.ax = Math.cos(a); f.ay = Math.sin(a) * 0.7;
-    f.z = fresh ? 0.1 + Math.random() * 0.9 : 1;
-    f.v = 0.05 + Math.random() * 0.05;
-    f.r = 0.5 + Math.random() * 0.9;
-  }
-  function sizeNames() {
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    names.width = Math.round(scene.clientWidth * dpr); names.height = Math.round(scene.clientHeight * dpr);
-    names.style.width = scene.clientWidth + "px"; names.style.height = scene.clientHeight + "px";
-  }
-  function drawNames(dt) {
-    var W = scene.clientWidth, H = scene.clientHeight, d = door();
-    nctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    nctx.clearRect(0, 0, W, H);
-    if (!field.length) return;
-    var K = Math.min(W, H) * (band ? 0.55 : 0.5);
-    var order = field.slice().sort(function (p, q) { return q.z - p.z; });   // far first
-    for (var i = 0; i < order.length; i++) {
-      var f = order[i];
-      if (!still) {
-        f.z -= f.v * (f.lit ? 1.6 : 1) * flow * dt;
-        if (f.z < 0.07) { if (f.lit && flow > 0) pass(f); spawn(f, false); }
-        if (f.z > 1) { f.z = 1; }
-      }
-      if (f.z > 0.9) continue;                      // still inside the doorway
-      var spread = 24 + (1 / f.z - 1) * f.r * K;
-      var x = d.x + f.ax * spread, y = d.y + f.ay * spread;
-      if (x < -200 || x > W + 200 || y < -40 || y > H + 40) continue;
-      var near = f.z < 0.3, mid = f.z < 0.6;
-      var dim = typed && litCount && !f.lit;
-      nctx.font = (f.lit ? "600 " : "") + (near ? 16 : mid ? 13 : 11) + "px " + MONO;
-      nctx.fillStyle = f.lit ? "#C6F432" : dim ? "#332C47" : near ? "#F4F1FA" : mid ? "#A49DB4" : "#67607A";
-      nctx.textAlign = f.ax < 0 ? "right" : "left";
-      nctx.textBaseline = "middle";
-      // the mark stays clean: nothing is written across the G itself
-      var gx = (g.x - 1) * cell, gy = (g.y - 1) * cell, gs = 22 * UNIT * cell;
-      if (x > gx && x < gx + gs && y > gy && y < gy + gs && f.ax < 0) continue;
-      nctx.fillText(f.d.n, Math.round(x), Math.round(y));
-    }
-  }
-  function pass(f) {
-    if (f === lastPass) return;
-    lastPass = f;
-    listeners.forEach(function (fn) { fn({ count: field.length, lit: litCount, near: f.d, entered: entered }); });
-  }
-  var drawScene = draw;
-  var lastT = performance.now() / 1000;
-  draw = function () {
-    var now = performance.now() / 1000, dt = Math.min(0.05, now - lastT);
-    lastT = now;
-    drawScene();
-    drawNames(dt);
-  };
-  scene.appendChild(names);
-  if ("ResizeObserver" in window) new ResizeObserver(sizeNames).observe(scene);
-  sizeNames();
-
   // What the hero prompt drives (home.js): a fraction typed walks the cursor from outside
   // to the threshold, and enter() steps it through before the page moves on.
   window.gigScene = {
-    doors: function (list) {
-      field = list.map(function (d) { var f = { d: d, lit: false }; spawn(f, true); return f; });
-      listeners.forEach(function (fn) { fn({ count: field.length, lit: 0, near: null, entered: false }); });
-      if (still) draw(); else wake();
-    },
-    light: function (text) {
-      var words = String(text || "").toLowerCase().split(/[,\s]+/).filter(function (w) { return w.length > 1; });
-      typed = words.length > 0;
-      litCount = 0;
-      field.forEach(function (f) {
-        f.lit = typed && f.d.t.some(function (tag) {
-          return words.some(function (w) { return tag === w || (w.length > 2 && tag.indexOf(w) !== -1); });
-        });
-        if (f.lit) litCount += 1;
-      });
-      listeners.forEach(function (fn) { fn({ count: field.length, lit: litCount, near: null, entered: entered }); });
-      if (still) draw(); else wake();
-      return litCount;
-    },
-    onDoor: function (fn) { listeners.push(fn); },
     walk: function (fraction) {
       if (lost || entering || entered) return;
-      typedX = OUTSIDE.x - Math.round(Math.max(0, Math.min(1, fraction)) * (OUTSIDE.x - THRESHOLD.x));
+      typedX = OUTSIDE - Math.round(Math.max(0, Math.min(1, fraction)) * (OUTSIDE - THRESHOLD));
       typedUntil = performance.now() / 1000 + 6;
       idleStart = typedUntil;
       wake();
@@ -316,12 +250,11 @@
     enter: function (done) {
       if (lost || entered) { done(); return; }
       entering = true;
-      flow = -7;
-      if (!still) { cur.x = Math.min(cur.x, typedUntil > performance.now() / 1000 ? typedX : cur.x); }
+      enterAt = performance.now() / 1000;
       lastStep = 0;
       wake();
       if (still) draw();
-      setTimeout(done, still ? 80 : 720);
+      setTimeout(done, still ? 80 : 1900);
     },
     still: still
   };

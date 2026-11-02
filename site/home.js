@@ -9,33 +9,16 @@
   // --- hero: typing walks the cursor in, Enter steps through, then start/ opens -------
   var ask = document.querySelector(".ask");
   var invite = document.querySelector("[data-invite]");
-  var hud = document.querySelector("[data-hud]");
+  var STEPS_TO_DOOR = 12;   // characters typed before the cursor reaches the threshold
   if (ask) {
     var input = ask.elements.know;
     function scene() { return window.gigScene; }
     function say(html) { if (invite) invite.innerHTML = html; }
-    var STEPS_TO_DOOR = 12;   // characters typed before the cursor reaches the threshold
-    if (scene()) {
-      say(scene().still ? "Type a language, and the organizations that name it light up." : "Type a language, and the organizations that name it light up. <b>Enter</b> walks you in.");
-      // The names are the official organizations, written by the site build beside the page.
-      fetch("doors.json").then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-        if (j && j.doors) { scene().doors(j.doors); if (input.value) scene().light(input.value); }
-      }).catch(function () {});
-      // The caption under the scene counts what lit up and names the lit organization passing you.
-      function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
-      scene().onDoor(function (info) {
-        if (!hud || !info.count) return;
-        hud.hidden = false;
-        var line = info.lit ? "<b>" + info.lit + "</b> of " + info.count + " organizations name what you typed" : info.count + " organizations, from the official list";
-        var near = info.near ? '<br>passing <a href="orgs/' + encodeURIComponent(info.near.s) + '/">' + esc(info.near.n) + "</a>" + (info.near.y ? ' <span class="c">' + info.near.y + " year" + (info.near.y === 1 ? "" : "s") + " in GSoC</span>" : "") : "";
-        hud.innerHTML = '<span class="c">' + line + "</span>" + near;
-      });
-    }
+    if (scene() && !scene().still) say("Type, and the cursor walks to the door. <b>Enter</b> steps in.");
     input.addEventListener("input", function () {
-      if (!scene()) return;
-      var n = scene().light(input.value);
-      scene().walk(input.value.trim().length / STEPS_TO_DOOR);
-      if (!scene().still) say(n ? "<b>" + n + "</b> light up for that. <b>Enter</b> walks you in." : "Type a language, and the organizations that name it light up. <b>Enter</b> walks you in.");
+      var n = input.value.trim().length;
+      if (scene()) scene().walk(n / STEPS_TO_DOOR);
+      if (n >= STEPS_TO_DOOR && scene() && !scene().still) say("At the door. <b>Enter</b> to git in.");
     });
     // The first answer travels in the URL fragment, which browsers never send to a
     // server, so "your answers stay on your computer" holds. Without JavaScript the
@@ -45,7 +28,7 @@
       var v = input.value.trim();
       var href = ask.getAttribute("action") + (v ? "#know=" + encodeURIComponent(v) : "");
       var go = function () { location.href = href; };
-      if (scene()) { say("git in."); if (hud) hud.hidden = true; scene().enter(go); } else go();
+      if (scene()) { say("git in."); scene().enter(go); } else go();
     });
   }
 
