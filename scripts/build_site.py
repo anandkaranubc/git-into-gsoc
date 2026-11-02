@@ -36,6 +36,10 @@ WHEELS = (
 )
 # What the first visit downloads (Pyodide, pydantic, the package, the data), rounded up.
 DOWNLOAD_MB = 8
+# Page views only, so the project can tell whether anyone finds the site. GoatCounter sets no
+# cookies and stores no IP address, which is what docs/privacy.md promises; keep it the one
+# script shared with site/index.html, brand.html and 404.html (a test checks the four agree).
+ANALYTICS = '<script data-goatcounter="https://gitintogsoc.goatcounter.com/count" async src="https://gc.zgo.at/count.js"></script>'
 # A slug becomes a folder name, so anything else from the data is refused.
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
 TECH_CHIPS = 18
@@ -125,7 +129,6 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <title>{escape(title)}</title>
 <meta name="description" content="{escape(description)}">
 <link rel="canonical" href="{SITE_URL}{path}">
-<meta property="og:url" content="{SITE_URL}{path}">
 <meta property="og:type" content="website">
 <meta property="og:url" content="{SITE_URL}{path}">
 <meta property="og:title" content="{escape(title)}">
@@ -149,6 +152,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
     if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
   }})();
 </script>
+{ANALYTICS}
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
