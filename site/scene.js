@@ -6,11 +6,11 @@
 // The lime cursor is the visitor: it walks to the threshold on its own, walks as you
 // type, and steps in on Enter, when the camera follows it through. The G never moves.
 // No WebGL means the still SVG mark stays in place.
-(function () {
+(function init() {
   "use strict";
   // Compiling the shader is synchronous and would delay the first paint of the copy, so
   // the scene starts once the page has loaded.
-  if (document.readyState !== "complete") { window.addEventListener("load", arguments.callee); return; }
+  if (document.readyState !== "complete") { window.addEventListener("load", init); return; }
   var scene = document.querySelector(".scene");
   var hero = document.querySelector(".hero");
   if (!scene || !hero) return;
