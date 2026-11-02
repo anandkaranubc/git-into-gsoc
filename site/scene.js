@@ -2,8 +2,9 @@
 // of lime grains, one per would-be contributor, pours in from the right, piles against
 // the G, slides round it, and finds the way in through the door until the room is full.
 // A falling-sand automaton on the brand's own grid (every cell is one pixel), with
-// gravity pointing at the door. The pointer stirs the grains, typing adds to the flow,
-// and Enter opens the floor so everything drains down into the page. The G never moves.
+// gravity pointing at the door. The pointer stirs the grains, a tap drops a few more,
+// typing adds to the flow, and Enter opens the floor so everything drains down into
+// the page. The G never moves.
 // Without a canvas the still SVG mark stays in place.
 (function init() {
   "use strict";
@@ -16,8 +17,8 @@
   var ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) return;
 
-  var EMPTY = 0, WALL = 1, SAND = 2, SAND2 = 3, YOU = 4;   // two sand tones for texture; you, a 3 by 4 block
-  function sand(v) { return v === SAND || v === SAND2; }   // you are not sand: nothing moves or removes you but you
+  var EMPTY = 0, WALL = 1, SAND = 2, SAND2 = 3;   // two sand tones, for texture
+  function sand(v) { return v === SAND || v === SAND2; }
   var cols = 0, rows = 0, cell = 4, band = false, UNIT = 4;
   var grid, next, img, g = { x: 0, y: 0 };
   var gravity = "left", flow = 3, grains = 0, stir = null, entered = false, enterAt = 0;
@@ -25,7 +26,7 @@
   // The crowd mills sideways when blocked, so it reaches the room's corners; a few
   // cells always stay open where grains jostle.
   var FULL = 0.9;
-  var roomCells = 0, inRoom = 0, you = { x: 0, y: 0, tx: 0, ty: 0, at: 0 }, cheer = 0, listeners = [], told = -1;
+  var roomCells = 0, inRoom = 0, cheer = 0, listeners = [], told = -1;
   function doorX() { return g.x + 20 * UNIT; }
   function doorY() { return g.y + 9 * UNIT; }
 
@@ -66,32 +67,12 @@
       else if (inRoomUnit(ux, uy)) roomCells += 1;
     }
     grains = 0; inRoom = 0; entered = false; gravity = "left"; cheer = 0;
-    // you stand in the doorway, where the mark draws its cursor; the crowd squeezes past
-    // you through the gap above and below, and typing walks you in
-    you.x = g.x + 18 * UNIT; you.tx = you.x; you.y = g.y + 6 * UNIT; you.ty = you.y;
-    placeYou();
     if (still) { for (var i = 0; i < 900; i++) { emit(flow); step(); } countRoom(); }   // a settled pile for a still frame
     draw();
   }
 
   // Grains arrive in a stream aimed at the door, not across the whole field: a band of
   // rows around the door's height, so the piles outside stay a crowd and not a flood.
-  function placeYou() {
-    for (var y = 0; y < rows; y++) for (var x = 0; x < cols; x++) { var i = y * cols + x; if (grid[i] === YOU) grid[i] = EMPTY; }
-    for (var yy = you.y; yy < you.y + 4 * UNIT; yy++) for (var xx = you.x; xx < you.x + 3 * UNIT; xx++) {
-      if (xx < 0 || yy < 0 || xx >= cols || yy >= rows) continue;
-      var k = yy * cols + xx;
-      if (sand(grid[k])) grains -= 1;
-      if (grid[k] !== WALL) grid[k] = YOU;
-    }
-  }
-  function moveYou(now) {
-    if ((you.x === you.tx && you.y === you.ty) || now - you.at < (entered ? 0.01 : 0.03)) return;
-    you.at = now;
-    if (you.y !== you.ty) you.y += you.ty > you.y ? 1 : -1;   // into the lane first
-    else you.x += you.tx > you.x ? 1 : -1;
-    placeYou();
-  }
   // A handful of grains around a point: what a tap or click drops into the field.
   function emitAt(cx, cy, n) {
     for (var k = 0; k < n * 4 && n > 0; k++) {
@@ -130,7 +111,7 @@
         if (ax >= 0 && ax < cols && ay >= 0 && ay < rows) { var ai = ay * cols + ax; if (next[ai] === EMPTY && grid[ai] === EMPTY) { next[ai] = v; next[i] = EMPTY; continue; } }
         if (bx >= 0 && bx < cols && by >= 0 && by < rows) { var bi = by * cols + bx; if (next[bi] === EMPTY && grid[bi] === EMPTY) { next[bi] = v; next[i] = EMPTY; continue; } }
         // blocked all the way: a crowd mills sideways, so a pile spreads along a wall and
-        // the room fills past the slit beside you (pure sand would jam there)
+        // the room fills to its corners (pure sand would leave them empty)
         if (Math.random() < 0.5) {
           var cx = x + sx * flip, cy = y + sy * flip;
           if (cx >= 0 && cx < cols && cy >= 0 && cy < rows) { var ci = cy * cols + cx; if (next[ci] === EMPTY && grid[ci] === EMPTY) { next[ci] = v; next[i] = EMPTY; continue; } }
@@ -186,11 +167,10 @@
   // Dithered glow of the sand on the dark: a cell near many grains brightens a tone.
   var BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
   var INK = [21, 18, 30], INK2 = [33, 28, 46], INK3 = [51, 44, 71], MERGE = [122, 90, 248], MDEEP = [76, 47, 217], OPEN = [198, 244, 50], ODEEP = [63, 106, 0], PAPER = [244, 241, 250];
-  function nearYou(x, y) { return x >= you.x - 1 && x <= you.x + 3 * UNIT && y >= you.y - 1 && y <= you.y + 4 * UNIT; }
   function draw() {
     var d = img.data, now = performance.now() / 1000, t = now - start;
     var fill = roomCells ? Math.min(1, inRoom / (roomCells * FULL)) : 0;
-    var cheering = cheer && now - cheer < 0.7, blink = still || Math.floor(t / 0.55) % 2 === 0;
+    var cheering = cheer && now - cheer < 0.7;
     var dx0 = doorX(), dy0 = doorY();
     for (var y = 0; y < rows; y++) for (var x = 0; x < cols; x++) {
       var i = y * cols + x, v = grid[i], c = INK;
@@ -203,8 +183,6 @@
         else if (inRoomUnit(ux, uy)) L = 0.35 * fill;
       }
       if (v === WALL) c = MERGE;
-      else if (v === YOU) c = blink ? OPEN : PAPER;
-      else if (nearYou(x, y)) c = INK;                      // a little room around you, so you read in the crowd
       else if (sand(v)) c = ((entered || cheering) && inRoomUnit(ux, uy)) || L > 0.6 ? PAPER : v === SAND ? OPEN : PAPER;
       else {
         // light from grains next to this cell, dithered into the two dark tones
@@ -233,9 +211,8 @@
       else if (full && !entered && Math.random() < 0.35) { churn(1); emit(1); }   // one leaves, one arrives
       stirAt();
       step(); step();
-      moveYou(now);
       if (Math.floor(now * 4) !== Math.floor((now - dt) * 4)) { countRoom(); if (full && !cheer) cheer = now; tell(); }
-      if (entered && now - enterAt > 0.9 && gravity !== "down") gravity = "down";
+      if (entered && now - enterAt > 0.5 && gravity !== "down") gravity = "down";
     }
     draw();
   }
@@ -278,24 +255,17 @@
   // What the hero prompt drives (home.js): typing adds grains to the flow; Enter opens the
   // floor and the field drains before the page moves on.
   window.gigScene = {
-    walk: function (fraction) {
-      burst = 30 + 90 * fraction;
-      var f = Math.max(0, Math.min(1, fraction));
-      you.tx = Math.round(g.x + 18 * UNIT - f * 8 * UNIT);   // typing walks you in, as far as the room's middle
-      wake();
-    },
+    walk: function (fraction) { burst = 30 + 90 * fraction; wake(); },
     enter: function (done) {
       if (entered) { done(); return; }
       entered = true; enterAt = performance.now() / 1000;
-      you.tx = g.x + 6 * UNIT;   // all the way in, first
-      you.at = 0;
-      if (still) { you.x = you.tx; you.y = you.ty; placeYou(); gravity = "down"; draw(); setTimeout(done, 80); return; }
+      if (still) { gravity = "down"; draw(); setTimeout(done, 80); return; }
       wake();
-      setTimeout(done, 1900);
+      setTimeout(done, 1700);
     },
     onCount: function (fn) { listeners.push(fn); },
     // runs the automaton ahead: what a still frame uses, and what a check can call
-    advance: function (n) { for (var i = 0; i < n; i++) { if (!entered && inRoom < roomCells * FULL) emit(flow); if (grains - inRoom > 600) churn(3); step(); if (i % 60 === 0) countRoom(); } countRoom(); draw(); var youCells = 0; for (var k = 0; k < grid.length; k++) if (grid[k] === YOU) youCells += 1; return { grains: grains, inRoom: inRoom, roomCells: roomCells, band: band, cols: cols, rows: rows, gx: g.x, gy: g.y, unit: UNIT, you: [you.x, you.y, you.tx, youCells] }; },
+    advance: function (n) { for (var i = 0; i < n; i++) { if (!entered && inRoom < roomCells * FULL) emit(flow); if (grains - inRoom > 600) churn(3); step(); if (i % 60 === 0) countRoom(); } countRoom(); draw(); return { grains: grains, inRoom: inRoom, roomCells: roomCells, band: band, cols: cols, rows: rows, gx: g.x, gy: g.y, unit: UNIT }; },
     still: still
   };
 })();

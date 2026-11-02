@@ -16,7 +16,7 @@
     function say(html) { if (invite) invite.innerHTML = html; }
     if (scene()) {
       var touch = window.matchMedia("(pointer: coarse)").matches;
-      var base = scene().still ? "Every grain is a contributor looking for the way in; the lime block is you." : "Every grain is a contributor looking for the way in; the lime block is you. " + (touch ? "Tap the field to add people. " : "") + "Type, and you walk to the door. <b>Enter</b> steps in.";
+      var base = scene().still ? "Every grain is a contributor looking for the way in." : "Every grain is a contributor looking for the way in. " + (touch ? "Tap the field to add people. " : "Drag through a pile to move it. ") + "Type, and more arrive. <b>Enter</b> opens the floor.";
       say(base);
       // the count inside, as the room fills: honest grains, not people
       scene().onCount(function (info) {
@@ -28,7 +28,7 @@
     input.addEventListener("input", function () {
       var n = input.value.trim().length;
       if (scene()) scene().walk(n / STEPS_TO_DOOR);
-      if (n >= STEPS_TO_DOOR && scene() && !scene().still) say("At the door. <b>Enter</b> to git in.");
+      if (n >= STEPS_TO_DOOR && scene() && !scene().still) say("<b>Enter</b> to git in.");
     });
     // The first answer travels in the URL fragment, which browsers never send to a
     // server, so "your answers stay on your computer" holds. Without JavaScript the
