@@ -118,7 +118,7 @@ git-into-gsoc start</code></pre>
         </div>
         <p class="invite" aria-live="polite" data-invite></p>
 
-        <p class="fine">The install needs only an internet connection. If Python is missing, the installer offers <a href="https://docs.astral.sh/uv/">uv</a>, a free tool that brings its own. No account or token needed. Already use uv or pipx? <code>uv tool install git-into-gsoc</code> installs the <a href="https://pypi.org/project/git-into-gsoc/">package from PyPI</a>. <a href="docs/guide/02-install/">Other ways to install</a>.</p>
+        <p class="fine" data-install-note>The install needs only an internet connection. If Python is missing, the installer offers <a href="https://docs.astral.sh/uv/">uv</a>, a free tool that brings its own. Already use uv or pipx? <code>uv tool install git-into-gsoc</code> installs the <a href="https://pypi.org/project/git-into-gsoc/">package from PyPI</a>. <a href="docs/guide/02-install/">Other ways to install</a>.</p>
       </div>
     </div>
   </section>
@@ -134,7 +134,7 @@ git-into-gsoc start</code></pre>
           <ul class="callouts">
             <li tabindex="0" data-hl="fit"><b>A fit, not a promise</b><p>Strong, good, or partial says how well the work matches you. It never guesses your chance of being accepted.</p><span class="tag">fit · why it fits</span></li>
             <li tabindex="0" data-hl="history"><b>Years and projects, from the archive</b><p>How many years an organization has taken part and how many contributors it accepted each year, read from the official archive.</p><span class="tag">years · projects</span></li>
-            <li tabindex="0" data-hl="source"><b>The source, every time</b><p>A reason says where it came from: the official listing, the ideas page, the organization's repositories. Missing data is reported as missing.</p><span class="tag">evidence</span></li>
+            <li tabindex="0" data-hl="source"><b>The source, every time</b><p>A reason says where it came from: the official listing, the ideas page, the organization's repositories.</p><span class="tag">evidence</span></li>
           </ul>
           <ul class="sources" aria-label="What it reads">
             <li>the <a href="https://summerofcode.withgoogle.com">official program site</a> and its archive of past projects</li>
@@ -154,7 +154,7 @@ git-into-gsoc start</code></pre>
     <div class="wrap">
       <div class="section-head">
         <h2 id="journey-title" class="pixel">ten steps. one contribution.</h2>
-        <p>The cursor is you. Scroll, and it walks the path from first read to merged pull request, with the real command and output for each step beside it. <b>Skip what you know. Loop when you need to.</b> Each step has a guide page with real commands and expected output.</p>
+        <p>The cursor is you. Scroll, and it walks the path from first read to merged pull request, with the recorded output for each step beside it. <b>Skip what you know. Loop when you need to.</b> Each step links to its guide page.</p>
       </div>
       <div class="track">
         <span class="you" aria-hidden="true"></span>
@@ -256,7 +256,7 @@ git-into-gsoc start</code></pre>
           <li><b>A shortlist</b> you build by typing numbers, saved in a file on your computer.</li>
           <li><b>Your next steps</b> with the exact commands, so you are never stuck at a blank prompt.</li>
         </ol>
-        <p>The <a href="start/">browser version</a> asks the same four questions and ranks with the same code. The terminal tool goes further: it reads live data to tell you which repositories merge newcomers' work and which beginner issues are still free. Later, run <code>git-into-gsoc next</code> for what to do today.</p>
+        <p>The terminal tool goes further than the <a href="start/">browser version</a>: it reads live data to tell you which repositories merge newcomers' work and which beginner issues are still free.</p>
       </div>
       <figure class="term" aria-label="A recorded run of git-into-gsoc start">
         <div class="term-bar"><span><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>a real run, recorded 2026-11-02</span><span class="controls"><button class="copy" type="button" data-replay hidden>replay</button></span></div>
@@ -275,7 +275,7 @@ git-into-gsoc start</code></pre>
       <ul class="rules">
         <li class="rule">
           <img src="brand/stickers/sticker-evidence.svg" alt="Sticker: evidence > vibes" width="440" height="64">
-          <p>Every organization, repository, issue, and date comes from the official program site, the public archive, GitHub, or GitLab. Scores are explained. When data is missing, the tool says so instead of guessing.</p>
+          <p>Every organization, repository, issue, and date has a source you can open. Scores are explained. When data is missing, the tool says so instead of guessing.</p>
         </li>
         <li class="rule">
           <img src="brand/stickers/sticker-no-driveby.svg" alt="Sticker: no drive-by prs" width="440" height="64">
@@ -304,7 +304,7 @@ git-into-gsoc start</code></pre>
           <ul class="clients" aria-label="Works with">
             <li>Claude Code</li><li>Codex</li><li>Cursor</li><li>VS Code</li><li>Copilot CLI</li><li>Gemini CLI</li><li>Antigravity</li><li>Windsurf</li><li>any MCP client</li>
           </ul>
-          <p>One command finds the assistants on your machine, copies the skill into each one, and registers the MCP server in its configuration, keeping a backup of anything it touches. The installer already ran it for you; run it again whenever you add an assistant. Prefer a plugin? Claude Code, Codex, Copilot, Gemini CLI, and Antigravity install the skill and server with their own commands, listed on the <a href="docs/assistants/">assistant page</a>. The <a href="docs/guide/03-connect-your-ai-assistant/">assistant setup guide</a> covers manual configuration, and the <a href="docs/mcp/">MCP reference</a> lists every tool.</p>
+          <p>The installer already ran <code>setup</code> for you; run it again whenever you add an assistant. Prefer a plugin? Claude Code, Codex, Copilot, Gemini CLI, and Antigravity install the skill and server with their own commands, listed on the <a href="docs/assistants/">assistant page</a>. The <a href="docs/guide/03-connect-your-ai-assistant/">assistant setup guide</a> covers manual configuration, and the <a href="docs/mcp/">MCP reference</a> lists every tool.</p>
           <p>Or add only the server to one app with one click. All but the Claude Desktop download need <a href="https://docs.astral.sh/uv/">uv</a>, a free tool that runs it. The app shows what it will run and asks you first:</p>
 <!-- generated:site-install-links -->
           <ul class="clients" aria-label="Add the server with one click">
@@ -384,6 +384,7 @@ and like science. Where do I start?"</span></pre>
     // visitors see the PowerShell command before the bash one.
     var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
     var heroCopy = document.querySelector("#install [data-copy]");
+    var installNote = document.querySelector("[data-install-note]");
     function choose(tab, focus) {
       tabs.forEach(function (t) {
         var on = t === tab;
@@ -392,6 +393,7 @@ and like science. Where do I start?"</span></pre>
         document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
       });
       heroCopy.hidden = tab.getAttribute("data-tab") === "web";
+      installNote.hidden = heroCopy.hidden;
       if (focus) tab.focus();
     }
     tabs.forEach(function (t) {
@@ -408,6 +410,7 @@ and like science. Where do I start?"</span></pre>
       win.parentNode.insertBefore(win, document.getElementById("tab-unix"));
       tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
     }
+    installNote.hidden = true;
 
     document.querySelectorAll("[data-copy]").forEach(function (b) {
       b.addEventListener("click", function () {
