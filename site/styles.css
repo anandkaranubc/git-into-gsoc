@@ -175,7 +175,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
   .hero { display: block; min-height: 0; padding-top: 0; }
   .hero .scene { position: relative; inset: auto; height: 340px; z-index: 0; margin-bottom: 24px; }
   .hero .scene .mark { left: 28%; width: 130px; }
-  .hero .hud { right: var(--gutter); left: var(--gutter); text-align: left; max-width: none; bottom: 10px; font-size: 0.75rem; }
+  .hero .hud { right: var(--gutter); left: var(--gutter); text-align: left; max-width: none; bottom: 10px; }
   .hero .scene .you { left: 50%; }
   .hero::after { display: none; }
   .hero .grid { grid-template-columns: minmax(0, 1fr); }
@@ -256,7 +256,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 /* proof: a real `orgs` run with callouts that light the lines they talk about */
 .proof .term { max-width: none; }
 .proof .two { grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); }
-.proof .term pre { font-size: clamp(0.64rem, 0.9vw, 0.76rem); line-height: 1.5; }
+.proof .term pre { font-size: clamp(0.75rem, 0.9vw, 0.76rem); line-height: 1.5; }
 .proof .ln { display: block; margin: 0 -20px; padding: 0 20px; transition: background var(--fast) linear; }
 .proof .ln.on { background: var(--gig-ink-3); }
 .callouts { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
@@ -304,7 +304,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 .journey .run { grid-column: 3; margin-top: 10px; }
 .journey .run summary { cursor: pointer; font-size: 0.9rem; color: var(--accent-text); }
 .journey .run .term { margin-top: 10px; max-width: none; }
-.journey .run pre { font-size: clamp(0.64rem, 0.9vw, 0.76rem); line-height: 1.5; max-height: 420px; overflow: auto; }
+.journey .run pre { font-size: clamp(0.75rem, 0.9vw, 0.76rem); line-height: 1.5; max-height: 420px; overflow: auto; }
 .arrival { grid-column: 2; margin: 12px 0 0; }
 .arrival img { width: min(100%, 420px); height: auto; display: block; }
 @keyframes step-lit { from { --lit: 0; } to { --lit: 1; } }
@@ -318,7 +318,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
   .js .track { grid-template-columns: var(--rail) minmax(0, 1fr) minmax(0, 1.05fr); }
   .js .track .screen { display: block; grid-column: 3; grid-row: 1 / span 2; position: sticky; top: max(16px, calc(45vh - 260px)); align-self: start; }
   .js .track .screen .term { max-width: none; }
-  .js .track .screen pre { font-size: clamp(0.62rem, 0.85vw, 0.74rem); line-height: 1.5; height: 520px; overflow: auto; }
+  .js .track .screen pre { font-size: clamp(0.75rem, 0.85vw, 0.76rem); line-height: 1.5; height: 520px; overflow: auto; }
   .js .track .screen .term-bar .step { color: var(--gig-paper); font-weight: 500; }
   .js .journey .run { display: none; }
 }
@@ -335,7 +335,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 /* a real run, replayed line by line */
 .replay .term { max-width: none; }
 .replay .two { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); }
-.replay pre { font-size: clamp(0.64rem, 0.9vw, 0.76rem); line-height: 1.5; max-height: min(640px, 72vh); overflow: auto; }
+.replay pre { font-size: clamp(0.75rem, 0.9vw, 0.76rem); line-height: 1.5; max-height: min(640px, 72vh); overflow: auto; }
 .js .replay.playing .ln:not(.on) { visibility: hidden; height: 0; overflow: hidden; }
 .replay .term-bar .controls { display: flex; gap: 6px; }
 .replay .ln .typed::after { content: ""; display: inline-block; width: 0.55em; height: 1em; background: var(--gig-open); vertical-align: -0.15em; animation: var(--gig-blink); }

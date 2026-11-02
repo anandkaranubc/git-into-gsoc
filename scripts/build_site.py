@@ -104,7 +104,7 @@ def _nav(root: str, path: str) -> str:
         current = ' aria-current="page"' if path == href or path.startswith(href) else ""
         cls = ' class="cta"' if href == "start/" else ' class="optional"' if href == "docs/" else ""
         name = (
-            ' aria-label="Start: answer four questions in your browser"' if href == "start/" else ""
+            ' aria-label="git in: answer four questions in your browser"' if href == "start/" else ""
         )
         items.append(f'<li{cls}><a href="{root}{href}"{current}{name}>{label}</a></li>')
     items.append(f'<li><a href="{REPO_URL}">github</a></li>')
