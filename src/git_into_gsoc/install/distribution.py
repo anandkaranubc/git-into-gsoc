@@ -21,6 +21,7 @@ from __future__ import annotations
 import base64
 import html
 import json
+import re
 from typing import Any
 from urllib.parse import quote, urlencode
 
@@ -202,6 +203,10 @@ def raycast_install_link(command: list[str] | None = None) -> str:
     return f"raycast://mcp/install?{quote(_compact(config), safe='')}"
 
 
+def slug(name: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
+
+
 def site_install_links() -> str:
     """The one-click links on the project site, as an HTML list.
 
@@ -218,7 +223,8 @@ def site_install_links() -> str:
         ("Claude Desktop (download)", claude_desktop_bundle_link()),
     ]
     items = "\n".join(
-        f'            <li><a href="{html.escape(link)}">{name}</a></li>' for name, link in links
+        f'            <li><a href="{html.escape(link)}" data-out="install/{slug(name)}">{name}</a></li>'
+        for name, link in links
     )
     return f'          <ul class="clients" aria-label="Add the server with one click">\n{items}\n          </ul>'
 
