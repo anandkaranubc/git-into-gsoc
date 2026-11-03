@@ -18,7 +18,7 @@ from collections import Counter
 from html.parser import HTMLParser
 from itertools import takewhile
 from typing import ClassVar
-from urllib.parse import parse_qs, unquote, urljoin, urlparse
+from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 
 from git_into_gsoc.gsoc.ideas import confluence_api_url, get_page
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
@@ -1418,6 +1418,9 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         return None
     if _GITHUB_REPO_PAGE_RE.match(target) and not _has_github_readme(raw):
         return None
+    wiki = _RAW_WIKI_RE.match(target)
+    if wiki:
+        raw = _wiki_links(raw, f"https://github.com/{wiki.group(1)}/{wiki.group(2)}/wiki/")
     doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
     if _looks_like_html(raw):
@@ -1448,6 +1451,24 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
 
 
 _GITHUB_WIKI_RE = re.compile(r"https?://(?:www\.)?github\.com/[^/]+/[^/]+/wiki/", re.I)
+_RAW_WIKI_RE = re.compile(r"https://raw\.githubusercontent\.com/wiki/([^/]+)/([^/]+)/")
+# GitHub wiki links: [[Page Name]] or [[link text|Page Name]]. OpenVINO's page links
+# its 2026 ideas as [[here|Project ideas for 2026]], which read as no link at all.
+_WIKI_LINK_RE = re.compile(r"\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]")
+
+
+def _wiki_links(raw: str, wiki_url: str) -> str:
+    """GitHub wiki links written as markdown links to the pages they name."""
+
+    def link(match: re.Match[str]) -> str:
+        text, page = match.group(1).strip(), (match.group(2) or match.group(1)).strip()
+        if "://" in page:
+            return f"[{text}]({page})"
+        return f"[{text}]({wiki_url}{quote(page.replace(' ', '-'))})"
+
+    return _WIKI_LINK_RE.sub(link, raw)
+
+
 # A repository's front page or one of its folders, as GitHub renders it.
 _GITHUB_REPO_PAGE_RE = re.compile(
     r"https?://(?:www\.)?github\.com/[^/?#]+/[^/?#]+(?:/tree/[^?#]*)?/?(?:[?#].*)?$", re.I

@@ -1406,3 +1406,50 @@ def test_a_page_whose_script_lists_its_ideas_is_read_from_the_script() -> None:
     )
     doc = fetch_ideas_document(CachedHttpClient(get_settings()), page, ttl=10)
     assert doc is not None and doc.layout == "script" and len(doc.ideas) == 2
+
+
+@respx.mock
+def test_a_github_wiki_link_leads_to_the_page_it_names() -> None:
+    """OpenVINO's GSoC page links its 2026 ideas as [[here|Project ideas for 2026]],
+    which read as no link, so its 45 ideas were never opened."""
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.http_client import CachedHttpClient
+    from git_into_gsoc.service import GSoCToolkit
+
+    raw = "https://raw.githubusercontent.com/wiki/acme/engine/"
+    respx.get(raw + "Google-Summer-Of-Code.md").mock(
+        return_value=httpx.Response(
+            200,
+            text=(
+                "## Announcements\n\nSubscribe to [this discussion]"
+                "(https://github.com/acme/engine/discussions/1).\n\n"
+                "## Prerequisite task\n\nPick a ticket from the [board]"
+                "(https://github.com/orgs/acme/projects/3).\n\n"
+                "## Project ideas for 2026\n\nAll project ideas for 2026 can be found "
+                "[[here|Project ideas for 2026]].\n\n## Contribution guidelines\n\n"
+                "See [[CONTRIBUTING]] and [[the docs|https://docs.example.org/x]].\n"
+            ),
+        )
+    )
+    respx.get(raw + "Project-ideas-for-2026.md").mock(
+        return_value=httpx.Response(200, text=_read("wiki_headings.md"))
+    )
+    toolkit = GSoCToolkit()
+    toolkit.http = CachedHttpClient(get_settings())
+    doc, followed = toolkit.read_ideas_page(
+        "https://github.com/acme/engine/wiki/Google-Summer-Of-Code#project-ideas-for-2026"
+    )
+    assert doc is not None and doc.ideas
+    assert [p["url"] for p in followed] == [
+        "https://github.com/acme/engine/wiki/Project-ideas-for-2026"
+    ]
+
+
+def test_wiki_links_become_markdown_links() -> None:
+    from git_into_gsoc.gsoc.project_ideas import _wiki_links
+
+    base = "https://github.com/o/r/wiki/"
+    assert _wiki_links("[[Ideas 2026]]", base) == f"[Ideas 2026]({base}Ideas-2026)"
+    assert _wiki_links("[[here|Ideas 2026]]", base) == f"[here]({base}Ideas-2026)"
+    assert _wiki_links("[[x|https://e.org/a]]", base) == "[x](https://e.org/a)"
+    assert _wiki_links("a [[b\nc]] d", base) == "a [[b\nc]] d"
