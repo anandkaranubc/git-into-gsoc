@@ -8,13 +8,57 @@ export; everything else is fetched as HTML/markdown and stripped.
 from __future__ import annotations
 
 import html
+import json
 import re
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 
 MAX_CHARS = 400_000
 _GDOC = re.compile(r"^/document/d/([A-Za-z0-9_-]+)")
+_CONFLUENCE_PAGE = re.compile(r"^/wiki/spaces/[^/]+/pages/(\d+)")
+_CONFLUENCE_API = "/wiki/rest/api/content/"
+# A page that only sends the reader on: preCICE's old ideas address holds nothing else.
+_META_REFRESH = re.compile(
+    r"""<meta\s[^>]*http-equiv=["']?refresh["']?[^>]*content=["']?\s*0\s*;\s*url=([^"'>\s]+)""",
+    re.I,
+)
+
+
+def confluence_api_url(url: str) -> str | None:
+    """The REST address of a Confluence Cloud page, or None for any other page.
+
+    Confluence Cloud builds each page in the browser, so OpenMRS, JBoss, Mifos and
+    OpenELIS read as pages with no ideas. The REST API returns the same page as HTML.
+    """
+    parsed = urlparse(url.strip())
+    host = parsed.netloc.lower()
+    match = _CONFLUENCE_PAGE.match(parsed.path)
+    if parsed.scheme not in {"http", "https"} or not match:
+        return None
+    if not host.endswith((".atlassian.net", ".jira.com")):
+        return None
+    return f"https://{host}{_CONFLUENCE_API}{match.group(1)}?expand=body.view"
+
+
+def get_page(http: CachedHttpClient, target: str, ttl: int) -> tuple[str, str]:
+    """(page text, the address it came from), unwrapping what the address hides.
+
+    A Confluence REST reply is unwrapped to its HTML, and a page that only redirects
+    with a meta refresh is followed once. Raises HttpError like `get_text`.
+    """
+    raw = http.get_text(target, ttl=ttl)
+    if _CONFLUENCE_API in target:
+        try:
+            body = json.loads(raw)["body"]["view"]["value"]
+        except (ValueError, KeyError, TypeError):
+            return "", target
+        return f"<html><body>{body}</body></html>", target
+    moved = _META_REFRESH.search(raw[:4096])
+    if moved:
+        target = urljoin(target, html.unescape(moved.group(1)))
+        raw = http.get_text(target, ttl=ttl)
+    return raw, target
 
 
 def ideas_fetch_url(url: str) -> str | None:
@@ -24,6 +68,9 @@ def ideas_fetch_url(url: str) -> str | None:
         return None
     host = parsed.netloc.lower().removeprefix("www.")
     parts = [p for p in parsed.path.split("/") if p]
+    confluence = confluence_api_url(url)
+    if confluence:
+        return confluence
     if host == "docs.google.com":
         # A published document (/document/d/e/<id>/pub) has no export link; its
         # public page is the readable form. Its "e" is not a document id.
@@ -57,6 +104,6 @@ def fetch_ideas_text(http: CachedHttpClient, url: str | None, ttl: int) -> str |
     if not target:
         return None
     try:
-        return to_text(http.get_text(target, ttl=ttl))
+        return to_text(get_page(http, target, ttl)[0])
     except HttpError:
         return None
