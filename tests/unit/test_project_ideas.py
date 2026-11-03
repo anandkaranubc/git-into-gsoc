@@ -1453,3 +1453,53 @@ def test_wiki_links_become_markdown_links() -> None:
     assert _wiki_links("[[here|Ideas 2026]]", base) == f"[here]({base}Ideas-2026)"
     assert _wiki_links("[[x|https://e.org/a]]", base) == "[x](https://e.org/a)"
     assert _wiki_links("a [[b\nc]] d", base) == "a [[b\nc]] d"
+
+
+@respx.mock
+def test_a_refresh_for_readers_without_scripts_is_not_followed() -> None:
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    page = "https://ideas.example.org/2026"
+    body = _read("html_bold_labels.html").replace(
+        "<body>",
+        '<body><noscript><meta http-equiv="refresh" content="0;url=/enable-js.html"></noscript>',
+        1,
+    )
+    respx.get(page).mock(return_value=httpx.Response(200, text=body))
+    doc = fetch_ideas_document(CachedHttpClient(get_settings()), page, ttl=10)
+    assert doc is not None and len(doc.ideas) == 3 and doc.fetched_url == page
+
+
+@respx.mock
+def test_a_redirect_that_fails_keeps_the_page_it_came_from() -> None:
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.ideas import get_page
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    page = "https://ideas.example.org/old"
+    html = "<html><head><meta http-equiv='refresh' content=\"0;URL='/gone'\"></head></html>"
+    respx.get(page).mock(return_value=httpx.Response(200, text=html))
+    respx.get("https://ideas.example.org/gone").mock(return_value=httpx.Response(404))
+    # The quoted form of the address is read too: the request for /gone was made.
+    assert get_page(CachedHttpClient(get_settings()), page, 10) == (html, page)
+    assert respx.calls.call_count == 2
+
+
+def test_a_confluence_address_keeps_only_its_host() -> None:
+    from git_into_gsoc.gsoc.ideas import confluence_api_url
+
+    url = "https://user:pw@acme.atlassian.net/wiki/spaces/X/pages/12/Ideas"
+    assert confluence_api_url(url) == (
+        "https://acme.atlassian.net/wiki/rest/api/content/12?expand=body.view"
+    )
+
+
+def test_an_idea_whose_title_starts_like_a_section_is_kept() -> None:
+    text = (
+        "## Selected projects dashboard\n\nDifficulty: Easy\n\nSize: 90 hours\n\n"
+        "## Faster readers\n\nDifficulty: Medium\n\nSize: 175 hours\n"
+    )
+    doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
+    assert [i.title for i in doc.ideas] == ["Selected projects dashboard", "Faster readers"]

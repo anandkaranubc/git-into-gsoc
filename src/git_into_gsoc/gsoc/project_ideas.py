@@ -837,7 +837,7 @@ def _is_page_part(title: str, body: list[str], source_url: str) -> bool:
         return False
     low = title.lower().strip(" :#")
     # Projects already chosen are never an idea, however many fields their table holds.
-    if re.search(r"\bideas?\b|\babout$|^selected projects\b", low) or any(
+    if re.search(r"\bideas?\b|\babout$|^selected projects(?: for\b.*)?$", low) or any(
         low in (w, w + "s") for w in _NON_IDEA_HEADINGS
     ):
         return True
