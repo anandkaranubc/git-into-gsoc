@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.26.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.0...v0.26.1) (2026-11-03)
+
+
+### Bug Fixes
+
+* **ideas:** read a list of project sizes by its first count when prose follows ([#448](https://github.com/anandkaranubc/git-into-gsoc/issues/448)) ([df3ed7c](https://github.com/anandkaranubc/git-into-gsoc/commit/df3ed7c8034d6e74061b2247c4645dd37d206422))
+* **signals:** sample an owner's most starred repositories when its first page is full ([#450](https://github.com/anandkaranubc/git-into-gsoc/issues/450)) ([8d36d56](https://github.com/anandkaranubc/git-into-gsoc/commit/8d36d56395eeea657d0f4dd231c15bcfd22a559e))
+
 ## [0.26.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.25.0...v0.26.0) (2026-11-02)
 
 
