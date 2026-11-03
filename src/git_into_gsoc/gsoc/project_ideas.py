@@ -12,12 +12,13 @@ stays empty.
 from __future__ import annotations
 
 import html
+import json
 import re
 from collections import Counter
 from html.parser import HTMLParser
 from itertools import takewhile
 from typing import ClassVar
-from urllib.parse import parse_qs, unquote, urljoin, urlparse
+from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 
 from git_into_gsoc.gsoc.ideas import confluence_api_url, get_page
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
@@ -1442,6 +1443,11 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         return None
     if _GITHUB_REPO_PAGE_RE.match(target) and not _has_github_readme(raw):
         return None
+    wiki = _RAW_WIKI_RE.match(target)
+    if wiki:
+        raw = _wiki_links(
+            raw[:MAX_CHARS], f"https://github.com/{wiki.group(1)}/{wiki.group(2)}/wiki/"
+        )
     doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
     if _looks_like_html(raw):
@@ -1451,6 +1457,10 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         if len(rows) >= MIN_IDEAS_FOR_LAYOUT and len(rows) > len(doc.ideas):
             doc.ideas, doc.fallback_ideas, doc.sub_pages = rows, [], []
             doc.layout = "table"
+        listed = script_ideas(raw, source_url=url)
+        if len(listed) >= MIN_IDEAS_FOR_LAYOUT and len(listed) > len(doc.ideas):
+            doc.ideas, doc.fallback_ideas, doc.sub_pages = listed, [], []
+            doc.layout = "script"
     if _MEDIAWIKI_RE.search(raw[:20_000]):
         # OpenStreetMap writes each idea as a {{GSoC idea |title=... |skills=...}}
         # template. The rendered page shows them as boxes this cannot tell apart from
@@ -1468,6 +1478,27 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
 
 
 _GITHUB_WIKI_RE = re.compile(r"https?://(?:www\.)?github\.com/[^/]+/[^/]+/wiki/", re.I)
+_RAW_WIKI_RE = re.compile(r"https://raw\.githubusercontent\.com/wiki/([^/]+)/([^/]+)/")
+# GitHub wiki links: [[Page Name]] or [[link text|Page Name]]. OpenVINO's page links
+# its 2026 ideas as [[here|Project ideas for 2026]], which read as no link at all.
+# No "[" inside: with it, a line of "[[" repeated scanned to its end from every
+# position, and 20,000 of them took 18 seconds (review probe, 2026-11-03).
+_WIKI_LINK_RE = re.compile(r"\[\[([^\[\]|\n]+)(?:\|([^\[\]\n]+))?\]\]")
+
+
+def _wiki_links(raw: str, wiki_url: str) -> str:
+    """GitHub wiki links written as markdown links to the pages they name."""
+
+    def link(match: re.Match[str]) -> str:
+        text, page = match.group(1).strip(), (match.group(2) or match.group(1)).strip()
+        if "://" in page:
+            return f"[{text}]({page})"
+        name = page.split("#", 1)[0]  # [[Ideas#2026]] is a section of the Ideas page
+        return f"[{text}]({wiki_url}{quote(name.replace(' ', '-'))})"
+
+    return _WIKI_LINK_RE.sub(link, raw)
+
+
 # A repository's front page or one of its folders, as GitHub renders it.
 _GITHUB_REPO_PAGE_RE = re.compile(
     r"https?://(?:www\.)?github\.com/[^/?#]+/[^/?#]+(?:/tree/[^?#]*)?/?(?:[?#].*)?$", re.I
@@ -1616,6 +1647,52 @@ def table_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
                     _assign(idea, field, row[index][0])
             idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
             ideas.append(idea)
+    return ideas
+
+
+# OpenAstronomy's page is an app that draws its ideas from a list in its own script:
+# `var projects = [{"name": ..., "desc": ..., "difficulty": ..., "project_size": [...]}]`.
+_SCRIPT_PROJECTS_RE = re.compile(r"\bvar\s+projects\s*=\s*(?=\[)")
+_SCRIPT_FIELDS = {
+    "desc": "description",
+    "difficulty": "difficulty",
+    "project_size": "size",
+    "tags": "skills",
+    "requirements": "skills",
+    "mentors": "mentors",
+    "issues": "links",
+}
+
+
+def script_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
+    """Ideas from a list of projects that a page's own script draws (OpenAstronomy)."""
+    text = html_text[:MAX_CHARS]
+    match = _SCRIPT_PROJECTS_RE.search(text)
+    if not match:
+        return []
+    try:
+        items, _ = json.JSONDecoder().raw_decode(text, match.end())
+    except (ValueError, RecursionError):  # a list nested 100,000 deep
+        return []
+    ideas: list[ProjectIdea] = []
+    for item in items if isinstance(items, list) else []:
+        title = _clean(str(item.get("name") or "")) if isinstance(item, dict) else ""
+        if not title:
+            continue
+        projects = item.get("collaborating_projects")
+        idea = ProjectIdea(
+            title=title[:200],
+            section=str(projects[0]) if isinstance(projects, list) and projects else None,
+            source_url=source_url,
+        )
+        for key, field in _SCRIPT_FIELDS.items():
+            if key == "requirements" and item.get("tags"):
+                continue  # sentences ("Proficiency in Python") where tags already name skills
+            value = item.get(key)
+            joined = ", ".join(map(str, value)) if isinstance(value, list) else str(value or "")
+            _assign(idea, field, joined if field != "links" else joined.replace(",", " "))
+        idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
+        ideas.append(idea)
     return ideas
 
 
