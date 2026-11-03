@@ -1420,7 +1420,9 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         return None
     wiki = _RAW_WIKI_RE.match(target)
     if wiki:
-        raw = _wiki_links(raw, f"https://github.com/{wiki.group(1)}/{wiki.group(2)}/wiki/")
+        raw = _wiki_links(
+            raw[:MAX_CHARS], f"https://github.com/{wiki.group(1)}/{wiki.group(2)}/wiki/"
+        )
     doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
     if _looks_like_html(raw):
@@ -1454,7 +1456,9 @@ _GITHUB_WIKI_RE = re.compile(r"https?://(?:www\.)?github\.com/[^/]+/[^/]+/wiki/"
 _RAW_WIKI_RE = re.compile(r"https://raw\.githubusercontent\.com/wiki/([^/]+)/([^/]+)/")
 # GitHub wiki links: [[Page Name]] or [[link text|Page Name]]. OpenVINO's page links
 # its 2026 ideas as [[here|Project ideas for 2026]], which read as no link at all.
-_WIKI_LINK_RE = re.compile(r"\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]")
+# No "[" inside: with it, a line of "[[" repeated scanned to its end from every
+# position, and 20,000 of them took 18 seconds (review probe, 2026-11-03).
+_WIKI_LINK_RE = re.compile(r"\[\[([^\[\]|\n]+)(?:\|([^\[\]\n]+))?\]\]")
 
 
 def _wiki_links(raw: str, wiki_url: str) -> str:
@@ -1464,7 +1468,8 @@ def _wiki_links(raw: str, wiki_url: str) -> str:
         text, page = match.group(1).strip(), (match.group(2) or match.group(1)).strip()
         if "://" in page:
             return f"[{text}]({page})"
-        return f"[{text}]({wiki_url}{quote(page.replace(' ', '-'))})"
+        name = page.split("#", 1)[0]  # [[Ideas#2026]] is a section of the Ideas page
+        return f"[{text}]({wiki_url}{quote(name.replace(' ', '-'))})"
 
     return _WIKI_LINK_RE.sub(link, raw)
 
@@ -1642,7 +1647,7 @@ def script_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
         return []
     try:
         items, _ = json.JSONDecoder().raw_decode(text, match.end())
-    except ValueError:
+    except (ValueError, RecursionError):  # a list nested 100,000 deep
         return []
     ideas: list[ProjectIdea] = []
     for item in items if isinstance(items, list) else []:

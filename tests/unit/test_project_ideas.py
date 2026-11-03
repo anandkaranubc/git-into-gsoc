@@ -1503,3 +1503,22 @@ def test_an_idea_whose_title_starts_like_a_section_is_kept() -> None:
     )
     doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
     assert [i.title for i in doc.ideas] == ["Selected projects dashboard", "Faster readers"]
+
+
+def test_hostile_wiki_links_and_script_lists_read_quickly_as_nothing() -> None:
+    import time
+
+    from git_into_gsoc.gsoc.project_ideas import _wiki_links, script_ideas
+
+    start = time.monotonic()
+    assert _wiki_links("[[" * 40_000, "https://github.com/o/r/wiki/") == "[[" * 40_000
+    assert _wiki_links("[[a|b" * 20_000, "https://github.com/o/r/wiki/") == "[[a|b" * 20_000
+    assert script_ideas("<script>var projects = " + "[" * 100_000, source_url="u") == []
+    assert time.monotonic() - start < 2
+
+
+def test_a_wiki_link_to_a_section_leads_to_its_page() -> None:
+    from git_into_gsoc.gsoc.project_ideas import _wiki_links
+
+    base = "https://github.com/o/r/wiki/"
+    assert _wiki_links("[[2026|Ideas#2026 list]]", base) == f"[2026]({base}Ideas)"
