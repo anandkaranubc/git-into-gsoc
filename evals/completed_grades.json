@@ -1,5 +1,5 @@
 {
- "about": "Grades for persona and organization pairs that the reviewers of personas.json and dev2.json never graded, added so that both sides of a comparison are scored on the same judgments (pooling, as TREC does). On 2026-10-22 the top ten of each compared version, for every dev, dev2 and test persona, were pooled, and each pair with no grade and not in wrong_top5 was graded blind by a grader who saw the persona, the earlier grades and notes for calibration, the official listing, and, when unsure, the organization's 2026 ideas page. Graders never saw a ranking or which version surfaced an organization. Same scale as the original grades; 0 is listed too. See evals/README.md.",
+ "about": "Grades for persona and organization pairs that the reviewers of personas.json and dev2.json never graded, added so that both sides of a comparison are scored on the same judgments (pooling, as TREC does). On 2026-10-22 the top ten of each compared version, for every dev, dev2 and test persona, were pooled, and each pair with no grade and not in wrong_top5 was graded blind by a grader who saw the persona, the earlier grades and notes for calibration, the official listing, and, when unsure, the organization's 2026 ideas page. Graders never saw a ranking or which version surfaced an organization. Same scale as the original grades; 0 is listed too. See evals/README.md. On 2026-11-03, 14 more pairs that the reader fixes of that day brought into a dev, dev2 or test top ten were graded the same way.",
  "grades": [
   {
    "persona": "android-java",
@@ -1071,6 +1071,104 @@
    "grade": 1,
    "ideas_page": true,
    "why": "Its frontend is React and TypeScript, but the only AI client project is hard and large for 8 hours a week."
+  },
+  {
+   "persona": "php-cms-new",
+   "org": "LLVM Compiler Infrastructure",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "LLVM is a C++ compiler project and its only web idea is a website facelift, with no PHP or content management work."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "OpenVINO Toolkit",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "The ideas are AI inference, vision and robotics projects, and none involve screen readers or assistive technology."
+  },
+  {
+   "persona": "computer-vision-cpp",
+   "org": "Open Technologies Alliance - GFOSS",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Only the thermal satellite data analysis idea touches image processing, and it reads as an AI framework rather than C++ camera or vision work."
+  },
+  {
+   "persona": "node-backend",
+   "org": "OpenVINO Toolkit",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "The Model Server installer CLI and the n8n workflow idea brush against developer tools and Node, but the org's stack is Python and C++ AI inference."
+  },
+  {
+   "persona": "game-scripting-new",
+   "org": "The FreeBSD Project",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "Every idea is C kernel, networking or system work, with nothing on games or Lua."
+  },
+  {
+   "persona": "ruby-rails",
+   "org": "LLVM Compiler Infrastructure",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "LLVM is C++ compiler infrastructure with no Ruby or Rails work, and its one website idea is not a Rails app."
+  },
+  {
+   "persona": "database-internals-experienced",
+   "org": "The Julia Language",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "The ideas are Julia scientific computing, quantum and GPU packages, with no C++ or Rust database, query or storage engine work."
+  },
+  {
+   "persona": "rust-devtools-cloud",
+   "org": "C2SI",
+   "grade": 2,
+   "ideas_page": false,
+   "why": "The RustCloud idea is a Rust multi-cloud library that matches both Rust and cloud, but it is one project in an org that is otherwise Python, Java and Go."
+  },
+  {
+   "persona": "go-cloud-exp",
+   "org": "OpenVINO Toolkit",
+   "grade": 2,
+   "ideas_page": true,
+   "why": "The full 2026 ideas include four Go projects with an infrastructure angle (a Linux system migration tool with Docker, an edge orchestrator integration, an edge node diagnostic tool, and an OS image builder), and several ideas deploy with Docker, Kubernetes, Helm or k3s, but the org's core work is AI inference rather than cloud native platforms."
+  },
+  {
+   "persona": "cpp-robotics",
+   "org": "UC OSPO",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Only the Scenic driving simulator ideas and the autonomous vehicle network models touch robotics, and none use ROS, drones or C++ autopilot work."
+  },
+  {
+   "persona": "screen-reader-python",
+   "org": "The Honeynet Project",
+   "grade": 0,
+   "ideas_page": false,
+   "why": "The ideas are honeypots and threat intelligence tools in Python, with nothing on screen readers or accessibility."
+  },
+  {
+   "persona": "node-backend",
+   "org": "The Mifos Initiative",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "Mifos is a Java, Kotlin and Angular fintech platform, and only the React web app and the MCP developer productivity ideas loosely touch TypeScript or developer tools."
+  },
+  {
+   "persona": "ts-a11y-edu",
+   "org": "CNCF",
+   "grade": 1,
+   "ideas_page": false,
+   "why": "The Headlamp plugin and Kmesh dashboard ideas share the TypeScript and React stack, but nothing is about education or accessibility."
+  },
+  {
+   "persona": "embedded-iot",
+   "org": "Apache Software Foundation",
+   "grade": 3,
+   "ideas_page": true,
+   "why": "The ideas page lists about eleven Apache NuttX RTOS projects in C, such as ADC and DAC interface unification and a Raspberry Pi 4B port, which match embedded and hardware work directly."
   }
  ]
 }
