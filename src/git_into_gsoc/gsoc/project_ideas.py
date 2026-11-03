@@ -215,7 +215,8 @@ _COMMENT_RE = re.compile(r"^\s*(?:\[//\]:\s*#|#(?!#*\s)|<!--)")
 _BULLET_RE = re.compile(r"^\s*(?:[-*+•]|\d+[.)])\s+")
 _AI_RE = re.compile(r"\b(ai|llm|llms|chatgpt|copilot|gemini|claude|language model)s?\b", re.I)
 _POLICY_RE = re.compile(
-    r"\b(propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
+    # UC OSPO's NeuroHealth idea: "we propose NeuroHealth: AI-Powered Health Assistant".
+    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
     r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|"
     # UC OSPO's AIDRIN page: GIGO "is a widely accepted quote ... including AI".
@@ -750,6 +751,24 @@ def ai_policy_sentences(text: str, limit: int = 4) -> list[str]:
     return found
 
 
+def _policy_text(body: list[str]) -> list[str]:
+    """A dropped section's own text, and the text under any subheading about AI or policy.
+
+    Not the rest: under a ListenBrainz-style "## Ideas" sit the ideas, and an idea's
+    "AI output is not allowed to ..." is not the page's rule. MLLAM's rule sits under
+    "Policy on the use of AI tooling".
+    """
+    kept: list[str] = []
+    keep = True
+    for line in body:
+        head = _heading(line)
+        if head:
+            keep = bool(_AI_RE.search(head[1]) or re.search(r"\bpolic", head[1], re.I))
+        elif keep:
+            kept.append(line)
+    return kept
+
+
 def _candidate_levels(lines: list[str]) -> list[int]:
     counts: dict[int, int] = {}
     for line in lines:
@@ -1240,11 +1259,17 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
     best: tuple[tuple[int, ...], int, list[ProjectIdea], list[str]] | None = None
     for level in levels:
         blocks, outside = _split_blocks(lines, level)
-        ideas = [
-            _parse_block(t, b, section=s, source_url=source_url)
-            for t, b, s in blocks
-            if not _is_page_part(t, b, source_url) and not _links_to_post(t)
-        ]
+        ideas: list[ProjectIdea] = []
+        sections: list[str] = []
+        for t, b, s in blocks:
+            if _links_to_post(t):
+                continue
+            if _is_page_part(t, b, source_url):
+                # A page's own section can still state its AI policy: OpenVINO's sits
+                # under "Application Template", so the page read as having none.
+                sections.extend(_policy_text(b))
+                continue
+            ideas.append(_parse_block(t, b, section=s, source_url=source_url))
         yield_ = sum(_labelled(i) for i in ideas)
         # When as many blocks carry as many fields, the deeper level wins: LibreOffice's
         # "## Filters" holds one "### Add JPEG XL import support", and its empty groups
@@ -1252,7 +1277,7 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         labelled = sum(1 for i in ideas if _labelled(i))
         key = (yield_, labelled, level if labelled else len(ideas), len(ideas), level)
         if best is None or key > best[0]:
-            best = (key, level, ideas, outside)
+            best = (key, level, ideas, [*outside, *sections])
     assert best is not None
     _, level, ideas, outside = best
     # Some pages put ideas at two heading levels: ListenBrainz's 2026 page has three
