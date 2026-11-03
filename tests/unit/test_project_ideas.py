@@ -1366,3 +1366,43 @@ def test_a_list_of_chosen_projects_is_not_an_idea() -> None:
     )
     doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
     assert doc.ideas == []
+
+
+def test_ideas_listed_in_the_pages_own_script_are_read() -> None:
+    """OpenAstronomy's ideas page is an app: the HTML holds no ideas, only the list of
+    projects its script draws."""
+    from git_into_gsoc.gsoc.project_ideas import script_ideas
+
+    first, second = script_ideas(_read("script_projects.html"), source_url="https://x/ideas")
+    assert first.title == "Hardening astropy's core stability" and first.section == "astropy"
+    assert (first.size, first.hours, first.difficulty) == ("medium", 175, "hard")
+    assert first.skills == ["python", "Cython", "pytest"]  # the tags, not the sentences
+    assert first.mentors == ["neutrinoceros", "astrofrog"]
+    assert first.links == [
+        "https://github.com/astropy/astropy/issues/17760",
+        "https://github.com/astropy/astropy/issues/19249",
+    ]
+    assert first.confidence == "high"
+    assert second.skills == ["Python"] and second.hours == 350  # no tags: the requirements
+
+
+def test_a_script_list_that_is_not_json_reads_as_no_ideas() -> None:
+    from git_into_gsoc.gsoc.project_ideas import script_ideas
+
+    assert script_ideas("<script>var projects = [{name: 'x'}];</script>", source_url="u") == []
+    assert script_ideas('<script>var projects = ["a", 1];</script>', source_url="u") == []
+    assert script_ideas("<p>No script here</p>", source_url="u") == []
+
+
+@respx.mock
+def test_a_page_whose_script_lists_its_ideas_is_read_from_the_script() -> None:
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    page = "https://openastronomy.example.org/gsoc/gsoc2026/#/projects"
+    respx.get("https://openastronomy.example.org/gsoc/gsoc2026/").mock(
+        return_value=httpx.Response(200, text=_read("script_projects.html"))
+    )
+    doc = fetch_ideas_document(CachedHttpClient(get_settings()), page, ttl=10)
+    assert doc is not None and doc.layout == "script" and len(doc.ideas) == 2

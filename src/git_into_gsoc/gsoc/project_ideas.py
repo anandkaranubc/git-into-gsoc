@@ -12,6 +12,7 @@ stays empty.
 from __future__ import annotations
 
 import html
+import json
 import re
 from collections import Counter
 from html.parser import HTMLParser
@@ -1426,6 +1427,10 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         if len(rows) >= MIN_IDEAS_FOR_LAYOUT and len(rows) > len(doc.ideas):
             doc.ideas, doc.fallback_ideas, doc.sub_pages = rows, [], []
             doc.layout = "table"
+        listed = script_ideas(raw, source_url=url)
+        if len(listed) >= MIN_IDEAS_FOR_LAYOUT and len(listed) > len(doc.ideas):
+            doc.ideas, doc.fallback_ideas, doc.sub_pages = listed, [], []
+            doc.layout = "script"
     if _MEDIAWIKI_RE.search(raw[:20_000]):
         # OpenStreetMap writes each idea as a {{GSoC idea |title=... |skills=...}}
         # template. The rendered page shows them as boxes this cannot tell apart from
@@ -1591,6 +1596,52 @@ def table_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
                     _assign(idea, field, row[index][0])
             idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
             ideas.append(idea)
+    return ideas
+
+
+# OpenAstronomy's page is an app that draws its ideas from a list in its own script:
+# `var projects = [{"name": ..., "desc": ..., "difficulty": ..., "project_size": [...]}]`.
+_SCRIPT_PROJECTS_RE = re.compile(r"\bvar\s+projects\s*=\s*(?=\[)")
+_SCRIPT_FIELDS = {
+    "desc": "description",
+    "difficulty": "difficulty",
+    "project_size": "size",
+    "tags": "skills",
+    "requirements": "skills",
+    "mentors": "mentors",
+    "issues": "links",
+}
+
+
+def script_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
+    """Ideas from a list of projects that a page's own script draws (OpenAstronomy)."""
+    text = html_text[:MAX_CHARS]
+    match = _SCRIPT_PROJECTS_RE.search(text)
+    if not match:
+        return []
+    try:
+        items, _ = json.JSONDecoder().raw_decode(text, match.end())
+    except ValueError:
+        return []
+    ideas: list[ProjectIdea] = []
+    for item in items if isinstance(items, list) else []:
+        title = _clean(str(item.get("name") or "")) if isinstance(item, dict) else ""
+        if not title:
+            continue
+        projects = item.get("collaborating_projects")
+        idea = ProjectIdea(
+            title=title[:200],
+            section=str(projects[0]) if isinstance(projects, list) and projects else None,
+            source_url=source_url,
+        )
+        for key, field in _SCRIPT_FIELDS.items():
+            if key == "requirements" and item.get("tags"):
+                continue  # sentences ("Proficiency in Python") where tags already name skills
+            value = item.get(key)
+            joined = ", ".join(map(str, value)) if isinstance(value, list) else str(value or "")
+            _assign(idea, field, joined if field != "links" else joined.replace(",", " "))
+        idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
+        ideas.append(idea)
     return ideas
 
 
