@@ -111,3 +111,26 @@ def test_the_remaining_count_is_never_read_from_the_cache() -> None:
     assert client.rate_limit()["remaining"] == 60
     assert client.rate_limit()["remaining"] == 3
     assert route.call_count == 2
+
+
+def test_a_misspelt_language_is_searched_as_the_one_it_is_close_to(monkeypatch: Any) -> None:
+    # `issues --language pyhton` searched GitHub for a language nobody uses and listed
+    # nothing, without a word about why (UX pass, 2026-11-01).
+    toolkit = _toolkit(monkeypatch, [], None)
+    asked: list[Any] = []
+    monkeypatch.setattr(
+        toolkit.github, "find_beginner_issues", lambda **kwargs: asked.append(kwargs) or []
+    )
+    note = toolkit.find_issues(language="pyhton")["note"]
+    assert asked[0]["language"] == "python"
+    assert "Searched python: no language is called 'pyhton'." in note
+
+
+def test_known_and_short_languages_are_left_as_typed() -> None:
+    from git_into_gsoc.service import _spelled_language
+
+    assert _spelled_language("Python") is None
+    assert _spelled_language("js") is None  # an alias, not a typo
+    assert _spelled_language("cs") is None  # too short to guess from
+    assert _spelled_language("javscript") == "javascript"
+    assert _spelled_language("zebralang") is None
