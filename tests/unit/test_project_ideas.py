@@ -1282,3 +1282,25 @@ def test_a_size_needs_a_unit_or_a_cell_of_nothing_but_hours() -> None:
     # as no size, so the 2026-11-02 snapshot called all 33 of its sized ideas large.
     assert normalize_size("175/350 hours. Can be scoped accordingly.") == ("medium", 175)
     assert normalize_size("90/175/350. Scope can be tailored accordingly.") == ("small", 90)
+
+
+def test_an_ai_policy_inside_a_page_section_is_quoted() -> None:
+    """OpenVINO states its AI rule under "Application Template", a section of the page,
+    not an idea, so the page read as having no policy at all."""
+    text = (
+        "## Application Template\n\n"
+        "**Purely AI-generated applications are not allowed and will result in "
+        "disqualification.**\n\nYour application should list your experience.\n\n"
+        "## Faster readers\n\nDifficulty: Medium\n\nSize: 175 hours\n\n"
+        "## Better plots\n\nDifficulty: Easy\n\nSize: 90 hours\n"
+    )
+    doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
+    assert [i.title for i in doc.ideas] == ["Faster readers", "Better plots"]
+    assert doc.ai_policy == [
+        "Purely AI-generated applications are not allowed and will result in disqualification."
+    ]
+
+
+def test_a_project_that_proposes_an_ai_tool_is_not_a_policy() -> None:
+    sentence = "To help clinicians, we propose NeuroHealth: AI-Powered Health Assistant."
+    assert ai_policy_sentences(sentence) == []
