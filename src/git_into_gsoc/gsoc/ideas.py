@@ -20,9 +20,11 @@ _CONFLUENCE_PAGE = re.compile(r"^/wiki/spaces/[^/]+/pages/(\d+)")
 _CONFLUENCE_API = "/wiki/rest/api/content/"
 # A page that only sends the reader on: preCICE's old ideas address holds nothing else.
 _META_REFRESH = re.compile(
-    r"""<meta\s[^>]*http-equiv=["']?refresh["']?[^>]*content=["']?\s*0\s*;\s*url=([^"'>\s]+)""",
+    r"""<meta\s[^>]*http-equiv=["']?refresh["']?[^>]*content=["']?\s*0\s*;\s*url=['"]?([^"'>\s]+)""",
     re.I,
 )
+# A refresh inside <noscript> only sends readers without scripts to a notice page.
+_NOSCRIPT = re.compile(r"<noscript\b.*?</noscript>", re.I | re.S)
 
 
 def confluence_api_url(url: str) -> str | None:
@@ -32,7 +34,7 @@ def confluence_api_url(url: str) -> str | None:
     OpenELIS read as pages with no ideas. The REST API returns the same page as HTML.
     """
     parsed = urlparse(url.strip())
-    host = parsed.netloc.lower()
+    host = (parsed.hostname or "").lower()  # never a user name or password before the host
     match = _CONFLUENCE_PAGE.match(parsed.path)
     if parsed.scheme not in {"http", "https"} or not match:
         return None
@@ -51,13 +53,16 @@ def get_page(http: CachedHttpClient, target: str, ttl: int) -> tuple[str, str]:
     if _CONFLUENCE_API in target:
         try:
             body = json.loads(raw)["body"]["view"]["value"]
-        except (ValueError, KeyError, TypeError):
+        except (ValueError, KeyError, TypeError, RecursionError):
             return "", target
         return f"<html><body>{body}</body></html>", target
-    moved = _META_REFRESH.search(raw[:4096])
+    moved = _META_REFRESH.search(_NOSCRIPT.sub(" ", raw[:4096]))
     if moved:
-        target = urljoin(target, html.unescape(moved.group(1)))
-        raw = http.get_text(target, ttl=ttl)
+        follow = urljoin(target, html.unescape(moved.group(1)))
+        try:
+            return http.get_text(follow, ttl=ttl), follow
+        except HttpError:
+            return raw, target  # the page as it came is still better than nothing
     return raw, target
 
 
