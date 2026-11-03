@@ -107,6 +107,34 @@ The result, read once on the refreshed data with round 6 (`main` plus the shared
 
 All three conditions held, so the refresh ships. It finds more of the strong matches and puts accepted projects' organizations higher, at the cost of a slightly less precise top five: `test` P@5 falls from 0.637 to 0.600 whether or not the new grades are counted, and `dev2` gains three wrong picks at rank five (MetaBrainz, Ruby and Meshery, each from real new evidence). Keeping only grades made without an ideas page points the same way on every split. The floors were reset around the new result, as for every earlier round: `test` P@5 to 0.58 and `dev2` wrong@5 to 12.
 
+### Deciding the 2026-11-03 reader fixes (written before the deciding read)
+
+Four reader fixes find real ideas on pages that read as empty: Confluence wikis read through their REST API (OpenMRS 0 to 9, JBoss 0 to 15, Mifos 0 to 40), redirect-only pages followed (preCICE, Swift, GNU XaoS), OpenAstronomy's project list read from its page script (0 to 8), and GitHub wiki links followed (OpenVINO 0 to 45, The Linux Foundation 3 to 30). They change no shipped data. The first monthly snapshot after they merge carries them.
+
+What was read before this rule, with fresh readings for those organizations spliced into the shipped data:
+
+- The tuning and test splits on completed grades, after the 14 pairs the readings newly brought into a top ten were graded blind and added to `completed_grades.json`:
+
+| Split | Shipped nDCG@10, P@5 | With the readings |
+|---|---|---|
+| `dev` | 0.816, 0.778 | 0.809, 0.767 |
+| `dev2` | 0.674, 0.413 | 0.661, 0.413 |
+| `test` | 0.846, 0.625 | 0.826, 0.613 |
+
+- Accepted-project hit@10 rose on `dev` (0.874 to 0.882) and `test` (0.739 to 0.756), and MRR fell a little (0.588 to 0.578, and 0.490 to 0.485).
+- Pass or fail only, from `tests/unit/test_match_benchmark.py`: `holdout5` and `holdout6` pass, and `holdout4` fails both its floor and its margin over the keyword baseline. No sealed number and no sealed row was read.
+
+The changes are small reorderings among graded organizations, not one cause. Tightening the cloud concept's free-text words did not help (below, under "Tried and not kept").
+
+The rule, fixed before that snapshot exists. The snapshot ships, and the floors are reset around its result as for every earlier round, if all four hold:
+
+1. Pairs that the snapshot brings into a `dev`, `dev2` or `test` top ten without a grade are graded blind first, the same way as above.
+2. On completed grades, `dev`, `dev2` and `test` nDCG@10 are each at most 0.03 below the shipped data's.
+3. Accepted-project MRR over `dev` and `test` together is at most 0.01 below the shipped data's.
+4. `holdout4`, read once: nDCG@10 at least 0.44 (its first look, 0.469, less 0.03), P@5 at least 0.16, and wrong@5 at most 14, the keyword ranker's. `holdout5` and `holdout6` keep their floors.
+
+If any fails, the snapshot does not ship, the numbers go to the owner, and nothing is re-tuned to pass. That read uses `holdout4` to decide, so a new sealed set then replaces it, as its section says.
+
 ## `completed_grades.json` (grades for pairs the reviewers never graded)
 
 A reviewer grades the organizations they looked at, so an organization a better ranker or better data brings into a top ten often has no grade, and it counts as a miss. Before the 2026-10-22 refresh, only 57% of `dev2`'s top-ten entries had any grade (88% on `dev`), so a version that surfaced new organizations looked worse than it was.
@@ -238,6 +266,8 @@ Each was tuned on the development sets only (`dev` and `dev2`, and `dev3` once i
 - **"Most of its ideas need X" as a ×0.95 cost**: it helped the sets it was tuned on and hurt both held-out sets, so it was taken out (#288). The caveat stays.
 - **A stronger main-language cost** (×0.95 down to ×0.6) on `dev`, `dev2` and `dev3`: it never fixed `dev3`'s wrong picks, because the check rarely fired. The structural fix in round 7 replaced it, with the cost unchanged.
 - **A "science field you did not name" caveat with a ×0.95 cost** on `dev`, `dev2` and `dev3`. It removed two of `dev3`'s wrong picks (ML4SCI twice) but dropped ML4SCI where `dev`'s grader rates it 3. The caveat was also wrong for about 4 of the 18 organizations it named (Catrobat as physics, Open Food Facts as climate, SymPy as physics, IOOS as biology). A caveat that overstates its evidence is not shipped.
+
+- **The cloud concept's everyday words counted only in tags** (`monitoring`, `telemetry` and `orchestration`, and once also `cloud`), 2026-11-03, on data with the reader fixes above. Those words set the cloud concept on OpenVINO's camera and digital twin ideas. On `dev`, `dev2` and `dev3`, the first change left nDCG@10 and P@5 as they were, lowered MRR by 0.003, and added one wrong pick on `dev3`. Adding `cloud` raised nDCG@10 by up to 0.008 but cost hit@10 (0.882 to 0.874) and MRR (0.578 to 0.571). Neither was kept.
 
 A product experiment, decided by its own rule:
 
