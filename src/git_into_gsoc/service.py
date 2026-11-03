@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import difflib
 import re
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
@@ -129,6 +130,7 @@ from git_into_gsoc.matching.path import learning_path
 from git_into_gsoc.matching.profile import (
     EXPERIENCE_HELP,
     EXPERIENCE_LEVELS,
+    GITHUB_LANGUAGES,
     ContributorProfile,
     build_profile,
     effective_experience,
@@ -290,6 +292,34 @@ def participation_from(found: dict[str, Any]) -> dict[str, Any]:
             "by_maintainer": bool(reported.get("by_maintainer")),
         }
     return {"status": "no_post"}
+
+
+def _spelled_language(language: str) -> str | None:
+    """The known language a misspelt one is close to ("pyhton" is python), or None.
+
+    GitHub's search takes any word after `language:` and finds nothing for a typo, so
+    `issues --language pyhton` listed no issues and never said why (UX pass, 2026-11-01).
+    """
+    typed = canonical(language)
+    orgs = (load_signals().get("organizations") or {}).values()
+    known = {
+        *GITHUB_LANGUAGES.values(),
+        *(
+            name.lower()
+            for org in orgs
+            for name in (org.get("github") or {}).get("languages") or {}
+        ),
+    }
+    # Several languages ("python,go") or a name GitHub knows that no organization uses
+    # (PureScript read as typescript, WebAssembly as assembly) is left as typed.
+    if typed in known or len(typed) < 4 or re.search(r"[\s,/]", typed):
+        return None
+    close = [
+        name
+        for name in difflib.get_close_matches(typed, sorted(known), n=3, cutoff=0.8)
+        if name[0] == typed[0] and abs(len(name) - len(typed)) <= 1
+    ]
+    return close[0] if close else None
 
 
 def _int_or_none(value: Any) -> int | None:
@@ -1574,6 +1604,9 @@ class GSoCToolkit:
             # "github.com/https://github.com/.../issues" and "repos https:".
             repo = "/".join(parse_repo(repo))
         from_profile = False
+        typed_language = language
+        if language:
+            language = _spelled_language(language) or language
         asked_org = org  # cleared below when it names a GSoC organization
         self.github.rate_limited = None
         # The CLI offers an enum, but MCP passes raw text: "GSoC" or "gsoc_orgs" used to
@@ -1653,6 +1686,8 @@ class GSoCToolkit:
                 )
         if from_profile:
             note += f" Using {language} from your saved profile; pass a language to change it."
+        if typed_language and language != typed_language:
+            note += f" Searched {language}: no language is called '{typed_language}'."
         labels_used: list[str] = [label] if label else ["good first issue", "help wanted"]
         if gsoc_owners and not label:
             # A few named organizations: their own spellings fit in one query.

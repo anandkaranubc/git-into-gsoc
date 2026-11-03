@@ -12,13 +12,15 @@ stays empty.
 from __future__ import annotations
 
 import html
+import json
 import re
 from collections import Counter
 from html.parser import HTMLParser
 from itertools import takewhile
 from typing import ClassVar
-from urllib.parse import parse_qs, unquote, urljoin, urlparse
+from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 
+from git_into_gsoc.gsoc.ideas import confluence_api_url, get_page
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
 from git_into_gsoc.text import clean_untrusted
@@ -200,6 +202,10 @@ _NON_IDEA_HEADINGS = (
     "how do we judge",
     "navigation menu",
     "navigation",
+    # OpenELIS's 2026 page, once projects were chosen: its sections, not ideas.
+    "guidelines",
+    "administrators",
+    "selected projects",
     # Parts of one idea: UC OSPO's MedJEPA page has them beside its fields' heading.
     "project description",
     "project objective",
@@ -209,7 +215,8 @@ _COMMENT_RE = re.compile(r"^\s*(?:\[//\]:\s*#|#(?!#*\s)|<!--)")
 _BULLET_RE = re.compile(r"^\s*(?:[-*+•]|\d+[.)])\s+")
 _AI_RE = re.compile(r"\b(ai|llm|llms|chatgpt|copilot|gemini|claude|language model)s?\b", re.I)
 _POLICY_RE = re.compile(
-    r"\b(propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
+    # UC OSPO's NeuroHealth idea: "we propose NeuroHealth: AI-Powered Health Assistant".
+    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
     r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|"
     # UC OSPO's AIDRIN page: GIGO "is a widely accepted quote ... including AI".
@@ -236,6 +243,9 @@ def ideas_document_url(url: str) -> str | None:
         return None
     host = parsed.netloc.lower().removeprefix("www.")
     parts = [p for p in parsed.path.split("/") if p]
+    confluence = confluence_api_url(url)
+    if confluence:
+        return confluence
     if host == "docs.google.com":
         if parsed.path.startswith("/document/d/e/") and parts[-1:] == ["pub"]:
             return url.split("#", 1)[0]
@@ -741,6 +751,24 @@ def ai_policy_sentences(text: str, limit: int = 4) -> list[str]:
     return found
 
 
+def _policy_text(body: list[str]) -> list[str]:
+    """A dropped section's own text, and the text under any subheading about AI or policy.
+
+    Not the rest: under a ListenBrainz-style "## Ideas" sit the ideas, and an idea's
+    "AI output is not allowed to ..." is not the page's rule. MLLAM's rule sits under
+    "Policy on the use of AI tooling".
+    """
+    kept: list[str] = []
+    keep = True
+    for line in body:
+        head = _heading(line)
+        if head:
+            keep = bool(_AI_RE.search(head[1]) or re.search(r"\bpolic", head[1], re.I))
+        elif keep:
+            kept.append(line)
+    return kept
+
+
 def _candidate_levels(lines: list[str]) -> list[int]:
     counts: dict[int, int] = {}
     for line in lines:
@@ -827,7 +855,8 @@ def _is_page_part(title: str, body: list[str], source_url: str) -> bool:
     if not _is_non_idea(title):
         return False
     low = title.lower().strip(" :#")
-    if re.search(r"\bideas?\b|\babout$", low) or any(
+    # Projects already chosen are never an idea, however many fields their table holds.
+    if re.search(r"\bideas?\b|\babout$|^selected projects(?: for\b.*)?$", low) or any(
         low in (w, w + "s") for w in _NON_IDEA_HEADINGS
     ):
         return True
@@ -1230,11 +1259,17 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
     best: tuple[tuple[int, ...], int, list[ProjectIdea], list[str]] | None = None
     for level in levels:
         blocks, outside = _split_blocks(lines, level)
-        ideas = [
-            _parse_block(t, b, section=s, source_url=source_url)
-            for t, b, s in blocks
-            if not _is_page_part(t, b, source_url) and not _links_to_post(t)
-        ]
+        ideas: list[ProjectIdea] = []
+        sections: list[str] = []
+        for t, b, s in blocks:
+            if _links_to_post(t):
+                continue
+            if _is_page_part(t, b, source_url):
+                # A page's own section can still state its AI policy: OpenVINO's sits
+                # under "Application Template", so the page read as having none.
+                sections.extend(_policy_text(b))
+                continue
+            ideas.append(_parse_block(t, b, section=s, source_url=source_url))
         yield_ = sum(_labelled(i) for i in ideas)
         # When as many blocks carry as many fields, the deeper level wins: LibreOffice's
         # "## Filters" holds one "### Add JPEG XL import support", and its empty groups
@@ -1242,7 +1277,7 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
         labelled = sum(1 for i in ideas if _labelled(i))
         key = (yield_, labelled, level if labelled else len(ideas), len(ideas), level)
         if best is None or key > best[0]:
-            best = (key, level, ideas, outside)
+            best = (key, level, ideas, [*outside, *sections])
     assert best is not None
     _, level, ideas, outside = best
     # Some pages put ideas at two heading levels: ListenBrainz's 2026 page has three
@@ -1386,7 +1421,7 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
     if not url or not target:
         return None
     try:
-        raw = http.get_text(target, ttl=ttl)
+        raw, target = get_page(http, target, ttl)
     except NotFoundError:
         # The raw file name is a guess. A GitHub wiki page can live in a folder
         # (CGAL's GSoC/Project-Ideas.md), differ in case (AboutCode), or be Org mode
@@ -1408,6 +1443,11 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         return None
     if _GITHUB_REPO_PAGE_RE.match(target) and not _has_github_readme(raw):
         return None
+    wiki = _RAW_WIKI_RE.match(target)
+    if wiki:
+        raw = _wiki_links(
+            raw[:MAX_CHARS], f"https://github.com/{wiki.group(1)}/{wiki.group(2)}/wiki/"
+        )
     doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
     doc.fetched_url = target
     if _looks_like_html(raw):
@@ -1417,6 +1457,10 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         if len(rows) >= MIN_IDEAS_FOR_LAYOUT and len(rows) > len(doc.ideas):
             doc.ideas, doc.fallback_ideas, doc.sub_pages = rows, [], []
             doc.layout = "table"
+        listed = script_ideas(raw, source_url=url)
+        if len(listed) >= MIN_IDEAS_FOR_LAYOUT and len(listed) > len(doc.ideas):
+            doc.ideas, doc.fallback_ideas, doc.sub_pages = listed, [], []
+            doc.layout = "script"
     if _MEDIAWIKI_RE.search(raw[:20_000]):
         # OpenStreetMap writes each idea as a {{GSoC idea |title=... |skills=...}}
         # template. The rendered page shows them as boxes this cannot tell apart from
@@ -1434,6 +1478,27 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
 
 
 _GITHUB_WIKI_RE = re.compile(r"https?://(?:www\.)?github\.com/[^/]+/[^/]+/wiki/", re.I)
+_RAW_WIKI_RE = re.compile(r"https://raw\.githubusercontent\.com/wiki/([^/]+)/([^/]+)/")
+# GitHub wiki links: [[Page Name]] or [[link text|Page Name]]. OpenVINO's page links
+# its 2026 ideas as [[here|Project ideas for 2026]], which read as no link at all.
+# No "[" inside: with it, a line of "[[" repeated scanned to its end from every
+# position, and 20,000 of them took 18 seconds (review probe, 2026-11-03).
+_WIKI_LINK_RE = re.compile(r"\[\[([^\[\]|\n]+)(?:\|([^\[\]\n]+))?\]\]")
+
+
+def _wiki_links(raw: str, wiki_url: str) -> str:
+    """GitHub wiki links written as markdown links to the pages they name."""
+
+    def link(match: re.Match[str]) -> str:
+        text, page = match.group(1).strip(), (match.group(2) or match.group(1)).strip()
+        if "://" in page:
+            return f"[{text}]({page})"
+        name = page.split("#", 1)[0]  # [[Ideas#2026]] is a section of the Ideas page
+        return f"[{text}]({wiki_url}{quote(name.replace(' ', '-'))})"
+
+    return _WIKI_LINK_RE.sub(link, raw)
+
+
 # A repository's front page or one of its folders, as GitHub renders it.
 _GITHUB_REPO_PAGE_RE = re.compile(
     r"https?://(?:www\.)?github\.com/[^/?#]+/[^/?#]+(?:/tree/[^?#]*)?/?(?:[?#].*)?$", re.I
@@ -1582,6 +1647,52 @@ def table_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
                     _assign(idea, field, row[index][0])
             idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
             ideas.append(idea)
+    return ideas
+
+
+# OpenAstronomy's page is an app that draws its ideas from a list in its own script:
+# `var projects = [{"name": ..., "desc": ..., "difficulty": ..., "project_size": [...]}]`.
+_SCRIPT_PROJECTS_RE = re.compile(r"\bvar\s+projects\s*=\s*(?=\[)")
+_SCRIPT_FIELDS = {
+    "desc": "description",
+    "difficulty": "difficulty",
+    "project_size": "size",
+    "tags": "skills",
+    "requirements": "skills",
+    "mentors": "mentors",
+    "issues": "links",
+}
+
+
+def script_ideas(html_text: str, *, source_url: str) -> list[ProjectIdea]:
+    """Ideas from a list of projects that a page's own script draws (OpenAstronomy)."""
+    text = html_text[:MAX_CHARS]
+    match = _SCRIPT_PROJECTS_RE.search(text)
+    if not match:
+        return []
+    try:
+        items, _ = json.JSONDecoder().raw_decode(text, match.end())
+    except (ValueError, RecursionError):  # a list nested 100,000 deep
+        return []
+    ideas: list[ProjectIdea] = []
+    for item in items if isinstance(items, list) else []:
+        title = _clean(str(item.get("name") or "")) if isinstance(item, dict) else ""
+        if not title:
+            continue
+        projects = item.get("collaborating_projects")
+        idea = ProjectIdea(
+            title=title[:200],
+            section=str(projects[0]) if isinstance(projects, list) and projects else None,
+            source_url=source_url,
+        )
+        for key, field in _SCRIPT_FIELDS.items():
+            if key == "requirements" and item.get("tags"):
+                continue  # sentences ("Proficiency in Python") where tags already name skills
+            value = item.get(key)
+            joined = ", ".join(map(str, value)) if isinstance(value, list) else str(value or "")
+            _assign(idea, field, joined if field != "links" else joined.replace(",", " "))
+        idea.confidence = "high" if _labelled(idea) >= 2 else "medium"
+        ideas.append(idea)
     return ideas
 
 
