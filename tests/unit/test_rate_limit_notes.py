@@ -134,3 +134,13 @@ def test_known_and_short_languages_are_left_as_typed() -> None:
     assert _spelled_language("cs") is None  # too short to guess from
     assert _spelled_language("javscript") == "javascript"
     assert _spelled_language("zebralang") is None
+    # Real languages, and lists, are never rewritten (review findings, 2026-11-03).
+    for typed in (
+        "PureScript",
+        "WebAssembly",
+        "Objective-C++",
+        "swiftui",
+        "python,go",
+        "python go",
+    ):
+        assert _spelled_language(typed) is None, typed

@@ -310,9 +310,15 @@ def _spelled_language(language: str) -> str | None:
             for name in (org.get("github") or {}).get("languages") or {}
         ),
     }
-    if typed in known or len(typed) < 4:
+    # Several languages ("python,go") or a name GitHub knows that no organization uses
+    # (PureScript read as typescript, WebAssembly as assembly) is left as typed.
+    if typed in known or len(typed) < 4 or re.search(r"[\s,/]", typed):
         return None
-    close = difflib.get_close_matches(typed, sorted(known), n=1, cutoff=0.8)
+    close = [
+        name
+        for name in difflib.get_close_matches(typed, sorted(known), n=3, cutoff=0.8)
+        if name[0] == typed[0] and abs(len(name) - len(typed)) <= 1
+    ]
     return close[0] if close else None
 
 
