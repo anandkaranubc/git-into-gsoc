@@ -19,6 +19,7 @@ from itertools import takewhile
 from typing import ClassVar
 from urllib.parse import parse_qs, unquote, urljoin, urlparse
 
+from git_into_gsoc.gsoc.ideas import confluence_api_url, get_page
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
 from git_into_gsoc.text import clean_untrusted
@@ -200,6 +201,10 @@ _NON_IDEA_HEADINGS = (
     "how do we judge",
     "navigation menu",
     "navigation",
+    # OpenELIS's 2026 page, once projects were chosen: its sections, not ideas.
+    "guidelines",
+    "administrators",
+    "selected projects",
     # Parts of one idea: UC OSPO's MedJEPA page has them beside its fields' heading.
     "project description",
     "project objective",
@@ -237,6 +242,9 @@ def ideas_document_url(url: str) -> str | None:
         return None
     host = parsed.netloc.lower().removeprefix("www.")
     parts = [p for p in parsed.path.split("/") if p]
+    confluence = confluence_api_url(url)
+    if confluence:
+        return confluence
     if host == "docs.google.com":
         if parsed.path.startswith("/document/d/e/") and parts[-1:] == ["pub"]:
             return url.split("#", 1)[0]
@@ -846,7 +854,8 @@ def _is_page_part(title: str, body: list[str], source_url: str) -> bool:
     if not _is_non_idea(title):
         return False
     low = title.lower().strip(" :#")
-    if re.search(r"\bideas?\b|\babout$", low) or any(
+    # Projects already chosen are never an idea, however many fields their table holds.
+    if re.search(r"\bideas?\b|\babout$|^selected projects(?: for\b.*)?$", low) or any(
         low in (w, w + "s") for w in _NON_IDEA_HEADINGS
     ):
         return True
@@ -1411,7 +1420,7 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
     if not url or not target:
         return None
     try:
-        raw = http.get_text(target, ttl=ttl)
+        raw, target = get_page(http, target, ttl)
     except NotFoundError:
         # The raw file name is a guess. A GitHub wiki page can live in a folder
         # (CGAL's GSoC/Project-Ideas.md), differ in case (AboutCode), or be Org mode

@@ -1284,6 +1284,140 @@ def test_a_size_needs_a_unit_or_a_cell_of_nothing_but_hours() -> None:
     assert normalize_size("90/175/350. Scope can be tailored accordingly.") == ("small", 90)
 
 
+@respx.mock
+def test_a_confluence_cloud_page_is_read_through_its_rest_api() -> None:
+    """OpenMRS, JBoss, Mifos and OpenELIS keep their ideas on Confluence Cloud, which
+    builds the page in the browser: the page itself read as no ideas."""
+    import json
+
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    page = "https://openmrs.atlassian.net/wiki/spaces/RES/pages/752844801/Summer+of+Code+2026"
+    api = "https://openmrs.atlassian.net/wiki/rest/api/content/752844801?expand=body.view"
+    assert ideas_document_url(page) == api
+    reply = {
+        "title": "Summer of Code 2026",
+        "body": {"view": {"value": _read("html_bold_labels.html")}},
+    }
+    respx.get(api).mock(return_value=httpx.Response(200, text=json.dumps(reply)))
+    doc = fetch_ideas_document(CachedHttpClient(get_settings()), page, ttl=10)
+    assert doc is not None and len(doc.ideas) == 3
+    assert doc.fetched_url == api
+
+
+@respx.mock
+def test_a_confluence_reply_without_a_body_reads_as_no_ideas() -> None:
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    page = "https://example.atlassian.net/wiki/spaces/X/pages/12/Ideas"
+    respx.get("https://example.atlassian.net/wiki/rest/api/content/12?expand=body.view").mock(
+        return_value=httpx.Response(200, text="<html>Log in</html>")
+    )
+    doc = fetch_ideas_document(CachedHttpClient(get_settings()), page, ttl=10)
+    assert doc is not None and doc.ideas == []
+
+
+def test_only_confluence_cloud_pages_use_the_rest_api() -> None:
+    from git_into_gsoc.gsoc.ideas import confluence_api_url, ideas_fetch_url
+
+    assert confluence_api_url("https://wiki.example.org/wiki/spaces/X/pages/12/Ideas") is None
+    assert confluence_api_url("https://example.atlassian.net/wiki/home") is None
+    assert confluence_api_url("ftp://example.atlassian.net/wiki/spaces/X/pages/12") is None
+    assert ideas_fetch_url("https://mifosforge.jira.com/wiki/spaces/RES/pages/50/2026") == (
+        "https://mifosforge.jira.com/wiki/rest/api/content/50?expand=body.view"
+    )
+
+
+@respx.mock
+def test_a_page_that_only_redirects_is_followed_once() -> None:
+    """preCICE's ideas address is a meta refresh to the page that holds the ideas."""
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.ideas import fetch_ideas_text
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    old = "https://precice.example.org/open-projects.html"
+    new = "https://precice.example.org/community/open-projects/"
+    respx.get(old).mock(
+        return_value=httpx.Response(
+            200,
+            text=f'<html><head><meta http-equiv=refresh content="0; url={new}"></head></html>',
+        )
+    )
+    respx.get(new).mock(return_value=httpx.Response(200, text=_read("html_bold_labels.html")))
+    http = CachedHttpClient(get_settings())
+    doc = fetch_ideas_document(http, old, ttl=10)
+    assert doc is not None and len(doc.ideas) == 3 and doc.fetched_url == new
+    # The text read that finds repositories follows it too.
+    assert doc.ideas[0].title in (fetch_ideas_text(http, old, ttl=10) or "")
+
+
+def test_a_list_of_chosen_projects_is_not_an_idea() -> None:
+    """OpenELIS turned its 2026 ideas page into the projects it chose, in a table with
+    sizes and skills, under "Selected Projects for GSoC 2026"."""
+    text = (
+        "## Selected Projects for GSoC 2026\n\n"
+        "Project Size: 350 hours\n\nRequired Skills: Java, React\n\nMentors: A. Mentor\n\n"
+        "## Guidelines\n\nRead the guide.\n"
+    )
+    doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
+    assert doc.ideas == []
+
+
+@respx.mock
+def test_a_refresh_for_readers_without_scripts_is_not_followed() -> None:
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    page = "https://ideas.example.org/2026"
+    body = _read("html_bold_labels.html").replace(
+        "<body>",
+        '<body><noscript><meta http-equiv="refresh" content="0;url=/enable-js.html"></noscript>',
+        1,
+    )
+    respx.get(page).mock(return_value=httpx.Response(200, text=body))
+    doc = fetch_ideas_document(CachedHttpClient(get_settings()), page, ttl=10)
+    assert doc is not None and len(doc.ideas) == 3 and doc.fetched_url == page
+
+
+@respx.mock
+def test_a_redirect_that_fails_keeps_the_page_it_came_from() -> None:
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.ideas import get_page
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    page = "https://ideas.example.org/old"
+    html = "<html><head><meta http-equiv='refresh' content=\"0;URL='/gone'\"></head></html>"
+    respx.get(page).mock(return_value=httpx.Response(200, text=html))
+    respx.get("https://ideas.example.org/gone").mock(return_value=httpx.Response(404))
+    # The quoted form of the address is read too: the request for /gone was made.
+    assert get_page(CachedHttpClient(get_settings()), page, 10) == (html, page)
+    assert respx.calls.call_count == 2
+
+
+def test_a_confluence_address_keeps_only_its_host() -> None:
+    from git_into_gsoc.gsoc.ideas import confluence_api_url
+
+    url = "https://user:pw@acme.atlassian.net/wiki/spaces/X/pages/12/Ideas"
+    assert confluence_api_url(url) == (
+        "https://acme.atlassian.net/wiki/rest/api/content/12?expand=body.view"
+    )
+
+
+def test_an_idea_whose_title_starts_like_a_section_is_kept() -> None:
+    text = (
+        "## Selected projects dashboard\n\nDifficulty: Easy\n\nSize: 90 hours\n\n"
+        "## Faster readers\n\nDifficulty: Medium\n\nSize: 175 hours\n"
+    )
+    doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
+    assert [i.title for i in doc.ideas] == ["Selected projects dashboard", "Faster readers"]
+
+
 def test_an_ai_policy_inside_a_page_section_is_quoted() -> None:
     """OpenVINO states its AI rule under "Application Template", a section of the page,
     not an idea, so the page read as having no policy at all."""
