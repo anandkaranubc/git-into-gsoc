@@ -1304,3 +1304,15 @@ def test_an_ai_policy_inside_a_page_section_is_quoted() -> None:
 def test_a_project_that_proposes_an_ai_tool_is_not_a_policy() -> None:
     sentence = "To help clinicians, we propose NeuroHealth: AI-Powered Health Assistant."
     assert ai_policy_sentences(sentence) == []
+
+
+def test_an_ideas_own_words_about_ai_are_not_the_pages_policy() -> None:
+    text = (
+        "## Ideas\n\n### Playlist assistant\n\nBuild an LLM assistant for playlists. "
+        "Generated playlists should not repeat tracks, and AI output is not allowed to "
+        "include private data.\n\nDifficulty: Medium\n\n"
+        "## Android app\n\nDifficulty: Easy\n\nSize: 90 hours\n\n"
+        "## Android widget\n\nDifficulty: Easy\n\nSize: 90 hours\n"
+    )
+    doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
+    assert doc.ai_policy == []

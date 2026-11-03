@@ -742,6 +742,24 @@ def ai_policy_sentences(text: str, limit: int = 4) -> list[str]:
     return found
 
 
+def _policy_text(body: list[str]) -> list[str]:
+    """A dropped section's own text, and the text under any subheading about AI or policy.
+
+    Not the rest: under a ListenBrainz-style "## Ideas" sit the ideas, and an idea's
+    "AI output is not allowed to ..." is not the page's rule. MLLAM's rule sits under
+    "Policy on the use of AI tooling".
+    """
+    kept: list[str] = []
+    keep = True
+    for line in body:
+        head = _heading(line)
+        if head:
+            keep = bool(_AI_RE.search(head[1]) or re.search(r"\bpolic", head[1], re.I))
+        elif keep:
+            kept.append(line)
+    return kept
+
+
 def _candidate_levels(lines: list[str]) -> list[int]:
     counts: dict[int, int] = {}
     for line in lines:
@@ -1239,7 +1257,7 @@ def extract_ideas(lines: list[str], *, source_url: str) -> IdeasDocument:
             if _is_page_part(t, b, source_url):
                 # A page's own section can still state its AI policy: OpenVINO's sits
                 # under "Application Template", so the page read as having none.
-                sections.extend(b)
+                sections.extend(_policy_text(b))
                 continue
             ideas.append(_parse_block(t, b, section=s, source_url=source_url))
         yield_ = sum(_labelled(i) for i in ideas)
