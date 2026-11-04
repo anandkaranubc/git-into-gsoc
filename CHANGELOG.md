@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.26.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.1...v0.26.2) (2026-11-04)
+
+
+### Bug Fixes
+
+* **ideas:** quote an AI policy stated inside a page section ([#456](https://github.com/anandkaranubc/git-into-gsoc/issues/456)) ([ebfdf16](https://github.com/anandkaranubc/git-into-gsoc/commit/ebfdf1616f0b48101a45cbc57758750430acfe44))
+* **ideas:** read Confluence Cloud pages and follow redirect-only pages ([#453](https://github.com/anandkaranubc/git-into-gsoc/issues/453)) ([1b25f60](https://github.com/anandkaranubc/git-into-gsoc/commit/1b25f601ffd7654c4fc91e8f327bc040e6fcf29c))
+* **ideas:** read script-drawn project lists and follow GitHub wiki links ([#455](https://github.com/anandkaranubc/git-into-gsoc/issues/455)) ([656fbe0](https://github.com/anandkaranubc/git-into-gsoc/commit/656fbe03e0d075283640f17c40c5b5558528ceff))
+* **issues:** search a misspelt language as the known one it is close to ([#454](https://github.com/anandkaranubc/git-into-gsoc/issues/454)) ([3ae4461](https://github.com/anandkaranubc/git-into-gsoc/commit/3ae4461029e259e5499a2207bf6a3f261e12f772))
+
+
+### Documentation
+
+* **evals:** fix the rule for the snapshot that carries the 2026-11-03 reader fixes ([#457](https://github.com/anandkaranubc/git-into-gsoc/issues/457)) ([ebf2f3f](https://github.com/anandkaranubc/git-into-gsoc/commit/ebf2f3faf01f0af17eaf5c3d86958180c33cee6b))
+* **readme:** lead with the questions newcomers ask and three ways to start ([#459](https://github.com/anandkaranubc/git-into-gsoc/issues/459)) ([5a19872](https://github.com/anandkaranubc/git-into-gsoc/commit/5a19872b01f3b48cef66dd3cfa1fd5bc347f8749))
+
 ## [0.26.1](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.0...v0.26.1) (2026-11-03)
 
 
