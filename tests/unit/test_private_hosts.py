@@ -112,6 +112,14 @@ def test_an_ideas_page_linking_to_a_local_address_is_read_without_it(tmp_path: P
     assert requested == []
 
 
+@pytest.mark.parametrize("url", ["file:///etc/passwd", "javascript:alert(1)", "data:text/html,x"])
+def test_only_web_addresses_are_fetched(tmp_path: Path, url: str) -> None:
+    # A meta refresh to one of these cost two retries and a "Network error contacting :".
+    client = _client(tmp_path, lambda request: httpx.Response(200, text="never sent"))
+    with pytest.raises(HttpError, match="Not a web address"):
+        client.get_text(url)
+
+
 @pytest.mark.parametrize("url", ["https://xn--/gsoc/ideas", "http://[::1/x"])
 def test_a_malformed_address_is_an_http_error(tmp_path: Path, url: str) -> None:
     from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document

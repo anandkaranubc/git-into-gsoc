@@ -8,6 +8,7 @@ from Google's "how it works" page instead.
 from __future__ import annotations
 
 import json
+import time
 
 import httpx
 import pytest
@@ -206,6 +207,17 @@ def test_a_proposal_link_keeps_a_title_with_an_aside_in_parentheses(
     ]
     assert f"{SITE}/gsoc/2026/proposal_GENIE5.html" in links
     assert "? " not in shown.stdout and "Mentors" not in shown.stdout
+
+
+def test_one_very_long_line_does_not_stall_the_reader() -> None:
+    # `_ONLY_LINK_RE.fullmatch` backtracked across a 400 KB line for 8 s or more
+    # (health audit, 2026-11-05); such a line is never one link with its title.
+    from git_into_gsoc.gsoc.project_ideas import extract_ideas
+
+    lines = ["# Ideas", "## A project", "- " * 200_000 + "(https://a.example.org/x)"]
+    started = time.perf_counter()
+    extract_ideas(lines, source_url="https://a.example.org/ideas")
+    assert time.perf_counter() - started < 2
 
 
 def test_two_links_on_one_line_are_not_read_as_one_title() -> None:

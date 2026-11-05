@@ -161,7 +161,9 @@ def other_host_link(value: str) -> str | None:
     return link.rstrip("/").removesuffix(".git")
 
 
-_OTHER_HOST_ISSUE = re.compile(r"/(?:-/)?(?:issues|merge_requests|pulls?|bugs?|tickets?)/\d+")
+_OTHER_HOST_ISSUE = re.compile(
+    r"/(?:-/)?(?:issues|work_items|merge_requests|pulls?|bugs?|tickets?)/\d+"
+)
 
 
 def _repo_key(full_name: str) -> str:

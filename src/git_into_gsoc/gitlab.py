@@ -102,7 +102,10 @@ def _status(
 ) -> tuple[Availability, str, list[dict[str, Any]], list[str]]:
     """Availability, reason, the merge requests in this project, and caveats."""
     caveats: list[str] = []
-    own = [mr for mr in merge_requests if f"/{project}/-/merge_requests/" in str(mr.get("web_url"))]
+    # GitLab reads "gnome/gitg" and "GNOME/gitg" as one project but prints the canonical
+    # case in web_url, so a lowercase link dropped every merge request of its own project.
+    wanted = f"/{project.lower()}/-/merge_requests/"
+    own = [mr for mr in merge_requests if wanted in str(mr.get("web_url")).lower()]
     linked: list[dict[str, Any]] = [
         {
             "number": mr.get("iid"),

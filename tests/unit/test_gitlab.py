@@ -121,6 +121,15 @@ def test_an_open_merge_request_means_likely_taken() -> None:
     assert any("cannot read the 3 comment(s)" in c for c in found["assessment"]["caveats"])
 
 
+def test_a_link_in_the_wrong_case_still_finds_the_merge_requests() -> None:
+    # Health audit (2026-11-05): GitLab serves "gnome/gitg" but prints "GNOME/gitg" in
+    # every web_url, so the lowercase link called the taken issue available.
+    lower = "https://gitlab.gnome.org/api/v4/projects/gnome%2Fgitg/issues/494"
+    http = FakeHttp({lower: _issue(), f"{lower}/related_merge_requests": [_mr(330, "opened")]})
+    found = gitlab_issue_status(http, "https://gitlab.gnome.org/gnome/gitg/-/issues/494")  # type: ignore[arg-type]
+    assert found["availability"] == "likely_taken"
+
+
 def test_comments_it_cannot_read_make_the_status_unknown() -> None:
     http = FakeHttp({API: _issue(user_notes_count=2), f"{API}/related_merge_requests": []})
     found = gitlab_issue_status(http, "https://gitlab.gnome.org/GNOME/gitg/-/issues/494")  # type: ignore[arg-type]

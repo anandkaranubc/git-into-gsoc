@@ -39,6 +39,9 @@ coverage.xml
 # Installer backups
 *.bak
 
+# Local worktrees (CONTRIBUTING); never part of the project
+.worktrees/
+
 # Installer-generated skill copies. The tracked skill lives in skills/git-into-gsoc.
 .agents/skills/
 .cursor/skills/
@@ -53,7 +56,6 @@ coverage.xml
 .github/skills/
 .agents/mcp_config.json
 .devin/
-*.bak
 
 # Written by every `claude plugin eval` run
 plugin-evals/results/

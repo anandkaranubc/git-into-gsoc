@@ -219,6 +219,11 @@ def test_normalizers() -> None:
     assert normalize_size("small") == ("small", 90)
     assert normalize_size("~ 90 hrs") == ("small", 90)
     assert normalize_size("unknown") == (None, None)
+    # A count that opens the cell with prose after it (health audit, 2026-11-05).
+    assert normalize_size("350 (full-time)") == ("large", 350)
+    assert normalize_size("90/175/350. Scope can be tailored") == ("small", 90)
+    assert normalize_size("90% of the work is tests") == (None, None)
+    assert normalize_size("1750 hours") == (None, None)
     assert normalize_difficulty("Intermediate") == "medium"
     assert normalize_difficulty("Beginner-friendly") == "easy"
     assert normalize_difficulty("Advanced / Hard") == "hard"
