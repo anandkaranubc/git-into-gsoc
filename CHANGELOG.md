@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.26.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.2...v0.26.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* read hostile ideas pages in linear time, and match GitLab merge requests in any case ([#460](https://github.com/anandkaranubc/git-into-gsoc/issues/460)) ([fc918fd](https://github.com/anandkaranubc/git-into-gsoc/commit/fc918fd6f5542c1cba40aaccced9b879e21d56f7))
+
 ## [0.26.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.1...v0.26.2) (2026-11-04)
 
 
