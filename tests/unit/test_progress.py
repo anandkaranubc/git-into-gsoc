@@ -534,6 +534,11 @@ def test_other_host_links_follow_the_same_rules_as_github_and_log_links(tmp_path
         store.track_issue("https://gitlab.com/x/" + "a" * 5000 + "/-/issues/5")
     with pytest.raises(InputError, match="issue link, not a repository"):
         store.track_repo("https://gitlab.com/inkscape/inkscape/-/issues/5")
+    # GitLab's newer issue links (`issue` and `pointers` already read them).
+    work_item = "https://gitlab.com/nsnam/ns-3-dev/-/work_items/7"
+    assert work_item in store.track_issue(work_item).tracked_issues
+    with pytest.raises(InputError, match="issue link, not a repository"):
+        store.track_repo(work_item)
 
 
 def test_bug_trackers_that_put_the_number_in_the_query_keep_it() -> None:

@@ -595,13 +595,19 @@ def _require_valid_url(url: str) -> None:
     expects, so `ideas` stopped with an internal error.
     """
     try:
-        httpx.URL(url).host  # noqa: B018 - reading the host runs the IDNA check
+        parsed = httpx.URL(url)
+        parsed.host  # noqa: B018 - reading the host runs the IDNA check
     except (httpx.InvalidURL, ValueError) as exc:
         raise HttpError(
             f"Not a valid web address: {url}",
             url=url,
             hint="Check the link for a typing mistake; pages with broken links are skipped.",
         ) from exc
+    if parsed.scheme not in {"http", "https"}:
+        # A meta refresh to "file:" or "javascript:" cost two retries and a blank error.
+        raise HttpError(
+            f"Not a web address: {url}", url=url, hint="Only http and https links are read."
+        )
 
 
 def _host(url: str) -> str:

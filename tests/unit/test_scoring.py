@@ -7,6 +7,8 @@ import re
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import pytest
+
 from git_into_gsoc.models import Availability, IssueCandidate, OrgSummary, RepoHealth
 from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
@@ -124,6 +126,35 @@ def test_issue_score_penalizes_assigned() -> None:
         )
     )
     assert open_issue.beginner_score > taken.beginner_score
+
+
+@pytest.mark.parametrize(
+    ("overrides", "signal", "below"),
+    [
+        ({"availability": Availability.STALE}, "Availability: stale", True),
+        ({"availability": Availability.CONTESTED}, "contested by several", True),
+        ({"availability": Availability.CLOSED}, None, True),
+        ({"created_at": datetime.now(UTC) - timedelta(days=800)}, "Open since", True),
+        ({"updated_at": datetime.now(UTC) - timedelta(days=200)}, "No updates in 180+", True),
+        ({"comments": 12}, "Busy discussion", True),
+        ({"filed_by_maintainer": True}, "Filed by a maintainer", False),
+        ({"gsoc_org": "SymPy"}, "Part of GSoC org SymPy", False),
+    ],
+)
+def test_issue_score_branches_point_the_right_way(
+    overrides: dict[str, object], signal: str | None, below: bool
+) -> None:
+    # Each branch had no test, so a flipped sign would have shipped (health audit, 2026-11-05).
+    def candidate(**extra: object) -> IssueCandidate:
+        return IssueCandidate(
+            repo="acme/lib", number=4, title="x", url="https://example.com", **extra
+        )
+
+    plain = score_issue(candidate())
+    scored = score_issue(candidate(**overrides))
+    assert (scored.beginner_score < plain.beginner_score) == below
+    if signal:
+        assert any(signal in s for s in scored.signals)
 
 
 def _org(**overrides: object) -> OrgSummary:

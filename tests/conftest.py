@@ -84,6 +84,8 @@ def hermetic_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[No
     monkeypatch.setenv("GIG_SEARCH_MIN_INTERVAL_SECONDS", "0")
     monkeypatch.setenv("GIG_CACHE_DIR", str(tmp_path / "cache"))
     monkeypatch.setenv("GIG_DATA_DIR", str(tmp_path / "data"))
+    # Without this, an install test that forgets `home=` writes to the real ~/.claude.json.
+    monkeypatch.setenv("GIG_HOME", str(tmp_path / "home"))
     monkeypatch.chdir(tmp_path)
     config.get_settings.cache_clear()
     config._gh_cli_token.cache_clear()

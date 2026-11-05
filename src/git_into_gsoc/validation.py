@@ -209,6 +209,8 @@ _SKILL_QUALIFIER_RE = re.compile(
 def plain_skill(term: str) -> str:
     """ "a little python" -> "python": the level is useful to a person, not to a search."""
     cleaned = term.strip()
+    if len(cleaned) > 200:
+        return cleaned  # no skill is that long, and the pattern is quadratic on spaces
     while True:
         shorter = _SKILL_QUALIFIER_RE.sub("", cleaned).strip()
         if shorter == cleaned or not shorter:

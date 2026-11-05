@@ -96,12 +96,35 @@ def ideas_fetch_url(url: str) -> str | None:
     return url.split("#", 1)[0]
 
 
+# A tag is read up to the next angle bracket, so one pass over a page is linear however
+# the tags are left open. The regexes this replaced backtracked for minutes on a page
+# of unterminated `<a href="` tags, and html.parser before 3.13.4 does the same
+# (health audit, 2026-11-05); `ideas` and `repos` read any page an organization links to.
+_TAG_RE = re.compile(r"<(/?)([a-z!?][a-z0-9-]*)([^<>]*)>", re.I)
+_HREF_RE = re.compile(r"""\bhref\s*=\s*["']([^"'<>]+)""", re.I)
+
+
 def to_text(raw: str) -> str:
     """Keep link targets (they name repos) while dropping markup."""
-    with_links = re.sub(r"""<a\s[^>]*href=["']([^"']+)["'][^>]*>""", r" \1 ", raw, flags=re.I)
-    no_scripts = re.sub(r"<(script|style)[^>]*>.*?</\1>", " ", with_links, flags=re.I | re.S)
-    text = html.unescape(re.sub(r"<[^>]+>", " ", no_scripts))
-    return re.sub(r"\s+", " ", text)[:MAX_CHARS]
+    raw = raw[:MAX_CHARS]
+    parts: list[str] = []
+    skipping: str | None = None  # inside <script> or <style>
+    at = 0
+    for tag in _TAG_RE.finditer(raw):
+        closing, name, attrs = tag.group(1), tag.group(2).lower(), tag.group(3)
+        if skipping is None:
+            parts.append(raw[at : tag.start()])
+            href = _HREF_RE.search(attrs) if name == "a" else None
+            if href:
+                parts.append(href.group(1))
+            if name in {"script", "style"} and not closing:
+                skipping = name
+        elif closing and name == skipping:
+            skipping = None
+        at = tag.end()
+    if skipping is None:
+        parts.append(raw[at:])
+    return re.sub(r"\s+", " ", html.unescape(" ".join(parts)))[:MAX_CHARS]
 
 
 def fetch_ideas_text(http: CachedHttpClient, url: str | None, ttl: int) -> str | None:

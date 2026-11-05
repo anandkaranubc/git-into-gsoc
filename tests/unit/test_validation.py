@@ -3,6 +3,8 @@ skill words."""
 
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from git_into_gsoc.errors import InputError
@@ -164,6 +166,10 @@ def test_plain_skill_drops_level_words() -> None:
     assert plain_skill("Rust (learning)") == "Rust"
     assert plain_skill("machine learning") == "machine learning"
     assert plain_skill("advanced") == "advanced"
+    # The qualifier pattern is quadratic on spaces; a long term is returned as typed.
+    started = time.perf_counter()
+    assert plain_skill("a" + " " * 50_000 + "b (basic)").endswith("(basic)")
+    assert time.perf_counter() - started < 1
 
 
 def test_a_project_on_another_site_is_named_as_such_without_its_scheme() -> None:

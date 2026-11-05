@@ -14,6 +14,7 @@
   if (!scene || !hero) return;
   var still = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var canvas = document.createElement("canvas");
+  canvas.setAttribute("aria-hidden", "true"); // decorative; the copy beside it says it all
   var ctx = canvas.getContext("2d", { alpha: false });
   if (!ctx) return;
 

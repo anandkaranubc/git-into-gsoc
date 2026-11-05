@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 import httpx
+import pytest
 import respx
 
 from conftest import load_fixture
@@ -268,3 +269,126 @@ def test_commit_statuses_are_cleaned_and_do_not_repeat_check_runs() -> None:
         ("ci / test", "success"),
         ("build", "failure"),
     ]
+
+
+# The whole command, through the service and the CLI. Until the 2026-11-05 health audit
+# only the pure checker above had tests, so a wrong key in the pull request JSON or a
+# missing client call would have shipped green.
+
+API = "https://api.github.com/repos/acme/lib"
+
+
+def _mock_pull_request(router: respx.MockRouter) -> None:
+    router.get(f"{API}/pulls/7").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                **_pull(),
+                "html_url": "https://github.com/acme/lib/pull/7",
+                "user": {"login": "newbie"},
+                "head": {"sha": "deadbeef"},
+            },
+        )
+    )
+    router.get(f"{API}/pulls/7/files").mock(return_value=httpx.Response(200, json=FILES))
+    router.get(f"{API}/pulls/7/commits").mock(
+        return_value=httpx.Response(
+            200, json=[_commit("Fix empty input\n\nSigned-off-by: N <n@x>")]
+        )
+    )
+    router.get(f"{API}/commits/deadbeef/check-runs").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "check_runs": [
+                    {
+                        "name": "tests",
+                        "status": "completed",
+                        "conclusion": "failure",
+                        "id": 42,
+                        "app": {"slug": "github-actions"},
+                    }
+                ]
+            },
+        )
+    )
+    router.get(f"{API}/commits/deadbeef/status").mock(
+        return_value=httpx.Response(200, json={"statuses": []})
+    )
+    tree = [
+        {"path": p, "type": "blob", "size": 10, "sha": "x"}
+        for p in (
+            "CONTRIBUTING.md",
+            ".github/PULL_REQUEST_TEMPLATE.md",
+            ".github/workflows/ci.yml",
+            "src/reader.py",
+            "tests/test_reader.py",
+        )
+    ]
+    router.get(f"{API}/git/trees/main").mock(
+        return_value=httpx.Response(200, json={"sha": "abc", "truncated": False, "tree": tree})
+    )
+    router.get(f"{API}/rules/branches/main").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "type": "pull_request",
+                    "parameters": {"required_approving_review_count": 1},
+                }
+            ],
+        )
+    )
+    signed = {"commit": {"message": "feat: x\n\nSigned-off-by: M <m@x>", "author": {"date": ""}}}
+    router.get(f"{API}/commits").mock(return_value=httpx.Response(200, json=[signed] * 6))
+    raw = {
+        "CONTRIBUTING.md": "Sign your commits with git commit -s.",
+        ".github/PULL_REQUEST_TEMPLATE.md": TEMPLATE,
+        ".github/workflows/ci.yml": "on: pull_request\njobs:\n  t:\n    steps:\n      - run: pytest\n",
+    }
+    for path, text in raw.items():
+        router.get(f"{API}/contents/{path}").mock(return_value=httpx.Response(200, text=text))
+
+
+@respx.mock
+def test_pr_check_reads_the_pull_request_its_checks_and_the_repository_rules() -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    _mock_pull_request(respx.mock)
+    data = GSoCToolkit().pr_check("https://github.com/acme/lib/pull/7")
+    assert data["ref"] == "acme/lib#7" and data["author"] == "newbie"
+    assert data["title"] == "Fix empty input in the reader"
+    by_id = {f["id"]: f for f in data["findings"]}
+    assert by_id["checks"]["status"] == "fail" and "tests" in by_id["checks"]["title"]
+    # Failed job logs need a token; without one the finding says so instead of guessing.
+    assert "logs were not read" in by_id["checks"]["detail"]
+    assert by_id["sign_off"]["status"] == "pass"  # the repository's rule, read from history
+    assert by_id["issue_link"]["status"] == "pass"
+    assert any("1 approving review" in gate for gate in data["what_happens_next"])
+    assert data["verdict"].startswith("Fix 1 problem")
+
+
+@respx.mock
+def test_cli_pr_check_renders_the_table_and_the_gates() -> None:
+    from typer.testing import CliRunner
+
+    from git_into_gsoc.cli import app
+
+    _mock_pull_request(respx.mock)
+    result = CliRunner().invoke(app, ["pr-check", "acme/lib", "7"])
+    assert result.exit_code == 0, result.output
+    assert "Pull request check: acme/lib#7" in result.output
+    assert "Before it can merge" in result.output
+    assert "Fix 1 problem" in result.output
+    as_json = CliRunner().invoke(app, ["pr-check", "acme/lib#7", "--output", "json"])
+    assert as_json.exit_code == 0 and '"verdict"' in as_json.output
+
+
+@respx.mock
+def test_pr_check_refuses_a_number_that_is_not_a_pull_request() -> None:
+    from git_into_gsoc.errors import InputError
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.get(f"{API}/pulls/9").mock(return_value=httpx.Response(404, json={}))
+    with pytest.raises(InputError, match="not a pull request"):
+        GSoCToolkit().pr_check("acme/lib", 9)

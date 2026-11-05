@@ -37,14 +37,14 @@ _MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
 # 350", "~175", "90-175 hours"): "1750 hours" read as 175 and "90%" as 90. The first
 # count of a cell wins, as it did before the unit rule; without the trailing unit in
 # the anchored branch, "175 or 350 hours" read as 350 (review of #428, 2026-11-01).
-# A list of counts is also unambiguous when prose follows it: stdlib writes "175/350
-# hours. Can be scoped accordingly." and "90/175/350. Scope can be tailored", which
-# the unit branch read as 350 and as nothing, so the 2026-11-02 snapshot called all
-# of its ideas large.
+# A count that opens the cell is also unambiguous when prose follows it: stdlib writes
+# "175/350 hours. Can be scoped accordingly." and "90/175/350. Scope can be tailored",
+# which the unit branch read as 350 and as nothing, so the 2026-11-02 snapshot called
+# all of its ideas large; "350 (full-time)" read as no size at all. "90%" is not a count.
 _COUNT_LIST = r"(90|175|350)(?:\s*(?:or|/|,|-|\u2013|to)\s*(?:90|175|350))"
 _HOURS_RE = re.compile(
     r"^\s*(?:~|\u2248|about |approx\.? )?" + _COUNT_LIST + r"*(?:\s*(?:h|hrs?|hours?))?\s*$"
-    r"|^\s*" + _COUNT_LIST + r"+\b"
+    r"|^\s*" + _COUNT_LIST + r"*\b(?!\s*%)"
     r"|\b" + _COUNT_LIST + r"*\s*(?:h\b|hrs?\b|hours?\b|-hours?\b)",
     re.I,
 )
@@ -1112,7 +1112,8 @@ def _sub_pages(lines: list[str]) -> list[dict[str, str]]:
             continue
         titles = {url.rstrip(".,;:)"): text for text, url in _MD_LINK_RE.findall(line)}
         # A line that is nothing but one HTML link renders as "text (url)".
-        only_link = _ONLY_LINK_RE.fullmatch(line)
+        # The pattern backtracks across the whole line, so one 400 KB line took 8 s.
+        only_link = _ONLY_LINK_RE.fullmatch(line) if "(http" in line and len(line) <= 2000 else None
         if only_link:
             titles.setdefault(only_link.group(2).rstrip(".,;:)"), only_link.group(1))
         for url in _URL_RE.findall(line):

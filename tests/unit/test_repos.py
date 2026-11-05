@@ -3,6 +3,7 @@ mirrors, and the ranking with its outside-merge checks."""
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -162,6 +163,16 @@ def test_to_text_keeps_links() -> None:
     text = to_text('<p>See <a href="https://github.com/org/repo">repo</a></p><script>x()</script>')
     assert "https://github.com/org/repo" in text
     assert "x()" not in text
+    assert to_text("<b>a</b><i>b</i> &amp; <style>c{}</style>d") == " a b & d"
+
+
+def test_to_text_finishes_on_a_page_of_unterminated_anchors() -> None:
+    # The regex this replaced took 10 s on 1,000 of these and hours on a real-sized
+    # page (health audit, 2026-11-05).
+    started = time.perf_counter()
+    text = to_text('<a href="' * 20_000 + "https://github.com/org/repo")
+    assert time.perf_counter() - started < 2
+    assert "https://github.com/org/repo" in text
 
 
 @respx.mock
