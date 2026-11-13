@@ -182,3 +182,17 @@ def test_the_embedded_snapshot_keeps_its_stats() -> None:
     status = program_status(2026, official_program=None, now=OCT_2026, offline=True)
     assert status["dates_are_official"] is True
     assert status["stats"]
+
+
+@respx.mock
+def test_a_program_in_an_unreadable_shape_counts_as_offline_not_unpublished() -> None:
+    # Read as "not published", a changed shape would hold the phase at "before
+    # announcement" through a whole program Google had announced.
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.get("https://summerofcode.withgoogle.com/api/program/2027/").mock(
+        return_value=httpx.Response(200, json={"timeline": []})
+    )
+    info = GSoCToolkit().program_info(2027)
+    assert info["dates_are_official"] is False
+    assert "ESTIMATE" in info["source"]
