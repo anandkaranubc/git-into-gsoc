@@ -3808,6 +3808,11 @@ class GSoCToolkit:
             repo = "/".join(parts[-2:]) if len(parts) >= 2 else ""
             if "/" not in repo or not item.get("number"):
                 continue
+            # The search matches whole days, so without this an issue opened this
+            # morning was "new" again on every check for the rest of the day.
+            created = parse_iso(item.get("created_at"))
+            if created is not None and created < since:
+                continue
             out.append(
                 {
                     "repo": repo,

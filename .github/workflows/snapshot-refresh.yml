@@ -18,8 +18,11 @@ jobs:
     name: Refresh snapshot
     runs-on: ubuntu-latest
     steps:
-      # Keeps the checkout's credentials: the last step pushes a branch.
+      # No stored credentials: the install and refresh steps run unpinned
+      # dependencies and read pages strangers write. Only the last step can push.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
@@ -43,8 +46,9 @@ jobs:
         env:
           # The built-in token's searches with an OR group come back wrong, so the
           # canary keeps last month's beginner counts and statements. A read-only
-          # token of the owner's, when set, reads them like a person's searches do.
-          GITHUB_TOKEN: ${{ secrets.SNAPSHOT_READ_TOKEN || github.token }}
+          # token of the owner's reads them like a person's searches do. No fallback
+          # to the job's token, which can write and would sit beside stranger pages.
+          GITHUB_TOKEN: ${{ secrets.SNAPSHOT_READ_TOKEN }}
           EVENT: ${{ github.event_name }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ] || [ "$(date -u +%d)" -le 7 ]; then
@@ -67,8 +71,12 @@ jobs:
           git checkout -b "$branch"
           git add src/git_into_gsoc/data
           git commit -m "chore(data): refresh the organization snapshot and evidence"
+          gh auth setup-git
           git push -f origin "$branch"
+          if [ -n "$(gh pr list --head "$branch" --state open --json number --jq '.[].number')" ]; then
+            echo "pull request already open"
+            exit 0
+          fi
           gh pr create --base main --head "$branch" \
             --title "chore(data): refresh the organization snapshot and evidence" \
-            --body "Weekly refresh of the embedded organization list and history from the official site and the community archive, and (on the first Monday of each month) the ideas-page and repository evidence used to rank matches. Close and reopen this pull request to run CI (bot-created pull requests do not trigger workflows); CI also runs the ranking benchmark (tests/unit/test_match_benchmark.py), so a red benchmark means the new data made recommendations worse. Then squash-merge." \
-            || echo "pull request already open"
+            --body "Weekly refresh of the embedded organization list and history from the official site and the community archive, and (on the first Monday of each month) the ideas-page and repository evidence used to rank matches. Close and reopen this pull request to run CI (bot-created pull requests do not trigger workflows); CI also runs the ranking benchmark (tests/unit/test_match_benchmark.py), so a red benchmark means the new data made recommendations worse. Then squash-merge."

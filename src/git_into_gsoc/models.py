@@ -398,6 +398,7 @@ class Milestone(BaseModel):
     official: bool
     status: str
     days_until: int
+    hours_until: int | None = None
     window_days: int | None = None
 
 

@@ -29,6 +29,7 @@ from typer.core import TyperGroup
 from git_into_gsoc import __version__, onboarding
 from git_into_gsoc.errors import GigError, InputError, reset_phrase
 from git_into_gsoc.github.availability import pull_ref
+from git_into_gsoc.gsoc.timeline import countdown
 from git_into_gsoc.guidance import journey_overview
 from git_into_gsoc.http_client import GITHUB_CORE
 from git_into_gsoc.models import LogEntry
@@ -163,14 +164,16 @@ def _toolkit() -> GSoCToolkit:
 # and the user's own notes must print literally: an unescaped "[x]" vanishes and an
 # unescaped "[/]" raises MarkupError. Same pattern as rich.markup.escape, but idempotent,
 # so escaping data once up front and again at a call site never shows a backslash.
-_MARKUP_TAG = re.compile(r"(?<!\\)(\[[a-z#/@][^\[\]]*\])")
+# An even run of backslashes escapes only itself: a title with "\\[link=...]" printed
+# a live link to the sender's site, so such a tag gets one more.
+_MARKUP_TAG = re.compile(r"(?<!\\)((?:\\\\)*)(\[[a-z#/@][^\[\]]*\])")
 
 
 def escape(text: str) -> str:
     """Make text print literally: no markup, no hidden or terminal-control characters."""
-    escaped = _MARKUP_TAG.sub(r"\\\1", strip_hidden(text))
-    if escaped.endswith("\\") and not escaped.endswith("\\\\"):
-        escaped += "\\"  # a trailing backslash would otherwise escape the next tag
+    escaped = _MARKUP_TAG.sub(r"\1\\\2", strip_hidden(text))
+    if (len(escaped) - len(escaped.rstrip("\\"))) % 2:
+        escaped += "\\"  # an odd trailing run would otherwise escape the next tag
     return escaped
 
 
@@ -179,7 +182,7 @@ def _markup_safe(value: Any) -> Any:
     if isinstance(value, str):
         return escape(value)
     if isinstance(value, dict):
-        return {k: _markup_safe(v) for k, v in value.items()}
+        return {_markup_safe(k): _markup_safe(v) for k, v in value.items()}
     if isinstance(value, list):
         return [_markup_safe(v) for v in value]
     return value
@@ -245,8 +248,7 @@ _HOME_COMMANDS = (
 
 
 def _when(milestone: dict[str, Any]) -> str:
-    days = milestone["days_until"]
-    when = {0: "today", 1: "tomorrow"}.get(days, f"in {days} days")
+    when = countdown(milestone)
     mark = "" if milestone["official"] else ", an estimate"
     return f"{milestone['label']}, {milestone['at'][:10]} ({when}{mark})"
 
@@ -306,12 +308,14 @@ class ProjectSize(StrEnum):
     large = "large"
 
 
-def _relative(days: int) -> str:
-    if days == 0:
-        return "today"
-    if days > 0:
-        return f"in {days}d"
-    return f"{-days}d ago"
+def _relative(event: dict[str, Any]) -> str:
+    days, hours = event["days_until"], event.get("hours_until")
+    if event.get("status") == "past":
+        # A deadline at 18:00 UTC is over at 20:00, though its date is still today.
+        return "earlier today" if days == 0 else f"{-days}d ago"
+    if hours is not None and hours < 48:
+        return "in <1h" if hours < 1 else f"in {hours}h"
+    return "today" if days == 0 else f"in {days}d"
 
 
 def _stdin_is_interactive() -> bool:
@@ -574,7 +578,7 @@ def program_cmd(
     badge = "[green]official[/green]" if data["dates_are_official"] else "[yellow]estimate[/yellow]"
     console.print(
         Panel.fit(
-            f"[bold]GSoC {year}[/bold]  dates: {badge}\n"
+            f"[bold]GSoC {data['year']}[/bold]  dates: {badge}\n"
             f"[bold cyan]Now:[/bold cyan] {phase['title']}\n{phase['advice']}\n\n"
             f"[dim]{data['source']}[/dim]\n"
             f"Verify: {data['official_timeline']}",
@@ -590,7 +594,7 @@ def program_cmd(
         if event.get("window_days"):
             date = f"~{date} ±{event['window_days']}d"
         style = "dim" if event["status"] == "past" else ""
-        table.add_row(date, event["label"], _relative(event["days_until"]), style=style)
+        table.add_row(date, event["label"], _relative(event), style=style)
     console.print(table)
     console.print("\n[bold]Good habits[/bold]")
     for habit in data.get("contributor_habits") or []:
@@ -2215,9 +2219,7 @@ def next_cmd(
         console.print("\n[bold]Coming up[/bold]")
         for item in data["deadlines"]:
             mark = "" if item["official"] else " (estimate)"
-            console.print(
-                f"  {item['at'][:10]}  {item['label']}{mark}  {_relative(item['days_until'])}"
-            )
+            console.print(f"  {item['at'][:10]}  {item['label']}{mark}  {_relative(item)}")
     if data.get("time_budget"):
         budget = data["time_budget"]
         mark = "" if budget["official"] else " (estimate)"

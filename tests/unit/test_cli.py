@@ -267,6 +267,10 @@ def test_program_without_a_year_uses_the_configured_target_year(monkeypatch) -> 
     result = runner.invoke(app, ["program", "--output", "json"])
     assert result.exit_code == 0, result.output
     assert json.loads(result.stdout)["year"] == 2026
+    # The text header printed the raw option, so it read "GSoC None".
+    result = runner.invoke(app, ["program"])
+    assert "GSoC 2026" in result.stdout
+    assert "None" not in result.stdout
 
 
 def test_an_empty_issue_search_prints_next_steps_not_an_empty_table(monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -488,7 +492,10 @@ def test_counts_that_must_be_at_least_one_are_refused_by_the_option() -> None:
     for args in (["mentors", "SymPy", "--years", "0"], ["pointers", "a/b#1", "--similar", "0"]):
         result = runner.invoke(app, args)
         assert result.exit_code == 2, result.output
-        assert "not in the range" in result.output
+        # typer 0.29 reworded "0 is not in the range x>=1", and colours the quoted
+        # option on CI (GITHUB_ACTIONS forces colour); both read like this as plain text.
+        plain = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+        assert f"Invalid value for '{args[2]}'" in plain
 
 
 def test_diagnose_from_a_closed_standard_input_is_a_friendly_error(monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -536,3 +543,13 @@ def test_a_missing_argument_shows_an_example_to_type() -> None:
     assert "Missing argument 'name'. Example: git-into-gsoc org \"SymPy\"" in text
     result = runner.invoke(app, ["issue"])
     assert "Example: git-into-gsoc issue owner/repo#123" in " ".join(result.output.split())
+
+
+def test_the_timeline_says_a_deadline_passed_earlier_today() -> None:
+    from git_into_gsoc.cli import _relative
+
+    # At 20:00 UTC the 18:00 proposal deadline is over; the table still said "today".
+    assert _relative({"days_until": 0, "hours_until": -2, "status": "past"}) == "earlier today"
+    assert _relative({"days_until": -3, "status": "past"}) == "3d ago"
+    assert _relative({"days_until": 1, "hours_until": 19, "status": "upcoming"}) == "in 19h"
+    assert _relative({"days_until": 30, "hours_until": 720, "status": "upcoming"}) == "in 30d"
