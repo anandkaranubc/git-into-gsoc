@@ -171,8 +171,8 @@ _MARKUP_TAG = re.compile(r"(?<!\\)((?:\\\\)*)(\[[a-z#/@][^\[\]]*\])")
 def escape(text: str) -> str:
     """Make text print literally: no markup, no hidden or terminal-control characters."""
     escaped = _MARKUP_TAG.sub(r"\1\\\2", strip_hidden(text))
-    if escaped.endswith("\\") and not escaped.endswith("\\\\"):
-        escaped += "\\"  # a trailing backslash would otherwise escape the next tag
+    if (len(escaped) - len(escaped.rstrip("\\"))) % 2:
+        escaped += "\\"  # an odd trailing run would otherwise escape the next tag
     return escaped
 
 

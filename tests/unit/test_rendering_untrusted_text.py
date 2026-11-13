@@ -263,3 +263,17 @@ def test_progress_ignores_phases_made_up_in_the_file(wide_console: None) -> None
     assert shown.exit_code == 0, shown.output
     assert "\x1b" not in shown.output and "pwned" not in shown.output
     assert "1/10 phases done" in shown.output
+
+
+@pytest.mark.parametrize("tail", ["\\", "\\\\\\", "\\\\\\\\\\"])
+def test_an_odd_run_of_trailing_backslashes_cannot_escape_the_next_tag(tail: str) -> None:
+    # "a\\\" placed before the template's own "[bold]" escaped it, and the closing tag
+    # then raised MarkupError.
+    import io
+
+    escaped = cli.escape("a" + tail)
+    assert cli.escape(escaped) == escaped
+    out = io.StringIO()
+    Console(file=out, color_system=None, width=200).print(f"x{escaped}[bold]y[/bold]")
+    assert out.getvalue().startswith("xa\\")
+    assert out.getvalue().rstrip().endswith("y") and "[" not in out.getvalue()
