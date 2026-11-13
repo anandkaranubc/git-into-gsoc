@@ -267,6 +267,10 @@ def test_program_without_a_year_uses_the_configured_target_year(monkeypatch) -> 
     result = runner.invoke(app, ["program", "--output", "json"])
     assert result.exit_code == 0, result.output
     assert json.loads(result.stdout)["year"] == 2026
+    # The text header printed the raw option, so it read "GSoC None".
+    result = runner.invoke(app, ["program"])
+    assert "GSoC 2026" in result.stdout
+    assert "None" not in result.stdout
 
 
 def test_an_empty_issue_search_prints_next_steps_not_an_empty_table(monkeypatch) -> None:  # type: ignore[no-untyped-def]
@@ -539,3 +543,13 @@ def test_a_missing_argument_shows_an_example_to_type() -> None:
     assert "Missing argument 'name'. Example: git-into-gsoc org \"SymPy\"" in text
     result = runner.invoke(app, ["issue"])
     assert "Example: git-into-gsoc issue owner/repo#123" in " ".join(result.output.split())
+
+
+def test_the_timeline_says_a_deadline_passed_earlier_today() -> None:
+    from git_into_gsoc.cli import _relative
+
+    # At 20:00 UTC the 18:00 proposal deadline is over; the table still said "today".
+    assert _relative({"days_until": 0, "hours_until": -2, "status": "past"}) == "earlier today"
+    assert _relative({"days_until": -3, "status": "past"}) == "3d ago"
+    assert _relative({"days_until": 1, "hours_until": 19, "status": "upcoming"}) == "in 19h"
+    assert _relative({"days_until": 30, "hours_until": 720, "status": "upcoming"}) == "in 30d"
