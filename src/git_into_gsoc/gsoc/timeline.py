@@ -164,11 +164,24 @@ def build_timeline(
                 official=official,
                 status=status,
                 days_until=days,
+                # Days count UTC dates: at 04:00 in India an 18:00 UTC deadline read as
+                # "tomorrow" though it closed that evening, so near dates say hours too.
+                hours_until=int((at - now).total_seconds() // 3600),
                 window_days=None if official else raw.get("window_days", MIN_WINDOW_DAYS),
             )
         )
     items.sort(key=lambda m: m.at)
     return items
+
+
+def countdown(milestone: dict[str, Any]) -> str:
+    """How far off an upcoming milestone (in its JSON shape) is, in words: "in 5 hours",
+    "tomorrow", "in 12 days"."""
+    days = int(milestone.get("days_until") or 0)
+    hours = milestone.get("hours_until")
+    if hours is not None and 0 <= hours < 48:
+        return "in under an hour" if hours < 1 else f"in {hours} hour{'s' if hours != 1 else ''}"
+    return {0: "today", 1: "tomorrow"}.get(days, f"in {days} days")
 
 
 def current_phase(timeline: list[Milestone], now: datetime | None = None) -> ProgramPhase:
@@ -216,6 +229,12 @@ def program_status(
 
     timeline = build_timeline(program or {}, official=official, project_size=project_size, now=now)
     upcoming = [m for m in timeline if m.status in {"upcoming", "today"}]
+    phase = current_phase(timeline, now)
+    if not official and not offline:
+        # The live site answered without this year, so it is not announced, whatever
+        # the estimate says: the 2026 announcement came six weeks early, and from the
+        # estimated date on the 2027 estimate told everyone the program was out.
+        phase = _BEFORE
     return {
         "year": year,
         "dates_are_official": official,
@@ -223,11 +242,11 @@ def program_status(
         "official_home": OFFICIAL_GSOC_HOME,
         "official_timeline": OFFICIAL_TIMELINE,
         "program_page": f"{OFFICIAL_GSOC_HOME}/programs/{year}",
-        "phase": current_phase(timeline, now).model_dump(),
+        "phase": phase.model_dump(),
         "project_size": project_size,
         "next_milestones": [m.model_dump(mode="json") for m in upcoming[:3]],
         "timeline": [m.model_dump(mode="json") for m in timeline],
-        "stats": (official_program or {}).get("stats") if official else None,
+        "stats": (program or {}).get("stats") if official else None,
         "disclaimer": (
             source_note
             if official

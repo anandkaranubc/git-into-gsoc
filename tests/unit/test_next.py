@@ -461,3 +461,22 @@ def test_next_after_start_names_the_organizations_start_matched() -> None:
     state.shortlisted_orgs = ["MDAnalysis"]
     actions = plan_actions(state, {"timeline": []}, tracked_issues=[], new_issues=[])
     assert not any(a["title"].startswith("Shortlist") for a in actions)
+
+
+def test_next_does_not_report_an_issue_from_before_the_last_check_again(
+    api: respx.MockRouter,
+) -> None:
+    # The search matches whole days, so an issue opened at 09:00 came back as new on a
+    # 19:00 check and again at 20:00.
+    store = ProgressStore()
+    store.track_repo("sympy/sympy")
+    store.mark_checked({}, NOW - timedelta(hours=1))
+    earlier = _search_item(7, "sympy/sympy")
+    earlier["created_at"] = (NOW - timedelta(hours=11)).isoformat().replace("+00:00", "Z")
+    fresh = _search_item(8, "sympy/sympy")
+    fresh["created_at"] = (NOW - timedelta(minutes=30)).isoformat().replace("+00:00", "Z")
+    api.get(f"{GH}/search/issues").mock(
+        return_value=httpx.Response(200, json={"items": [fresh, earlier]})
+    )
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert [i["number"] for i in data["new_issues"]] == [8]

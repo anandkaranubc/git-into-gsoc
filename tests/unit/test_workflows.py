@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.yml"))
+# GitHub runs .yaml files too, and one would skip every guard below.
+WORKFLOWS = sorted((ROOT / ".github" / "workflows").glob("*.y*ml"))
 # The main branch ruleset requires these check names; renaming a job blocks every merge.
 REQUIRED_CHECKS = {
     "Quality",
