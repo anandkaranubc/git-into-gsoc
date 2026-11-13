@@ -488,7 +488,8 @@ def test_counts_that_must_be_at_least_one_are_refused_by_the_option() -> None:
     for args in (["mentors", "SymPy", "--years", "0"], ["pointers", "a/b#1", "--similar", "0"]):
         result = runner.invoke(app, args)
         assert result.exit_code == 2, result.output
-        assert "not in the range" in result.output
+        # typer 0.29 reworded "0 is not in the range x>=1"; both start like this.
+        assert f"Invalid value for '{args[2]}'" in result.output
 
 
 def test_diagnose_from_a_closed_standard_input_is_a_friendly_error(monkeypatch) -> None:  # type: ignore[no-untyped-def]
