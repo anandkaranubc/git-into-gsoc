@@ -13,18 +13,31 @@
   if (ask) {
     var input = ask.elements.know;
     function scene() { return window.gigScene; }
-    function say(html) { if (invite) invite.innerHTML = html; }
-    if (scene()) {
+    // The invite is a live region, so screen readers hear the message; the count beside
+    // it changes several times a second and stays out of what they read.
+    var count = document.createElement("span"), message = document.createElement("span");
+    count.setAttribute("aria-hidden", "true");
+    if (invite) invite.append(count, message);
+    var said = null;
+    function say(html, counted) {
+      count.innerHTML = counted || "";
+      if (html !== said) { said = html; message.innerHTML = html; }
+    }
+    function greet() {
+      if (!scene()) return;
       var touch = window.matchMedia("(pointer: coarse)").matches;
       var base = scene().still ? "Every grain is a contributor looking for the way in." : "Every grain is a contributor looking for the way in. " + (touch ? "Tap the field to add people. " : "Drag through a pile to move it. ") + "Type, and more arrive. <b>Enter</b> opens the floor.";
       say(base);
       // the count inside, as the room fills: honest grains, not people
       scene().onCount(function (info) {
         if (info.entered) return;
-        var n = info.inside.toLocaleString();
-        say(info.full ? "<b>" + n + "</b> in. The door is open. <b>Enter</b> steps in." : (info.inside ? "<b>" + n + "</b> in so far. " : "") + base);
+        var n = "<b>" + info.inside.toLocaleString() + "</b>";
+        if (info.full) say("The door is open. <b>Enter</b> steps in.", n + " in. ");
+        else say(base, info.inside ? n + " in so far. " : "");
       });
     }
+    // scene.js starts on the load event, after this deferred script has run.
+    if (scene()) greet(); else window.addEventListener("load", greet);
     input.addEventListener("input", function () {
       var n = input.value.trim().length;
       if (scene()) scene().walk(n / STEPS_TO_DOOR);

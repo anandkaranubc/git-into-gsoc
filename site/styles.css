@@ -514,6 +514,7 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 .loading.on i:nth-child(3) { animation-delay: 0.6s; }
 .loading.on i:nth-child(4) { animation-delay: 0.9s; }
 @keyframes load-step { 0%, 100% { background: var(--line); } 25%, 75% { background: var(--cursor); } }
+@media (prefers-reduced-motion: reduce) { .loading.on i { animation: none; background: var(--cursor); } }
 
 /* --- docs pages (site/docs/, rendered from docs/ by scripts/build_docs.py) ------ */
 .doc { padding: 24px 0 72px; }

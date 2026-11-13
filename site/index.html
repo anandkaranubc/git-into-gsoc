@@ -422,10 +422,17 @@ and like science. Where do I start?"</span></pre>
         )[0];
         if (!visible) return;
         var text = visible.textContent;
+        var label = b.getAttribute("aria-label");
         var done = function () {
           b.setAttribute("data-done", "1");
           b.lastElementChild.textContent = "copied.";
-          setTimeout(function () { b.removeAttribute("data-done"); b.lastElementChild.textContent = "copy"; }, 1600);
+          // The aria-label hides the visible "copied.", so screen readers get it here.
+          if (label) b.setAttribute("aria-label", "Copied");
+          setTimeout(function () {
+            b.removeAttribute("data-done");
+            b.lastElementChild.textContent = "copy";
+            if (label) b.setAttribute("aria-label", label);
+          }, 1600);
         };
         if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
         else { var r = document.createRange(); r.selectNodeContents(visible); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done(); }

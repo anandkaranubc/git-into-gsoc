@@ -12,7 +12,7 @@ git-into-gsoc --install-completion     # tab completion for your shell
 How to read the commands:
 
 - Options come after the command, except the top-level `--version`.
-- Data commands accept `--output rich` (the default, tables and panels) or `--output json` (for scripts and assistants). `doctor`, `cache`, `mcp`, and `--version` do not take `--output`.
+- Data commands accept `--output rich` (the default, tables and panels) or `--output json` (for scripts and assistants). `doctor`, `cache`, `feedback`, `mcp`, and `--version` do not take `--output`.
 - A repository can be written as `owner/name`, as any GitHub URL, or as the `git@github.com:owner/name.git` form that `git remote -v` prints. An issue can be written as `owner/name#123`, `owner/name 123`, or any issue or pull request URL, including a link copied from a single comment.
 - Uppercase words such as `OWNER/REPO`, `YOUR_USERNAME` and `NUMBER` are placeholders for your own values.
 - Nothing here posts to GitHub or submits anything to GSoC. Commands that save do so in a file on your computer, and say so.

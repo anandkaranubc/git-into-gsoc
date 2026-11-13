@@ -299,11 +299,13 @@ class CachedHttpClient:
         cache_path = self._cache_path(kind, url, cache_key, "Authorization" in headers)
         entry = self._read_cache(cache_path) if use_cache else None
         if entry is not None and "not_found" in entry:
-            if time.time() - entry.get("ts", 0) <= min(ttl, NOT_FOUND_TTL_SECONDS):
+            # Strictly less, so ttl=0 always asks again: Windows clocks tick every
+            # ~16 ms, and a copy written in the same tick looked fresh.
+            if time.time() - entry.get("ts", 0) < min(ttl, NOT_FOUND_TTL_SECONDS):
                 self.stats["cache_hits"] += 1
                 raise NotFoundError(entry["not_found"], status_code=404, url=url)
             entry = None
-        if entry is not None and time.time() - entry.get("ts", 0) <= ttl:
+        if entry is not None and time.time() - entry.get("ts", 0) < ttl:
             self.stats["cache_hits"] += 1
             return entry["data"]
 
