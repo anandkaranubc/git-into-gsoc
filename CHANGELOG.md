@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.26.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.2...v0.26.3) (2026-11-13)
+
+
+### Bug Fixes
+
+* **deps:** require typer 0.27, pin uv in CI, and keep the snapshot token out of installs ([#465](https://github.com/anandkaranubc/git-into-gsoc/issues/465)) ([b7f4f3d](https://github.com/anandkaranubc/git-into-gsoc/commit/b7f4f3d2d498e8ac495654b4924c7ff810ed8eee))
+* keep markup in untrusted text inert after a doubled backslash ([#463](https://github.com/anandkaranubc/git-into-gsoc/issues/463)) ([c41dfa8](https://github.com/anandkaranubc/git-into-gsoc/commit/c41dfa8e5131da24ffab661d4eef50a61640d9c3))
+* read hostile ideas pages in linear time, and match GitLab merge requests in any case ([#460](https://github.com/anandkaranubc/git-into-gsoc/issues/460)) ([fc918fd](https://github.com/anandkaranubc/git-into-gsoc/commit/fc918fd6f5542c1cba40aaccced9b879e21d56f7))
+* say the right year, phase and time left on the program timeline ([#462](https://github.com/anandkaranubc/git-into-gsoc/issues/462)) ([7623bf9](https://github.com/anandkaranubc/git-into-gsoc/commit/7623bf9506b80a47f08277e02c232cdb95a23791))
+* show the home page hint, make ttl=0 always fetch, and small docs fixes ([#464](https://github.com/anandkaranubc/git-into-gsoc/issues/464)) ([ecf07d1](https://github.com/anandkaranubc/git-into-gsoc/commit/ecf07d1ac74818ff1005e656ef85889f9380a317))
+
 ## [0.26.2](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.1...v0.26.2) (2026-11-04)
 
 
