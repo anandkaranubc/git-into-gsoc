@@ -150,3 +150,35 @@ def test_journey_overview_complete() -> None:
         "proposal",
         "track",
     ]
+
+
+def test_an_estimate_never_says_the_program_is_announced() -> None:
+    # The 2027 estimate put the announcement on 2026-12-02, and from then on `next` said
+    # "Program announced" while the official site still had no 2027 program.
+    later = datetime(2027, 1, 25, tzinfo=UTC)
+    status = program_status(2027, official_program=None, now=later)
+    assert status["phase"]["id"] == "before_announcement"
+    # Offline, the estimate is all there is, so it still sets the phase.
+    offline = program_status(2027, official_program=None, now=later, offline=True)
+    assert offline["phase"]["id"] != "before_announcement"
+
+
+def test_near_deadlines_count_hours_not_utc_dates() -> None:
+    from git_into_gsoc.gsoc.timeline import countdown
+
+    # 22:30 UTC on 30 March is 04:00 on 31 March in India; the 18:00 UTC deadline that
+    # evening read as "tomorrow".
+    night = datetime(2026, 3, 30, 22, 30, tzinfo=UTC)
+    status = program_status(2026, official_program=None, now=night)
+    deadline = next(m for m in status["timeline"] if m["key"] == "proposal_deadline")
+    assert deadline["days_until"] == 1
+    assert deadline["hours_until"] == 19
+    assert countdown(deadline) == "in 19 hours"
+    assert countdown({"days_until": 12, "hours_until": 290}) == "in 12 days"
+    assert countdown({"days_until": 0}) == "today"
+
+
+def test_the_embedded_snapshot_keeps_its_stats() -> None:
+    status = program_status(2026, official_program=None, now=OCT_2026, offline=True)
+    assert status["dates_are_official"] is True
+    assert status["stats"]

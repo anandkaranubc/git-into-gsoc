@@ -10,6 +10,7 @@ import re
 from datetime import UTC, datetime
 from typing import Any
 
+from git_into_gsoc.gsoc.timeline import countdown
 from git_into_gsoc.models import ProgressState
 
 DEADLINE_HORIZON_DAYS = 45
@@ -226,8 +227,7 @@ def plan_actions(
     for item in deadlines:
         if int(item.get("days_until") or 0) <= SOON_DAYS:
             label = str(item.get("label") or item.get("key"))
-            days = int(item.get("days_until") or 0)
-            when = "today" if days == 0 else f"in {days} day{'s' if days != 1 else ''}"
+            when = countdown(item)
             estimate = (
                 "" if item.get("official") else " (estimated date; verify on the official site)"
             )
