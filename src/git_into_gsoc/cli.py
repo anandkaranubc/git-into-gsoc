@@ -1861,7 +1861,7 @@ def recommend_cmd(
         help="Your open source experience: new, some, or experienced (default: your profile)",
     ),
     hours: int | None = typer.Option(
-        None, "--hours", min=1, help="Hours a week you can give (default: your profile)"
+        None, "--hours", min=1, max=80, help="Hours a week you can give (default: your profile)"
     ),
     output: Output = OUTPUT_OPTION,
 ) -> None:

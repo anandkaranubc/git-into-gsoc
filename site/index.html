@@ -415,6 +415,7 @@ and like science. Where do I start?"</span></pre>
     installNote.hidden = true;
 
     document.querySelectorAll("[data-copy]").forEach(function (b) {
+      var label = b.getAttribute("aria-label"); // read once: a second click would see "Copied"
       b.addEventListener("click", function () {
         var visible = Array.prototype.filter.call(
           b.closest(".term").querySelectorAll("code.copyable"),
@@ -425,7 +426,13 @@ and like science. Where do I start?"</span></pre>
         var done = function () {
           b.setAttribute("data-done", "1");
           b.lastElementChild.textContent = "copied.";
-          setTimeout(function () { b.removeAttribute("data-done"); b.lastElementChild.textContent = "copy"; }, 1600);
+          // The aria-label hides the visible "copied.", so screen readers get it here.
+          if (label) b.setAttribute("aria-label", "Copied");
+          setTimeout(function () {
+            b.removeAttribute("data-done");
+            b.lastElementChild.textContent = "copy";
+            if (label) b.setAttribute("aria-label", label);
+          }, 1600);
         };
         if (navigator.clipboard) navigator.clipboard.writeText(text).then(done);
         else { var r = document.createRange(); r.selectNodeContents(visible); var s = getSelection(); s.removeAllRanges(); s.addRange(r); done(); }

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from pathlib import Path
 
 import httpx
@@ -48,7 +47,6 @@ def test_a_page_that_appears_is_seen_once_the_memory_is_stale(tmp_path: Path) ->
     url = "https://summerofcode.withgoogle.com/api/program/2027/organizations/"
     with pytest.raises(NotFoundError):
         client.get_json(url)
-    time.sleep(0.01)
     # ttl=0: the remembered 404 is too old, so the page is asked for again.
     assert client.get_json(url, ttl=0) == [{"name": "An org"}]
     assert not answers
@@ -67,7 +65,6 @@ def test_a_not_found_memory_is_not_served_after_a_network_error(tmp_path: Path) 
     url = "https://api.github.com/repos/someone/missing"
     with pytest.raises(NotFoundError):
         client.get_json(url)
-    time.sleep(0.01)
     # A stale 404 is not a copy of the page: the network error is reported as itself.
     with pytest.raises(HttpError, match="Network error"):
         client.get_json(url, ttl=0)

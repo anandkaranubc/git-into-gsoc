@@ -28,8 +28,10 @@ CHECKED = [
     "skills",
     "plugin-evals",
     "pyproject.toml",
+    "site",
+    "brand",
 ]
-SUFFIXES = {".md", ".yml", ".yaml", ".toml", ".example", ".sh", ".json"}
+SUFFIXES = {".md", ".yml", ".yaml", ".toml", ".example", ".sh", ".json", ".html", ".js", ".css"}
 
 # Filler and sales words that say nothing to a beginner. The list is short on
 # purpose: each entry is a word the docs never need, not a word to ration.
