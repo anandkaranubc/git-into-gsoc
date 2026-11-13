@@ -233,3 +233,47 @@ def test_recommend_marks_a_starter_issue_someone_asked_for_before(
     assert as_json.exit_code == 0, as_json.output
     starters = json.loads(as_json.stdout)["starter_issues"]
     assert starters[0]["caution"] == "Needs design context first"
+
+
+@pytest.mark.parametrize(
+    "hostile", ["\\\\[link=https://evil.example/x]click", "\\\\[/]", "a \\\\\\\\[bold]b"]
+)
+def test_a_doubled_backslash_does_not_reopen_markup(hostile: str) -> None:
+    # Rich reads an even run of backslashes as escaped backslashes, so the tag after it
+    # stayed live: a clickable link to the sender's site, or a MarkupError crash.
+    import io
+
+    escaped = cli.escape(hostile)
+    assert cli.escape(escaped) == escaped
+    out = io.StringIO()
+    Console(file=out, force_terminal=True, color_system="truecolor", width=200).print(
+        escaped, highlight=False
+    )
+    assert "\x1b]8" not in out.getvalue() and "\x1b[1m" not in out.getvalue()
+    assert hostile.replace("\\", "").lstrip("a ") in out.getvalue()
+
+
+def test_progress_ignores_phases_made_up_in_the_file(wide_console: None) -> None:
+    store = ProgressStore()
+    store.complete_phase("learn")
+    raw = json.loads(store.path.read_text("utf-8"))
+    raw["phases"].update({"x\x1b]0;pwned\x07": True, "[/]": True})
+    store.path.write_text(json.dumps(raw), "utf-8")
+    shown = CliRunner().invoke(cli.app, ["progress"])
+    assert shown.exit_code == 0, shown.output
+    assert "\x1b" not in shown.output and "pwned" not in shown.output
+    assert "1/10 phases done" in shown.output
+
+
+@pytest.mark.parametrize("tail", ["\\", "\\\\\\", "\\\\\\\\\\"])
+def test_an_odd_run_of_trailing_backslashes_cannot_escape_the_next_tag(tail: str) -> None:
+    # "a\\\" placed before the template's own "[bold]" escaped it, and the closing tag
+    # then raised MarkupError.
+    import io
+
+    escaped = cli.escape("a" + tail)
+    assert cli.escape(escaped) == escaped
+    out = io.StringIO()
+    Console(file=out, color_system=None, width=200).print(f"x{escaped}[bold]y[/bold]")
+    assert out.getvalue().startswith("xa\\")
+    assert out.getvalue().rstrip().endswith("y") and "[" not in out.getvalue()

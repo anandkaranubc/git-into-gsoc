@@ -475,6 +475,7 @@ class ProgressStore:
             "notes": len(state.notes),
             "recent_notes": state.notes[::-1][:RECENT_NOTES],
             "profile": state.profile,
-            "phases": state.phases,
+            # progress.json is edited by hand; a made-up key reached the terminal raw.
+            "phases": {k: v for k, v in state.phases.items() if k in DEFAULT_PHASES},
             "updated_at": state.updated_at.isoformat() if state.updated_at else None,
         }
