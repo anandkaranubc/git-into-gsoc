@@ -49,7 +49,9 @@ dependencies = [
   "pydantic>=2.7,<3",
   "pydantic-settings>=2.3,<3",
   "rich>=13.7",
-  "typer>=0.16,<1",
+  # Below 0.27 a missing argument prints no example to type, and below 0.18 (with
+  # click 8.5) the command ran on with None instead of stopping.
+  "typer>=0.27,<1",
   "platformdirs>=4.2,<5",
 ]
 
