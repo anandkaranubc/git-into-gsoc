@@ -76,7 +76,7 @@ def strip_hidden_all(value: Any) -> Any:
     if isinstance(value, str):
         return strip_hidden(value)
     if isinstance(value, dict):
-        return {key: strip_hidden_all(item) for key, item in value.items()}
+        return {strip_hidden_all(key): strip_hidden_all(item) for key, item in value.items()}
     if isinstance(value, list | tuple):
         return [strip_hidden_all(item) for item in value]
     return value
