@@ -415,6 +415,7 @@ and like science. Where do I start?"</span></pre>
     installNote.hidden = true;
 
     document.querySelectorAll("[data-copy]").forEach(function (b) {
+      var label = b.getAttribute("aria-label"); // read once: a second click would see "Copied"
       b.addEventListener("click", function () {
         var visible = Array.prototype.filter.call(
           b.closest(".term").querySelectorAll("code.copyable"),
@@ -422,7 +423,6 @@ and like science. Where do I start?"</span></pre>
         )[0];
         if (!visible) return;
         var text = visible.textContent;
-        var label = b.getAttribute("aria-label");
         var done = function () {
           b.setAttribute("data-done", "1");
           b.lastElementChild.textContent = "copied.";
