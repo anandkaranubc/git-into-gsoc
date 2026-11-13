@@ -46,8 +46,9 @@ jobs:
         env:
           # The built-in token's searches with an OR group come back wrong, so the
           # canary keeps last month's beginner counts and statements. A read-only
-          # token of the owner's, when set, reads them like a person's searches do.
-          GITHUB_TOKEN: ${{ secrets.SNAPSHOT_READ_TOKEN || github.token }}
+          # token of the owner's reads them like a person's searches do. No fallback
+          # to the job's token, which can write and would sit beside stranger pages.
+          GITHUB_TOKEN: ${{ secrets.SNAPSHOT_READ_TOKEN }}
           EVENT: ${{ github.event_name }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ] || [ "$(date -u +%d)" -le 7 ]; then
