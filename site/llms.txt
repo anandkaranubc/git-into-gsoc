@@ -1,0 +1,20 @@
+# git into gsoc
+
+> A free, MIT-licensed tool that helps newcomers prepare for Google Summer of Code (GSoC). It finds mentoring organizations that fit you, repositories where first-time pull requests get merged, and beginner issues nobody has claimed. It works in the terminal and inside AI assistants (MCP server and Agent Skill). It is independent and not affiliated with Google.
+
+Facts come from official GSoC pages and live GitHub data. Dates for a program year that Google has not announced are estimates and are labelled that way.
+
+## Use it
+
+- [Four questions, three organizations](https://gitintogsoc.me/start/): runs in the browser, nothing to install
+- [Every GSoC organization](https://gitintogsoc.me/orgs/): project ideas, difficulty, history, channels
+- [Beginner guide](https://gitintogsoc.me/docs/): from "what is GSoC?" to a first pull request and a proposal
+
+## For assistants and developers
+
+- [Connect your AI assistant](https://gitintogsoc.me/docs/assistants/)
+- [MCP tools](https://gitintogsoc.me/docs/mcp/)
+- [Command reference](https://gitintogsoc.me/docs/cli/)
+- [Sources and limitations](https://gitintogsoc.me/docs/sources/)
+- [Source code](https://github.com/anandkaranubc/git-into-gsoc)
+- [Package on PyPI](https://pypi.org/project/git-into-gsoc/)

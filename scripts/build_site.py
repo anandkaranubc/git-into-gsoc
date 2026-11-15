@@ -18,10 +18,12 @@ import json
 import re
 import zipfile
 from collections import Counter
+from datetime import datetime
 from html import escape
 from pathlib import Path
 from typing import Any
 
+from git_into_gsoc.gsoc.timeline import build_timeline, estimate_program, load_history
 from git_into_gsoc.install.distribution import REPO_URL, SITE_URL
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -43,6 +45,13 @@ ANALYTICS = '<script data-goatcounter="https://gitintogsoc.goatcounter.com/count
 # A slug becomes a folder name, so anything else from the data is refused.
 SLUG = re.compile(r"[a-z0-9][a-z0-9-]*")
 TECH_CHIPS = 18
+# Search snippets cut off near 160 characters, so a longer description is trimmed here, not there.
+DESCRIPTION_CHARS = 155
+RELATED = 5
+# The program year people are preparing for. Its page is the one that should already be
+# indexed when searches for it start (January), so bump this when that year's program ends.
+PLAN_YEAR = 2027
+PLAN_PATH = f"gsoc-{PLAN_YEAR}/"
 CHANNEL_LABELS = {
     "mailingList": "Mailing list",
     "chat": "Chat",
@@ -107,8 +116,11 @@ def _nav(root: str, path: str) -> str:
     for href, label in NAV:
         current = ' aria-current="page"' if path == href or path.startswith(href) else ""
         cls = ' class="cta"' if href == "start/" else ' class="optional"' if href == "docs/" else ""
+        # The name must begin with the visible words, or voice control cannot say "click git in".
         name = (
-            ' aria-label="Start: answer four questions in your browser"' if href == "start/" else ""
+            ' aria-label="git in: answer four questions in your browser"'
+            if href == "start/"
+            else ""
         )
         items.append(f'<li{cls}><a href="{root}{href}"{current}{name}>{label}</a></li>')
     items.append(f'<li><a href="{REPO_URL}">github</a></li>')
@@ -130,6 +142,7 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <meta name="description" content="{escape(description)}">
 <link rel="canonical" href="{SITE_URL}{path}">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="git into gsoc">
 <meta property="og:url" content="{SITE_URL}{path}">
 <meta property="og:title" content="{escape(title)}">
 <meta property="og:description" content="{escape(description)}">
@@ -172,7 +185,8 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 """
 
 
-FOOT = """</main>
+FOOT = (
+    """</main>
 
 <footer class="footer">
   <div class="wrap cols">
@@ -183,6 +197,7 @@ FOOT = """</main>
     <ul>
       <li><a href="SITE/start/">Four questions, in your browser</a></li>
       <li><a href="SITE/orgs/">Every organization, in your browser</a></li>
+      <li><a href="SITE/PLAN/">GSoC YEAR: dates and how to prepare</a></li>
       <li><a href="SITE/docs/">Beginner guide</a></li>
       <li><a href="SITE/docs/sources/">Sources and limitations</a></li>
       <li><a href="REPO/">Source on GitHub</a></li>
@@ -216,7 +231,11 @@ FOOT = """</main>
     paint();
   })();
 </script>
-""".replace("REPO", REPO_URL).replace("SITE/", SITE_URL)
+""".replace("REPO", REPO_URL)
+    .replace("SITE/PLAN/", f"SITE/{PLAN_PATH}")
+    .replace("GSoC YEAR", f"GSoC {PLAN_YEAR}")
+    .replace("SITE/", SITE_URL)
+)
 
 FILTER_SCRIPT = """<script>
   (function () {
@@ -299,10 +318,76 @@ def _years_line(years: dict[int, int]) -> str:
     first = min(years)
     runs = ", ".join(f"'{y % 100:02d}: {n}" for y, n in sorted(years.items()))
     plural = "s" if len(years) != 1 else ""
-    return f"In GSoC since {first}, {len(years)} year{plural}. Projects per year: {runs}."
+    # The archive starts in 2016, so an older organization's first year here is not its first.
+    return f"{len(years)} year{plural} in our archive, from {first}. Projects per year: {runs}."
 
 
-def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int], year: int) -> str:
+def breadcrumbs(crumbs: list[tuple[str, str]]) -> str:
+    """BreadcrumbList markup, so search results can show the page's place in the site."""
+    data = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i, "name": name, "item": url}
+            for i, (name, url) in enumerate(crumbs, 1)
+        ],
+    }
+    return f'<script type="application/ld+json">{json.dumps(data)}</script>\n'
+
+
+def org_description(
+    name: str, tagline: str, ideas: dict[str, Any], years: dict[int, int], year: int
+) -> str:
+    """A search snippet that differs per organization: its numbers first, its tagline after."""
+    facts = []
+    count = int(ideas.get("count") or 0)
+    if count:
+        easy = int((ideas.get("difficulty") or {}).get("easy") or 0)
+        facts.append(
+            f"{count} project idea{'s' if count != 1 else ''}" + (f", {easy} easy" if easy else "")
+        )
+    if years:
+        facts.append(f"{len(years)} year{'s' if len(years) != 1 else ''} of GSoC history")
+    text = f"{name} in Google Summer of Code {year}: " + (", ".join(facts) + ". " if facts else "")
+    text += tagline
+    if len(text) <= DESCRIPTION_CHARS:
+        return text.strip()
+    return text[:DESCRIPTION_CHARS].rsplit(" ", 1)[0].rstrip(",;:.") + "..."
+
+
+def related_orgs(
+    orgs: list[dict[str, Any]], limit: int = RELATED
+) -> dict[str, list[dict[str, Any]]]:
+    """For each organization, the ones sharing its rarest technologies and topics.
+
+    Rare tags count more: nearly every organization lists python, which says nothing."""
+    tags = {o["slug"]: set(o.get("tech_tags") or []) | set(o.get("topic_tags") or []) for o in orgs}
+    seen = Counter(t for ts in tags.values() for t in ts)
+    out: dict[str, list[dict[str, Any]]] = {}
+    for org in orgs:
+        scored = sorted(
+            (
+                (
+                    -sum(1 / seen[t] for t in tags[org["slug"]] & tags[o["slug"]]),
+                    str(o["name"]).lower(),
+                    o,
+                )
+                for o in orgs
+                if o["slug"] != org["slug"] and tags[org["slug"]] & tags[o["slug"]]
+            ),
+            key=lambda row: row[:2],
+        )
+        out[org["slug"]] = [o for *_, o in scored[:limit]]
+    return out
+
+
+def org_page(
+    org: dict[str, Any],
+    signal: dict[str, Any],
+    years: dict[int, int],
+    year: int,
+    related: list[dict[str, Any]] = (),  # type: ignore[assignment]
+) -> str:
     name = str(org["name"])
     tagline = str(org.get("tagline") or "")
     description = str(org.get("description") or "")
@@ -358,8 +443,26 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
     else:
         gh_block = "<p>No GitHub organization found in its official listing.</p>"
 
-    meta = f"GSoC {year} organization. {tagline}".strip()
-    html = _head(f"{name}: GSoC {year} organization", meta, "../../", f"orgs/{org['slug']}/")
+    meta = org_description(name, tagline, ideas, years, year)
+    title = f"{name} GSoC {year}: " + (
+        "project ideas and history" if ideas.get("count") else "profile and history"
+    )
+    path = f"orgs/{org['slug']}/"
+    html = _head(title, meta, "../../", path)
+    html += breadcrumbs(
+        [
+            ("git into gsoc", SITE_URL),
+            ("Organizations", f"{SITE_URL}orgs/"),
+            (name, f"{SITE_URL}{path}"),
+        ]
+    )
+    similar = ""
+    if related:
+        items = "".join(
+            f'<li><a href="../{escape(o["slug"])}/">{escape(str(o["name"]))}</a></li>'
+            for o in related
+        )
+        similar = f'<h2>Similar organizations</h2>\n          <ul class="links">{items}</ul>'
     bars = ""
     if years:
         top = max(years.values()) or 1
@@ -387,6 +490,7 @@ def org_page(org: dict[str, Any], signal: dict[str, Any], years: dict[int, int],
           {bars}<p>{escape(_years_line(years))}</p>
           <h2>On GitHub</h2>
           {gh_block}
+          {similar}
         </div>
         <div>
           <h2>Links and channels</h2>
@@ -446,7 +550,7 @@ def index_page(
         if org.get("contributor_guidance_url"):
             facts.append("contributor guide")
         if years:
-            facts.append(f"since {min(years)}")
+            facts.append(f"{len(years)} year{'s' if len(years) != 1 else ''} of history")
         search = " ".join(
             [
                 str(org["name"]),
@@ -495,6 +599,7 @@ def index_page(
     )
     idle = f"{len(cards)} doors, one per organization, by category. Brighter doors have taken part longer. Hover one."
     html = _head(title, description, "../", "orgs/")
+    html += breadcrumbs([("git into gsoc", SITE_URL), ("Organizations", f"{SITE_URL}orgs/")])
     html += f"""  <section class="section org-index" aria-labelledby="orgs-title">
     <div class="wrap">
       <div class="section-head page-head">
@@ -732,6 +837,7 @@ def start_page(year: int, generated: str, *, download_mb: int = DOWNLOAD_MB) -> 
         "fit you, with the evidence. Runs in your browser; nothing to install."
     )
     html = _head(title, description, "../", "start/")
+    html += breadcrumbs([("git into gsoc", SITE_URL), ("Start", f"{SITE_URL}start/")])
     html += f"""  <section class="section start" aria-labelledby="start-title">
     <div class="wrap">
       <div class="section-head page-head">
@@ -833,11 +939,102 @@ def build_start(out: Path, official: dict[str, Any], signals: dict[str, Any]) ->
     package_zip(start / "pkg.zip")
 
 
+def _day(at: Any) -> str:
+    return f"{at.day} {at:%b %Y}"
+
+
+def plan_page(
+    year: int,
+    programs: dict[int, dict[str, Any]],
+    orgs: list[dict[str, Any]],
+    history: dict[str, Any],
+) -> str:
+    """The page for the program year people are preparing for, before and after Google
+    publishes its dates. Dates come from the same code as the ``program`` command."""
+    official = year in programs
+    program = programs.get(year) or estimate_program(year, programs) or {}
+    marks = [m for m in build_timeline(program, official=official) if m.project_size is None]
+    rows = "".join(
+        f"<tr><td>{escape(m.label)}</td><td>{_day(m.at)}</td>"
+        f"<td>{'official' if official else f'±{m.window_days} days'}</td></tr>"
+        for m in marks
+    )
+    earlier = sorted(y for y in programs if y < year)
+    last = (
+        {m["name"]: _day(_parse_at(m)) for m in programs[earlier[-1]]["milestones"]}
+        if earlier
+        else {}
+    )
+    pattern = ""
+    if earlier and {"org_announce_public", "contributor_proposals_open"} <= set(last):
+        pattern = (
+            f" In {earlier[-1]} the organizations were announced on {last['org_announce_public']} "
+            f"and proposals opened on {last['contributor_proposals_open']}."
+        )
+    lede = (
+        "These are the dates Google published."
+        if official
+        else "Google has not published the dates yet. The table projects the official "
+        f"{earlier[-1] if earlier else 'previous'} dates forward one year, so treat every date as "
+        "an estimate and check Google's timeline page before you plan around one."
+    )
+    veterans = sorted(
+        (
+            (len(y), sum(y.values()), str(o["name"]), str(o["slug"]))
+            for o in orgs
+            if (y := history_for(str(o["name"]), history))
+        ),
+        key=lambda r: (-r[0], -r[1], r[2].lower()),
+    )[:12]
+    longest = "".join(
+        f'<li><a href="../orgs/{escape(slug)}/">{escape(name)}</a>: {n} years of history in our archive</li>'
+        for n, _, name, slug in veterans
+    )
+    title = f"Google Summer of Code {year}: dates and how to prepare"
+    description = (
+        f"{'Official' if official else 'Estimated'} Google Summer of Code {year} dates, what to do "
+        f"before applications open, and {len(orgs)} organizations to start from."
+    )
+    path = PLAN_PATH
+    html = _head(title, description, "../", path)
+    html += breadcrumbs([("git into gsoc", SITE_URL), (f"GSoC {year}", f"{SITE_URL}{path}")])
+    html += f"""  <div class="wrap">
+  <article class="doc">
+    <h1>{escape(title)}</h1>
+    <p>{escape(lede)}{escape(pattern)}</p>
+    <p><a href="https://developers.google.com/open-source/gsoc/timeline">Google's timeline page</a> is the source of truth.</p>
+    <h2>{"Dates" if official else "Estimated dates"}</h2>
+    <table>
+      <thead><tr><th>Milestone</th><th>{"Date" if official else "Estimate"} (UTC)</th><th>{"Source" if official else "Give or take"}</th></tr></thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <h2>What to do before applications open</h2>
+    <ol>
+      <li>Learn how the program works: <a href="../docs/guide/01-understand-gsoc/">what GSoC is and who can join</a>.</li>
+      <li>Pick two or three organizations. <a href="../start/">Answer four questions in your browser</a> or <a href="../orgs/">browse all {len(orgs)}</a>.</li>
+      <li>Find a beginner issue nobody has claimed and land one small pull request. <a href="../docs/guide/05-choose-an-issue/">The guide shows how</a>.</li>
+      <li>Read each organization's contributor guide and its AI policy, then say hello in its public channel before you propose anything.</li>
+      <li>Start your proposal early. <a href="../docs/guide/07-prepare-a-proposal/">The guide has a checklist</a>.</li>
+    </ol>
+    <h2>Organizations to look at first</h2>
+    <p>These have taken part the longest, so their ideas, mentors and habits are the easiest to learn from. The list changes every year. Google publishes the new one on the date for accepted organizations above.</p>
+    <ul>{longest}</ul>
+  </article>
+  </div>
+"""
+    return html + FOOT
+
+
+def _parse_at(milestone: dict[str, Any]) -> Any:
+    return datetime.fromisoformat(str(milestone["datetime"]).replace("Z", "+00:00"))
+
+
 def sitemap(slugs: list[str]) -> str:
     urls = [
         SITE_URL,
         f"{SITE_URL}brand.html",
         f"{SITE_URL}start/",
+        f"{SITE_URL}{PLAN_PATH}",
         f"{SITE_URL}orgs/",
         *(f"{SITE_URL}orgs/{s}/" for s in slugs),
     ]
@@ -865,14 +1062,25 @@ def build(out: Path, data: Path = DATA) -> list[str]:
     orgs_dir = out / "orgs"
     orgs_dir.mkdir(parents=True, exist_ok=True)
     slugs = []
+    similar = related_orgs(orgs)
     for org in orgs:
         slug = str(org["slug"])
-        page = org_page(org, by_slug.get(slug) or {}, history_for(str(org["name"]), history), year)
+        page = org_page(
+            org,
+            by_slug.get(slug) or {},
+            history_for(str(org["name"]), history),
+            year,
+            similar[slug],
+        )
         (orgs_dir / slug).mkdir(exist_ok=True)
         (orgs_dir / slug / "index.html").write_text(page, encoding="utf-8")
         slugs.append(slug)
     (orgs_dir / "index.html").write_text(
         index_page(orgs, by_slug, history, year, generated), encoding="utf-8"
+    )
+    (out / PLAN_PATH).mkdir(exist_ok=True)
+    (out / PLAN_PATH / "index.html").write_text(
+        plan_page(PLAN_YEAR, load_history(), orgs, history), encoding="utf-8"
     )
     (out / "sitemap.xml").write_text(sitemap(slugs), encoding="utf-8")
     build_start(out, official, signals)

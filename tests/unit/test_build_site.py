@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from scripts.build_site import ANALYTICS, build, ideas_line  # noqa: E402
+from scripts.build_site import ANALYTICS, PLAN_PATH, PLAN_YEAR, build, ideas_line, related_orgs  # noqa: E402
 
 
 def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
@@ -25,7 +25,7 @@ def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
         assert (tmp_path / "orgs" / org["slug"] / "index.html").is_file()
         assert f'href="{org["slug"]}/"' in index
     sitemap = (tmp_path / "sitemap.xml").read_text(encoding="utf-8")
-    assert sitemap.count("<loc>") == len(slugs) + 4
+    assert sitemap.count("<loc>") == len(slugs) + 5
 
 
 def test_every_page_carries_the_same_page_view_counter(tmp_path: Path) -> None:
@@ -95,7 +95,7 @@ def test_data_text_is_escaped_and_odd_slugs_are_refused(tmp_path: Path) -> None:
     assert 'href="https://example.org/ideas?a=1&amp;b=2" data-out="org-link/ideas"' in page
     # A link from the data is only a link when it is a web address.
     assert "javascript:alert(1)" in page and 'href="javascript:' not in page
-    assert "In GSoC since 2025, 1 year." in page
+    assert "1 year in our archive, from 2025." in page
     assert not (tmp_path / "escapee").exists()
 
 
@@ -106,3 +106,49 @@ def test_ideas_line_matches_the_cli_evidence_wording() -> None:
         "Sizes: 3 small. 1 mentor named."
     )
     assert ideas_line({}, 2026).startswith("Its ideas page could not be split")
+
+
+def test_organization_pages_have_their_own_snippet_breadcrumbs_and_neighbours(
+    tmp_path: Path,
+) -> None:
+    build(tmp_path)
+    page = (tmp_path / "orgs/sympy/index.html").read_text(encoding="utf-8")
+    title = page.split("<title>")[1].split("</title>")[0]
+    description = page.split('name="description" content="')[1].split('"')[0]
+    assert title.startswith("SymPy GSoC ")
+    assert description.startswith("SymPy in Google Summer of Code ")
+    assert len(description) <= 160
+    assert "BreadcrumbList" in page
+    assert page.count('href="../') >= 5  # the way back plus similar organizations
+    descriptions = {
+        (p / "index.html").read_text(encoding="utf-8").split('name="description" content="')[1]
+        for p in (tmp_path / "orgs").iterdir()
+        if p.is_dir()
+    }
+    assert len(descriptions) > 150  # one snippet per organization, not one for all
+
+
+def test_related_orgs_skip_the_organization_itself_and_rank_rare_tags_first() -> None:
+    orgs = [
+        {"slug": "a", "name": "A", "tech_tags": ["python", "rust"]},
+        {"slug": "b", "name": "B", "tech_tags": ["python"]},
+        {"slug": "c", "name": "C", "tech_tags": ["rust"]},
+        {"slug": "d", "name": "D", "tech_tags": ["go"]},
+        {"slug": "e", "name": "E", "tech_tags": ["python"]},
+    ]
+    near = related_orgs(orgs)
+    assert [o["slug"] for o in near["a"]] == ["c", "b", "e"]  # rust is rarer than python
+    assert near["d"] == []
+
+
+def test_plan_page_labels_estimates_and_is_linked_from_every_page(tmp_path: Path) -> None:
+    build(tmp_path)
+    page = (tmp_path / PLAN_PATH / "index.html").read_text(encoding="utf-8")
+    assert f"Google Summer of Code {PLAN_YEAR}" in page
+    assert "Give or take" in page or "official" in page
+    assert "developers.google.com/open-source/gsoc/timeline" in page
+    description = page.split('name="description" content="')[1].split('"')[0]
+    assert len(description) <= 160
+    assert "\u2014" not in page  # no em dashes
+    for html in (tmp_path / "orgs/sympy/index.html", ROOT / "site/index.html"):
+        assert f'gsoc-{PLAN_YEAR}/"' in html.read_text(encoding="utf-8")
