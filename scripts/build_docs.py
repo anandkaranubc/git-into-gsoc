@@ -13,12 +13,11 @@ is not committed.
 from __future__ import annotations
 
 import argparse
-import json
 import re
 from html import escape
 from pathlib import Path
 
-from build_site import FOOT, REPO_URL, SITE_URL, _head
+from build_site import DESCRIPTION_CHARS, FOOT, REPO_URL, SITE_URL, _head, breadcrumbs
 from markdown_it import MarkdownIt
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,7 +26,6 @@ LINK = re.compile(r"(?<!!)\]\(([^)\s]+)\)")
 # Markup to drop when a paragraph becomes a meta description: link text is kept.
 INLINE_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 SKIP_BLOCK = re.compile(r"^(?:#|\||```|>|[-*] |\d+\. )")
-DESCRIPTION_CHARS = 155
 
 
 def slugify(value: str) -> str:
@@ -119,19 +117,11 @@ def render(source: Path) -> str:
     crumbs = [("git into gsoc", SITE_URL), ("Guide", f"{SITE_URL}docs/")]
     if path != "docs/":
         crumbs.append((title, f"{SITE_URL}{path}"))
-    breadcrumbs = {
-        "@context": "https://schema.org",
-        "@type": "BreadcrumbList",
-        "itemListElement": [
-            {"@type": "ListItem", "position": i, "name": name, "item": url}
-            for i, (name, url) in enumerate(crumbs, 1)
-        ],
-    }
     trail = " / ".join(f'<a href="{escape(url)}">{escape(name)}</a>' for name, url in crumbs[:-1])
     source_rel = source.relative_to(ROOT).as_posix()
     return (
         _head(f"{title} | git into gsoc", description(text), root, path)
-        + f'<script type="application/ld+json">{json.dumps(breadcrumbs)}</script>\n'
+        + breadcrumbs(crumbs)
         + f'<div class="wrap doc-grid">\n{toc(sections)}<article class="doc">\n'
         + f'<nav class="crumbs" aria-label="Breadcrumb">{trail}</nav>\n'
         + body

@@ -165,6 +165,8 @@ The site counts page views and a few named clicks with GoatCounter; [docs/privac
 | `install/<app>` | Which one-click assistant install is used? |
 | `start/submit`, `start/results` | How often does the start page get as far as results? |
 | `org-link/<kind>` | Which links do visitors follow off an organization page (ideas, website, guide, source, contact)? |
+| `to-start/<page>` | Which kinds of page (home, orgs, org, docs) send visitors to the start page? |
+| `orgs/filter` | Does anyone use the organization filters, or only scroll? Counted once per visit; nothing typed is sent. |
 | `out/<host>` | Where else do visitors leave to? |
 
 Add an event only with a question beside it, and never send anything a visitor typed. Local previews are not counted. To keep your own visits out, open https://gitintogsoc.me/#toggle-goatcounter once in each browser. The numbers live in the owner's GoatCounter account.
