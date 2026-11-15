@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.27.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.3...v0.27.0) (2026-11-15)
+
+
+### Features
+
+* **site:** sharper search snippets, a GSoC 2027 page, and two funnel events ([#466](https://github.com/anandkaranubc/git-into-gsoc/issues/466)) ([7fe42db](https://github.com/anandkaranubc/git-into-gsoc/commit/7fe42db3f2340326a845fef26fb6a75680905767))
+
 ## [0.26.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.2...v0.26.3) (2026-11-13)
 
 
