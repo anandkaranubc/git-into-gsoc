@@ -195,7 +195,13 @@ def _ideas_for(toolkit: Any, raw: dict[str, Any], ttl: int) -> dict[str, Any] | 
     doc, _ = toolkit.read_ideas_page(str(url), ttl=ttl)
     if doc is None:
         return {"url": url, "layout": "unreachable", "count": 0}
-    return summarize_ideas([i.model_dump() for i in doc.ideas], layout=doc.layout, url=str(url))
+    summary = summarize_ideas([i.model_dump() for i in doc.ideas], layout=doc.layout, url=str(url))
+    # The site's org pages quote these, so a maintainer can check what applicants are told.
+    if doc.ai_policy:
+        summary["ai"] = doc.ai_policy
+    if doc.ai_policy_url:
+        summary["ai_url"] = doc.ai_policy_url
+    return summary
 
 
 # The labels recommend searches for its starter issues, so the count matches them.

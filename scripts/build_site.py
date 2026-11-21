@@ -429,6 +429,17 @@ def org_page(
             f"<p>{_link(str(ideas['url']), 'Read the ideas page', 'org-link/ideas')}. "
             "Ideas are for scope reference; never copy one into a proposal.</p>"
         )
+    rules = [str(s) for s in ideas.get("ai") or []]
+    if rules:
+        # Quoted so a maintainer can check what applicants are told about their rules.
+        source = str(ideas.get("ai_url") or ideas.get("url") or "")
+        ideas_block += (
+            "<h3>What its pages say about AI use</h3><ul>"
+            + "".join(f"<li>&ldquo;{escape(s)}&rdquo;</li>" for s in rules)
+            + "</ul><p>"
+            + (f"Quoted from {_link(source, out='org-link/ai-policy')}. " if source else "")
+            + "Rules change each year; read the organization's current page before you use any AI tool.</p>"
+        )
 
     languages = github.get("languages") or {}
     if github:

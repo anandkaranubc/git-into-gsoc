@@ -152,3 +152,29 @@ def test_plan_page_labels_estimates_and_is_linked_from_every_page(tmp_path: Path
     assert "\u2014" not in page  # no em dashes
     for html in (tmp_path / "orgs/sympy/index.html", ROOT / "site/index.html"):
         assert f'gsoc-{PLAN_YEAR}/"' in html.read_text(encoding="utf-8")
+
+
+def test_an_organization_page_quotes_its_ai_rules_escaped(tmp_path: Path) -> None:
+    # A maintainer asked "is your page right?" must see what applicants are told.
+    data = tmp_path / "data"
+    data.mkdir()
+    org = {"name": "Jenkins", "slug": "jenkins", "categories": [], "tech_tags": []}
+    (data / "official_orgs.json").write_text(
+        json.dumps({"year": 2026, "generated": "2026-11-21", "organizations": [org]})
+    )
+    rule = "You may not paste <AI> code."
+    ideas = {
+        "url": "https://x.org/ideas",
+        "count": 0,
+        "ai": [rule],
+        "ai_url": "https://x.org/ai-policy",
+    }
+    (data / "org_signals.json").write_text(
+        json.dumps({"organizations": {"jenkins": {"ideas": ideas}}})
+    )
+    (data / "org_history.json").write_text(json.dumps({"organizations": {}}))
+    out = tmp_path / "site"
+    build(out, data)
+    page = (out / "orgs/jenkins/index.html").read_text(encoding="utf-8")
+    assert "You may not paste &lt;AI&gt; code." in page
+    assert 'href="https://x.org/ai-policy" data-out="org-link/ai-policy"' in page
