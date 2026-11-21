@@ -164,7 +164,7 @@ The site counts page views and a few named clicks with GoatCounter; [docs/privac
 | `copy/unix`, `copy/windows`, `copy/setup` | Which install commands get copied? |
 | `install/<app>` | Which one-click assistant install is used? |
 | `start/submit`, `start/results` | How often does the start page get as far as results? |
-| `org-link/<kind>` | Which links do visitors follow off an organization page (ideas, website, guide, source, contact)? |
+| `org-link/<kind>` | Which links do visitors follow off an organization page (ideas, website, guide, source, contact, ai-policy)? |
 | `to-start/<page>` | Which kinds of page (home, orgs, org, docs) send visitors to the start page? |
 | `orgs/filter` | Does anyone use the organization filters, or only scroll? Counted once per visit; nothing typed is sent. |
 | `out/<host>` | Where else do visitors leave to? |

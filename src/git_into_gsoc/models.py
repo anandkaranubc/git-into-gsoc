@@ -328,6 +328,8 @@ class IdeasDocument(BaseModel):
     sub_pages: list[dict[str, str]] = Field(default_factory=list)
     headings: list[str] = Field(default_factory=list)
     ai_policy: list[str] = Field(default_factory=list)
+    # Set when the rules came from a page the ideas page links to, not the page itself.
+    ai_policy_url: str | None = None
 
 
 class ProposalChecklistItem(BaseModel):

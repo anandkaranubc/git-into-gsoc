@@ -959,6 +959,8 @@ def ideas_cmd(
     lines.append(escape(data["note"]))
     for sentence in data.get("ai_policy") or []:
         lines.append(f"[yellow]AI policy:[/yellow] {escape(sentence)}")
+    if data.get("ai_policy_url"):
+        lines.append(f"[dim]AI policy read from: {escape(data['ai_policy_url'])}[/dim]")
     console.print(Panel(Text.from_markup("\n".join(lines)), title=f"Ideas: {data['layout']}"))
     if data.get("hours_note"):
         console.print(f"[yellow]![/yellow] {escape(data['hours_note'])}")

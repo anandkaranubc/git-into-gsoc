@@ -216,7 +216,9 @@ _BULLET_RE = re.compile(r"^\s*(?:[-*+•]|\d+[.)])\s+")
 _AI_RE = re.compile(r"\b(ai|llm|llms|chatgpt|copilot|gemini|claude|language model)s?\b", re.I)
 _POLICY_RE = re.compile(
     # UC OSPO's NeuroHealth idea: "we propose NeuroHealth: AI-Powered Health Assistant".
-    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow\w*|permit\w*|prohibit\w*|forbid\w*|"
+    # Rocket.Chat 2026: "continued focus on ML/AI projects, ...; allowing participation
+    # from those who can only devote part of their summer". "allowing" describes, not rules.
+    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow(?:ed|s)?\b|permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
     r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|"
     # UC OSPO's AIDRIN page: GIGO "is a widely accepted quote ... including AI".
@@ -1449,8 +1451,11 @@ def fetch_ideas_document(http: CachedHttpClient, url: str | None, ttl: int) -> I
         raw = _wiki_links(
             raw[:MAX_CHARS], f"https://github.com/{wiki.group(1)}/{wiki.group(2)}/wiki/"
         )
-    doc = extract_ideas(to_lines(raw, base_url=target), source_url=url)
+    lines = to_lines(raw, base_url=target)
+    doc = extract_ideas(lines, source_url=url)
     doc.fetched_url = target
+    if not doc.ai_policy:
+        _read_linked_policy(http, doc, lines, ttl)
     if _looks_like_html(raw):
         # R lists its projects in a table: Proposal, Hours, Status, Mentors, Languages.
         # Flattened into lines, every cell reads as text and nothing as an idea.
@@ -1485,6 +1490,67 @@ _RAW_WIKI_RE = re.compile(r"https://raw\.githubusercontent\.com/wiki/([^/]+)/([^
 # No "[" inside: with it, a line of "[[" repeated scanned to its end from every
 # position, and 20,000 of them took 18 seconds (review probe, 2026-11-03).
 _WIKI_LINK_RE = re.compile(r"\[\[([^\[\]|\n]+)(?:\|([^\[\]\n]+))?\]\]")
+
+
+# Jenkins' 2026 ideas page says nothing about AI. It links its GSoC hub, /projects/gsoc,
+# and the hub links the rules at /projects/gsoc/ai-usage-policy ("a ban from
+# contributing" on a second offence).
+_POLICY_PATH_RE = re.compile(r"(?:^|[/_-])(?:ai|llm|genai)(?:[_-][a-z]+){0,2}[_-]polic", re.I)
+_HUB_PATH_RE = re.compile(r"(?:gsoc|summer[-_]?of[-_]?code)/?$", re.I)
+
+
+def _same_site_links(lines: list[str], page: str) -> list[str]:
+    home = urlparse(page).netloc
+    links = (
+        found.rstrip(".,;:)").split("#", 1)[0] for line in lines for found in _URL_RE.findall(line)
+    )
+    return [link for link in dict.fromkeys(links) if link != page and urlparse(link).netloc == home]
+
+
+def _policy_page(
+    http: CachedHttpClient, lines: list[str], page: str, ttl: int
+) -> tuple[list[str], str] | None:
+    """The sentences of the first AI policy page that `page` links to, and its address."""
+    for link in _same_site_links(lines, page):
+        if _POLICY_PATH_RE.search(urlparse(link).path):
+            try:
+                raw, link = get_page(http, link, ttl)
+            except HttpError:
+                return None
+            # On a page that is all policy, a heading is its title, not a rule: Jenkins'
+            # "Google Summer of Code (GSoC): AI Usage Policy for Jenkins Contributions".
+            text = "\n".join(line for line in to_lines(raw, base_url=link) if not _heading(line))
+            return ai_policy_sentences(text), link
+    return None
+
+
+def _read_linked_policy(
+    http: CachedHttpClient, doc: IdeasDocument, lines: list[str], ttl: int
+) -> None:
+    """Quote the AI rules from a policy page on the same site, linked from the ideas
+    page or from the GSoC hub page above it. At most three extra requests.
+
+    shortcut: matches link paths only, not link text ("our AI rules"); widen it
+    when a real page names its policy page some other way.
+    """
+    page = doc.fetched_url.split("#", 1)[0]
+    found = _policy_page(http, lines, page, ttl)
+    if found is None:
+        path = urlparse(page).path.rstrip("/")
+        hubs = [
+            link
+            for link in _same_site_links(lines, page)
+            if _HUB_PATH_RE.search(urlparse(link).path)
+            and path.startswith(urlparse(link).path.rstrip("/") + "/")
+        ]
+        if hubs:
+            try:
+                raw, hub = get_page(http, hubs[0], ttl)
+            except HttpError:
+                return
+            found = _policy_page(http, to_lines(raw, base_url=hub), hub, ttl)
+    if found and found[0]:
+        doc.ai_policy, doc.ai_policy_url = found
 
 
 def _wiki_links(raw: str, wiki_url: str) -> str:

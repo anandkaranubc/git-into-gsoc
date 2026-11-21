@@ -110,6 +110,7 @@ from git_into_gsoc.gsoc.names import GITHUB_RESERVED
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
 from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
+    ideas_document_url,
     ideas_from_link_list,
     issues_page_target,
     rank_ideas,
@@ -3255,13 +3256,17 @@ class GSoCToolkit:
             }
         doc, followed = self.read_ideas_page(org.ideas_url, follow=follow)
         if doc is None:
-            return {
-                **base,
-                "layout": "unreachable",
-                "ideas": [],
-                "note": "The ideas page could not be fetched or read automatically. Open it in "
-                "a browser; some wikis block automated readers.",
-            }
+            # Metaflow deleted its 2026 ideas file in June; "blocked" sent people to
+            # retry a page that no longer exists.
+            note = (
+                'The ideas page is gone: its address answers "not found". Organizations '
+                "often move or remove last year's page; look for a newer one on its website"
+                + (f" ({org.url})." if org.url else ".")
+                if self._page_gone(org.ideas_url)
+                else "The ideas page could not be fetched or read automatically. Open it in "
+                "a browser; some wikis block automated readers."
+            )
+            return {**base, "layout": "unreachable", "ideas": [], "note": note}
         wanted = list(skills or []) or list(self.progress.profile().get("technologies") or [])
         saved = self.progress.profile()
         ranked = rank_ideas(
@@ -3300,6 +3305,7 @@ class GSoCToolkit:
             "hours_note": hours_note,
             "skills_matched_on": wanted,
             "ai_policy": doc.ai_policy,
+            "ai_policy_url": doc.ai_policy_url,
             "sub_pages": doc.sub_pages[:40] if doc.layout == "index" else [],
             "followed": followed,
             "headings": doc.headings[:30] if not doc.ideas else [],
@@ -3423,6 +3429,18 @@ class GSoCToolkit:
                 )
             )
         return doc
+
+    def _page_gone(self, url: str) -> bool:
+        """True when the page's address answers "not found", not when it is blocked."""
+        try:
+            self.http.get_text(
+                ideas_document_url(url) or url, ttl=self.settings.archive_ttl_seconds
+            )
+        except NotFoundError:
+            return True
+        except HttpError:
+            return False
+        return False
 
     def _availability_of(self, full_name: str, number: int) -> tuple[str, str]:
         """(status, reason) for one tracked issue; never raises."""

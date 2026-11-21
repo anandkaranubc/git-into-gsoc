@@ -1561,3 +1561,54 @@ def test_an_ideas_own_words_about_ai_are_not_the_pages_policy() -> None:
     )
     doc = extract_ideas(markdown_to_lines(text), source_url="https://x/ideas")
     assert doc.ai_policy == []
+
+
+def test_allowing_as_a_description_is_not_a_rule() -> None:
+    # Rocket.Chat's 2026 page: AI is the topic and "allowing" describes who can join.
+    news = (
+        "Most exciting news for the 2026 season is continued focus on ML/AI projects, and "
+        "the continued support for a small project size with a 90 hours duration; allowing "
+        "participation from those who can only devote part of their summer."
+    )
+    assert ai_policy_sentences(news) == []
+    assert ai_policy_sentences("Using AI tools is allowed for research only.") != []
+
+
+@respx.mock
+def test_ai_rules_on_a_linked_policy_page_are_quoted() -> None:
+    from git_into_gsoc.config import get_settings
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+    from git_into_gsoc.http_client import CachedHttpClient
+
+    # Jenkins: the ideas page links its GSoC hub, and the hub links the policy page.
+    ideas = "https://www.example.org/projects/gsoc/2026/project-ideas/"
+    hub = "https://www.example.org/projects/gsoc"
+    policy = "https://www.example.org/projects/gsoc/ai-usage-policy"
+    respx.get(ideas).mock(
+        return_value=httpx.Response(
+            200,
+            text='<html><body><p><a href="/projects/gsoc">GSoC</a></p>'
+            "<h2>Chatbot</h2><p>Skills: Python</p><h2>Docs site</h2><p>Skills: Vite</p>"
+            "</body></html>",
+        )
+    )
+    respx.get(hub).mock(
+        return_value=httpx.Response(
+            200,
+            text='<html><body><ul><li><a href="/projects/gsoc/ai-usage-policy">GSoC AI Policy</a></li></ul></body></html>',
+        )
+    )
+    respx.get(policy).mock(
+        return_value=httpx.Response(
+            200,
+            text="<html><body><h1>GSoC: AI Usage Policy</h1>"
+            "<p>You may not copy-paste AI-generated code directly into a pull request.</p>"
+            "</body></html>",
+        )
+    )
+    doc = fetch_ideas_document(CachedHttpClient(get_settings()), ideas, ttl=10)
+    assert doc is not None
+    assert doc.ai_policy == [
+        "You may not copy-paste AI-generated code directly into a pull request."
+    ]
+    assert doc.ai_policy_url == policy

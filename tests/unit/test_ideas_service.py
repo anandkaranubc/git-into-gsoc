@@ -87,6 +87,15 @@ def test_org_ideas_unreachable_is_honest(api: respx.MockRouter) -> None:
     assert data["ideas"] == []
 
 
+def test_org_ideas_says_a_removed_page_is_gone(api: respx.MockRouter) -> None:
+    # Metaflow deleted its 2026 ideas file in June; "blocked" was the wrong advice.
+    api.get(SYMPY_RAW).mock(return_value=httpx.Response(404))
+    api.get("https://github.com/sympy/sympy/wiki/GSoC-Ideas").mock(return_value=httpx.Response(404))
+    data = GSoCToolkit().org_ideas("SymPy")
+    assert data["layout"] == "unreachable"
+    assert "gone" in data["note"] and "block" not in data["note"]
+
+
 def test_org_ideas_unknown_org(api: respx.MockRouter) -> None:
     data = GSoCToolkit().org_ideas("no-such-org-xyz")
     assert data["found"] is False
