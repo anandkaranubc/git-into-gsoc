@@ -112,6 +112,7 @@ from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
     ideas_document_url,
     ideas_from_link_list,
+    is_missing_wiki_page,
     issues_page_target,
     rank_ideas,
 )
@@ -3375,6 +3376,8 @@ class GSoCToolkit:
                 # An index of its own project pages: links elsewhere on it (CERN, arXiv
                 # papers) describe the projects and hold no ideas.
                 pages = same_site
+            own_rules = bool(doc.ai_policy)
+            rule_pages: list[str] = []
             for page in pages[:MAX_FOLLOWED_PAGES]:
                 child = fetch_ideas_document(self.http, page["url"], ttl)
                 if child is None:
@@ -3399,8 +3402,15 @@ class GSoCToolkit:
                 for idea in child.ideas:
                     idea.section = page["title"]
                 doc.ideas.extend(child.ideas)
+                if child.ai_policy:
+                    rule_pages.append(child.ai_policy_url or page["url"])
                 doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
                 followed.append(page)
+            # Rules quoted from one sub-page are named by that page, or the site would
+            # say they were "quoted from" the umbrella's own page. Rules from several
+            # pages have no single source to name.
+            if not own_rules and len(set(rule_pages)) == 1:
+                doc.ai_policy_url = rule_pages[0]
         if doc.layout == "index" and not followed and doc.fallback_ideas:
             # The links led to no ideas, so the page's own prose blocks are the ideas.
             doc.ideas = list(doc.fallback_ideas)
@@ -3431,16 +3441,20 @@ class GSoCToolkit:
         return doc
 
     def _page_gone(self, url: str) -> bool:
-        """True when the page's address answers "not found", not when it is blocked."""
-        try:
-            self.http.get_text(
-                ideas_document_url(url) or url, ttl=self.settings.archive_ttl_seconds
-            )
-        except NotFoundError:
-            return True
-        except HttpError:
-            return False
-        return False
+        """True when every address for the page answers "not found", not when one is blocked."""
+        # A wiki's raw .md can answer 404 while the wiki page itself answers 503, and that
+        # page is blocked, not gone: so the page's own address must answer 404 as well.
+        # GitHub answers a missing wiki page with the wiki's Home, not a 404 (Libreswan).
+        for address in dict.fromkeys((ideas_document_url(url) or url, url)):
+            try:
+                text = self.http.get_text(address, ttl=self.settings.archive_ttl_seconds)
+            except NotFoundError:
+                continue
+            except HttpError:
+                return False
+            if not is_missing_wiki_page(text, address):
+                return False
+        return True
 
     def _availability_of(self, full_name: str, number: int) -> tuple[str, str]:
         """(status, reason) for one tracked issue; never raises."""

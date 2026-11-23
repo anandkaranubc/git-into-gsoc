@@ -218,7 +218,11 @@ _POLICY_RE = re.compile(
     # UC OSPO's NeuroHealth idea: "we propose NeuroHealth: AI-Powered Health Assistant".
     # Rocket.Chat 2026: "continued focus on ML/AI projects, ...; allowing participation
     # from those who can only devote part of their summer". "allowing" describes, not rules.
-    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow(?:ed|s)?\b|permit\w*|prohibit\w*|forbid\w*|"
+    # A negated "not allowing" or "won't be allowing" the use of AI still rules, as does
+    # "disallow".
+    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow(?:ed|s)?\b|disallow\w*|"
+    r"(?:not|\w+n't)(?: be)? allowing|"
+    r"permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
     r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|"
     # UC OSPO's AIDRIN page: GIGO "is a widely accepted quote ... including AI".
@@ -1499,12 +1503,32 @@ _POLICY_PATH_RE = re.compile(r"(?:^|[/_-])(?:ai|llm|genai)(?:[_-][a-z]+){0,2}[_-
 _HUB_PATH_RE = re.compile(r"(?:gsoc|summer[-_]?of[-_]?code)/?$", re.I)
 
 
+_SHARED_HOSTS = frozenset({"github.com", "gitlab.com"})
+
+
+def _site(url: str) -> tuple[str, str]:
+    """Host, plus the owner on hosts every project shares: another owner's repository
+    on github.com is a different site, and its AI rules are not this org's."""
+    parts = urlparse(url)
+    host = parts.netloc.lower().removeprefix("www.")
+    # A wiki page is read from raw.githubusercontent.com, but links to its own policy
+    # on github.com: both are the same owner's GitHub.
+    if host == "raw.githubusercontent.com":
+        host = "github.com"
+    if host not in _SHARED_HOSTS:
+        return host, ""
+    segments = [s for s in parts.path.split("/") if s]
+    if segments[:1] == ["wiki"]:  # raw.githubusercontent.com/wiki/<owner>/<repo>/...
+        segments = segments[1:]
+    return host, (segments[0].lower() if segments else "")
+
+
 def _same_site_links(lines: list[str], page: str) -> list[str]:
-    home = urlparse(page).netloc
+    home = _site(page)
     links = (
         found.rstrip(".,;:)").split("#", 1)[0] for line in lines for found in _URL_RE.findall(line)
     )
-    return [link for link in dict.fromkeys(links) if link != page and urlparse(link).netloc == home]
+    return [link for link in dict.fromkeys(links) if link != page and _site(link) == home]
 
 
 def _policy_page(
@@ -1582,6 +1606,11 @@ def _has_github_readme(html: str) -> bool:
     return '<article class="markdown-body' in html
 
 
+def is_missing_wiki_page(html: str, url: str) -> bool:
+    """True when GitHub answered a wiki page's address with the wiki's Home instead."""
+    return _github_wiki_body(html, url) is None
+
+
 def _github_wiki_body(html: str, url: str) -> str | None:
     """The page's own text from a rendered GitHub wiki page, or None when it is gone.
 
@@ -1593,7 +1622,8 @@ def _github_wiki_body(html: str, url: str) -> str | None:
     if parsed.netloc.lower().removeprefix("www.") != "github.com" or "/wiki/" not in parsed.path:
         return html
     page = parsed.path.rstrip("/").rsplit("/", 1)[-1].lower()
-    if page != "home" and re.search(r"<title>\s*Home\s*·", html):
+    # ".../wiki/" names the wiki itself, whose page is Home.
+    if page not in ("home", "wiki") and re.search(r"<title>\s*Home\s*·", html):
         return None
     start = html.find('id="wiki-body"')
     if start == -1:
