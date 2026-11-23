@@ -45,6 +45,10 @@ def test_every_docs_page_is_rendered_with_its_links_and_anchors(tmp_path: Path) 
         # A two-space nested list and a fenced block inside a list item once rendered
         # as literal "- " text and inline code; GitHub renders both as structure.
         assert "<p>- " not in text and "<code>json" not in text, page
+        # docs/assistants.md once got "...gives an assistant two things:" as its whole
+        # search snippet, because its first paragraph only introduces a list.
+        snippet = text.split('name="description" content="')[1].split('"')[0]
+        assert len(snippet) >= 50 and not snippet.endswith(":"), f"{page}: {snippet}"
     guide = (tmp_path / "docs/guide/01-understand-gsoc/index.html").read_text(encoding="utf-8")
     assert "<title>Understand GSoC | git into gsoc</title>" in guide
     assert 'rel="canonical" href="https://gitintogsoc.me/docs/guide/01-understand-gsoc/"' in guide

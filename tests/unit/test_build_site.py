@@ -11,7 +11,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-from scripts.build_site import ANALYTICS, PLAN_PATH, PLAN_YEAR, build, ideas_line, related_orgs  # noqa: E402
+from scripts.build_site import (  # noqa: E402
+    ANALYTICS,
+    PLAN_PATH,
+    PLAN_YEAR,
+    breadcrumbs,
+    build,
+    ideas_line,
+    related_orgs,
+)
 
 
 def test_builds_one_page_per_official_organization(tmp_path: Path) -> None:
@@ -119,13 +127,31 @@ def test_organization_pages_have_their_own_snippet_breadcrumbs_and_neighbours(
     assert description.startswith("SymPy in Google Summer of Code ")
     assert len(description) <= 160
     assert "BreadcrumbList" in page
-    assert page.count('href="../') >= 5  # the way back plus similar organizations
+    similar = page.split("<h2>Similar organizations</h2>")[1].split("</ul>")[0]
+    assert similar.count('href="../') == 5
     descriptions = {
         (p / "index.html").read_text(encoding="utf-8").split('name="description" content="')[1]
         for p in (tmp_path / "orgs").iterdir()
         if p.is_dir()
     }
     assert len(descriptions) > 150  # one snippet per organization, not one for all
+
+
+def test_breadcrumbs_keep_a_script_end_tag_in_an_org_name_inert() -> None:
+    markup = breadcrumbs([("Evil</script><script>alert(1)</script>", "https://example.org/")])
+    assert markup.count("</script>") == 1  # only the block's own end tag
+    body = markup.split(">", 1)[1].rsplit("</script>", 1)[0]
+    assert json.loads(body)["itemListElement"][0]["name"].startswith("Evil</script>")
+
+
+def test_org_pages_find_archive_history_under_a_longer_archive_name(tmp_path: Path) -> None:
+    # The archive calls them "The Apache Software Foundation" and "Ceph Foundation", and
+    # both pages said "Not in the public archive yet" until names matched as the CLI does.
+    build(tmp_path)
+    for slug in ("apache-software-foundation", "ceph"):
+        page = (tmp_path / f"orgs/{slug}/index.html").read_text(encoding="utf-8")
+        assert "Not in the public archive" not in page, slug
+        assert "years in our archive" in page, slug
 
 
 def test_related_orgs_skip_the_organization_itself_and_rank_rare_tags_first() -> None:
@@ -146,6 +172,7 @@ def test_plan_page_labels_estimates_and_is_linked_from_every_page(tmp_path: Path
     page = (tmp_path / PLAN_PATH / "index.html").read_text(encoding="utf-8")
     assert f"Google Summer of Code {PLAN_YEAR}" in page
     assert "Give or take" in page or "official" in page
+    assert page.count("<tr><td>") >= 5  # milestones, not an empty table
     assert "developers.google.com/open-source/gsoc/timeline" in page
     description = page.split('name="description" content="')[1].split('"')[0]
     assert len(description) <= 160
