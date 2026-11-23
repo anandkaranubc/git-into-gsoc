@@ -3399,6 +3399,10 @@ class GSoCToolkit:
                 for idea in child.ideas:
                     idea.section = page["title"]
                 doc.ideas.extend(child.ideas)
+                if child.ai_policy and not doc.ai_policy:
+                    # Rules quoted from a sub-page are named by that page, or the site
+                    # would say they were "quoted from" the umbrella's own page.
+                    doc.ai_policy_url = child.ai_policy_url or page["url"]
                 doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
                 followed.append(page)
         if doc.layout == "index" and not followed and doc.fallback_ideas:
@@ -3431,16 +3435,18 @@ class GSoCToolkit:
         return doc
 
     def _page_gone(self, url: str) -> bool:
-        """True when the page's address answers "not found", not when it is blocked."""
-        try:
-            self.http.get_text(
-                ideas_document_url(url) or url, ttl=self.settings.archive_ttl_seconds
-            )
-        except NotFoundError:
-            return True
-        except HttpError:
+        """True when every address for the page answers "not found", not when one is blocked."""
+        # A wiki's raw .md can answer 404 while the wiki page itself answers 503, and that
+        # page is blocked, not gone: so the page's own address must answer 404 as well.
+        for address in dict.fromkeys((ideas_document_url(url) or url, url)):
+            try:
+                self.http.get_text(address, ttl=self.settings.archive_ttl_seconds)
+            except NotFoundError:
+                continue
+            except HttpError:
+                return False
             return False
-        return False
+        return True
 
     def _availability_of(self, full_name: str, number: int) -> tuple[str, str]:
         """(status, reason) for one tracked issue; never raises."""

@@ -218,7 +218,9 @@ _POLICY_RE = re.compile(
     # UC OSPO's NeuroHealth idea: "we propose NeuroHealth: AI-Powered Health Assistant".
     # Rocket.Chat 2026: "continued focus on ML/AI projects, ...; allowing participation
     # from those who can only devote part of their summer". "allowing" describes, not rules.
-    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow(?:ed|s)?\b|permit\w*|prohibit\w*|forbid\w*|"
+    # A negated "not allowing the use of AI" still rules, as does "disallow".
+    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow(?:ed|s)?\b|not allowing|disallow\w*|"
+    r"permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
     r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|"
     # UC OSPO's AIDRIN page: GIGO "is a widely accepted quote ... including AI".
@@ -1499,12 +1501,28 @@ _POLICY_PATH_RE = re.compile(r"(?:^|[/_-])(?:ai|llm|genai)(?:[_-][a-z]+){0,2}[_-
 _HUB_PATH_RE = re.compile(r"(?:gsoc|summer[-_]?of[-_]?code)/?$", re.I)
 
 
+_SHARED_HOSTS = frozenset({"github.com", "raw.githubusercontent.com", "gitlab.com"})
+
+
+def _site(url: str) -> tuple[str, str]:
+    """Host, plus the owner on hosts every project shares: another owner's repository
+    on github.com is a different site, and its AI rules are not this org's."""
+    parts = urlparse(url)
+    host = parts.netloc.lower()
+    if host not in _SHARED_HOSTS:
+        return host, ""
+    segments = [s for s in parts.path.split("/") if s]
+    if segments[:1] == ["wiki"]:  # raw.githubusercontent.com/wiki/<owner>/<repo>/...
+        segments = segments[1:]
+    return host, (segments[0].lower() if segments else "")
+
+
 def _same_site_links(lines: list[str], page: str) -> list[str]:
-    home = urlparse(page).netloc
+    home = _site(page)
     links = (
         found.rstrip(".,;:)").split("#", 1)[0] for line in lines for found in _URL_RE.findall(line)
     )
-    return [link for link in dict.fromkeys(links) if link != page and urlparse(link).netloc == home]
+    return [link for link in dict.fromkeys(links) if link != page and _site(link) == home]
 
 
 def _policy_page(
