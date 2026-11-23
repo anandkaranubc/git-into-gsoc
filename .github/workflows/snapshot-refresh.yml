@@ -10,16 +10,18 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
   refresh:
     name: Refresh snapshot
     runs-on: ubuntu-latest
+    # This job runs unpinned dependencies and reads pages strangers write, so it holds
+    # no write token. Code it installs could plant a git hook or a fake `git` on PATH,
+    # which is why the push happens in a fresh job that installs nothing.
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
     steps:
-      # No stored credentials: the install and refresh steps run unpinned
-      # dependencies and read pages strangers write. Only the last step can push.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -46,8 +48,8 @@ jobs:
         env:
           # The built-in token's searches with an OR group come back wrong, so the
           # canary keeps last month's beginner counts and statements. A read-only
-          # token of the owner's reads them like a person's searches do. No fallback
-          # to the job's token, which can write and would sit beside stranger pages.
+          # token of the owner's reads them like a person's searches do, so there is
+          # no fallback to the job's token.
           GITHUB_TOKEN: ${{ secrets.SNAPSHOT_READ_TOKEN }}
           EVENT: ${{ github.event_name }}
         run: |
@@ -57,12 +59,49 @@ jobs:
             echo "evidence refresh runs on the first Monday of the month"
           fi
 
-      - name: Open a pull request when the data changed
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Check whether the data changed
+        id: diff
         run: |
           if git diff --quiet -- src/git_into_gsoc/data; then
             echo "snapshot unchanged"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Keep the new data for the next job
+        if: steps.diff.outputs.changed == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: snapshot-data
+          path: src/git_into_gsoc/data
+          retention-days: 1
+
+  publish:
+    name: Open the data pull request
+    needs: refresh
+    if: needs.refresh.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: snapshot-data
+          path: src/git_into_gsoc/data
+
+      - name: Open a pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The artifact carries changed and new files, not deletions.
+          if git diff --quiet -- src/git_into_gsoc/data; then
+            echo "nothing to commit after download"
             exit 0
           fi
           branch="chore/snapshot-$(date -u +%Y-%m-%d)"
