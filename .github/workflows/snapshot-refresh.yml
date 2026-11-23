@@ -48,8 +48,8 @@ jobs:
         env:
           # The built-in token's searches with an OR group come back wrong, so the
           # canary keeps last month's beginner counts and statements. A read-only
-          # token of the owner's reads them like a person's searches do. No fallback
-          # to the job's token, which can write and would sit beside stranger pages.
+          # token of the owner's reads them like a person's searches do, so there is
+          # no fallback to the job's token.
           GITHUB_TOKEN: ${{ secrets.SNAPSHOT_READ_TOKEN }}
           EVENT: ${{ github.event_name }}
         run: |
@@ -99,6 +99,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # The artifact carries changed and new files, not deletions.
+          if git diff --quiet -- src/git_into_gsoc/data; then
+            echo "nothing to commit after download"
+            exit 0
+          fi
           branch="chore/snapshot-$(date -u +%Y-%m-%d)"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
