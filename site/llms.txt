@@ -9,6 +9,7 @@ Facts come from official GSoC pages and live GitHub data. Dates for a program ye
 - [Four questions, three organizations](https://gitintogsoc.me/start/): runs in the browser, nothing to install
 - [Every GSoC organization](https://gitintogsoc.me/orgs/): project ideas, difficulty, history, channels
 - [Beginner guide](https://gitintogsoc.me/docs/): from "what is GSoC?" to a first pull request and a proposal
+- [Videos](https://gitintogsoc.me/videos/): talks on getting into GSoC, each with chapters, a transcript, and the step to try next
 
 ## For assistants and developers
 

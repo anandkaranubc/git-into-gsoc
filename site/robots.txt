@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+# The transcript sources behind the video pages; the pages themselves carry the same text.
+Disallow: /videos/*.md$
 
 Sitemap: https://gitintogsoc.me/sitemap.xml

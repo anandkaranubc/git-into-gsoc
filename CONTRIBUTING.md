@@ -168,8 +168,24 @@ The site counts page views and a few named clicks with GoatCounter; [docs/privac
 | `to-start/<page>` | Which kinds of page (home, orgs, org, docs) send visitors to the start page? |
 | `orgs/filter` | Does anyone use the organization filters, or only scroll? Counted once per visit; nothing typed is sent. |
 | `out/<host>` | Where else do visitors leave to? |
+| `to-video/<page>` | Which kinds of page send visitors to a video page? |
+| `video/play`, `video/chapter`, `video/transcript` | Does anyone press play on a video page, and from the picture, a chapter time, or the transcript? |
 
 Add an event only with a question beside it, and never send anything a visitor typed. Local previews are not counted. To keep your own visits out, open https://gitintogsoc.me/#toggle-goatcounter once in each browser. The numbers live in the owner's GoatCounter account.
+
+### Adding a video
+
+Each published video gets a page at `gitintogsoc.me/videos/<slug>/`, written by `scripts/build_videos.py` from `site/videos/videos.json`. To add one:
+
+1. Publish it on YouTube first, with embedding allowed. List only videos that are public now, never planned ones.
+2. Copy the title, the publish time (with its time zone), the length in seconds, and the chapters exactly as YouTube shows them. `description` is the search snippet, 160 characters at most; `summary` is one or two paragraphs from the video's own description.
+3. Save the thumbnail as `site/videos/<slug>.webp`, 1280 by 720, with `cwebp -q 74`. The page shows this copy, so it never asks YouTube for an image.
+4. Optional: add the English captions as `site/videos/<slug>.md`, in the format the existing transcript uses (`## 0:36 Chapter title`, then `**[0:36]** words`).
+5. Give a chapter a `try` link (a site path such as `start/` or `docs/guide/06-first-contribution/`) when there is one clear thing to do after it. Leave it out otherwise.
+6. Add `"vertical": true` for a Short.
+7. Run `python3 scripts/build_site.py && python3 scripts/build_docs.py && python3 scripts/build_videos.py`, open `site/videos/` through `python3 -m http.server -d site` (YouTube refuses to play inside a `file://` page), and press play.
+
+`tests/unit/test_build_videos.py` checks the entry: the id, the time zone, chapter order, and that every `try` link reaches a page the site builds.
 
 ## Where things live
 
@@ -182,7 +198,7 @@ Add an event only with a question beside it, and never send anything a visitor t
 | `evals/` | Benchmarks for the organization ranking ([evals/README.md](evals/README.md)) |
 | `plugin-evals/` | Behaviour tests for the skill and tool text, run by `claude plugin eval` (see [Text for models](#text-for-models)) |
 | `scripts/` | Maintainer scripts: generated files, assistant checks, live journeys, the benchmark, the brand kit |
-| `examples/`, `brand/`, `site/` | A sample terminal session and prompts; the logo; the project website |
+| `examples/`, `brand/`, `site/` | A sample terminal session and prompts; the logo; the project website, with its list of videos in `site/videos/` |
 | `install.sh`, `install.ps1` | The installers people run |
 | `.github/` | CI workflows, issue and PR templates, Dependabot |
 

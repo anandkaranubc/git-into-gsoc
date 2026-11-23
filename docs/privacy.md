@@ -47,6 +47,8 @@ When you use git-into-gsoc through an assistant, the assistant sends what you ty
 
 The website at https://gitintogsoc.me/ counts page views with [GoatCounter](https://www.goatcounter.com/), an open source service. For each view it keeps the page, the page that linked to it, the browser's name, the screen size, and the country. It also counts a few clicks by name, such as copying an install command, pressing the start page's button, or opening an organization's ideas page. Nothing you type on the site is sent. It sets no cookies and does not store your IP address, so it cannot follow you from one day to the next. The site works the same with the counter blocked.
 
+The video pages under https://gitintogsoc.me/videos/ show a picture of the video, served by the site itself. Nothing loads from YouTube until you press play. Then the page loads YouTube's player from youtube-nocookie.com, YouTube's privacy-enhanced mode, and [Google's privacy policy](https://policies.google.com/privacy) applies to what you watch there, as it would on youtube.com. The site counts that you pressed play or a chapter time, not anything about you.
+
 ## Contact
 
 Questions or concerns: open an issue at https://github.com/anandkaranubc/git-into-gsoc/issues. For a security problem, follow [SECURITY.md](../SECURITY.md).

@@ -63,4 +63,6 @@ plugin-evals/results/
 site/orgs/
 site/start/
 site/docs/
+site/videos/index.html
+site/videos/*/
 site/sitemap.xml
