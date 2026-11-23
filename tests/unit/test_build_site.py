@@ -17,6 +17,7 @@ from scripts.build_site import (  # noqa: E402
     PLAN_YEAR,
     breadcrumbs,
     build,
+    history_for,
     ideas_line,
     related_orgs,
 )
@@ -144,14 +145,18 @@ def test_breadcrumbs_keep_a_script_end_tag_in_an_org_name_inert() -> None:
     assert json.loads(body)["itemListElement"][0]["name"].startswith("Evil</script>")
 
 
-def test_org_pages_find_archive_history_under_a_longer_archive_name(tmp_path: Path) -> None:
+def test_history_is_found_under_a_longer_archive_name() -> None:
     # The archive calls them "The Apache Software Foundation" and "Ceph Foundation", and
     # both pages said "Not in the public archive yet" until names matched as the CLI does.
-    build(tmp_path)
-    for slug in ("apache-software-foundation", "ceph"):
-        page = (tmp_path / f"orgs/{slug}/index.html").read_text(encoding="utf-8")
-        assert "Not in the public archive" not in page, slug
-        assert "years in our archive" in page, slug
+    one = {"years": {"2020": {"num_projects": 2}}}
+    two = {"years": {"2019": {"num_projects": 1}, "2020": {"num_projects": 3}}}
+    history = {"organizations": {"The Apache Software Foundation": two, "Ceph Foundation": one}}
+    assert history_for("Apache Software Foundation", history) == {2019: 1, 2020: 3}
+    assert history_for("Ceph", history) == {2020: 2}
+    assert history_for("Cephalopod", history) == {}
+    # Two archive records under longer names: the one with more years wins.
+    history["organizations"]["Ceph Project"] = two
+    assert history_for("Ceph", history) == {2019: 1, 2020: 3}
 
 
 def test_related_orgs_skip_the_organization_itself_and_rank_rare_tags_first() -> None:
