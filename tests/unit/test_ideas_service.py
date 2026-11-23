@@ -85,6 +85,29 @@ def test_ai_rules_from_an_umbrella_sub_page_name_that_page(api: respx.MockRouter
     assert data["ai_policy_url"] == policy
 
 
+def test_ai_rules_from_two_sub_pages_name_neither(api: respx.MockRouter) -> None:
+    # Naming the first page would credit the second sub-project's rules to it.
+    api.get(PG_PAGE).mock(return_value=httpx.Response(200, text=_read("umbrella_index.md")))
+    for site, words in (("alpha", "AI-generated code"), ("gamma", "LLM-written proposals")):
+        page = (
+            "https://alpha.example.org/gsoc/ideas"
+            if site == "alpha"
+            else "https://gamma.example.org/summer-of-code"
+        )
+        policy = f"https://{site}.example.org/gsoc/ai-policy"
+        ideas = _read("bullet_labels.md").replace("great/project", f"{site}/project")
+        api.get(page).mock(return_value=httpx.Response(200, text=f"{ideas}\n\nRules: {policy}\n"))
+        api.get(policy).mock(
+            return_value=httpx.Response(200, text=f"# AI policy\n\nYou must not submit {words}.\n")
+        )
+    api.get(url__regex=r"https://(raw\.githubusercontent|github)\.com/.*").mock(
+        return_value=httpx.Response(404)
+    )
+    data = GSoCToolkit().org_ideas("PostgreSQL")
+    assert len(data["ai_policy"]) == 2
+    assert data["ai_policy_url"] is None
+
+
 def test_org_ideas_uses_prose_blocks_when_links_lead_nowhere(api: respx.MockRouter) -> None:
     body = " ".join(["The goal is a faster importer that handles broken files gracefully."] * 5)
     page = "# Projects\n\n"

@@ -1574,7 +1574,8 @@ def test_allowing_as_a_description_is_not_a_rule() -> None:
     assert ai_policy_sentences("Using AI tools is allowed for research only.") != []
     # Dropping bare "allowing" must not drop a negated rule along with it.
     assert ai_policy_sentences("We are not allowing the use of AI tools this year.") != []
-    assert ai_policy_sentences("Maintainers disallow AI-generated pull requests.") != []
+    assert ai_policy_sentences("We won't be allowing AI tools in 2026.") != []
+    assert ai_policy_sentences("Maintainers disallow AI tools for code.") != []
 
 
 def test_another_owners_policy_on_a_shared_host_is_not_this_orgs() -> None:
@@ -1584,9 +1585,9 @@ def test_another_owners_policy_on_a_shared_host_is_not_this_orgs() -> None:
     ours = "https://github.com/sympy/sympy/blob/master/AI-policy.md"
     theirs = "https://github.com/other/thing/blob/main/ai-policy.md"
     assert _same_site_links([f"Ours: {ours}", f"Theirs: {theirs}"], page) == [ours]
+    # A wiki is read from raw.githubusercontent.com but links its policy on github.com.
     raw = "https://raw.githubusercontent.com/wiki/sympy/sympy/GSoC-Ideas.md"
-    sibling = "https://raw.githubusercontent.com/sympy/sympy/master/ai-policy.md"
-    assert _same_site_links([sibling], raw) == [sibling]
+    assert _same_site_links([ours, theirs, theirs.replace("//", "//www.")], raw) == [ours]
 
 
 @respx.mock

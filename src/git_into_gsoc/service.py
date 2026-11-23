@@ -3376,6 +3376,8 @@ class GSoCToolkit:
                 # An index of its own project pages: links elsewhere on it (CERN, arXiv
                 # papers) describe the projects and hold no ideas.
                 pages = same_site
+            own_rules = bool(doc.ai_policy)
+            rule_pages: list[str] = []
             for page in pages[:MAX_FOLLOWED_PAGES]:
                 child = fetch_ideas_document(self.http, page["url"], ttl)
                 if child is None:
@@ -3400,12 +3402,15 @@ class GSoCToolkit:
                 for idea in child.ideas:
                     idea.section = page["title"]
                 doc.ideas.extend(child.ideas)
-                if child.ai_policy and not doc.ai_policy:
-                    # Rules quoted from a sub-page are named by that page, or the site
-                    # would say they were "quoted from" the umbrella's own page.
-                    doc.ai_policy_url = child.ai_policy_url or page["url"]
+                if child.ai_policy:
+                    rule_pages.append(child.ai_policy_url or page["url"])
                 doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
                 followed.append(page)
+            # Rules quoted from one sub-page are named by that page, or the site would
+            # say they were "quoted from" the umbrella's own page. Rules from several
+            # pages have no single source to name.
+            if not own_rules and len(set(rule_pages)) == 1:
+                doc.ai_policy_url = rule_pages[0]
         if doc.layout == "index" and not followed and doc.fallback_ideas:
             # The links led to no ideas, so the page's own prose blocks are the ideas.
             doc.ideas = list(doc.fallback_ideas)
