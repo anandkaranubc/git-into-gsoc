@@ -23,6 +23,7 @@ from html import escape
 from pathlib import Path
 from typing import Any
 
+from git_into_gsoc.gsoc.names import core_key
 from git_into_gsoc.gsoc.timeline import build_timeline, estimate_program, load_history
 from git_into_gsoc.install.distribution import REPO_URL, SITE_URL
 
@@ -78,7 +79,12 @@ def history_for(name: str, history: dict[str, Any]) -> dict[int, int]:
     entry = orgs.get(name)
     if entry is None:
         wanted = _squash(name)
-        entry = next((v for k, v in orgs.items() if _squash(k) == wanted), {})
+        entry = next((v for k, v in orgs.items() if _squash(k) == wanted), None)
+    if entry is None:
+        # "Ceph" is "Ceph Foundation" in the archive: match without filler words, as the
+        # CLI does, and let the record with more years win.
+        same = [v for k, v in orgs.items() if core_key(k) == core_key(name)]
+        entry = max(same, key=lambda v: len(v.get("years") or {}), default={})
     years = (entry or {}).get("years") or {}
     return {int(y): int(v.get("num_projects") or 0) for y, v in years.items() if str(y).isdigit()}
 
@@ -332,7 +338,9 @@ def breadcrumbs(crumbs: list[tuple[str, str]]) -> str:
             for i, (name, url) in enumerate(crumbs, 1)
         ],
     }
-    return f'<script type="application/ld+json">{json.dumps(data)}</script>\n'
+    # Org names come from Google's list: an escaped "<" keeps a "</script>" in one inert.
+    text = json.dumps(data).replace("<", "\\u003c")
+    return f'<script type="application/ld+json">{text}</script>\n'
 
 
 def org_description(

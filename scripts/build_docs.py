@@ -26,6 +26,7 @@ LINK = re.compile(r"(?<!!)\]\(([^)\s]+)\)")
 # Markup to drop when a paragraph becomes a meta description: link text is kept.
 INLINE_LINK = re.compile(r"\[([^\]]*)\]\([^)]*\)")
 SKIP_BLOCK = re.compile(r"^(?:#|\||```|>|[-*] |\d+\. )")
+LIST_ITEM = re.compile(r"(?m)^\s*(?:[-*]|\d+\.) ")
 
 
 def slugify(value: str) -> str:
@@ -94,9 +95,15 @@ def rewrite_links(text: str, source: Path, root: str) -> str:
 
 def description(text: str) -> str:
     """The first prose paragraph, plain and cut to a search snippet at a word boundary."""
-    for block in text.split("\n\n")[1:]:
+    blocks = text.split("\n\n")
+    for i, block in enumerate(blocks[1:], 1):
         line = block.strip()
         if line and not SKIP_BLOCK.match(line):
+            # docs/assistants.md opens "gives an assistant two things:" before a list, and
+            # that alone made a 44-character snippet: carry on into the list.
+            following = blocks[i + 1].strip() if i + 1 < len(blocks) else ""
+            if line.endswith(":") and LIST_ITEM.match(following):
+                line += " " + LIST_ITEM.sub("", following)
             plain = (
                 INLINE_LINK.sub(r"\1", line.replace("\n", " ")).replace("**", "").replace("`", "")
             )
