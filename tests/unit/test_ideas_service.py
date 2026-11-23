@@ -116,6 +116,21 @@ def test_org_ideas_says_a_removed_page_is_gone(api: respx.MockRouter) -> None:
     assert "gone" in data["note"] and "block" not in data["note"]
 
 
+def test_a_wiki_page_github_sends_to_home_is_gone(api: respx.MockRouter) -> None:
+    # Libreswan's 2026 link: the raw .md answers 404 and the page redirects to Home.
+    api.get(SYMPY_RAW).mock(return_value=httpx.Response(404))
+    home = "https://github.com/sympy/sympy/wiki/"
+    api.get("https://github.com/sympy/sympy/wiki/GSoC-Ideas").mock(
+        return_value=httpx.Response(302, headers={"Location": home})
+    )
+    api.get(home).mock(
+        return_value=httpx.Response(200, text="<html><title>Home · sympy/sympy Wiki</title></html>")
+    )
+    data = GSoCToolkit().org_ideas("SymPy")
+    assert data["layout"] == "unreachable"
+    assert "gone" in data["note"]
+
+
 def test_org_ideas_does_not_call_a_blocked_wiki_page_gone(api: respx.MockRouter) -> None:
     # Only the raw .md is missing; the wiki page itself is down, so it may come back.
     api.get(SYMPY_RAW).mock(return_value=httpx.Response(404))

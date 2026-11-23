@@ -1600,6 +1600,11 @@ def _has_github_readme(html: str) -> bool:
     return '<article class="markdown-body' in html
 
 
+def is_missing_wiki_page(html: str, url: str) -> bool:
+    """True when GitHub answered a wiki page's address with the wiki's Home instead."""
+    return _github_wiki_body(html, url) is None
+
+
 def _github_wiki_body(html: str, url: str) -> str | None:
     """The page's own text from a rendered GitHub wiki page, or None when it is gone.
 

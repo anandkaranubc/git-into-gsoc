@@ -112,6 +112,7 @@ from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
     ideas_document_url,
     ideas_from_link_list,
+    is_missing_wiki_page,
     issues_page_target,
     rank_ideas,
 )
@@ -3438,14 +3439,16 @@ class GSoCToolkit:
         """True when every address for the page answers "not found", not when one is blocked."""
         # A wiki's raw .md can answer 404 while the wiki page itself answers 503, and that
         # page is blocked, not gone: so the page's own address must answer 404 as well.
+        # GitHub answers a missing wiki page with the wiki's Home, not a 404 (Libreswan).
         for address in dict.fromkeys((ideas_document_url(url) or url, url)):
             try:
-                self.http.get_text(address, ttl=self.settings.archive_ttl_seconds)
+                text = self.http.get_text(address, ttl=self.settings.archive_ttl_seconds)
             except NotFoundError:
                 continue
             except HttpError:
                 return False
-            return False
+            if not is_missing_wiki_page(text, address):
+                return False
         return True
 
     def _availability_of(self, full_name: str, number: int) -> tuple[str, str]:
