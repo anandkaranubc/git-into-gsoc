@@ -1,6 +1,7 @@
 // A few actions that page views cannot show: which install route a visitor takes, whether the
 // start page gets as far as results, which links are followed off an organization page, which
-// pages send visitors to the start page, and whether the organization filters get used.
+// pages send visitors to the start page or a video, whether a video gets played, and whether the
+// organization filters get used.
 // Each name answers one question listed in CONTRIBUTING.md ("Measuring the site"). Nothing a
 // visitor typed is ever sent.
 (function () {
@@ -21,6 +22,7 @@
     if (out) count(out);
     else if (hit.host && hit.host !== location.host) count("out/" + hit.host.replace(/^www\./, ""));
     else if (/\/start\/$/.test(hit.pathname)) count("to-start/" + where());
+    else if (/^\/videos\//.test(hit.pathname) && !/^\/videos\//.test(location.pathname)) count("to-video/" + where());
   });
   // The page's kind, not its address: 180 organization pages would be 180 names.
   function where() {
@@ -29,6 +31,7 @@
     if (path === "/orgs/") return "orgs";
     if (path.indexOf("/orgs/") === 0) return "org";
     if (path.indexOf("/docs/") === 0) return "docs";
+    if (path.indexOf("/videos/") === 0) return "video";
     return "other";
   }
   var filtered = false;

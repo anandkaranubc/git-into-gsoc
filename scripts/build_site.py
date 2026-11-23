@@ -138,7 +138,15 @@ def _nav(root: str, path: str) -> str:
     return "".join(items)
 
 
-def _head(title: str, description: str, root: str, path: str) -> str:
+def _head(
+    title: str,
+    description: str,
+    root: str,
+    path: str,
+    *,
+    image: str = f"{SITE_URL}brand/social/social-preview.png",
+    kind: str = "website",
+) -> str:
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -147,12 +155,12 @@ def _head(title: str, description: str, root: str, path: str) -> str:
 <title>{escape(title)}</title>
 <meta name="description" content="{escape(description)}">
 <link rel="canonical" href="{SITE_URL}{path}">
-<meta property="og:type" content="website">
+<meta property="og:type" content="{kind}">
 <meta property="og:site_name" content="git into gsoc">
 <meta property="og:url" content="{SITE_URL}{path}">
 <meta property="og:title" content="{escape(title)}">
 <meta property="og:description" content="{escape(description)}">
-<meta property="og:image" content="{SITE_URL}brand/social/social-preview.png">
+<meta property="og:image" content="{escape(image)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#7A5AF8">
 <link rel="icon" href="{root}brand/favicon/favicon.svg" type="image/svg+xml">
@@ -205,6 +213,7 @@ FOOT = (
       <li><a href="SITE/orgs/">Every organization, in your browser</a></li>
       <li><a href="SITE/PLAN/">GSoC YEAR: dates and how to prepare</a></li>
       <li><a href="SITE/docs/">Beginner guide</a></li>
+      <li><a href="SITE/videos/">Videos, with chapters and transcripts</a></li>
       <li><a href="SITE/docs/sources/">Sources and limitations</a></li>
       <li><a href="REPO/">Source on GitHub</a></li>
       <li><a href="https://pypi.org/project/git-into-gsoc/">Package on PyPI</a></li>
@@ -1029,7 +1038,7 @@ def plan_page(
     </table>
     <h2>What to do before applications open</h2>
     <ol>
-      <li>Learn how the program works: <a href="../docs/guide/01-understand-gsoc/">what GSoC is and who can join</a>.</li>
+      <li>Learn how the program works: <a href="../docs/guide/01-understand-gsoc/">what GSoC is and who can join</a>. Or watch <a href="../videos/gsoc-rejection-to-mentor/">one applicant go from a rejection in 2024 to mentoring in 2026</a>, with the lessons for {year}.</li>
       <li>Pick two or three organizations. <a href="../start/">Answer four questions in your browser</a> or <a href="../orgs/">browse all {len(orgs)}</a>.</li>
       <li>Find a beginner issue nobody has claimed and land one small pull request. <a href="../docs/guide/05-choose-an-issue/">The guide shows how</a>.</li>
       <li>Read each organization's contributor guide and its AI policy, then say hello in its public channel before you propose anything.</li>

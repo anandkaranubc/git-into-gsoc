@@ -1,0 +1,40 @@
+{
+  "channel": {
+    "name": "Karan Anand",
+    "url": "https://www.youtube.com/@KaranAnand"
+  },
+  "videos": [
+    {
+      "slug": "gsoc-rejection-to-mentor",
+      "id": "RjqTWjdtIB8",
+      "title": "From GSoC Rejection to Mentor: Lessons for GSoC 2027",
+      "description": "Rejected from GSoC in 2024, a contributor at stdlib in 2025, a mentor in 2026: the lessons for GSoC 2027, with chapters, a transcript, and what to try next.",
+      "summary": [
+        "I got rejected from Google Summer of Code in 2024. In 2025 I was a GSoC contributor at stdlib, and in 2026 I was a GSoC mentor there. This is that story, plus the lessons I'd give anyone preparing for GSoC 2027.",
+        "I talk about why my first application fell short, how I picked an organization, the mistake I made by opening a batch of near-identical PRs in two days, the contribution that finally made me stand out (a benchmark fix that had no issue), and how contributing turned into mentoring."
+      ],
+      "published": "2026-11-23T05:00:09-08:00",
+      "seconds": 1472,
+      "thumbnail": "gsoc-rejection-to-mentor.webp",
+      "transcript": "gsoc-rejection-to-mentor.md",
+      "chapters": [
+        {"at": "0:00", "title": "Intro"},
+        {"at": "0:36", "title": "How I found GSoC, and got rejected"},
+        {"at": "2:40", "title": "Lesson 1: Start early", "try": {"href": "gsoc-2027/", "text": "See the estimated GSoC 2027 dates"}},
+        {"at": "4:19", "title": "Lesson 2: Know what you enjoy", "try": {"href": "start/", "text": "Answer four questions about what you like"}},
+        {"at": "6:05", "title": "Lesson 3: Don't stick to one organization", "try": {"href": "orgs/", "text": "Browse every organization"}},
+        {"at": "7:57", "title": "git-into-gsoc: a free tool to find your org", "try": {"href": "docs/guide/03-connect-your-ai-assistant/", "text": "Add it to your AI assistant"}},
+        {"at": "8:41", "title": "How I found stdlib", "try": {"href": "orgs/stdlib/", "text": "stdlib's organization page"}},
+        {"at": "10:21", "title": "My early mistake: mass-creating PRs", "try": {"href": "docs/guide/06-first-contribution/", "text": "Make one first contribution well"}},
+        {"at": "12:26", "title": "Join the community (office hours)", "try": {"href": "docs/guide/05-choose-an-issue/#introduce-yourself-to-the-community", "text": "Introduce yourself"}},
+        {"at": "13:51", "title": "Step out of good first issues", "try": {"href": "docs/guide/05-choose-an-issue/", "text": "Choose an issue nobody has claimed"}},
+        {"at": "15:10", "title": "The benchmark fix that changed things"},
+        {"at": "17:57", "title": "Get out of your comfort zone"},
+        {"at": "18:37", "title": "Help maintainers, carefully"},
+        {"at": "20:46", "title": "Start your proposal early", "try": {"href": "docs/guide/07-prepare-a-proposal/", "text": "The proposal checklist"}},
+        {"at": "22:55", "title": "From contributor to mentor"},
+        {"at": "23:56", "title": "Closing thoughts"}
+      ]
+    }
+  ]
+}

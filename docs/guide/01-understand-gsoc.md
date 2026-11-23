@@ -46,7 +46,7 @@ git-into-gsoc program
 
 It shows the current phase of the program (for example "Before the program is announced" or "Proposal window is open"), what to do during that phase, and the timeline. When Google has published the year's dates, they are marked **official**. Otherwise the tool projects them from the previous year and marks every date as an **estimate** with an uncertainty window. Either way, confirm dates on the [official timeline](https://developers.google.com/open-source/gsoc/timeline) before acting on them.
 
-Starting before the program is announced gives you time to learn a project and get feedback, and organizations that took part last year are the most likely to return. You can still begin at any point in the year.
+Starting before the program is announced gives you time to learn a project and get feedback, and organizations that took part last year are the most likely to return. You can still begin at any point in the year. For one applicant's year from the inside, a first application that started too late and the next one that worked, watch [From GSoC Rejection to Mentor](https://gitintogsoc.me/videos/gsoc-rejection-to-mentor/) (25 minutes, with chapters and a transcript).
 
 ## AI assistance
 
