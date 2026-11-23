@@ -161,6 +161,9 @@ def test_an_estimate_never_says_the_program_is_announced() -> None:
     # Offline, the estimate is all there is, so it still sets the phase.
     offline = program_status(2027, official_program=None, now=later, offline=True)
     assert offline["phase"]["id"] != "before_announcement"
+    # An unreachable site is not proof that Google has published nothing.
+    assert "has not published" in status["source"]
+    assert "has not published" not in offline["source"] and "ESTIMATE" in offline["source"]
 
 
 def test_near_deadlines_count_hours_not_utc_dates() -> None:
