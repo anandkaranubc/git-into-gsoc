@@ -218,9 +218,14 @@ def program_status(
         source_note = f"Embedded snapshot of official dates ({reason})."
     elif program is None:
         program = estimate_program(year, history)
+        # Offline we only know the site did not answer, not that Google has said nothing.
+        unknown = (
+            "The live site could not be read, so Google may have published dates since."
+            if offline
+            else "Google has not published this timeline yet."
+        )
         source_note = (
-            f"ESTIMATE projected from official {program['estimated_from']} dates. "
-            "Google has not published this timeline yet."
+            f"ESTIMATE projected from official {program['estimated_from']} dates. {unknown}"
             if program
             else "No official or estimated timeline available."
         )
