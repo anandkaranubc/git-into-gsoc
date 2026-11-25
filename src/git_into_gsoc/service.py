@@ -152,7 +152,7 @@ from git_into_gsoc.models import (
 from git_into_gsoc.progress.store import ProgressStore, other_host_link
 from git_into_gsoc.scoring.health import DORMANT_DAYS
 from git_into_gsoc.scoring.org_match import canonical
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 from git_into_gsoc.validation import (
     parse_issue_ref,
     parse_repo,
@@ -219,7 +219,7 @@ def _retired_repo(raw: dict[str, Any]) -> str | None:
 
 def _unlinked_caveat(pull: dict[str, Any]) -> str:
     """What a look-alike pull request that does not link the issue means for a newcomer."""
-    title = clean_untrusted(pull.get("title"), limit=90)
+    title = clean_title(pull.get("title"), limit=90)
     ref = f'PR #{pull.get("number")} "{title}"'
     if (pull.get("pull_request") or {}).get("merged_at"):
         return (
@@ -1914,7 +1914,7 @@ class GSoCToolkit:
         return {
             "repo": f"{owner}/{repo}",
             "number": num,
-            "title": clean_untrusted(issue.get("title"), limit=256),
+            "title": clean_title(issue.get("title"), limit=256),
             "url": issue.get("html_url") or f"https://github.com/{owner}/{repo}/issues/{num}",
             "labels": labels,
             "comments": issue.get("comments"),
@@ -2724,7 +2724,7 @@ class GSoCToolkit:
                 return {
                     "number": int(pull["number"]),
                     "url": pull.get("html_url"),
-                    "title": clean_untrusted(pull.get("title"), limit=120),
+                    "title": clean_title(pull.get("title"), limit=120),
                     "author": (pull.get("user") or {}).get("login"),
                     "files": len(files),
                     "paths": [str(f.get("filename")) for f in files[:6]],
@@ -2853,7 +2853,7 @@ class GSoCToolkit:
             "issue": {
                 "repo": full,
                 "number": num,
-                "title": clean_untrusted(issue.get("title"), limit=200),
+                "title": clean_title(issue.get("title"), limit=200),
                 "url": issue.get("html_url") or f"https://github.com/{full}/issues/{num}",
                 "labels": [
                     lab.get("name") for lab in issue.get("labels") or [] if isinstance(lab, dict)
@@ -2939,7 +2939,7 @@ class GSoCToolkit:
                 {
                     "issue": {
                         "number": int(item["number"]),
-                        "title": clean_untrusted(item.get("title"), limit=120),
+                        "title": clean_title(item.get("title"), limit=120),
                         "url": item.get("html_url"),
                     },
                     "pull_request": closer,
@@ -2997,7 +2997,7 @@ class GSoCToolkit:
             context["issue"] = {"repo": f"{owner}/{name}", "number": num}
             try:
                 status = self.issue_status(issue)
-                context["issue"]["title"] = clean_untrusted(status.get("title"), limit=200)
+                context["issue"]["title"] = clean_title(status.get("title"), limit=200)
                 context["issue"]["availability"] = status.get("availability")
                 context["issue"]["reason"] = status.get("reason")
                 # Free by the rules, but someone asked over a month ago and opened nothing:
@@ -3430,7 +3430,7 @@ class GSoCToolkit:
             body = str(item.get("body") or "")
             doc.ideas.append(
                 ProjectIdea(
-                    title=clean_untrusted(item.get("title") or f"#{item.get('number')}", limit=200),
+                    title=clean_title(item.get("title") or f"#{item.get('number')}", limit=200),
                     description=clean_untrusted(body, limit=500),
                     links=[str(item.get("html_url") or "")],
                     skills=[],
@@ -3527,7 +3527,7 @@ class GSoCToolkit:
         return {
             "ref": f"{owner}/{repo}#{num}",
             "url": pull.get("html_url"),
-            "title": clean_untrusted(pull.get("title"), limit=160),
+            "title": clean_title(pull.get("title"), limit=160),
             "author": (pull.get("user") or {}).get("login"),
             **report,
             "note": (
@@ -3668,7 +3668,7 @@ class GSoCToolkit:
                 {
                     "ref": f"{parts[-2]}/{parts[-1]}#{item['number']}",
                     "url": str(item.get("html_url") or ""),
-                    "title": clean_untrusted(item.get("title"), limit=160),
+                    "title": clean_title(item.get("title"), limit=160),
                     "merged_at": str(merged_at),
                 }
             )
@@ -3704,7 +3704,7 @@ class GSoCToolkit:
             sha = str((pull.get("head") or {}).get("sha") or "")
             checks = self.github.check_runs(owner, repo, sha) if sha else []
             status = pull_request_status(pull, timeline, checks, now=now)
-            status["title"] = clean_untrusted(status.get("title"), limit=160)
+            status["title"] = clean_title(status.get("title"), limit=160)
             return status
 
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
@@ -3849,7 +3849,7 @@ class GSoCToolkit:
                 {
                     "repo": repo,
                     "number": int(item["number"]),
-                    "title": clean_untrusted(item.get("title"), limit=160),
+                    "title": clean_title(item.get("title"), limit=160),
                     "url": str(item.get("html_url") or ""),
                     "created_at": item.get("created_at"),
                     "labels": [

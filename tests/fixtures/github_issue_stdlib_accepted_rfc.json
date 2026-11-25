@@ -1,0 +1,41 @@
+{
+  "number": 3429,
+  "title": "[RFC]: Add C implementation for `@stdlib/stats/base/dists/beta/median`",
+  "html_url": "https://github.com/stdlib-js/stdlib/issues/3429",
+  "repository_url": "https://api.github.com/repos/stdlib-js/stdlib",
+  "created_at": "2024-12-11T03:27:46Z",
+  "updated_at": "2026-08-22T21:23:45Z",
+  "comments": 2,
+  "author_association": "MEMBER",
+  "state": "open",
+  "labels": [
+    {
+      "name": "RFC"
+    },
+    {
+      "name": "Feature"
+    },
+    {
+      "name": "Statistics"
+    },
+    {
+      "name": "Accepted"
+    },
+    {
+      "name": "Good First Issue"
+    },
+    {
+      "name": "priority: Normal"
+    },
+    {
+      "name": "C"
+    },
+    {
+      "name": "difficulty: 2"
+    }
+  ],
+  "user": {
+    "login": "stdlib-bot"
+  },
+  "body": "### Description\n\nThis RFC proposes adding a C implementation, including a Node.js native addon, C benchmarks, and C examples, for the [`@stdlib/stats/base/dists/beta/median`](https://github.com/stdlib-js/stdlib/tree/develop/lib/node_modules/@stdlib/stats/base/dists/beta/median) package.\n\nWhen adding support, the following tasks should be completed:\n\n1. A C source implementation should be added to a `src` folder within the package's directory.\n2. A native add-on interface should be added in order to call the C implementation from JavaScript.\n3. A JavaScript file should be added to the `lib` fol"
+}

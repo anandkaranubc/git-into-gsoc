@@ -121,14 +121,19 @@ def _drop_hidden_elements(text: str) -> str:
     return " ".join(kept)
 
 
-def clean_untrusted(text: str | None, *, limit: int = 400) -> str:
-    """Strip hidden characters and text GitHub hides, collapse whitespace, cap length."""
+def clean_untrusted(text: str | None, *, limit: int = 400, markdown: bool = True) -> str:
+    """Strip hidden characters and text GitHub hides, collapse whitespace, cap length.
+
+    ``markdown=False`` keeps images and link reference definitions, for plain text.
+    """
     if not text:
         return ""
     value = _HTML_COMMENT_RE.sub(" ", str(text))
-    value = _MARKDOWN_IMAGE_RE.sub(" ", value)
+    if markdown:
+        value = _MARKDOWN_IMAGE_RE.sub(" ", value)
     value = _drop_hidden_elements(value)
-    value = _LINK_REFERENCE_RE.sub(" ", value)
+    if markdown:
+        value = _LINK_REFERENCE_RE.sub(" ", value)
     value = _TAG_RE.sub(" ", value)
     value = strip_hidden(value)
     value = re.sub(r"[ \t\r\f\v]+", " ", value)
@@ -136,3 +141,13 @@ def clean_untrusted(text: str | None, *, limit: int = 400) -> str:
     if len(value) > limit:
         value = value[: limit - 1].rstrip() + "…"
     return value
+
+
+def clean_title(text: str | None, *, limit: int = 256) -> str:
+    """``clean_untrusted`` for an issue or pull request title.
+
+    GitHub and GitLab show a title as plain text, so nothing in it is hidden. The
+    markdown rules emptied every stdlib title of the form "[RFC]: Add C implementation
+    for ...", which reads like a link reference definition.
+    """
+    return clean_untrusted(text, limit=limit, markdown=False)

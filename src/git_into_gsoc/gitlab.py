@@ -69,7 +69,7 @@ from git_into_gsoc.models import (
 )
 from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 
 _SHORT_REF = re.compile(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+[\w.-]+)#(\d+)$")
 _ISSUE_URL = re.compile(
@@ -271,7 +271,7 @@ def gitlab_issue_status(
     return {
         "repo": f"{host}/{project}",
         "number": number,
-        "title": clean_untrusted(issue.get("title"), limit=256),
+        "title": clean_title(issue.get("title"), limit=256),
         "url": f"https://{host}/{project}/-/issues/{number}",
         "labels": [str(label) for label in issue.get("labels") or []],
         "comments": notes,
@@ -433,7 +433,7 @@ def search_gitlab_issues(
             IssueCandidate(
                 repo=f"{host}/{project}",
                 number=number,
-                title=clean_untrusted(item.get("title"), limit=256),
+                title=clean_title(item.get("title"), limit=256),
                 url=f"https://{host}/{project}/-/issues/{number}",
                 labels=[str(label) for label in item.get("labels") or []],
                 created_at=_dt(item.get("created_at")),
@@ -1341,7 +1341,7 @@ def gitlab_issue_pointers(
                     {
                         "issue": {
                             "number": int(item["iid"]),
-                            "title": clean_untrusted(item.get("title"), limit=120),
+                            "title": clean_title(item.get("title"), limit=120),
                             "url": item.get("web_url"),
                         },
                         "pull_request": closer,
@@ -1376,7 +1376,7 @@ def gitlab_issue_pointers(
             "repo": repo,
             "host": host,
             "number": number,
-            "title": clean_untrusted(title, limit=200),
+            "title": clean_title(title, limit=200),
             "url": issue.get("web_url") or f"https://{host}/{path}/-/issues/{number}",
             "labels": own_labels,
         },

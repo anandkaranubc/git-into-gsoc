@@ -12,7 +12,7 @@ from typing import Any
 
 from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.models import ContributionItem
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title
 
 
 def _repo_of(item: dict[str, Any]) -> str:
@@ -38,7 +38,7 @@ def to_item(item: dict[str, Any], kind: str) -> ContributionItem | None:
         kind=kind,
         repo=repo,
         number=int(number),
-        title=clean_untrusted(item.get("title"), limit=160),
+        title=clean_title(item.get("title"), limit=160),
         url=str(item.get("html_url") or ""),
         state=_state(item),
         author=(item.get("user") or {}).get("login"),
