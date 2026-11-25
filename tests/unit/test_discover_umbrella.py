@@ -32,7 +32,8 @@ def _repos(request: httpx.Request) -> httpx.Response:
             {
                 "full_name": f"{owner}/core",
                 "html_url": f"https://github.com/{owner}/core",
-                "description": "the main package",
+                # Plain text on GitHub; as markdown it is a hidden link reference.
+                "description": "[core]: the main package",
                 "language": "Python",
                 "stargazers_count": 10,
                 "pushed_at": datetime.now(UTC).isoformat(),
@@ -75,6 +76,23 @@ def test_umbrella_org_repos_include_member_projects() -> None:
     assert {"sympy/core", "alpha-lab/core"} <= names
     alpha = next(r for r in data["repos"] if r["full_name"] == "alpha-lab/core")
     assert any("umbrella ideas page (Alpha Lab)" in reason for reason in alpha["reasons"])
+    assert alpha["description"] == "[core]: the main package"
+
+
+@respx.mock
+def test_a_repository_an_ideas_page_names_keeps_a_bracketed_description() -> None:
+    respx.get("https://api.github.com/repos/acme/lib").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "full_name": "acme/lib",
+                "owner": {"type": "Organization"},
+                "description": "[DEPRECATED]: use other-repo instead",
+            },
+        )
+    )
+    lead = GSoCToolkit()._named_repo_lead("acme/lib", language=None, reason="Named on the page")
+    assert lead is not None and lead.description == "[DEPRECATED]: use other-repo instead"
 
 
 def _without_owners(toolkit: GSoCToolkit, source_code: str | None = None) -> None:

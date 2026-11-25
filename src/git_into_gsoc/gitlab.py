@@ -139,10 +139,18 @@ def _status(
         return Availability.ASSIGNED, f"Assigned to {names}", linked, caveats
     open_mrs = [mr for mr in linked if mr["state"] == "open"]
     if open_mrs:
-        mr = open_mrs[0]
+        # As on GitHub: the most recently active one, and idle only when all of them
+        # are, so one merge request left for months does not hide this week's work.
+        mr = min(open_mrs, key=lambda m: (m["idle_days"] is None, m["idle_days"] or 0))
+        others = len(open_mrs) - 1
         reason = f"Open merge request !{mr['number']} by @{mr['author']} references it"
-        if mr["idle_days"] is not None and mr["idle_days"] >= 90:
+        if all(m["idle_days"] is not None and m["idle_days"] >= 90 for m in open_mrs):
             reason += f"; it has been idle for {mr['idle_days']} days"
+        if others:
+            reason += (
+                f"; {others} other open merge request{'s' if others > 1 else ''} also "
+                f"point{'' if others > 1 else 's'} to it"
+            )
         return Availability.LIKELY_TAKEN, reason, linked, caveats
     held = sorted(label for label in labels if is_not_open_label(label))
     if held:

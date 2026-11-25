@@ -121,6 +121,29 @@ def test_an_open_merge_request_means_likely_taken() -> None:
     assert any("cannot read the 3 comment(s)" in c for c in found["assessment"]["caveats"])
 
 
+def test_a_busy_issue_names_its_most_recently_active_open_merge_request() -> None:
+    # As on GitHub: the first open merge request was quoted, so one left idle for months
+    # hid two that were active this week.
+    active = {**_mr(341, "opened"), "updated_at": _iso(1)}
+    http = FakeHttp(
+        {
+            API: _issue(),
+            f"{API}/related_merge_requests": [_mr(330, "opened"), active, _mr(335, "opened")],
+        }
+    )
+    found = gitlab_issue_status(http, "https://gitlab.gnome.org/GNOME/gitg/-/issues/494")  # type: ignore[arg-type]
+    assert found["reason"] == (
+        "Open merge request !341 by @someone references it; "
+        "2 other open merge requests also point to it"
+    )
+    http.routes[f"{API}/related_merge_requests"] = [_mr(330, "opened"), _mr(335, "opened")]
+    quiet = gitlab_issue_status(http, "https://gitlab.gnome.org/GNOME/gitg/-/issues/494")  # type: ignore[arg-type]
+    assert quiet["reason"] == (
+        "Open merge request !330 by @someone references it; it has been idle for 210 days; "
+        "1 other open merge request also points to it"
+    )
+
+
 def test_a_link_in_the_wrong_case_still_finds_the_merge_requests() -> None:
     # Health audit (2026-11-05): GitLab serves "gnome/gitg" but prints "GNOME/gitg" in
     # every web_url, so the lowercase link called the taken issue available.

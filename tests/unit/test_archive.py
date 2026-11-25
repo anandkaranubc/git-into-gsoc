@@ -81,3 +81,30 @@ def test_cli_mentors_table(api: respx.MockRouter) -> None:
     assert "Alice Mentor" in result.stdout
     assert "sympy/sympy" in result.stdout
     assert "2024" in result.stdout and "2025" in result.stdout
+
+
+def test_mentors_says_when_the_archive_cannot_be_read(api: respx.MockRouter) -> None:
+    # Offline, `mentors stdlib` printed "0 completed projects ... Mentors: 0 named" and
+    # exited 0, as if the organization had never had a mentor.
+    from conftest import mock_catalog
+    from git_into_gsoc.errors import HttpError
+    from git_into_gsoc.service import GSoCToolkit
+
+    mock_catalog(api)
+    api.get(f"{ARCHIVE}/programs/").mock(side_effect=httpx.ConnectError("offline"))
+    with pytest.raises(HttpError):
+        GSoCToolkit().org_mentors("SymPy")
+    result = runner.invoke(app, ["mentors", "SymPy", "--output", "json"])
+    assert result.exit_code == 1
+    assert '"found": true' not in result.output
+
+
+def test_mentors_says_when_one_year_of_the_archive_cannot_be_read(api: respx.MockRouter) -> None:
+    from conftest import mock_catalog
+    from git_into_gsoc.errors import HttpError
+    from git_into_gsoc.service import GSoCToolkit
+
+    mock_catalog(api)
+    api.get(f"{ARCHIVE}/programs/2025/projects/").mock(return_value=httpx.Response(502))
+    with pytest.raises(HttpError):
+        GSoCToolkit().org_mentors("SymPy")
