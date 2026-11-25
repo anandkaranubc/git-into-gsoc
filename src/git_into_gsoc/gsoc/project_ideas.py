@@ -24,7 +24,7 @@ from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 from git_into_gsoc.gsoc.ideas import confluence_api_url, get_page
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
-from git_into_gsoc.text import clean_untrusted, straight_quotes
+from git_into_gsoc.text import clean_untrusted, drop_html_comments, straight_quotes
 
 MAX_CHARS = 600_000
 MIN_IDEAS_FOR_LAYOUT = 2
@@ -462,8 +462,8 @@ def html_to_lines(raw: str, base_url: str | None = None) -> list[str]:
         parser.close()
     except (ValueError, AssertionError):
         # What html.parser raises on a broken page: "<![foo bar]>" in a 61-byte page
-        # ended `ideas` with a traceback. The lines read before it are still good.
-        pass
+        # ended `ideas` with a traceback. What was read before it is still good.
+        parser._flush()
     return [html.unescape(line) for line in parser.lines]
 
 
@@ -485,28 +485,12 @@ def _promotable(line: str) -> bool:
     )
 
 
-def _without_comments(text: str) -> str:
-    """The text with each closed `<!-- ... -->` replaced by a space."""
-    # A pattern for this scans to the end of the page from every "<!--" that is never
-    # closed: 20,000 of them (80 KB) took 9 seconds.
-    kept: list[str] = []
-    position = 0
-    while (start := text.find("<!--", position)) != -1:
-        end = text.find("-->", start + 4)
-        if end == -1:
-            break
-        kept += [text[position:start], " "]
-        position = end + 3
-    kept.append(text[position:])
-    return "".join(kept)
-
-
 def markdown_to_lines(raw: str) -> list[str]:
     """Markdown or reStructuredText as lines: underlined headings become `#` headings;
     front matter, comments, and rules are dropped."""
     lines: list[str] = []
     text = _FRONT_MATTER_RE.sub("", raw[:MAX_CHARS], count=1)
-    text = _without_comments(text)
+    text = drop_html_comments(text)
     prev_blank = True
     for line in text.splitlines():
         stripped = line.rstrip()
@@ -614,11 +598,14 @@ def _label(line: str) -> tuple[str, str, str] | None:
 
 
 def _clean(value: str) -> str:
-    # The result is cut to 600 characters, so the far end of a very long line is never
-    # used, and the link pattern below read a 320 KB line of unclosed links for 6 seconds.
+    # A line is cut at 20,000 characters and each tag or link has a length limit: left
+    # open, both patterns read on to the end of the line from every "<" or "[", and a
+    # 320 KB line of unclosed links took 6 seconds. The result keeps 600 characters, so
+    # only a tag or link longer than its limit, or one that crosses the cut, is left
+    # as typed.
     value = _BULLET_RE.sub("", value[:20_000])
-    value = re.sub(r"<[^>]+>", " ", value)
-    value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
+    value = re.sub(r"<[^>]{1,2000}>", " ", value)
+    value = re.sub(r"\[([^\]]{1,300})\]\([^)]{1,2000}\)", r"\1", value)
     value = re.sub(r"\*\*|__|`", "", value)
     return clean_untrusted(re.sub(r"\s+", " ", value), limit=600)
 

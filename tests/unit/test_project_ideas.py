@@ -1651,6 +1651,8 @@ _STALLING_PAGES = {
     + "\n",
     "a wiki heading of 5,000 spaces (38 s)": _WIKI_HEAD + "==" + " " * 5_000 + "x\n",
     "a wiki heading of 5,000 equals signs": _WIKI_HEAD + "=" * 5_000 + "x\n",
+    "four lines of 20,000 open brackets (9 s)": "## A\nx\n## B\n" + ("[" * 19_990 + "\n") * 4,
+    "four lines of 20,000 open tags": "## A\nx\n## B\n" + ("<" * 19_990 + "\n") * 4,
 }
 
 
@@ -1684,9 +1686,22 @@ def test_only_closed_comments_are_dropped() -> None:
 def test_markup_the_html_parser_refuses_keeps_the_lines_before_it() -> None:
     # "<![foo bar]>" makes html.parser raise AssertionError: `ideas` ended in a traceback.
     lines = html_to_lines(
-        "<html><body><h2>Ideas</h2><p>First</p><![foo bar]><p>x</p></body></html>"
+        "<html><body><h2>Ideas</h2><p>First idea <![foo bar]> more</p><h2>B</h2></body></html>"
     )
-    assert "## Ideas" in lines and "First" in lines
+    assert lines[0] == "## Ideas" and lines[1].startswith("First idea")
+
+
+def test_comments_that_are_never_closed_are_cleaned_quickly() -> None:
+    # The pattern in clean_untrusted read to the end from every "<!--": 3 seconds.
+    import time
+
+    from git_into_gsoc.text import clean_untrusted, drop_html_comments
+
+    started = time.perf_counter()
+    assert clean_untrusted("<!--" * 16_384, limit=20) == "<!--<!--<!--<!--<!-…"
+    assert time.perf_counter() - started < 2
+    assert drop_html_comments("a<!-- x -->b<!-- y\n-->c<!-- open") == "a b c<!-- open"
+    assert drop_html_comments("a<!-- x -->b", "") == "ab"
 
 
 def test_wiki_headings_are_read_line_by_line() -> None:

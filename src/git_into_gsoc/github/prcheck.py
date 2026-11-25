@@ -18,6 +18,7 @@ from typing import Any
 from git_into_gsoc.github.orientation import CONVENTIONAL_RE
 from git_into_gsoc.github.pulls import FAILED_CONCLUSIONS
 from git_into_gsoc.proposal import Finding
+from git_into_gsoc.text import drop_html_comments
 
 # Research behind the size check: first patches that land are small (Turzo,
 # Sultana and Bosu 2025). These are gentle limits, not rules.
@@ -26,7 +27,9 @@ LARGE_FILES = 15
 
 _ISSUE_REF_RE = re.compile(
     r"(?:\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?|part of|refs?|see)\s+)?"
-    r"(?:[\w.-]+/[\w.-]+)?#\d+|github\.com/[\w.-]+/[\w.-]+/issues/\d+",
+    # The owner/repo part starts only at the start of a name: begun at every letter, a
+    # body of one 65,000-letter word took 6 seconds.
+    r"(?:(?<![\w.-])[\w.-]+/[\w.-]+)?#\d+|github\.com/[\w.-]+/[\w.-]+/issues/\d+",
     re.I,
 )
 _ITEM_RE = re.compile(r"^[^\S\n]*[-*]\s*\[([ xX])\]\s*(.+)$", re.M)
@@ -189,7 +192,7 @@ def check_pull_request(
             )
         )
 
-    if len(re.sub(r"<!--.*?-->", "", body, flags=re.S).strip()) < 40:
+    if len(drop_html_comments(body, "").strip()) < 40:
         findings.append(
             Finding(
                 "description",
