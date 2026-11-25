@@ -49,8 +49,9 @@ class OfficialGSoCClient:
             # An empty list printed "dates: official" over an empty table.
             if dated:
                 return {**data, "milestones": dated}
-        # Not "unpublished": that would hold the phase at "before announcement" for a
-        # program Google has announced. Callers treat this like the site being down.
+        # Not "unpublished": the source line would then say Google has not published
+        # this year, about a program it may have announced. Callers treat this like
+        # the site being down.
         raise HttpError("The GSoC site answered in a shape this version cannot read", url=url)
 
     def organizations(self, year: int) -> list[dict[str, Any]] | None:

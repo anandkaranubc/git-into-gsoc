@@ -160,9 +160,9 @@ def test_an_estimate_never_says_the_program_is_announced() -> None:
     later = datetime(2027, 1, 25, tzinfo=UTC)
     status = program_status(2027, official_program=None, now=later)
     assert status["phase"]["id"] == "before_announcement"
-    # Offline, the estimate is all there is, so it still sets the phase.
+    # Offline too: a site that did not answer is no sign that the program is out.
     offline = program_status(2027, official_program=None, now=later, offline=True)
-    assert offline["phase"]["id"] != "before_announcement"
+    assert offline["phase"]["id"] == "before_announcement"
     # An unreachable site is not proof that Google has published nothing.
     assert "has not published" in status["source"]
     assert "has not published" not in offline["source"] and "ESTIMATE" in offline["source"]
@@ -191,8 +191,8 @@ def test_the_embedded_snapshot_keeps_its_stats() -> None:
 
 @respx.mock
 def test_a_program_in_an_unreadable_shape_counts_as_offline_not_unpublished() -> None:
-    # Read as "not published", a changed shape would hold the phase at "before
-    # announcement" through a whole program Google had announced.
+    # Read as "not published", a changed shape would say "Google has not published
+    # this timeline yet" through a whole program Google had announced.
     from git_into_gsoc.service import GSoCToolkit
 
     respx.get("https://summerofcode.withgoogle.com/api/program/2027/").mock(
@@ -200,7 +200,35 @@ def test_a_program_in_an_unreadable_shape_counts_as_offline_not_unpublished() ->
     )
     info = GSoCToolkit().program_info(2027)
     assert info["dates_are_official"] is False
-    assert "ESTIMATE" in info["source"]
+    assert "ESTIMATE" in info["source"] and "has not published" not in info["source"]
+
+
+@respx.mock
+def test_an_unreachable_site_never_says_the_program_is_announced() -> None:
+    # With every request refused, `next` said "Program announced" from 2026-12-02 and
+    # "Organizations are applying" on 2027-01-20, with no official 2027 program in hand.
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.route().mock(side_effect=httpx.ConnectError("offline"))
+    for day in ((2026, 11, 25), (2026, 12, 3), (2027, 1, 20)):
+        now = datetime(*day, tzinfo=UTC)
+        program = GSoCToolkit().next_steps(now=now, recheck=False)["program"]
+        assert program["dates_are_official"] is False
+        assert program["phase"]["id"] == "before_announcement", day
+    # The estimated dates are still there to plan with.
+    status = program_status(2027, official_program=None, now=now, offline=True)
+    assert status["next_milestones"] and all(m["window_days"] for m in status["timeline"])
+
+
+@pytest.mark.parametrize("answer", [httpx.Response(502), httpx.Response(200, text="<html>")])
+@respx.mock
+def test_a_site_error_never_says_the_program_is_announced(answer: httpx.Response) -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.get("https://summerofcode.withgoogle.com/api/program/2027/").mock(return_value=answer)
+    info = GSoCToolkit().next_steps(now=datetime(2027, 1, 20, tzinfo=UTC), recheck=False)
+    assert info["program"]["phase"]["id"] == "before_announcement"
+    assert "could not be read" in info["program"]["source"]
 
 
 PROGRAM_2027 = "https://summerofcode.withgoogle.com/api/program/2027/"
