@@ -392,3 +392,16 @@ def test_pr_check_refuses_a_number_that_is_not_a_pull_request() -> None:
     respx.get(f"{API}/pulls/9").mock(return_value=httpx.Response(404, json={}))
     with pytest.raises(InputError, match="not a pull request"):
         GSoCToolkit().pr_check("acme/lib", 9)
+
+
+def test_a_body_of_blank_lines_is_scanned_quickly() -> None:
+    # The checklist patterns ran their leading whitespace across every blank line
+    # below each line start: a 65,000-line empty body took 12 seconds per pattern.
+    import time
+
+    from git_into_gsoc.github.prcheck import unticked_items
+
+    body = "a" + "\n" * 65_000 + "  - [ ] I ran the tests\n- [x] I read the guide\n"
+    start = time.perf_counter()
+    assert unticked_items(body) == ["I ran the tests"]
+    assert time.perf_counter() - start < 2.0
