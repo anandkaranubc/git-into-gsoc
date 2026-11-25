@@ -153,7 +153,7 @@ _CLAIM_PATTERNS = [
     r"\bi wanna (?:take|work|fix|try|do)\b",
     r"\bi have (?:the |a )?(?:change|changes|fix|patch|pr) ready\b",
     r"\bi(?:'m| am) (?:nearly|almost) (?:done|finished)\b",
-    r"^\s*take\s*$|^\s*taking (?:this|it)\b",  # pandas-style "take" comment, or "Taking this one."
+    r"^[^\S\n]*take\s*$|^[^\S\n]*taking (?:this|it)\b",  # pandas-style "take" comment, or "Taking this one."
     r"\bi want to (?:work on|fix|take|tackle|solve|resolve) (?:this|it)\b",
     r"\bi(?:'ll| will) be (?:taking|working on|picking up)\b",
     r"\b(?:formally |officially )?take (?:this|the) issue\b",
@@ -210,7 +210,7 @@ _CLAIM_PATTERNS = [
     r"\bi(?:'ll| will) (?:raise|open|submit|create|send) (?:a|the|my) (?:pr|pull request)\b",
     r"\bi(?:'ll| will) (?:really )?(?:love|like) to submit\b",
     r"(?<!anyone )(?<!you )\bstill on (?:this|it)\b",
-    r"^\s*(?:in progress|pr soon)\b",
+    r"^[^\S\n]*(?:in progress|pr soon)\b",
     r"\bdo you want me to (?:work on|take|fix)\b",
     r"\b(?:we|i) (?:could|can) work (?:on (?:this|it) )?together\b",  # a second claimant
     # A fifth sample (568 comments, 21 organizations never sampled, labelled blind)
@@ -231,18 +231,18 @@ _CLAIM_PATTERNS = [
     r"\b(?:my|the) (?:work|changes|fix) (?:is|are) ready\b",
     r"\b(?:i want to|can (?:we|i)|could (?:we|i)|we can) (?:both )?collab(?:orate)?\b",
     r"\bi(?:'ll| will) (?:take a look|look) into (?:this|it)\b",
-    r"^\s*(?:hi,?\s*)?i(?:'m| am) interested[.!]?\s*$",
+    r"^[^\S\n]*(?:hi,?\s*)?i(?:'m| am) interested[.!]?\s*$",
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
-    r"^\s*/(?:assign(?:-me)?|take|claim|attempt)\s*$",
-    r"^\s*\.take(?:-issue)?\s*$",
-    r"^\s*@[\w-]+\s+(?:claim|assign)\s*$",  # "@zulipbot claim", "@openwisp-companion assign"
+    r"^[^\S\n]*/(?:assign(?:-me)?|take|claim|attempt)\s*$",
+    r"^[^\S\n]*\.take(?:-issue)?\s*$",
+    r"^[^\S\n]*@[\w-]+\s+(?:claim|assign)\s*$",  # "@zulipbot claim", "@openwisp-companion assign"
     # Git Bash on Windows turns a typed /assign into a path.
-    r"^\s*[a-z]:/program files/git/(?:assign|take|claim)\s*$",
+    r"^[^\S\n]*[a-z]:/program files/git/(?:assign|take|claim)\s*$",
 ]
 _RELEASE_PATTERNS = [
-    r"^\s*/(?:unassign(?:-me)?|release|unclaim)\s*$",
-    r"^\s*\.(?:release|unassign)\s*$",
-    r"^\s*@\w+bot\s+(?:abandon|unclaim|release)\b",
+    r"^[^\S\n]*/(?:unassign(?:-me)?|release|unclaim)\s*$",
+    r"^[^\S\n]*\.(?:release|unassign)\s*$",
+    r"^[^\S\n]*@\w+bot\s+(?:abandon|unclaim|release)\b",
     r"\b(?:i(?:'m| am) )?no longer (?:working on|able to work on|interested in) (?:this|it)\b",
     r"\b(?:please )?un-?assign me\b",
     r"\bfeel free to (?:take|pick) (?:this|it) (?:over|up)\b",
@@ -252,8 +252,8 @@ _RELEASE_PATTERNS = [
 # Giving back one's own claim. A report about someone else ("the assignee is no
 # longer working on this, so can I take it?") must not cancel the writer's claim.
 _OWN_RELEASE_PATTERNS = [
-    r"^\s*/(?:unassign(?:-me)?|release|unclaim)\s*$",
-    r"^\s*\.(?:release|unassign)\s*$",
+    r"^[^\S\n]*/(?:unassign(?:-me)?|release|unclaim)\s*$",
+    r"^[^\S\n]*\.(?:release|unassign)\s*$",
     r"\bi(?:'m| am| can)? no longer (?:working on|able to|interested in)\b",
     r"\b(?:please )?un-?assign me\b",
     r"\bi(?:'m| am) (?:not |un)able to (?:continue|work on|finish|complete|set up)\b",
@@ -327,7 +327,7 @@ def _mentions(body: str) -> set[str]:
     return {name.lower() for name in re.findall(r"@([A-Za-z0-9-]+)", body)}
 
 
-_QUOTED_LINE = re.compile(r"^\s*>.*$", re.MULTILINE)
+_QUOTED_LINE = re.compile(r"^[^\S\n]*>.*$", re.MULTILINE)
 
 
 def _own_words(text: str) -> str:
@@ -656,7 +656,11 @@ def assess_issue(
 
     open_prs = [p for p in prs if p.state == "open"]
     if open_prs:
-        pr = open_prs[0]
+        # The most recently active one, not the oldest: an issue with 14 open pull
+        # requests, 12 of them active in the last two days, read "idle for 181 days"
+        # (a health audit, 2026-11-25). One with no known activity date goes last.
+        pr = min(open_prs, key=lambda p: (p.idle_days is None, p.idle_days or 0))
+        others = len(open_prs) - 1
         ref = _pull_ref(pr, repo)
         who = f" by @{pr.author}" if pr.author else ""
         draft = " (draft)" if pr.draft else ""
@@ -665,13 +669,21 @@ def assess_issue(
             if pr.via_comment
             else f"Open PR {ref}{who}{draft} references it"
         ).replace("  ", " ")
-        if pr.idle_days is not None and pr.idle_days >= STALE_PR_DAYS:
+        if all(p.idle_days is not None and p.idle_days >= STALE_PR_DAYS for p in open_prs):
             # Still someone else's work, but a quiet one: say how to ask, as
             # is-it-claimed does, instead of implying the issue is out of reach.
             reason += f"; it has been idle for {pr.idle_days} days"
             caveats.append(
-                f"The open PR has had no activity for {pr.idle_days} days; ask in the issue "
-                "whether its author is still working on it before you start"
+                f"None of the {len(open_prs)} open PRs has had activity for {pr.idle_days} "
+                "days; ask in the issue whether anyone is still working on it before you start"
+                if others
+                else f"The open PR has had no activity for {pr.idle_days} days; ask in the "
+                "issue whether its author is still working on it before you start"
+            )
+        if others:
+            reason += (
+                f"; {others} other open PR{'s' if others > 1 else ''} also "
+                f"point{'' if others > 1 else 's'} to it"
             )
         return result(Availability.LIKELY_TAKEN, reason)
 
