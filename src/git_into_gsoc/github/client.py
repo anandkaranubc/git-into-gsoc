@@ -660,7 +660,9 @@ class GitHubClient:
         health = RepoHealth(
             full_name=f"{owner}/{repo}",
             url=raw.get("html_url", f"https://github.com/{owner}/{repo}"),
-            description=clean_untrusted(raw.get("description"), limit=350) or None,
+            # GitHub shows a description as plain text, like a title: read as markdown,
+            # "[DEPRECATED]: use other-repo instead" is a hidden link reference.
+            description=clean_untrusted(raw.get("description"), limit=350, markdown=False) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
             forks=int(raw.get("forks_count") or 0),

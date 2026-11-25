@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import respx
 from typer.testing import CliRunner
@@ -274,3 +276,18 @@ def test_a_name_missing_from_an_installed_module_is_not_a_missing_module() -> No
     assert _ids(diagnose_output("ModuleNotFoundError: No module named 'numpy'")) == [
         "missing_module"
     ]
+
+
+def test_a_log_line_that_starts_with_a_bracketed_tag_keeps_its_quote() -> None:
+    # "[ERROR]: ..." reads like a markdown link reference definition, which is hidden
+    # text in an issue body. In a log it is the line that matters, and the cause was
+    # shown as "missing module  line 3: " with nothing after the colon.
+    line = "[ERROR]: ModuleNotFoundError: No module named 'numpy'"
+    cause = diagnose_output(f"Collecting numpy\nrunning tests\n{line}\n")["causes"][0]
+    assert (cause["id"], cause["line"], cause["quote"]) == ("missing_module", 3, line)
+    result = runner.invoke(app, ["diagnose", "-", "--output", "json"], input=f"{line}\n")
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.stdout)["causes"][0]["quote"] == line
+    # What nobody can see is still removed from a quoted line.
+    dirty = diagnose_output(f"{line}\x07​ <!-- note --> <b hidden>x</b>")
+    assert dirty["causes"][0]["quote"] == line
