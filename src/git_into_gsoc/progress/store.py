@@ -71,6 +71,15 @@ def _mutating(method: Callable[..., _T]) -> Callable[..., _T]:
     return wrapper
 
 
+def not_saved_note(exc: InputError) -> str:
+    """What `recommend` and `start` say when the progress folder cannot be written and
+    they answer anyway: the reason from `exc`, what it means, and its hint."""
+    return (
+        f"{str(exc).rstrip('.')}, so these answers were not saved and later commands "
+        f"will not remember them. {exc.hint or ''}"
+    ).strip()
+
+
 def _busy(exc: OSError) -> bool:
     """A Windows sharing violation: the file is mid-replace or mid-delete elsewhere."""
     return os.name == "nt" and isinstance(exc, PermissionError)
