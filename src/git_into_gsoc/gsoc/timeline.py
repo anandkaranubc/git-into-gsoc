@@ -237,12 +237,11 @@ def program_status(
 
     timeline = build_timeline(program or {}, official=official, project_size=project_size, now=now)
     upcoming = [m for m in timeline if m.status in {"upcoming", "today"}]
-    phase = current_phase(timeline, now)
-    if not official and not offline:
-        # The live site answered without this year, so it is not announced, whatever
-        # the estimate says: the 2026 announcement came six weeks early, and from the
-        # estimated date on the 2027 estimate told everyone the program was out.
-        phase = _BEFORE
+    # Without official dates the program is not known to be announced, whatever the
+    # estimate says: the 2026 announcement came six weeks early, and from the estimated
+    # date on the 2027 estimate told everyone the program was out. That holds when the
+    # site cannot be read too: one 502 on 2026-12-03 would have said "Program announced".
+    phase = current_phase(timeline, now) if official else _BEFORE
     return {
         "year": year,
         "dates_are_official": official,
