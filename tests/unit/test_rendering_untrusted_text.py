@@ -280,15 +280,19 @@ def test_an_odd_run_of_trailing_backslashes_cannot_escape_the_next_tag(tail: str
 
 
 @pytest.mark.parametrize(
-    ("first", "second"),
+    ("first", "joint", "second"),
     [
-        ("[link=https://evil.example/login", "] Sign in to see the ideas"),
-        ("\\\\[link=https://evil.example/login", "]click"),
-        ("[/", "] closing"),
-        ("see [bold", "red] here"),
+        ("[link=https://evil.example/login", "; ", "] Sign in to see the ideas"),
+        ("\\\\[link=https://evil.example/login", "; ", "]click"),
+        ("[/", "; ", "] closing"),
+        ("see [bold", ", ", "red] here"),
+        # A bare "[" at the end, with the rest of the tag in the next string.
+        ("Docs [", "", "link=https://evil.example/login]Sign in"),
+        ("acme/lib[", "#", "7]"),
+        ("[", "/", "]"),
     ],
 )
-def test_a_tag_split_across_two_strings_stays_text(first: str, second: str) -> None:
+def test_a_tag_split_across_two_strings_stays_text(first: str, joint: str, second: str) -> None:
     # Two headings of an ideas page, "[link=https://..." and "] Sign in ...", were each
     # harmless, but joined with "; " they printed a live link to the sender's site.
     import io
@@ -297,16 +301,18 @@ def test_a_tag_split_across_two_strings_stays_text(first: str, second: str) -> N
     assert [cli.escape(part) for part in parts] == parts
     out = io.StringIO()
     Console(file=out, force_terminal=True, color_system="truecolor", width=200).print(
-        "[dim]Page sections[/dim]: " + "; ".join(parts), highlight=False
+        "[dim]Page sections[/dim]: " + joint.join(parts), highlight=False
     )
     shown = out.getvalue()
     assert "\x1b]8" not in shown and "\x1b[1m" not in shown
-    assert first.replace("\\", "") + "; " + second in shown
+    assert first.replace("\\", "") + joint + second in shown
 
 
 def test_an_unclosed_bracket_alone_prints_as_typed() -> None:
     import io
 
     out = io.StringIO()
-    Console(file=out, color_system=None, width=200).print(cli.escape("Fix [bug in the parser"))
-    assert out.getvalue().strip() == "Fix [bug in the parser"
+    plain = Console(file=out, color_system=None, width=200)
+    plain.print(cli.escape("Fix [bug in the parser"))
+    plain.print(f"[bold]{cli.escape('values[')}[/bold] and {cli.escape('array[0')}")
+    assert out.getvalue().splitlines() == ["Fix [bug in the parser", "values[ and array[0"]

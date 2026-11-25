@@ -170,7 +170,8 @@ _MARKUP_TAG = re.compile(r"(?<!\\)((?:\\\\)*)(\[[a-z#/@][^\[\]]*\])")
 # A tag left open at the end of the text is closed by the "]" of whatever is printed
 # after it: two ideas-page headings, "[link=https://..." and "] Sign in ...", joined
 # with "; " printed a live link to the sender's site.
-_OPEN_TAG_AT_END = re.compile(r"(?<!\\)((?:\\\\)*)(\[[a-z#/@][^\[\]]*)\Z")
+# A bare "[" at the very end counts too: the next string can supply the whole rest.
+_OPEN_TAG_AT_END = re.compile(r"(?<!\\)((?:\\\\)*)(\[(?:[a-z#/@][^\[\]]*)?)\Z")
 
 
 def escape(text: str) -> str:
