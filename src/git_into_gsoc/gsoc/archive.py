@@ -19,7 +19,7 @@ from urllib.parse import quote, urlparse
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.gsoc.names import GITHUB_RESERVED, normalize_name
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 
 PROJECTS_TTL_SECONDS = 86400
 # An archived year lists completed projects only, so it no longer changes; after a
@@ -75,7 +75,7 @@ def summarize_mentors(
                 continue
             total += 1
             years_seen.add(year)
-            title = clean_untrusted(project.get("title"), limit=120)
+            title = clean_title(project.get("title"), limit=120)
             repo = github_repo_of(project.get("project_code_url"))
             if repo:
                 repos[repo] += 1

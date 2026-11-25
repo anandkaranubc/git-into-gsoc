@@ -54,7 +54,7 @@ from git_into_gsoc.models import (
 )
 from git_into_gsoc.scoring.health import MIN_REPLY_SAMPLE, score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 from git_into_gsoc.validation import parse_repo, validate_login
 
 MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample is short
@@ -124,7 +124,7 @@ def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
     return IssueCandidate(
         repo=repo_name,
         number=int(item["number"]),
-        title=clean_untrusted(item.get("title"), limit=256),
+        title=clean_title(item.get("title"), limit=256),
         url=item.get("html_url") or "",
         labels=[x for x in labels if x],
         created_at=parse_iso(item.get("created_at")),

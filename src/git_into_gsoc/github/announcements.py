@@ -13,7 +13,7 @@ import re
 from typing import Any
 
 from git_into_gsoc.github.availability import MAINTAINER_ROLES
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 
 _GSOC = re.compile(r"\bgsoc\b|summer of code", re.I)
 _NOT_TAKING_PART = re.compile(
@@ -132,7 +132,7 @@ def gsoc_posts(items: list[dict[str, Any]], *, year: int) -> list[dict[str, Any]
     for item in items:
         if "pull_request" in item:
             continue
-        title = clean_untrusted(item.get("title"), limit=200)
+        title = clean_title(item.get("title"), limit=200)
         if not (_GSOC.search(title) and year_re.search(title)):
             continue
         parts = str(item.get("repository_url") or "").rstrip("/").split("/")

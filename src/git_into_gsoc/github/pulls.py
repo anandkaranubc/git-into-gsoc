@@ -14,7 +14,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from git_into_gsoc.dates import parse_iso
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title
 
 # A commit or reply counts as answering a comment only if it came this long
 # after it; clocks and in-flight pushes make tighter comparisons unreliable.
@@ -170,7 +170,7 @@ def pull_request_status(
         "ref": f"{full_name}#{pull.get('number')}" if full_name else f"#{pull.get('number')}",
         "repo": full_name,
         "url": pull.get("html_url"),
-        "title": clean_untrusted(pull.get("title"), limit=256),
+        "title": clean_title(pull.get("title"), limit=256),
         "status": "needs_you" if reasons else "waiting",
         "reasons": reasons,
         "checks_running": running,
