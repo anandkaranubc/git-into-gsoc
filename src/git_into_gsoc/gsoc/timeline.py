@@ -97,7 +97,10 @@ def load_history() -> dict[int, dict[str, Any]]:
 
 
 def _parse(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+    at = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    # A stamp with no zone is UTC, like the rest; astimezone alone reads it in the
+    # machine's own zone, which moved 18:00 to 12:30 UTC on a laptop in India.
+    return at.replace(tzinfo=UTC) if at.tzinfo is None else at.astimezone(UTC)
 
 
 def _key(item: dict[str, Any]) -> tuple[str, str | None]:
