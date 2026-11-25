@@ -12,7 +12,23 @@ import re
 import unicodedata
 from typing import Any
 
-_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.S)
+
+def drop_html_comments(text: str, replacement: str = " ") -> str:
+    """The text with each closed `<!-- ... -->` replaced."""
+    # A pattern for this scans to the end of the text from every "<!--" that is never
+    # closed: 20,000 of them (80 KB) in an ideas page took 9 seconds.
+    kept: list[str] = []
+    position = 0
+    while (start := text.find("<!--", position)) != -1:
+        end = text.find("-->", start + 4)
+        if end == -1:
+            break
+        kept += [text[position:start], replacement]
+        position = end + 3
+    kept.append(text[position:])
+    return "".join(kept)
+
+
 _TAG_RE = re.compile(r"</?(?:script|style|iframe|img|svg|object|embed)[^>]*>", re.I)
 # Text GitHub renders as nothing readable: an image shows its picture, not its alt text
 # (inline `![alt](url "title")` or reference-style `![alt][ref]`); a link reference
@@ -128,7 +144,7 @@ def clean_untrusted(text: str | None, *, limit: int = 400, markdown: bool = True
     """
     if not text:
         return ""
-    value = _HTML_COMMENT_RE.sub(" ", str(text))
+    value = drop_html_comments(str(text))
     if markdown:
         value = _MARKDOWN_IMAGE_RE.sub(" ", value)
     value = _drop_hidden_elements(value)

@@ -186,6 +186,31 @@ def test_long_unticked_items_are_cut_at_a_word() -> None:
     assert "functional tests, the desktop build, and\u2026. Tick them" in found["detail"]
 
 
+def test_a_body_of_blank_lines_is_scanned_quickly() -> None:
+    # The checklist patterns ran their leading whitespace across every blank line
+    # below each line start: a 65,000-line empty body took 12 seconds per pattern.
+    import time
+
+    from git_into_gsoc.github.prcheck import unticked_items
+
+    body = "a" + "\n" * 65_000 + "x\n  - [ ] I ran the tests\n- [x] I read the guide\n"
+    start = time.perf_counter()
+    assert unticked_items(body) == ["I ran the tests"]
+    assert time.perf_counter() - start < 2.0
+
+
+@pytest.mark.parametrize("body", ["a" * 65_536, "<!--" * 16_384])
+def test_a_body_of_one_long_word_or_unclosed_comments_is_checked_quickly(body: str) -> None:
+    # The issue reference pattern began an owner/repo name at every letter (6 seconds),
+    # and the comment pattern read to the end from every "<!--" (3 seconds).
+    import time
+
+    start = time.perf_counter()
+    report = check_pull_request(_pull(body=body), FILES, [], [], rules=_rules())
+    assert time.perf_counter() - start < 2.0
+    assert report["verdict"]
+
+
 def test_a_page_about_testing_is_not_a_test_change() -> None:
     # zulip/zulip#40416 (2026-10-21) changes only docs/testing/manual-testing.md, and
     # pr-check said "Includes test changes".

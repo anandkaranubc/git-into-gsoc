@@ -167,11 +167,17 @@ def _toolkit() -> GSoCToolkit:
 # An even run of backslashes escapes only itself: a title with "\\[link=...]" printed
 # a live link to the sender's site, so such a tag gets one more.
 _MARKUP_TAG = re.compile(r"(?<!\\)((?:\\\\)*)(\[[a-z#/@][^\[\]]*\])")
+# A tag left open at the end of the text is closed by the "]" of whatever is printed
+# after it: two ideas-page headings, "[link=https://..." and "] Sign in ...", joined
+# with "; " printed a live link to the sender's site.
+# A bare "[" at the very end counts too: the next string can supply the whole rest.
+_OPEN_TAG_AT_END = re.compile(r"(?<!\\)((?:\\\\)*)(\[(?:[a-z#/@][^\[\]]*)?)\Z")
 
 
 def escape(text: str) -> str:
     """Make text print literally: no markup, no hidden or terminal-control characters."""
     escaped = _MARKUP_TAG.sub(r"\1\\\2", strip_hidden(text))
+    escaped = _OPEN_TAG_AT_END.sub(r"\1\\\2", escaped)
     if (len(escaped) - len(escaped.rstrip("\\"))) % 2:
         escaped += "\\"  # an odd trailing run would otherwise escape the next tag
     return escaped
