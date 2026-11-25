@@ -189,11 +189,10 @@ def video_page(video: dict[str, Any], channel: dict[str, str], transcript: str) 
             f'<span class="name">{escape(chapter["title"])}</span>{action}</li>'
         )
     summary = "".join(f"<p>{escape(p)}</p>" for p in video["summary"])
-    words = sum(len(m.group(2).split()) for m in TRANSCRIPT_LINE.finditer(transcript))
     transcript_block = (
         f"""    <h2 id="transcript">Transcript</h2>
     <details class="transcript">
-      <summary>Read the whole video ({words:,} words). Each time jumps the player there.</summary>
+      <summary>Read the transcript</summary>
 {transcript_html(transcript, video["id"])}
     </details>
 """
@@ -205,13 +204,13 @@ def video_page(video: dict[str, Any], channel: dict[str, str], transcript: str) 
     <nav class="crumbs" aria-label="Breadcrumb"><a href="{root}">git into gsoc</a> / <a href="../">Videos</a></nav>
     <h1>{escape(title)}</h1>
     <p class="meta">{_minutes(video["seconds"])} · {_day(video["published"])} · <a href="{escape(channel["url"])}">{escape(channel["name"])}</a> on YouTube</p>
-{player(video, root + "videos/" + video["thumbnail"])}    <p class="fine">The player loads from YouTube when you press play; until then this page sends nothing to YouTube. <a href="{escape(watch_url(video["id"]))}">Watch on YouTube</a> instead.</p>
+{player(video, root + "videos/" + video["thumbnail"])}    <p class="fine">Plays from YouTube. <a href="{escape(watch_url(video["id"]))}">Watch on YouTube</a> instead.</p>
     {summary}
-    <h2 id="chapters">Chapters, and what to try after each</h2>
+    <h2 id="chapters">Chapters</h2>
     <ol class="chapters">{"".join(rows)}</ol>
     <aside class="next" aria-labelledby="next-title">
       <h2 id="next-title">Find organizations that fit you</h2>
-      <p>Answer four questions about what you know and enjoy, and get three organizations to test with a first pull request. It runs in your browser, with nothing to install.</p>
+      <p>Answer four questions and get three organizations to try a first pull request with.</p>
       <p><a class="btn" href="{root}start/">git in</a> <a href="{root}orgs/">or browse every organization</a></p>
     </aside>
 {transcript_block}  </article>
@@ -241,9 +240,8 @@ def index_page(registry: dict[str, Any]) -> str:
     html += f"""  <div class="wrap">
   <article class="doc videos">
     <h1>Videos</h1>
-    <p>Videos on getting into Google Summer of Code and open source, by <a href="{escape(channel["url"])}">{escape(channel["name"])}</a>, who builds git into gsoc. Each page has the chapters, a transcript, and the step in the guide or the tool to try after you watch.</p>
+    <p>Videos on getting into Google Summer of Code and open source, by <a href="{escape(channel["url"])}">{escape(channel["name"])}</a>, who builds git into gsoc.</p>
     <ol class="video-list">{"".join(items)}</ol>
-    <p class="fine">New videos come out on YouTube first. This page lists only videos that are published.</p>
   </article>
   </div>
 """

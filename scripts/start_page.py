@@ -50,7 +50,8 @@ def _org(match: OrgMatch) -> dict[str, Any]:
         "fit": match.fit,
         "why": reasons[:3],
         "evidence": match.evidence(),
-        "readiness": match.readiness[:1],
+        # the readiness line often repeats a reason (the ideas count), so it is shown once
+        "readiness": [r for r in match.readiness[:1] if r not in reasons[:3]],
         "caveats": match.caveats[:2],
         "skills_to_learn": match.skills_to_learn,
     }

@@ -104,7 +104,7 @@ def test_data_text_is_escaped_and_odd_slugs_are_refused(tmp_path: Path) -> None:
     assert 'href="https://example.org/ideas?a=1&amp;b=2" data-out="org-link/ideas"' in page
     # A link from the data is only a link when it is a web address.
     assert "javascript:alert(1)" in page and 'href="javascript:' not in page
-    assert "1 year in our archive, from 2025." in page
+    assert "1 year in our archive, from 2025;" in page
     assert not (tmp_path / "escapee").exists()
 
 

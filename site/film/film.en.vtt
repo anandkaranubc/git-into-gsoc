@@ -1,0 +1,115 @@
+WEBVTT
+
+00:00:01.200 --> 00:00:04.220
+In 2026, more than fifteen thousand people
+
+00:00:04.260 --> 00:00:05.860
+applied to Google Summer of Code.
+
+00:00:07.042 --> 00:00:08.082
+If you're thinking about trying,
+
+00:00:08.122 --> 00:00:09.842
+you've probably wondered:
+
+00:00:09.882 --> 00:00:13.042
+Am I too late? Do I know enough?
+
+00:00:13.082 --> 00:00:14.682
+Where do I even start?
+
+00:00:17.844 --> 00:00:22.664
+In 2026, 183 organizations took part.
+
+00:00:22.704 --> 00:00:25.564
+It's easy to end up somewhere that's gone quiet,
+
+00:00:25.604 --> 00:00:28.434
+under an issue five people already claimed.
+
+00:00:30.288 --> 00:00:33.228
+git into gsoc is a free, open-source guide
+
+00:00:33.268 --> 00:00:34.888
+for exactly this moment.
+
+00:00:35.008 --> 00:00:37.288
+It even tells you where you are in the year,
+
+00:00:37.328 --> 00:00:39.038
+and what to do now.
+
+00:00:40.728 --> 00:00:42.738
+It starts with four questions.
+
+00:00:42.778 --> 00:00:46.038
+What you know. What you'd enjoy.
+
+00:00:46.078 --> 00:00:48.038
+How much time you have.
+
+00:00:48.078 --> 00:00:50.288
+And how much open source you've done.
+
+00:00:51.964 --> 00:00:56.754
+Then it shows you where you'd fit, and why.
+
+00:00:56.794 --> 00:00:59.174
+Every reason names its source.
+
+00:00:59.214 --> 00:01:02.174
+It tells you how well the work fits you.
+
+00:01:02.214 --> 00:01:04.034
+Never your odds of getting in.
+
+00:01:06.300 --> 00:01:10.780
+Pick one, like stdlib, and the terminal reads
+
+00:01:10.820 --> 00:01:14.460
+what a website can't: whether people outside the team get merged,
+
+00:01:14.500 --> 00:01:16.880
+how fast maintainers reply,
+
+00:01:16.920 --> 00:01:19.760
+and how big a change tends to land.
+
+00:01:21.619 --> 00:01:23.159
+Before you claim an issue,
+
+00:01:23.199 --> 00:01:24.839
+it checks whether someone got there first.
+
+00:01:25.069 --> 00:01:27.159
+And it reminds you what maintainers hope to read.
+
+00:01:27.809 --> 00:01:29.729
+Not "Can I work on this?"
+
+00:01:30.649 --> 00:01:33.279
+But what you'd change, and why.
+
+00:01:36.162 --> 00:01:38.382
+Rather ask in your own words?
+
+00:01:38.452 --> 00:01:41.602
+The same tools work inside AI assistants like Claude Code,
+
+00:01:41.642 --> 00:01:43.572
+and they show their sources.
+
+00:01:43.612 --> 00:01:46.202
+The tools never post anything for you.
+
+00:01:48.595 --> 00:01:50.565
+So whenever you feel stuck,
+
+00:01:50.895 --> 00:01:53.085
+there's one next step you can take today.
+
+00:01:57.237 --> 00:01:58.467
+Open source has a door.
+
+00:02:01.437 --> 00:02:02.837
+Find yours at gitintogsoc.me.

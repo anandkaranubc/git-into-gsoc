@@ -209,15 +209,18 @@ FOOT = (
       <p>git into gsoc is an independent, MIT-licensed project. It is not affiliated with or endorsed by Google. Google Summer of Code and GSoC are trademarks of Google LLC. Verify dates, organizations, and rules on the <a href="https://summerofcode.withgoogle.com">official program site</a> and follow each organization's <a href="https://developers.google.com/open-source/gsoc/resources/ai_guidance">AI policy</a>.</p>
     </div>
     <ul>
-      <li><a href="SITE/start/">Four questions, in your browser</a></li>
-      <li><a href="SITE/orgs/">Every organization, in your browser</a></li>
+      <li><a href="SITE/start/">Four questions</a></li>
+      <li><a href="SITE/orgs/">All organizations</a></li>
       <li><a href="SITE/PLAN/">GSoC YEAR: dates and how to prepare</a></li>
       <li><a href="SITE/docs/">Beginner guide</a></li>
-      <li><a href="SITE/videos/">Videos, with chapters and transcripts</a></li>
+      <li><a href="SITE/videos/">Videos</a></li>
+      <li><a href="SITE/docs/cli/">Every command</a></li>
       <li><a href="SITE/docs/sources/">Sources and limitations</a></li>
+      <li><a href="SITE/docs/privacy/">Privacy</a></li>
       <li><a href="REPO/">Source on GitHub</a></li>
-      <li><a href="https://pypi.org/project/git-into-gsoc/">Package on PyPI</a></li>
+      <li><a href="REPO/blob/main/CONTRIBUTING.md">Contribute</a></li>
       <li><a href="REPO/issues/new?template=feedback.yml">Tell us how it went</a> (a public GitHub issue)</li>
+      <li><a href="SITE/brand.html">Brand and assets</a></li>
     </ul>
   </div>
 </footer>
@@ -259,27 +262,30 @@ FILTER_SCRIPT = """<script>
     Array.prototype.forEach.call(document.querySelectorAll(".door"), function (d) { doors[d.getAttribute("data-slug")] = d; });
     var note = document.querySelector("[data-wall-note]");
     var search = document.getElementById("org-search");
-    var category = document.getElementById("org-category");
+    var cats = Array.prototype.slice.call(document.querySelectorAll(".lane .cat"));
+    var clear = document.getElementById("org-clear");
     var chips = Array.prototype.slice.call(document.querySelectorAll("[data-tech-chip]"));
     var count = document.getElementById("org-count");
     var total = cards.length;
     function apply() {
       var words = search.value.toLowerCase().split(/\\s+/).filter(Boolean);
-      var cat = category.value;
+      var on = cats.filter(function (c) { return c.getAttribute("aria-pressed") === "true"; })[0];
+      var cat = on ? on.getAttribute("data-cat") : "";
       var tech = chips.filter(function (c) { return c.getAttribute("aria-pressed") === "true"; })
         .map(function (c) { return c.getAttribute("data-tech-chip"); });
       var shown = 0;
       cards.forEach(function (card) {
         var text = card.getAttribute("data-search");
         var ok = words.every(function (w) { return text.indexOf(w) !== -1; })
-          && (!cat || card.getAttribute("data-categories").split("|").indexOf(cat) !== -1)
+          && (!cat || (card.getAttribute("data-categories").split("|")[0] || "Other") === cat)
           && tech.every(function (t) { return card.getAttribute("data-tech").split("|").indexOf(t) !== -1; });
         card.hidden = !ok;
         var door = doors[card.getAttribute("data-slug")];
         if (door) door.classList.toggle("off", !ok);
         if (ok) shown += 1;
       });
-      count.textContent = shown === total ? "all " + total + " organizations" : shown + " of " + total + " organizations";
+      count.textContent = shown === total ? "all " + total + " organizations" : shown === 0 ? "no organizations; try fewer filters" : shown + " of " + total + " organizations";
+      clear.hidden = !(words.length || cat || tech.length);
     }
     // A door names its organization while the pointer or focus is on it, and lights its card.
     Object.keys(doors).forEach(function (slug) {
@@ -295,7 +301,19 @@ FILTER_SCRIPT = """<script>
       d.addEventListener("mouseleave", off); d.addEventListener("blur", off);
     });
     search.addEventListener("input", apply);
-    category.addEventListener("change", apply);
+    cats.forEach(function (c) {
+      c.addEventListener("click", function () {
+        var was = c.getAttribute("aria-pressed") === "true";
+        cats.forEach(function (o) { o.setAttribute("aria-pressed", "false"); });
+        c.setAttribute("aria-pressed", was ? "false" : "true");
+        apply();
+      });
+    });
+    clear.addEventListener("click", function () {
+      search.value = "";
+      cats.concat(chips).forEach(function (c) { c.setAttribute("aria-pressed", "false"); });
+      apply();
+    });
     chips.forEach(function (c) {
       c.addEventListener("click", function () {
         c.setAttribute("aria-pressed", c.getAttribute("aria-pressed") === "true" ? "false" : "true");
@@ -330,11 +348,11 @@ def _tags(values: list[str], label: str) -> str:
 def _years_line(years: dict[int, int]) -> str:
     if not years:
         return "Not in the public archive yet (its first year, or listed under another name)."
-    first = min(years)
-    runs = ", ".join(f"'{y % 100:02d}: {n}" for y, n in sorted(years.items()))
+    first, last = min(years), max(years)
     plural = "s" if len(years) != 1 else ""
+    projects = "project" if years[last] == 1 else "projects"
     # The archive starts in 2016, so an older organization's first year here is not its first.
-    return f"{len(years)} year{plural} in our archive, from {first}. Projects per year: {runs}."
+    return f"{len(years)} year{plural} in our archive, from {first}; {years[last]} {projects} in {last}."
 
 
 def breadcrumbs(crumbs: list[tuple[str, str]]) -> str:
@@ -429,18 +447,25 @@ def org_page(
         label = CHANNEL_LABELS.get(kind, kind.capitalize() or "Contact")
         links.append(f"<li>{escape(label)}: {_link(value, out='org-link/contact')}</li>")
 
-    idea_items = "".join(
-        "<li>"
-        + escape(str(idea.get("t") or "Untitled idea"))
-        + "".join(
-            f' <span class="tag">{escape(str(idea[k]))}</span>' for k in ("s", "d") if idea.get(k)
+    def idea_item(idea: dict[str, Any]) -> str:
+        tags = ""
+        if idea.get("s"):
+            tags += f' <span class="tag">{escape(str(idea["s"]))} project</span>'
+        if idea.get("d"):
+            tags += f' <span class="tag d">{escape(str(idea["d"]))}</span>'
+        return "<li>" + escape(str(idea.get("t") or "Untitled idea")) + tags + "</li>"
+
+    all_ideas = list(ideas.get("ideas") or [])
+    # the first ten, the rest folded: a 38-idea list was a wall of text beside an empty column
+    shown, more = all_ideas[:10], all_ideas[10:]
+    ideas_block = f"<p>{escape(ideas_line(ideas, year))}</p>" if ideas.get("count") else ""
+    if shown:
+        ideas_block += f'<ol class="ideas">{"".join(idea_item(i) for i in shown)}</ol>'
+    if more:
+        ideas_block += (
+            f'<details class="more-ideas"><summary>All {len(all_ideas)} ideas</summary>'
+            f'<ol class="ideas" start="11">{"".join(idea_item(i) for i in more)}</ol></details>'
         )
-        + "</li>"
-        for idea in ideas.get("ideas") or []
-    )
-    ideas_block = f"<p>{escape(ideas_line(ideas, year))}</p>"
-    if idea_items:
-        ideas_block += f'<ol class="ideas">{idea_items}</ol>'
     if ideas.get("url"):
         ideas_block += (
             f"<p>{_link(str(ideas['url']), 'Read the ideas page', 'org-link/ideas')}. "
@@ -463,13 +488,19 @@ def org_page(
         ranked = sorted(languages.items(), key=lambda kv: -int(kv[1]))[:6]
         lang = ", ".join(f"{escape(k)} ({v})" for k, v in ranked)
         repos = int(github.get("active_repos") or 0)
+        # the snapshot reads at most 100 repositories, so 100 means "100 or more"
+        count = (
+            "100 or more repositories"
+            if repos >= 100
+            else f"{repos} repositor{'ies' if repos != 1 else 'y'}"
+        )
         gh_block = (
-            f"<p>{repos} repositor{'ies' if repos != 1 else 'y'} pushed to in the last year"
+            f"<h2>On GitHub</h2>\n          <p>{count} pushed to in the last year"
             + (f". Main languages: {lang}" if lang else "")
             + ".</p>"
         )
     else:
-        gh_block = "<p>No GitHub organization found in its official listing.</p>"
+        gh_block = ""
 
     meta = org_description(name, tagline, ideas, years, year)
     title = f"{name} GSoC {year}: " + (
@@ -494,8 +525,9 @@ def org_page(
     bars = ""
     if years:
         top = max(years.values()) or 1
+        runs = ", ".join(f"{y}: {n}" for y, n in sorted(years.items()))
         bars = (
-            '<p class="years" aria-hidden="true">'
+            f'<p class="years" role="img" aria-label="Projects per year: {runs}">'
             + "".join(
                 f'<i data-n="{n}" style="height: {max(3, round(44 * n / top))}px" title="{y}: {n}"></i>'
                 for y, n in sorted(years.items())
@@ -516,7 +548,6 @@ def org_page(
           {ideas_block}
           <h2>History</h2>
           {bars}<p>{escape(_years_line(years))}</p>
-          <h2>On GitHub</h2>
           {gh_block}
           {similar}
         </div>
@@ -533,7 +564,7 @@ git-into-gsoc issues --org "{escape(quoted)}"</code></pre>
 newcomers' pull requests, and which beginner
 issues are still free?"</span></pre>
           </div>
-          <p class="fine">Those commands read live data: which repositories merge outside pull requests, and which beginner issues nobody has claimed. <a href="../../#install">Install in two minutes</a>.</p>
+          <p class="fine"><a href="../../#install">Install in two minutes</a>.</p>
         </div>
       </div>
     </div>
@@ -549,14 +580,12 @@ def index_page(
     year: int,
     generated: str,
 ) -> str:
-    categories = sorted({c for org in orgs for c in org.get("categories") or []})
     tech_counts = Counter(t for org in orgs for t in org.get("tech_tags") or [])
     chips = "".join(
         f'<button type="button" class="chip" data-tech-chip="{escape(t)}" aria-pressed="false">'
         f"{escape(t)} <small>{n}</small></button>"
         for t, n in tech_counts.most_common(TECH_CHIPS)
     )
-    options = "".join(f'<option value="{escape(c)}">{escape(c)}</option>' for c in categories)
 
     cards = []
     lanes: dict[str, list[tuple[int, str]]] = {}
@@ -575,8 +604,6 @@ def index_page(
             small = int((ideas.get("size") or {}).get("small") or 0)
             if small:
                 facts.append(f"{small} small")
-        if org.get("contributor_guidance_url"):
-            facts.append("contributor guide")
         if years:
             facts.append(f"{len(years)} year{'s' if len(years) != 1 else ''} of history")
         search = " ".join(
@@ -615,7 +642,7 @@ def index_page(
             )
         )
     wall = "".join(
-        f'<li class="lane"><span class="cat">{escape(cat)}<small>{len(doors)}</small></span>'
+        f'<li class="lane"><button type="button" class="cat" data-cat="{escape(cat)}" aria-pressed="false">{escape(cat)} <small>{len(doors)}</small></button>'
         f'<span class="doors">{"".join(d for _, d in sorted(doors))}</span></li>'
         for cat, doors in sorted(lanes.items(), key=lambda kv: -len(kv[1]))
     )
@@ -625,24 +652,23 @@ def index_page(
         f"Every Google Summer of Code {year} mentoring organization, with its project ideas, "
         "difficulty, sizes, history, and channels. Filter by what you know. No install needed."
     )
-    idle = f"{len(cards)} doors, one per organization, by category. Brighter doors have taken part longer. Hover one."
+    idle = "One door per organization. Brighter doors have taken part longer."
     html = _head(title, description, "../", "orgs/")
     html += breadcrumbs([("git into gsoc", SITE_URL), ("Organizations", f"{SITE_URL}orgs/")])
     html += f"""  <section class="section org-index" aria-labelledby="orgs-title">
     <div class="wrap">
       <div class="section-head page-head">
         <h1 id="orgs-title" class="pixel">which door is yours?</h1>
-        <p>Every GSoC {year} mentoring organization from the <a href="https://summerofcode.withgoogle.com/programs/{year}/organizations">official list</a>, with what its ideas page offers and how long it has taken part. <b>{year + 1} organizations are not announced yet; {year} participants are the best predictor of who returns.</b> Snapshot of {escape(generated)}. Pick a few, then let the <a href="../#install">terminal tool</a> or your assistant check which repositories merge newcomers' work.</p>
+        <p>Every GSoC {year} organization from the <a href="https://summerofcode.withgoogle.com/programs/{year}/organizations">official list</a>. {year + 1} organizations are not announced yet, and {year} participants are the best predictor of who returns.</p>
       </div>
       <form class="filters" role="search" aria-label="Filter organizations" onsubmit="return false">
         <div class="row">
           <label>Search <input id="org-search" type="search" placeholder="name, language, topic" autocomplete="off"></label>
-          <label>Category <select id="org-category"><option value="">any</option>{options}</select></label>
         </div>
         <div class="chips" aria-label="Technologies">{chips}</div>
-        <p class="fine" aria-live="polite">Showing <span id="org-count">all {len(cards)} organizations</span>.</p>
+        <p class="fine" aria-live="polite">Showing <span id="org-count">all {len(cards)} organizations</span>. <button type="button" class="clear" id="org-clear" hidden>Clear filters</button></p>
       </form>
-      <ul class="wall" aria-label="Every organization as a door, by category">{wall}</ul>
+      <ul class="wall" aria-label="Organizations by category; choose a category to filter">{wall}</ul>
       <p class="wall-note" data-wall-note data-idle="{escape(idle)}" aria-live="polite">{escape(idle)}</p>
       <ul class="orgs">{"".join(cards)}</ul>
     </div>
@@ -716,7 +742,12 @@ START_SCRIPT = """<script>
       worker = new Worker("worker.js");
       worker.onmessage = function (event) {
         var data = event.data;
-        if (data.ready) { ready = true; say(pending ? "Matching..." : "Ready.", pending); return; }
+        if (data.ready) {
+          ready = true;
+          if (pending) say("Matching...", true);
+          else if (statusText.textContent.indexOf("Loading") === 0) say("");
+          return;
+        }
         if (data.failed) { say("The matcher could not load here: " + data.failed + " Run git-into-gsoc start in a terminal instead."); return; }
         pending = false;
         say("");
@@ -808,7 +839,6 @@ START_SCRIPT = """<script>
       ask.appendChild(el("span", "v", '"I know ' + (result.matched_on.skills.join(", ") || "a little programming") + ' and care about ' + (result.matched_on.interests.join(", ") || "open source") + '. Which GSoC organizations fit me, and which beginner issue should I try first?"'));
       term.appendChild(ask);
       out.appendChild(term);
-      out.appendChild(el("p", "fine", "The terminal tool also checks live data: which repositories merge newcomers' pull requests, which beginner issues are still free, and what each organization has said about the coming year."));
       out.scrollIntoView({ behavior: "smooth", block: "start" });
     }
     form.addEventListener("focusin", boot, { once: true });
@@ -870,20 +900,20 @@ def start_page(year: int, generated: str, *, download_mb: int = DOWNLOAD_MB) -> 
     <div class="wrap">
       <div class="section-head page-head">
         <h1 id="start-title" class="pixel">where would you fit?</h1>
-        <p>The four questions <code>git-into-gsoc start</code> asks, answered here. <b>The ranking is the terminal tool's own code</b>, run in your browser by <a href="https://pyodide.org">Pyodide</a>: the same matcher, the same reasons, the same caveats. Your answers never leave this page. Organizations are the official GSoC {year} list, snapshot of {escape(generated)}. The matcher downloads when you start typing: about {download_mb} MB the first time, kept by your browser after that.</p>
+        <p>Four questions, then three organizations that fit you, each with its reasons. Organizations come from the official GSoC {year} list. Your answers never leave this page.</p>
       </div>
       <form id="start-form" class="filters questions" aria-label="Four questions">
         <div class="q" data-q>
           <span class="n" aria-hidden="true">01</span>
           <div>
-            <label>1 of 4. Languages and tools you know? <span class="hint">For example: {escape(TECH_EXAMPLES)}</span>
+            <label><span class="visually-hidden">1 of 4. </span>Languages and tools you know?
               <input name="technologies" type="text" placeholder="{escape(TECH_EXAMPLES)}" autocomplete="off" autocapitalize="none"></label>
           </div>
         </div>
         <div class="q" data-q>
           <span class="n" aria-hidden="true">02</span>
           <fieldset>
-            <legend>2 of 4. What would you enjoy working on? <span class="hint">Pick any, or type your own words.</span></legend>
+            <legend><span class="visually-hidden">2 of 4. </span>What would you enjoy working on? <span class="hint">Pick any, or type your own.</span></legend>
             <div class="chips">{chips}</div>
             <label class="visually-hidden" for="start-interests">Your own words</label>
             <input id="start-interests" name="interests" type="text" placeholder="your own words, comma separated" autocomplete="off" autocapitalize="none">
@@ -892,14 +922,14 @@ def start_page(year: int, generated: str, *, download_mb: int = DOWNLOAD_MB) -> 
         <div class="q" data-q>
           <span class="n" aria-hidden="true">03</span>
           <div>
-            <label>3 of 4. About how many hours a week can you give?
+            <label><span class="visually-hidden">3 of 4. </span>About how many hours a week can you give?
               <input name="hours" type="number" min="1" max="80" inputmode="numeric" placeholder="for example 10"></label>
           </div>
         </div>
         <div class="q" data-q>
           <span class="n" aria-hidden="true">04</span>
           <fieldset>
-            <legend>4 of 4. Your open source experience? <span class="hint">Leave it blank if unsure.</span></legend>
+            <legend><span class="visually-hidden">4 of 4. </span>Your open source experience? <span class="hint">Leave it blank if unsure.</span></legend>
             {levels}
           </fieldset>
         </div>
@@ -981,11 +1011,27 @@ def plan_page(
     publishes its dates. Dates come from the same code as the ``program`` command."""
     official = year in programs
     program = programs.get(year) or estimate_program(year, programs) or {}
-    marks = [m for m in build_timeline(program, official=official) if m.project_size is None]
-    rows = "".join(
-        f"<tr><td>{escape(m.label)}</td><td>{_day(m.at)}</td>"
-        f"<td>{'official' if official else f'±{m.window_days} days'}</td></tr>"
-        for m in marks
+    # organization-side dates (their applications, ranking deadlines) are not a contributor's to act on
+    org_side = (
+        "Org Applications Open",
+        "Org Application Deadline",
+        "Org Notification Date",
+        "Proposal Ranking Deadline",
+        "Projects Announced to Orgs",
+    )
+    marks = [
+        m
+        for m in build_timeline(program, official=official)
+        if m.project_size is None and m.label not in org_side
+    ]
+    rows = "".join(f"<tr><td>{escape(m.label)}</td><td>{_day(m.at)}</td></tr>" for m in marks)
+    windows = sorted({m.window_days for m in marks if m.window_days})
+    spread = (
+        f"Each estimate is give or take {windows[0]} days"
+        + (f" (up to {windows[-1]})" if len(windows) > 1 else "")
+        + "."
+        if windows and not official
+        else ""
     )
     earlier = sorted(y for y in programs if y < year)
     last = (
@@ -1015,7 +1061,7 @@ def plan_page(
         key=lambda r: (-r[0], -r[1], r[2].lower()),
     )[:12]
     longest = "".join(
-        f'<li><a href="../orgs/{escape(slug)}/">{escape(name)}</a>: {n} years of history in our archive</li>'
+        f'<li><a href="../orgs/{escape(slug)}/">{escape(name)}</a></li>'
         for n, _, name, slug in veterans
     )
     title = f"Google Summer of Code {year}: dates and how to prepare"
@@ -1029,13 +1075,13 @@ def plan_page(
     html += f"""  <div class="wrap">
   <article class="doc">
     <h1>{escape(title)}</h1>
-    <p>{escape(lede)}{escape(pattern)}</p>
-    <p><a href="https://developers.google.com/open-source/gsoc/timeline">Google's timeline page</a> is the source of truth.</p>
+    <p>{escape(lede)}{escape(pattern)} The source of truth is <a href="https://developers.google.com/open-source/gsoc/timeline">Google's timeline page</a>.</p>
     <h2>{"Dates" if official else "Estimated dates"}</h2>
     <table>
-      <thead><tr><th>Milestone</th><th>{"Date" if official else "Estimate"} (UTC)</th><th>{"Source" if official else "Give or take"}</th></tr></thead>
+      <thead><tr><th>Milestone</th><th>{"Date" if official else "Estimate"} (UTC)</th></tr></thead>
       <tbody>{rows}</tbody>
     </table>
+    {f'<p class="fine">{escape(spread)}</p>' if spread else ""}
     <h2>What to do before applications open</h2>
     <ol>
       <li>Learn how the program works: <a href="../docs/guide/01-understand-gsoc/">what GSoC is and who can join</a>. Or watch <a href="../videos/gsoc-rejection-to-mentor/">one applicant go from a rejection in 2024 to mentoring in 2026</a>, with the lessons for {year}.</li>
@@ -1045,7 +1091,7 @@ def plan_page(
       <li>Start your proposal early. <a href="../docs/guide/07-prepare-a-proposal/">The guide has a checklist</a>.</li>
     </ol>
     <h2>Organizations to look at first</h2>
-    <p>These have taken part the longest, so their ideas, mentors and habits are the easiest to learn from. The list changes every year. Google publishes the new one on the date for accepted organizations above.</p>
+    <p>These have taken part the longest, so their ideas, mentors and habits are the easiest to learn from. Google publishes the new list on the date for accepted organizations above.</p>
     <ul>{longest}</ul>
   </article>
   </div>

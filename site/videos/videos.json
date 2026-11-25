@@ -8,7 +8,7 @@
       "slug": "gsoc-rejection-to-mentor",
       "id": "RjqTWjdtIB8",
       "title": "From GSoC Rejection to Mentor: Lessons for GSoC 2027",
-      "description": "Rejected from GSoC in 2024, a contributor at stdlib in 2025, a mentor in 2026: the lessons for GSoC 2027, with chapters, a transcript, and what to try next.",
+      "description": "Rejected from GSoC in 2024, a contributor at stdlib in 2025, a mentor in 2026: the lessons for GSoC 2027.",
       "summary": [
         "I got rejected from Google Summer of Code in 2024. In 2025 I was a GSoC contributor at stdlib, and in 2026 I was a GSoC mentor there. This is that story, plus the lessons I'd give anyone preparing for GSoC 2027.",
         "I talk about why my first application fell short, how I picked an organization, the mistake I made by opening a batch of near-identical PRs in two days, the contribution that finally made me stand out (a benchmark fix that had no issue), and how contributing turned into mentoring."

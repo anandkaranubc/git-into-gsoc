@@ -49,6 +49,8 @@ The website at https://gitintogsoc.me/ counts page views with [GoatCounter](http
 
 The video pages under https://gitintogsoc.me/videos/ show a picture of the video, served by the site itself. Nothing loads from YouTube until you press play. Then the page loads YouTube's player from youtube-nocookie.com, YouTube's privacy-enhanced mode, and [Google's privacy policy](https://policies.google.com/privacy) applies to what you watch there, as it would on youtube.com. The site counts that you pressed play or a chapter time, not anything about you.
 
+The film on the home page is served by the site itself, so playing it asks no other site for anything. Its video file loads only when you press play. The site counts that you pressed play, that the film passed its middle, that it reached the end, and whether you opened its transcript.
+
 ## Contact
 
 Questions or concerns: open an issue at https://github.com/anandkaranubc/git-into-gsoc/issues. For a security problem, follow [SECURITY.md](../SECURITY.md).

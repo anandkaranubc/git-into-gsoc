@@ -18,10 +18,17 @@
     var count = document.createElement("span"), message = document.createElement("span");
     count.setAttribute("aria-hidden", "true");
     if (invite) invite.append(count, message);
+    // a new width re-wraps the line, so its held height starts over (the scene re-lays out then anyway)
+    var inviteW = 0;
+    window.addEventListener("resize", function () { if (invite && invite.offsetWidth !== inviteW) { inviteW = invite.offsetWidth; invite.style.minHeight = ""; } });
     var said = null;
     function say(html, counted) {
       count.innerHTML = counted || "";
       if (html !== said) { said = html; message.innerHTML = html; }
+      // The line only grows. When the room filled, the shorter "door is open" message took a
+      // line away, the hero got shorter, and the scene re-laid itself out: the G jumped and
+      // the room emptied. Holding the tallest height keeps the hero, and so the door, still.
+      if (invite) invite.style.minHeight = Math.max(parseFloat(invite.style.minHeight) || 0, invite.offsetHeight) + "px";
     }
     function greet() {
       if (!scene()) return;

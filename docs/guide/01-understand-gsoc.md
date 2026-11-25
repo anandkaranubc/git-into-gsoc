@@ -32,7 +32,7 @@ After you [install the tool](02-install.md) in the next step, give it the same a
 git-into-gsoc start
 ```
 
-If you share your GitHub username, it reads your public repositories to suggest your main languages. Offline, it saves the username and reads the languages next time. To set or change single answers later, use `git-into-gsoc profile`, for example `git-into-gsoc profile --hours 10 --tz Asia/Kolkata`. The profile lives only on your computer.
+If you share your GitHub username, it reads your public repositories to suggest your main languages. To set or change single answers later, use `git-into-gsoc profile`, for example `git-into-gsoc profile --hours 10 --tz Asia/Kolkata`. The profile lives only on your computer.
 
 The time you can spend preparing may differ from the time a GSoC project requires; discuss the schedule with mentors before applying.
 
