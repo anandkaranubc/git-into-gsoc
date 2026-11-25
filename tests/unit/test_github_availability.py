@@ -1197,6 +1197,24 @@ def test_a_plan_heading_padded_with_spaces_is_read_quickly() -> None:
     assert is_claim("## Plan:  \n\nShip the fix in one file.")
 
 
+@pytest.mark.parametrize("line_end", ["\n", "\r\n", "\t\n"])
+def test_a_comment_of_blank_lines_is_read_quickly(line_end: str) -> None:
+    # One comment of GitHub's largest size, a letter and 65,000 blank lines, held every
+    # check of that issue for 160 seconds: each line-start pattern ran its leading
+    # whitespace across all the blank lines below it, then began again one line down.
+    import time
+
+    body = "a" + line_end * (65_000 // len(line_end)) + "/assign\n"
+    start = time.perf_counter()
+    assert is_claim(body)
+    found = assess_issue(_issue(), [_comment("dana", body, 2)], now=NOW)
+    assert time.perf_counter() - start < 2.0
+    assert found.availability == Availability.CLAIMED
+    # Blank lines above a quoted line or a command change nothing about how it reads.
+    assert not is_claim("\n\n  > I would like to work on this\n\nWho said that?")
+    assert is_claim("Thanks!\n\n   /take  \n")
+
+
 def test_a_closed_pr_that_says_it_fixes_the_issue_tried_it() -> None:
     # A post-merge audit (2026-10-23): a closed "Fixes #7" PR was listed as "mentions this
     # issue" and then as "#5 tried this", because only merged PRs could say they fix it.

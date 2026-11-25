@@ -153,7 +153,7 @@ _CLAIM_PATTERNS = [
     r"\bi wanna (?:take|work|fix|try|do)\b",
     r"\bi have (?:the |a )?(?:change|changes|fix|patch|pr) ready\b",
     r"\bi(?:'m| am) (?:nearly|almost) (?:done|finished)\b",
-    r"^\s*take\s*$|^\s*taking (?:this|it)\b",  # pandas-style "take" comment, or "Taking this one."
+    r"^[^\S\n]*take\s*$|^[^\S\n]*taking (?:this|it)\b",  # pandas-style "take" comment, or "Taking this one."
     r"\bi want to (?:work on|fix|take|tackle|solve|resolve) (?:this|it)\b",
     r"\bi(?:'ll| will) be (?:taking|working on|picking up)\b",
     r"\b(?:formally |officially )?take (?:this|the) issue\b",
@@ -210,7 +210,7 @@ _CLAIM_PATTERNS = [
     r"\bi(?:'ll| will) (?:raise|open|submit|create|send) (?:a|the|my) (?:pr|pull request)\b",
     r"\bi(?:'ll| will) (?:really )?(?:love|like) to submit\b",
     r"(?<!anyone )(?<!you )\bstill on (?:this|it)\b",
-    r"^\s*(?:in progress|pr soon)\b",
+    r"^[^\S\n]*(?:in progress|pr soon)\b",
     r"\bdo you want me to (?:work on|take|fix)\b",
     r"\b(?:we|i) (?:could|can) work (?:on (?:this|it) )?together\b",  # a second claimant
     # A fifth sample (568 comments, 21 organizations never sampled, labelled blind)
@@ -231,18 +231,18 @@ _CLAIM_PATTERNS = [
     r"\b(?:my|the) (?:work|changes|fix) (?:is|are) ready\b",
     r"\b(?:i want to|can (?:we|i)|could (?:we|i)|we can) (?:both )?collab(?:orate)?\b",
     r"\bi(?:'ll| will) (?:take a look|look) into (?:this|it)\b",
-    r"^\s*(?:hi,?\s*)?i(?:'m| am) interested[.!]?\s*$",
+    r"^[^\S\n]*(?:hi,?\s*)?i(?:'m| am) interested[.!]?\s*$",
     # bot commands used by Kubernetes, pandas, Zulip, Rust, Beam and others
-    r"^\s*/(?:assign(?:-me)?|take|claim|attempt)\s*$",
-    r"^\s*\.take(?:-issue)?\s*$",
-    r"^\s*@[\w-]+\s+(?:claim|assign)\s*$",  # "@zulipbot claim", "@openwisp-companion assign"
+    r"^[^\S\n]*/(?:assign(?:-me)?|take|claim|attempt)\s*$",
+    r"^[^\S\n]*\.take(?:-issue)?\s*$",
+    r"^[^\S\n]*@[\w-]+\s+(?:claim|assign)\s*$",  # "@zulipbot claim", "@openwisp-companion assign"
     # Git Bash on Windows turns a typed /assign into a path.
-    r"^\s*[a-z]:/program files/git/(?:assign|take|claim)\s*$",
+    r"^[^\S\n]*[a-z]:/program files/git/(?:assign|take|claim)\s*$",
 ]
 _RELEASE_PATTERNS = [
-    r"^\s*/(?:unassign(?:-me)?|release|unclaim)\s*$",
-    r"^\s*\.(?:release|unassign)\s*$",
-    r"^\s*@\w+bot\s+(?:abandon|unclaim|release)\b",
+    r"^[^\S\n]*/(?:unassign(?:-me)?|release|unclaim)\s*$",
+    r"^[^\S\n]*\.(?:release|unassign)\s*$",
+    r"^[^\S\n]*@\w+bot\s+(?:abandon|unclaim|release)\b",
     r"\b(?:i(?:'m| am) )?no longer (?:working on|able to work on|interested in) (?:this|it)\b",
     r"\b(?:please )?un-?assign me\b",
     r"\bfeel free to (?:take|pick) (?:this|it) (?:over|up)\b",
@@ -252,8 +252,8 @@ _RELEASE_PATTERNS = [
 # Giving back one's own claim. A report about someone else ("the assignee is no
 # longer working on this, so can I take it?") must not cancel the writer's claim.
 _OWN_RELEASE_PATTERNS = [
-    r"^\s*/(?:unassign(?:-me)?|release|unclaim)\s*$",
-    r"^\s*\.(?:release|unassign)\s*$",
+    r"^[^\S\n]*/(?:unassign(?:-me)?|release|unclaim)\s*$",
+    r"^[^\S\n]*\.(?:release|unassign)\s*$",
     r"\bi(?:'m| am| can)? no longer (?:working on|able to|interested in)\b",
     r"\b(?:please )?un-?assign me\b",
     r"\bi(?:'m| am) (?:not |un)able to (?:continue|work on|finish|complete|set up)\b",
@@ -327,7 +327,7 @@ def _mentions(body: str) -> set[str]:
     return {name.lower() for name in re.findall(r"@([A-Za-z0-9-]+)", body)}
 
 
-_QUOTED_LINE = re.compile(r"^\s*>.*$", re.MULTILINE)
+_QUOTED_LINE = re.compile(r"^[^\S\n]*>.*$", re.MULTILINE)
 
 
 def _own_words(text: str) -> str:
