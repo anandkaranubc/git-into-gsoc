@@ -417,3 +417,40 @@ def test_pr_check_refuses_a_number_that_is_not_a_pull_request() -> None:
     respx.get(f"{API}/pulls/9").mock(return_value=httpx.Response(404, json={}))
     with pytest.raises(InputError, match="not a pull request"):
         GSoCToolkit().pr_check("acme/lib", 9)
+
+
+@respx.mock
+def test_pr_check_says_when_github_could_not_answer() -> None:
+    # Offline, at the request limit, and on a 502, pr-check said "is not a pull request
+    # GitHub can show" about a pull request that exists.
+    from typer.testing import CliRunner
+
+    from conftest import rate_limited
+    from git_into_gsoc.cli import app
+    from git_into_gsoc.errors import HttpError, InputError, RateLimitError
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.get(f"{API}/pulls/9").mock(return_value=rate_limited())
+    with pytest.raises(RateLimitError):
+        GSoCToolkit().pr_check("acme/lib", 9)
+    for number, answer in ((10, httpx.ConnectError("offline")), (11, httpx.Response(502))):
+        respx.get(f"{API}/pulls/{number}").mock(side_effect=[answer])
+        with pytest.raises(HttpError) as caught:
+            GSoCToolkit().pr_check("acme/lib", number)
+        assert not isinstance(caught.value, InputError)
+    result = CliRunner().invoke(app, ["pr-check", "acme/lib#9"])
+    assert result.exit_code == 1
+    assert "rate limit" in result.output and "not a pull request" not in result.output
+
+
+@respx.mock
+def test_a_pull_request_that_cannot_be_read_does_not_stop_the_other_checks() -> None:
+    # A proposal's links and an issue's linked pull requests are extra evidence: a 502
+    # on one of them leaves it unverified, and the rest of the answer stands.
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.get(f"{API}/pulls/9").mock(return_value=httpx.Response(502))
+    toolkit = GSoCToolkit()
+    report = toolkit.check_proposal("My PR: https://github.com/acme/lib/pull/9", github="me")
+    assert report["links"][0]["verified"] is False
+    assert toolkit.github._pull_lookup()("acme/lib", 9) is None

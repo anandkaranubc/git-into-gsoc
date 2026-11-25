@@ -551,6 +551,8 @@ def start_cmd(
         return
     data = _markup_safe(data)
     _render_matches(data)
+    if data.get("profile_not_saved"):
+        _say(f"[yellow]![/yellow] {data['profile_not_saved']}")
     if interactive and data["organizations"]:
         answer = _ask("Shortlist any of these now? Type their numbers, or press Enter to skip")
         names = [org["name"] for org in data["organizations"]]
@@ -1901,6 +1903,8 @@ def recommend_cmd(
     console.print("; ".join(about))
     for note in data.get("read_as") or []:
         console.print(f"[dim]{note}[/dim]")
+    if data.get("profile_not_saved"):
+        _say(f"[yellow]![/yellow] {data['profile_not_saved']}")
     if data.get("hours_note"):
         console.print(f"[yellow]![/yellow] {data['hours_note']}")
     table = Table(title="Organizations")

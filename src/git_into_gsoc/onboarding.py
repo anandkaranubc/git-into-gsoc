@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from git_into_gsoc.errors import GigError
+from git_into_gsoc.errors import GigError, InputError
+from git_into_gsoc.progress.store import not_saved_note
 from git_into_gsoc.validation import split_csv
 
 if TYPE_CHECKING:
@@ -164,12 +165,29 @@ def first_run(
     The ones shown are checked for posts about the coming year; one that says it will
     sit the year out is set aside and the next match takes its place.
     """
-    profile = toolkit.save_profile(
-        github=github,
-        technologies=technologies or None,
-        interests=interests or None,
-        hours_per_week=hours_per_week,
-    )
+    not_saved = None
+    try:
+        profile = toolkit.save_profile(
+            github=github,
+            technologies=technologies or None,
+            interests=interests or None,
+            hours_per_week=hours_per_week,
+        )
+    except InputError as exc:
+        # The store raises this from an OSError. A username or an hours value that
+        # `start` refuses has no such cause, and stays an error.
+        if not isinstance(exc.__cause__, OSError):
+            raise
+        # In an assistant's sandbox the progress folder may be read-only, and `start`
+        # printed only "Cannot save your progress". The matches need just the answers.
+        not_saved = not_saved_note(exc)
+        answers = {
+            "github": github,
+            "technologies": technologies,
+            "interests": interests,
+            "hours_per_week": hours_per_week,
+        }
+        profile = {**toolkit.progress.profile(), **{k: v for k, v in answers.items() if v}}
     techs = list(profile.get("technologies") or [])
     if not techs and profile.get("top_language"):
         techs = [str(profile["top_language"])]
@@ -190,11 +208,13 @@ def first_run(
             if (org.get("participation") or {}).get("status") == "not_taking_part"
         ]
         catalog = matched["catalog"]
-        # So `next` can carry these names forward until something is shortlisted.
-        toolkit.progress.set_profile(suggested_orgs=[org["name"] for org in organizations])
+        if not_saved is None:
+            # So `next` can carry these names forward until something is shortlisted.
+            toolkit.progress.set_profile(suggested_orgs=[org["name"] for org in organizations])
     shortlisted = toolkit.progress.load().shortlisted_orgs
     return {
         "profile": profile,
+        "profile_not_saved": not_saved,
         "catalog": catalog,
         "organizations": organizations,
         "set_aside": set_aside,

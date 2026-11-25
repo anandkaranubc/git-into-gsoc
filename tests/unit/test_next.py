@@ -480,3 +480,55 @@ def test_next_does_not_report_an_issue_from_before_the_last_check_again(
     )
     data = GSoCToolkit().next_steps(now=NOW)
     assert [i["number"] for i in data["new_issues"]] == [8]
+
+
+def test_next_says_which_live_checks_could_not_run(api: respx.MockRouter) -> None:
+    # At GitHub's request limit `next` exited 0 with no pull requests, no new issues, and
+    # not a word about it, so someone with a pull request waiting on them saw nothing new.
+    from typer.testing import CliRunner
+
+    from conftest import rate_limited
+    from git_into_gsoc.cli import app
+
+    store = ProgressStore()
+    store.set_profile(technologies=["python"], github="alice")
+    store.track_repo("sympy/sympy")
+    store.shortlist_org("SymPy")
+    api.get(url__regex=rf"{GH}/.*").mock(return_value=rate_limited())
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert data["open_pull_requests"] == [] and data["new_issues"] == []
+    for check in (
+        "your open pull requests",
+        "your merged pull requests",
+        "new beginner issues",
+        "posts from your shortlisted organizations",
+    ):
+        assert check in data["not_checked"], check
+    assert "git-into-gsoc doctor" in data["not_checked"]
+    result = CliRunner().invoke(app, ["next"])
+    assert result.exit_code == 0, result.output
+    assert "Could not check your open pull requests" in " ".join(result.stdout.split())
+
+
+def test_next_says_when_an_open_pull_request_could_not_be_read(api: respx.MockRouter) -> None:
+    # The search has its own limit: it can answer while every pull request read is refused.
+    from conftest import rate_limited
+
+    ProgressStore().set_profile(technologies=["python"], github="alice")
+    found = {**_search_item(42, "sympy/sympy"), "pull_request": {}}
+    api.get(f"{GH}/search/issues").mock(
+        side_effect=lambda request: httpx.Response(
+            200, json={"items": [found] if "is:open" in request.url.params["q"] else []}
+        )
+    )
+    api.get(f"{GH}/repos/sympy/sympy/pulls/42").mock(return_value=rate_limited())
+    data = GSoCToolkit().next_steps(now=NOW)
+    assert data["open_pull_requests"] == []
+    assert "your open pull requests" in data["not_checked"]
+    assert "merged" not in data["not_checked"]
+
+
+def test_next_has_nothing_to_say_when_every_check_ran(api: respx.MockRouter) -> None:
+    ProgressStore().set_profile(technologies=["python"], github="alice")
+    api.get(f"{GH}/search/issues").mock(return_value=httpx.Response(200, json={"items": []}))
+    assert GSoCToolkit().next_steps(now=NOW)["not_checked"] is None
