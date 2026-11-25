@@ -55,7 +55,7 @@ The one-line `irm ... | iex` install is not affected. To activate a `.venv` in y
 
 ## "Cannot save your progress" or a permission error inside an AI assistant
 
-Some assistants run commands in a sandbox that may not write outside your project folder. Reading still works: the tool runs without its cache, and only saving progress fails. Allow the assistant to write to the folder the error names, or point the tool at a folder inside your project, for example `GIG_DATA_DIR=.gsoc-data GIG_CACHE_DIR=.gsoc-cache`. `git-into-gsoc doctor` shows which folder cannot be written.
+Some assistants run commands in a sandbox that may not write outside your project folder. Reading still works: the tool runs without its cache, and only saving progress fails. `start`, `recommend`, and `next` still give their answer and say that it was not saved (`profile_not_saved` in the JSON of the first two). Allow the assistant to write to the folder the error names, or point the tool at a folder inside your project, for example `GIG_DATA_DIR=.gsoc-data GIG_CACHE_DIR=.gsoc-cache`. `git-into-gsoc doctor` shows which folder cannot be written.
 
 ## Installation cannot download dependencies
 

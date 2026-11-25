@@ -15,7 +15,7 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from git_into_gsoc.github.repos import is_bot
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_untrusted, drop_html_comments
 
 PURPOSES: dict[str, tuple[str, ...]] = {
     "source": ("src", "lib", "pkg", "internal", "core", "app", "cmd", "packages", "crates"),
@@ -633,7 +633,7 @@ def changelog_request(contributing: str, pr_template: str) -> str | None:
         if heading and _CHANGELOG_TERM_RE.search(heading.group(1)):
             return f"The PR template has a '{heading.group(1).strip()}' section"
     for source, text in (("CONTRIBUTING", contributing), ("the PR template", pr_template)):
-        flat = re.sub(r"\s+", " ", re.sub(r"<!--.*?-->", " ", text, flags=re.S))
+        flat = re.sub(r"\s+", " ", drop_html_comments(text))
         for sentence in re.split(r"(?<=[.!?])\s+", flat):
             term = _CHANGELOG_TERM_RE.search(sentence)
             if term and _ASK_RE.search(sentence) and not _GENERATED_RE.search(sentence):
@@ -700,7 +700,7 @@ def conventions(
     if mention:
         changelog_evidence.insert(0, mention)
 
-    checklist_items = len(re.findall(r"^\s*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
+    checklist_items = len(re.findall(r"^[^\S\n]*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
     return {
         "dco": {"required": bool(dco_evidence), "evidence": dco_evidence},
         "cla": {"required": bool(cla_evidence), "evidence": cla_evidence},
@@ -767,7 +767,7 @@ def policy_quotes(
     quotes: list[dict[str, str]] = []
     seen: set[str] = set()
     for source, text in texts.items():
-        cleaned = re.sub(r"<!--.*?-->", " ", text or "", flags=re.S)
+        cleaned = drop_html_comments(text or "")
         taken: dict[str, int] = {}
         for line in _logical_lines(cleaned):
             stripped = line.strip()

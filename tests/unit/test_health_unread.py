@@ -182,6 +182,20 @@ def test_repo_health_leaves_out_a_rate_limited_community_profile() -> None:
 
 
 @respx.mock
+def test_a_description_that_starts_with_a_bracketed_tag_is_kept() -> None:
+    # GitHub shows a description as plain text. Read as markdown, "[DEPRECATED]: use
+    # other-repo instead" is a link reference definition, and `repo` showed no description.
+    said = "[DEPRECATED]: use other-repo instead"
+    repo = {
+        "full_name": "acme/lib",
+        "pushed_at": datetime.now(UTC).isoformat(),
+        # What nobody can see is still removed.
+        "description": f"{said}\x1b\x07​ <!-- note -->",
+    }
+    assert _repo_health(repo=httpx.Response(200, json=repo)).description == said
+
+
+@respx.mock
 def test_a_rate_limited_readme_leaves_out_only_the_guide() -> None:
     # The README is read last, after the pull requests, so it meets the limit most often.
     health = _repo_health(**{"contents/README.md": rate_limited()})
