@@ -29,7 +29,7 @@ _ISSUE_REF_RE = re.compile(
     r"(?:[\w.-]+/[\w.-]+)?#\d+|github\.com/[\w.-]+/[\w.-]+/issues/\d+",
     re.I,
 )
-_ITEM_RE = re.compile(r"^\s*[-*]\s*\[([ xX])\]\s*(.+)$", re.M)
+_ITEM_RE = re.compile(r"^[^\S\n]*[-*]\s*\[([ xX])\]\s*(.+)$", re.M)
 _MD_LINK_RE = re.compile(r"!?\[([^\]]*)\]\([^)]*\)")
 _MD_EMPHASIS_RE = re.compile(r"(?<![\w*])(\*\*|__|\*|_)(?=\S)(.+?)(?<=\S)\1(?![\w*])")
 _AI_MENTION_RE = re.compile(
@@ -199,7 +199,7 @@ def check_pull_request(
             )
         )
 
-    template_items = len(re.findall(r"^\s*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
+    template_items = len(re.findall(r"^[^\S\n]*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
     unchecked = unticked_items(body)
     if template_items and not _ITEM_RE.search(body):
         findings.append(

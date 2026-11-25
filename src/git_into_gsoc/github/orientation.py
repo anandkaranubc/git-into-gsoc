@@ -700,7 +700,7 @@ def conventions(
     if mention:
         changelog_evidence.insert(0, mention)
 
-    checklist_items = len(re.findall(r"^\s*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
+    checklist_items = len(re.findall(r"^[^\S\n]*[-*]\s*\[[ xX]\]", pr_template, flags=re.M))
     return {
         "dco": {"required": bool(dco_evidence), "evidence": dco_evidence},
         "cla": {"required": bool(cla_evidence), "evidence": cla_evidence},
