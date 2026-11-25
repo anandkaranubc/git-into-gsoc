@@ -69,6 +69,19 @@ def test_without_red_text_the_end_of_the_step_is_quoted() -> None:
     assert failing_step("Traceback (most recent call last):\nValueError: x") is None
 
 
+def test_a_printed_line_that_starts_with_a_bracketed_tag_is_quoted() -> None:
+    # "[ERROR]: ..." reads like a markdown link reference definition, so the one line
+    # that said what failed was dropped and the step had nothing to quote.
+    lines = [
+        "##[group]Run make test",
+        "##[endgroup]",
+        "[ERROR]: Failed to compile lib/core.c",
+        "##[error]Process completed with exit code 2.",
+    ]
+    step = failing_step("\n".join(lines))
+    assert step is not None and step["printed"] == ["[ERROR]: Failed to compile lib/core.c"]
+
+
 def _client(tmp_path: Path, handler: Any) -> CachedHttpClient:
     return CachedHttpClient(
         Settings(http_max_retries=0),

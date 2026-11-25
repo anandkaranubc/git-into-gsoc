@@ -1072,7 +1072,10 @@ class GSoCToolkit:
                     RepoLead(
                         full_name=full,
                         url=str(repo.get("html_url")),
-                        description=clean_untrusted(repo.get("description"), limit=300) or None,
+                        description=clean_untrusted(
+                            repo.get("description"), limit=300, markdown=False
+                        )
+                        or None,
                         language=repo.get("language"),
                         stars=int(repo.get("stargazers_count") or 0),
                         pushed_at=parse_iso(repo.get("pushed_at")),
@@ -1570,7 +1573,7 @@ class GSoCToolkit:
         return RepoLead(
             full_name=str(raw.get("full_name") or full),
             url=str(raw.get("html_url") or f"https://github.com/{full}"),
-            description=clean_untrusted(raw.get("description"), limit=300) or None,
+            description=clean_untrusted(raw.get("description"), limit=300, markdown=False) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
             pushed_at=parse_iso(raw.get("pushed_at")),
@@ -2661,7 +2664,7 @@ class GSoCToolkit:
         result = {
             "repo": f"{owner}/{repo}",
             "url": raw.get("html_url") or f"https://github.com/{owner}/{repo}",
-            "description": clean_untrusted(raw.get("description"), limit=300),
+            "description": clean_untrusted(raw.get("description"), limit=300, markdown=False),
             "default_branch": branch,
             "work_branch": work_branch(merged, default=branch),
             "as_of_commit": tree.get("sha"),
