@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.27.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.3...v0.27.0) (2026-11-25)
+
+
+### Features
+
+* **site:** sharper search snippets, a GSoC 2027 page, and two funnel events ([#466](https://github.com/anandkaranubc/git-into-gsoc/issues/466)) ([7fe42db](https://github.com/anandkaranubc/git-into-gsoc/commit/7fe42db3f2340326a845fef26fb6a75680905767))
+* **site:** video pages with chapters, a transcript, and the step to try next ([#478](https://github.com/anandkaranubc/git-into-gsoc/issues/478)) ([f811f72](https://github.com/anandkaranubc/git-into-gsoc/commit/f811f72721e439bf48116a4c02e6569c47bae458))
+
+
+### Bug Fixes
+
+* **cli:** keep a markup tag split across two printed strings as text ([b905357](https://github.com/anandkaranubc/git-into-gsoc/commit/b905357445359390066d7f9e600e5970fe956eea))
+* **ideas:** keep negated AI rules, name the right policy page, and call a page gone only when it is ([#475](https://github.com/anandkaranubc/git-into-gsoc/issues/475)) ([1d67ef3](https://github.com/anandkaranubc/git-into-gsoc/commit/1d67ef3e02a676545e1a5916c1eebe8f57186798))
+* **ideas:** read linked AI policy pages, drop a false positive, say when a page is gone ([#471](https://github.com/anandkaranubc/git-into-gsoc/issues/471)) ([2f467c6](https://github.com/anandkaranubc/git-into-gsoc/commit/2f467c6aa20364ce0d2b7e83b8fcb2440187c67e))
+* **issues:** keep "[RFC]:" titles and show accepted starter RFCs ([#479](https://github.com/anandkaranubc/git-into-gsoc/issues/479)) ([4a1afdf](https://github.com/anandkaranubc/git-into-gsoc/commit/4a1afdf22e6f077c6b0f32da53fb3ffc09a9846d))
+* **issues:** name the most recently active open pull request, not the oldest ([#484](https://github.com/anandkaranubc/git-into-gsoc/issues/484)) ([01c6d71](https://github.com/anandkaranubc/git-into-gsoc/commit/01c6d71eadd370348f606d34a017f567de825655))
+* keep log lines and descriptions that start with a bracketed tag ([#485](https://github.com/anandkaranubc/git-into-gsoc/issues/485)) ([cc0719f](https://github.com/anandkaranubc/git-into-gsoc/commit/cc0719ffccaeecf25f80f329a91171ae678afe25))
+* **program:** keep the phase at before announcement while the dates are estimates, offline too ([#488](https://github.com/anandkaranubc/git-into-gsoc/issues/488)) ([7fb52b6](https://github.com/anandkaranubc/git-into-gsoc/commit/7fb52b6ad23e77fdebd59b2f3a5c9741014a8b6e))
+* **program:** read an official timeline that has a milestone without a date ([#486](https://github.com/anandkaranubc/git-into-gsoc/issues/486)) ([45569b3](https://github.com/anandkaranubc/git-into-gsoc/commit/45569b38223899e8a54d286109b6d0e614dbd9d9))
+* **program:** say the site could not be read when an offline estimate is shown ([#476](https://github.com/anandkaranubc/git-into-gsoc/issues/476)) ([b0125e4](https://github.com/anandkaranubc/git-into-gsoc/commit/b0125e46f3c9363a2e3ae4dbc9646cb51bbe634a))
+* read comments, pull request bodies and ideas pages built to stall the readers quickly ([#482](https://github.com/anandkaranubc/git-into-gsoc/issues/482)) ([a90fac7](https://github.com/anandkaranubc/git-into-gsoc/commit/a90fac77ca8977e65a9f3a4d67e61903f1618fa2))
+* say when GitHub or the archive could not be read, not that nothing was found ([#483](https://github.com/anandkaranubc/git-into-gsoc/issues/483)) ([8d1caea](https://github.com/anandkaranubc/git-into-gsoc/commit/8d1caead1acda169b3a986ae4a80e98745fa16e0))
+* **site:** keep org names inert in JSON-LD, find Apache and Ceph history, and fix two snippets ([#474](https://github.com/anandkaranubc/git-into-gsoc/issues/474)) ([ea747fe](https://github.com/anandkaranubc/git-into-gsoc/commit/ea747fe27803cc2a31055938b7418eb071f42f2d))
+
 ## [0.26.3](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.2...v0.26.3) (2026-11-13)
 
 
