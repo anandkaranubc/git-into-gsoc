@@ -14,6 +14,7 @@ from __future__ import annotations
 import html
 import json
 import re
+from bisect import bisect_left
 from collections import Counter
 from html.parser import HTMLParser
 from itertools import takewhile
@@ -23,14 +24,16 @@ from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 from git_into_gsoc.gsoc.ideas import confluence_api_url, get_page
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_untrusted, straight_quotes
 
 MAX_CHARS = 600_000
 MIN_IDEAS_FOR_LAYOUT = 2
 
 _GDOC = re.compile(r"^/document/d/([A-Za-z0-9_-]+)")
 _URL_RE = re.compile(r"https?://[^\s<>()\"'\]]+")
-_MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
+# The address has a length limit because a link that is never closed makes the pattern
+# read to the end of the line from each one: a 320 KB line of them took a minute.
+_MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]{1,1000})\)")
 # The unit, or nothing but GSoC numbers in the cell ("175", R's "175 or 350"): "1750
 # hours" read as 175 and "90%" as 90 (reviewer probe, 2026-11-01).
 # A GSoC hour count needs a unit, or a cell holding nothing but such counts ("175 or
@@ -454,8 +457,13 @@ def html_to_lines(raw: str, base_url: str | None = None) -> list[str]:
     one), bullets, bold labels, definition-list terms and values, and links, with
     scripts, menus, and footers left out."""
     parser = _LineParser(base_url)
-    parser.feed(raw[:MAX_CHARS])
-    parser.close()
+    try:
+        parser.feed(raw[:MAX_CHARS])
+        parser.close()
+    except (ValueError, AssertionError):
+        # What html.parser raises on a broken page: "<![foo bar]>" in a 61-byte page
+        # ended `ideas` with a traceback. The lines read before it are still good.
+        pass
     return [html.unescape(line) for line in parser.lines]
 
 
@@ -477,12 +485,28 @@ def _promotable(line: str) -> bool:
     )
 
 
+def _without_comments(text: str) -> str:
+    """The text with each closed `<!-- ... -->` replaced by a space."""
+    # A pattern for this scans to the end of the page from every "<!--" that is never
+    # closed: 20,000 of them (80 KB) took 9 seconds.
+    kept: list[str] = []
+    position = 0
+    while (start := text.find("<!--", position)) != -1:
+        end = text.find("-->", start + 4)
+        if end == -1:
+            break
+        kept += [text[position:start], " "]
+        position = end + 3
+    kept.append(text[position:])
+    return "".join(kept)
+
+
 def markdown_to_lines(raw: str) -> list[str]:
     """Markdown or reStructuredText as lines: underlined headings become `#` headings;
     front matter, comments, and rules are dropped."""
     lines: list[str] = []
     text = _FRONT_MATTER_RE.sub("", raw[:MAX_CHARS], count=1)
-    text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)
+    text = _without_comments(text)
     prev_blank = True
     for line in text.splitlines():
         stripped = line.rstrip()
@@ -590,7 +614,9 @@ def _label(line: str) -> tuple[str, str, str] | None:
 
 
 def _clean(value: str) -> str:
-    value = _BULLET_RE.sub("", value)
+    # The result is cut to 600 characters, so the far end of a very long line is never
+    # used, and the link pattern below read a 320 KB line of unclosed links for 6 seconds.
+    value = _BULLET_RE.sub("", value[:20_000])
     value = re.sub(r"<[^>]+>", " ", value)
     value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
     value = re.sub(r"\*\*|__|`", "", value)
@@ -744,7 +770,9 @@ def ai_policy_sentences(text: str, limit: int = 4) -> list[str]:
         flat = re.sub(r"\s+", " ", re.sub(r"[#*_`]+", "", paragraph))
         for sentence in re.split(r"(?<=[.!?])\s+", flat):
             sentence = sentence.strip()
-            prose = _URL_RE.sub(" ", sentence)
+            # Google Docs and most site generators type "won't" and "don't" with a curly
+            # apostrophe, which the negations in the rule pattern did not match.
+            prose = straight_quotes(_URL_RE.sub(" ", sentence))
             if not (_AI_RE.search(prose) and _POLICY_RE.search(prose)):
                 continue
             if not 20 <= len(sentence) <= 400:
@@ -1008,11 +1036,18 @@ def _assign(idea: ProjectIdea, field: str, value: str) -> None:
     if not value or value.startswith("#"):  # "#" starts an inline template instruction
         return
     idea.labelled_fields += 1
+    # Size and difficulty stop taking text at 500 characters, like the other fields.
+    # Both are read again in full on each new line, so 20,000 bullets under "Size:"
+    # took over a minute.
     if field == "difficulty":
-        idea.difficulty_raw = (idea.difficulty_raw + " " + _clean(value)).strip()
+        if len(idea.difficulty_raw) >= 500:
+            return
+        idea.difficulty_raw = (idea.difficulty_raw + " " + _clean(value)).strip()[:500]
         idea.difficulty = normalize_difficulty(idea.difficulty_raw) or idea.difficulty
     elif field == "size":
-        idea.size_raw = (idea.size_raw + " " + _clean(value)).strip()
+        if len(idea.size_raw) >= 500:
+            return
+        idea.size_raw = (idea.size_raw + " " + _clean(value)).strip()[:500]
         size, hours = normalize_size(idea.size_raw)
         idea.size, idea.hours = size or idea.size, hours or idea.hours
     elif field == "mentors":
@@ -1879,17 +1914,25 @@ def _wiki_text(value: str) -> str:
 
 def wiki_template_ideas(wikitext: str, *, source_url: str) -> list[ProjectIdea]:
     """Ideas written as MediaWiki templates with a title parameter, one per template."""
-    headings = [
-        (m.start(), m.group(1).strip())
-        for m in re.finditer(r"^==+\s*(.+?)\s*==+\s*$", wikitext, re.M)
-    ]
+    # Read line by line: one pattern for "== Title ==" tried every split of a long run
+    # of spaces or "=" signs, so a 5 KB line of "==" and spaces took 38 seconds.
+    headings: list[tuple[int, str]] = []
+    position = 0
+    for line in wikitext[:MAX_CHARS].splitlines(keepends=True):
+        text = line.rstrip()
+        title = text.strip("=").strip()
+        if title and len(text) <= 300 and text.startswith("==") and text.endswith("=="):
+            headings.append((position, title))
+        position += len(line)
+    heading_starts = [start for start, _ in headings]
     ideas: list[ProjectIdea] = []
     for start, body in _wiki_blocks(wikitext[:MAX_CHARS]):
         params = _wiki_params(body)
         title = _wiki_text(params.get("title") or params.get("name") or params.get("project") or "")
         if not title:
             continue
-        heading = next((h for pos, h in reversed(headings) if pos < start), "")
+        above = bisect_left(heading_starts, start)
+        heading = headings[above - 1][1] if above else ""
         # Every value here is text strangers wrote: it goes through _clean, as the
         # parameters do in _assign.
         section = _clean(_wiki_text(heading))[:120] or None
