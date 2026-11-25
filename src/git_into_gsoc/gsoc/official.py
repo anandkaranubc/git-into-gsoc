@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 from git_into_gsoc.config import Settings, get_settings
+from git_into_gsoc.dates import parse_iso
 from git_into_gsoc.errors import HttpError
 from git_into_gsoc.http_client import CachedHttpClient, NotFoundError
 
@@ -30,14 +31,24 @@ class OfficialGSoCClient:
 
     def program(self, year: int) -> dict[str, Any] | None:
         """Program metadata and milestones, or None if Google hasn't published `year`.
-        Raises HttpError when the site answers in a shape this version cannot read."""
+        Raises HttpError when the site answers in a shape this version cannot read,
+        or with no milestone that has a date."""
         url = self._url(f"program/{int(year)}/")
         try:
             data = self.http.get_json(url, ttl=PROGRAM_TTL_SECONDS)
         except NotFoundError:
             return None
         if isinstance(data, dict) and isinstance(data.get("milestones"), list):
-            return data
+            # A milestone with "datetime": null was a traceback in `program` and `next`.
+            # Only that one is left out, so the dates that can be read stay official.
+            dated = [
+                m
+                for m in data["milestones"]
+                if isinstance(m, dict) and parse_iso(m.get("datetime"))
+            ]
+            # An empty list printed "dates: official" over an empty table.
+            if dated:
+                return {**data, "milestones": dated}
         # Not "unpublished": that would hold the phase at "before announcement" for a
         # program Google has announced. Callers treat this like the site being down.
         raise HttpError("The GSoC site answered in a shape this version cannot read", url=url)

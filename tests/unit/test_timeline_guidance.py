@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import time
 from datetime import UTC, datetime
 
 import httpx
+import pytest
 import respx
 
 from conftest import load_fixture
@@ -199,3 +201,58 @@ def test_a_program_in_an_unreadable_shape_counts_as_offline_not_unpublished() ->
     info = GSoCToolkit().program_info(2027)
     assert info["dates_are_official"] is False
     assert "ESTIMATE" in info["source"]
+
+
+PROGRAM_2027 = "https://summerofcode.withgoogle.com/api/program/2027/"
+
+
+@pytest.mark.parametrize(
+    "milestones",
+    [
+        [],
+        [{"name": "prog_announce", "datetime": None}],
+        [{"name": "prog_announce", "datetime": "soon"}],
+        [{"name": "prog_announce"}],
+        ["prog_announce"],
+    ],
+)
+@respx.mock
+def test_a_program_with_no_dated_milestone_is_not_official(milestones: list[object]) -> None:
+    # A milestone with "datetime": null was a traceback in `program` and `next`, and an
+    # empty list printed "dates: official" over an empty table.
+    from git_into_gsoc.service import GSoCToolkit
+
+    respx.get(PROGRAM_2027).mock(return_value=httpx.Response(200, json={"milestones": milestones}))
+    info = GSoCToolkit().program_info(2027)
+    assert info["dates_are_official"] is False
+    assert info["timeline"] and "could not be read" in info["source"]
+    assert GSoCToolkit().next_steps(recheck=False)["program"]["dates_are_official"] is False
+
+
+@respx.mock
+def test_one_milestone_without_a_date_does_not_hide_the_dated_ones() -> None:
+    from git_into_gsoc.service import GSoCToolkit
+
+    milestones = [
+        {"name": "prog_announce", "datetime": "2027-01-20T18:00:00Z"},
+        {"name": "org_apps_open", "datetime": None},
+        "not a milestone",
+    ]
+    respx.get(PROGRAM_2027).mock(return_value=httpx.Response(200, json={"milestones": milestones}))
+    info = GSoCToolkit().program_info(2027)
+    assert info["dates_are_official"] is True
+    assert [m["key"] for m in info["timeline"]] == ["prog_announce"]
+
+
+@pytest.mark.skipif(not hasattr(time, "tzset"), reason="needs a time zone the test can set")
+def test_a_date_with_no_zone_is_read_as_utc(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Read in the machine's own zone, 18:00 became 12:30 UTC on a laptop in India.
+    monkeypatch.setenv("TZ", "Asia/Kolkata")
+    time.tzset()
+    try:
+        program = {"milestones": [{"name": "prog_announce", "datetime": "2027-03-01T18:00:00"}]}
+        at = build_timeline(program, official=True, now=OCT_2026)[0].at
+    finally:
+        monkeypatch.undo()
+        time.tzset()
+    assert at == datetime(2027, 3, 1, 18, tzinfo=UTC)
