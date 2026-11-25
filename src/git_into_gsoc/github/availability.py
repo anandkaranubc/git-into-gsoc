@@ -656,7 +656,11 @@ def assess_issue(
 
     open_prs = [p for p in prs if p.state == "open"]
     if open_prs:
-        pr = open_prs[0]
+        # The most recently active one, not the oldest: an issue with 14 open pull
+        # requests, 12 of them active in the last two days, read "idle for 181 days"
+        # (a health audit, 2026-11-25). One with no known activity date goes last.
+        pr = min(open_prs, key=lambda p: (p.idle_days is None, p.idle_days or 0))
+        others = len(open_prs) - 1
         ref = _pull_ref(pr, repo)
         who = f" by @{pr.author}" if pr.author else ""
         draft = " (draft)" if pr.draft else ""
@@ -665,13 +669,21 @@ def assess_issue(
             if pr.via_comment
             else f"Open PR {ref}{who}{draft} references it"
         ).replace("  ", " ")
-        if pr.idle_days is not None and pr.idle_days >= STALE_PR_DAYS:
+        if all(p.idle_days is not None and p.idle_days >= STALE_PR_DAYS for p in open_prs):
             # Still someone else's work, but a quiet one: say how to ask, as
             # is-it-claimed does, instead of implying the issue is out of reach.
             reason += f"; it has been idle for {pr.idle_days} days"
             caveats.append(
-                f"The open PR has had no activity for {pr.idle_days} days; ask in the issue "
-                "whether its author is still working on it before you start"
+                f"None of the {len(open_prs)} open PRs has had activity for {pr.idle_days} "
+                "days; ask in the issue whether anyone is still working on it before you start"
+                if others
+                else f"The open PR has had no activity for {pr.idle_days} days; ask in the "
+                "issue whether its author is still working on it before you start"
+            )
+        if others:
+            reason += (
+                f"; {others} other open PR{'s' if others > 1 else ''} also "
+                f"point{'' if others > 1 else 's'} to it"
             )
         return result(Availability.LIKELY_TAKEN, reason)
 
