@@ -54,7 +54,7 @@ from git_into_gsoc.models import (
 )
 from git_into_gsoc.scoring.health import MIN_REPLY_SAMPLE, score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 from git_into_gsoc.validation import parse_repo, validate_login
 
 MAX_COMMENT_PAGES = 3  # at most 200 extra comments per endpoint when the sample is short
@@ -124,7 +124,7 @@ def _candidate_from_search(item: dict[str, Any]) -> IssueCandidate | None:
     return IssueCandidate(
         repo=repo_name,
         number=int(item["number"]),
-        title=clean_untrusted(item.get("title"), limit=256),
+        title=clean_title(item.get("title"), limit=256),
         url=item.get("html_url") or "",
         labels=[x for x in labels if x],
         created_at=parse_iso(item.get("created_at")),
@@ -362,10 +362,15 @@ class GitHubClient:
         return data if isinstance(data, dict) else {}
 
     def get_pull(self, owner: str, repo: str, number: int) -> dict[str, Any] | None:
+        """One pull request, or None when GitHub has none with that number.
+
+        Any other failure is raised: with every error read as None, `pr-check` said
+        "is not a pull request" about a real one while offline or at the request limit.
+        """
         owner, repo = parse_repo(f"{owner}/{repo}")
         try:
             data = self._api(f"repos/{owner}/{repo}/pulls/{int(number)}", ttl=900)
-        except HttpError:
+        except NotFoundError:
             return None
         return data if isinstance(data, dict) else None
 
@@ -655,7 +660,9 @@ class GitHubClient:
         health = RepoHealth(
             full_name=f"{owner}/{repo}",
             url=raw.get("html_url", f"https://github.com/{owner}/{repo}"),
-            description=clean_untrusted(raw.get("description"), limit=350) or None,
+            # GitHub shows a description as plain text, like a title: read as markdown,
+            # "[DEPRECATED]: use other-repo instead" is a hidden link reference.
+            description=clean_untrusted(raw.get("description"), limit=350, markdown=False) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
             forks=int(raw.get("forks_count") or 0),
@@ -915,7 +922,9 @@ class GitHubClient:
             owner, _, repo = full_name.partition("/")
             try:
                 return self.get_pull(owner, repo, number)
-            except InputError:  # a malformed name in someone's comment
+            # A malformed name in someone's comment, or GitHub not answering: the
+            # issue's own status still stands without this pull request.
+            except (InputError, HttpError):
                 return None
 
         return lookup

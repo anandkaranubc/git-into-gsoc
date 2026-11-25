@@ -167,11 +167,17 @@ def _toolkit() -> GSoCToolkit:
 # An even run of backslashes escapes only itself: a title with "\\[link=...]" printed
 # a live link to the sender's site, so such a tag gets one more.
 _MARKUP_TAG = re.compile(r"(?<!\\)((?:\\\\)*)(\[[a-z#/@][^\[\]]*\])")
+# A tag left open at the end of the text is closed by the "]" of whatever is printed
+# after it: two ideas-page headings, "[link=https://..." and "] Sign in ...", joined
+# with "; " printed a live link to the sender's site.
+# A bare "[" at the very end counts too: the next string can supply the whole rest.
+_OPEN_TAG_AT_END = re.compile(r"(?<!\\)((?:\\\\)*)(\[(?:[a-z#/@][^\[\]]*)?)\Z")
 
 
 def escape(text: str) -> str:
     """Make text print literally: no markup, no hidden or terminal-control characters."""
     escaped = _MARKUP_TAG.sub(r"\1\\\2", strip_hidden(text))
+    escaped = _OPEN_TAG_AT_END.sub(r"\1\\\2", escaped)
     if (len(escaped) - len(escaped.rstrip("\\"))) % 2:
         escaped += "\\"  # an odd trailing run would otherwise escape the next tag
     return escaped
@@ -545,6 +551,8 @@ def start_cmd(
         return
     data = _markup_safe(data)
     _render_matches(data)
+    if data.get("profile_not_saved"):
+        _say(f"[yellow]![/yellow] {data['profile_not_saved']}")
     if interactive and data["organizations"]:
         answer = _ask("Shortlist any of these now? Type their numbers, or press Enter to skip")
         names = [org["name"] for org in data["organizations"]]
@@ -1895,6 +1903,8 @@ def recommend_cmd(
     console.print("; ".join(about))
     for note in data.get("read_as") or []:
         console.print(f"[dim]{note}[/dim]")
+    if data.get("profile_not_saved"):
+        _say(f"[yellow]![/yellow] {data['profile_not_saved']}")
     if data.get("hours_note"):
         console.print(f"[yellow]![/yellow] {data['hours_note']}")
     table = Table(title="Organizations")

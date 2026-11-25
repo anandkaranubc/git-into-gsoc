@@ -69,7 +69,7 @@ from git_into_gsoc.models import (
 )
 from git_into_gsoc.scoring.health import score_repo_health
 from git_into_gsoc.scoring.issues import score_issue
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 
 _SHORT_REF = re.compile(r"^([A-Za-z0-9.-]+\.[A-Za-z]{2,})/((?:[\w.-]+/)+[\w.-]+)#(\d+)$")
 _ISSUE_URL = re.compile(
@@ -139,10 +139,18 @@ def _status(
         return Availability.ASSIGNED, f"Assigned to {names}", linked, caveats
     open_mrs = [mr for mr in linked if mr["state"] == "open"]
     if open_mrs:
-        mr = open_mrs[0]
+        # As on GitHub: the most recently active one, and idle only when all of them
+        # are, so one merge request left for months does not hide this week's work.
+        mr = min(open_mrs, key=lambda m: (m["idle_days"] is None, m["idle_days"] or 0))
+        others = len(open_mrs) - 1
         reason = f"Open merge request !{mr['number']} by @{mr['author']} references it"
-        if mr["idle_days"] is not None and mr["idle_days"] >= 90:
+        if all(m["idle_days"] is not None and m["idle_days"] >= 90 for m in open_mrs):
             reason += f"; it has been idle for {mr['idle_days']} days"
+        if others:
+            reason += (
+                f"; {others} other open merge request{'s' if others > 1 else ''} also "
+                f"point{'' if others > 1 else 's'} to it"
+            )
         return Availability.LIKELY_TAKEN, reason, linked, caveats
     held = sorted(label for label in labels if is_not_open_label(label))
     if held:
@@ -271,7 +279,7 @@ def gitlab_issue_status(
     return {
         "repo": f"{host}/{project}",
         "number": number,
-        "title": clean_untrusted(issue.get("title"), limit=256),
+        "title": clean_title(issue.get("title"), limit=256),
         "url": f"https://{host}/{project}/-/issues/{number}",
         "labels": [str(label) for label in issue.get("labels") or []],
         "comments": notes,
@@ -433,7 +441,7 @@ def search_gitlab_issues(
             IssueCandidate(
                 repo=f"{host}/{project}",
                 number=number,
-                title=clean_untrusted(item.get("title"), limit=256),
+                title=clean_title(item.get("title"), limit=256),
                 url=f"https://{host}/{project}/-/issues/{number}",
                 labels=[str(label) for label in item.get("labels") or []],
                 created_at=_dt(item.get("created_at")),
@@ -1341,7 +1349,7 @@ def gitlab_issue_pointers(
                     {
                         "issue": {
                             "number": int(item["iid"]),
-                            "title": clean_untrusted(item.get("title"), limit=120),
+                            "title": clean_title(item.get("title"), limit=120),
                             "url": item.get("web_url"),
                         },
                         "pull_request": closer,
@@ -1376,7 +1384,7 @@ def gitlab_issue_pointers(
             "repo": repo,
             "host": host,
             "number": number,
-            "title": clean_untrusted(title, limit=200),
+            "title": clean_title(title, limit=200),
             "url": issue.get("web_url") or f"https://{host}/{path}/-/issues/{number}",
             "labels": own_labels,
         },

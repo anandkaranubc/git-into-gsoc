@@ -65,6 +65,49 @@ def test_org_ideas_follows_umbrella_sub_pages(api: respx.MockRouter) -> None:
     assert "Umbrella" in data["note"]
 
 
+def test_ai_rules_from_an_umbrella_sub_page_name_that_page(api: respx.MockRouter) -> None:
+    api.get(PG_PAGE).mock(return_value=httpx.Response(200, text=_read("umbrella_index.md")))
+    policy = "https://alpha.example.org/gsoc/ai-policy"
+    api.get("https://alpha.example.org/gsoc/ideas").mock(
+        return_value=httpx.Response(200, text=_read("bullet_labels.md") + f"\n\nRules: {policy}\n")
+    )
+    api.get(policy).mock(
+        return_value=httpx.Response(
+            200, text="# AI policy\n\nYou must not submit AI-generated code in a pull request.\n"
+        )
+    )
+    api.get(url__regex=r"https://(raw\.githubusercontent|github)\.com/.*").mock(
+        return_value=httpx.Response(404)
+    )
+    api.get("https://gamma.example.org/summer-of-code").mock(return_value=httpx.Response(404))
+    data = GSoCToolkit().org_ideas("PostgreSQL")
+    assert any("must not" in s for s in data["ai_policy"])
+    assert data["ai_policy_url"] == policy
+
+
+def test_ai_rules_from_two_sub_pages_name_neither(api: respx.MockRouter) -> None:
+    # Naming the first page would credit the second sub-project's rules to it.
+    api.get(PG_PAGE).mock(return_value=httpx.Response(200, text=_read("umbrella_index.md")))
+    for site, words in (("alpha", "AI-generated code"), ("gamma", "LLM-written proposals")):
+        page = (
+            "https://alpha.example.org/gsoc/ideas"
+            if site == "alpha"
+            else "https://gamma.example.org/summer-of-code"
+        )
+        policy = f"https://{site}.example.org/gsoc/ai-policy"
+        ideas = _read("bullet_labels.md").replace("great/project", f"{site}/project")
+        api.get(page).mock(return_value=httpx.Response(200, text=f"{ideas}\n\nRules: {policy}\n"))
+        api.get(policy).mock(
+            return_value=httpx.Response(200, text=f"# AI policy\n\nYou must not submit {words}.\n")
+        )
+    api.get(url__regex=r"https://(raw\.githubusercontent|github)\.com/.*").mock(
+        return_value=httpx.Response(404)
+    )
+    data = GSoCToolkit().org_ideas("PostgreSQL")
+    assert len(data["ai_policy"]) == 2
+    assert data["ai_policy_url"] is None
+
+
 def test_org_ideas_uses_prose_blocks_when_links_lead_nowhere(api: respx.MockRouter) -> None:
     body = " ".join(["The goal is a faster importer that handles broken files gracefully."] * 5)
     page = "# Projects\n\n"
@@ -94,6 +137,30 @@ def test_org_ideas_says_a_removed_page_is_gone(api: respx.MockRouter) -> None:
     data = GSoCToolkit().org_ideas("SymPy")
     assert data["layout"] == "unreachable"
     assert "gone" in data["note"] and "block" not in data["note"]
+
+
+def test_a_wiki_page_github_sends_to_home_is_gone(api: respx.MockRouter) -> None:
+    # Libreswan's 2026 link: the raw .md answers 404 and the page redirects to Home.
+    api.get(SYMPY_RAW).mock(return_value=httpx.Response(404))
+    home = "https://github.com/sympy/sympy/wiki/"
+    api.get("https://github.com/sympy/sympy/wiki/GSoC-Ideas").mock(
+        return_value=httpx.Response(302, headers={"Location": home})
+    )
+    api.get(home).mock(
+        return_value=httpx.Response(200, text="<html><title>Home · sympy/sympy Wiki</title></html>")
+    )
+    data = GSoCToolkit().org_ideas("SymPy")
+    assert data["layout"] == "unreachable"
+    assert "gone" in data["note"]
+
+
+def test_org_ideas_does_not_call_a_blocked_wiki_page_gone(api: respx.MockRouter) -> None:
+    # Only the raw .md is missing; the wiki page itself is down, so it may come back.
+    api.get(SYMPY_RAW).mock(return_value=httpx.Response(404))
+    api.get("https://github.com/sympy/sympy/wiki/GSoC-Ideas").mock(return_value=httpx.Response(503))
+    data = GSoCToolkit().org_ideas("SymPy")
+    assert data["layout"] == "unreachable"
+    assert "gone" not in data["note"] and "could not be fetched" in data["note"]
 
 
 def test_org_ideas_unknown_org(api: respx.MockRouter) -> None:

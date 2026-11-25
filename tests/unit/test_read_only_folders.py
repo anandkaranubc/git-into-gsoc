@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import stat
 from pathlib import Path
@@ -114,3 +115,65 @@ def test_setup_with_an_assistant_suggests_a_natural_first_question(
     assert result.exit_code == 0, result.output
     assert "Restart your assistant" in result.stdout
     assert "Where do I start?" in result.stdout
+
+
+@pytest.fixture
+def catalog() -> respx.MockRouter:
+    from conftest import mock_catalog
+
+    with respx.mock(assert_all_called=False) as router:
+        mock_catalog(router)
+        router.get("https://api.github.com/search/issues").mock(
+            return_value=httpx.Response(200, json={"items": []})
+        )
+        router.get(url__regex=r"https://api\.github\.com/(orgs|users)/[^/]+/repos").mock(
+            return_value=httpx.Response(200, json=[])
+        )
+        router.get("https://api.github.com/users/alice").mock(
+            return_value=httpx.Response(200, json={"login": "alice"})
+        )
+        yield router
+
+
+@needs_posix_permissions
+def test_recommend_still_answers_and_says_the_profile_was_not_saved(
+    locked: Path, catalog: respx.MockRouter
+) -> None:
+    # In an assistant's sandbox, `recommend --tech go` printed only "Cannot save your
+    # progress" and exited 1: the person got no recommendations at all.
+    result = runner.invoke(app, ["recommend", "--tech", "python", "--interests", "science"])
+    assert result.exit_code == 0, result.output
+    words = " ".join(result.stdout.split())
+    assert "Organizations" in words
+    assert "Cannot save your progress" in words and "were not saved" in words
+    assert "GIG_DATA_DIR" in words
+    as_json = runner.invoke(app, ["recommend", "--tech", "python", "--output", "json"])
+    assert as_json.exit_code == 0, as_json.output
+    assert "were not saved" in json.loads(as_json.stdout)["profile_not_saved"]
+    by_name = runner.invoke(app, ["recommend", "--github", "alice", "--output", "json"])
+    assert by_name.exit_code == 0, by_name.output
+    assert "were not saved" in json.loads(by_name.stdout)["profile_not_saved"]
+
+
+@needs_posix_permissions
+def test_start_still_matches_and_says_the_answers_were_not_saved(
+    locked: Path, catalog: respx.MockRouter
+) -> None:
+    result = runner.invoke(app, ["start", "--tech", "python", "--interests", "1", "--hours", "8"])
+    assert result.exit_code == 0, result.output
+    words = " ".join(result.stdout.split())
+    assert "Organizations that fit you" in words
+    assert "Cannot save your progress" in words and "were not saved" in words
+    as_json = runner.invoke(app, ["start", "--tech", "python", "--hours", "8", "--output", "json"])
+    data = json.loads(as_json.stdout)
+    assert data["organizations"] and "were not saved" in data["profile_not_saved"]
+    assert data["profile"]["hours_per_week"] == 8
+    # A value `start` refuses is still an error, not a note about saving.
+    bad = runner.invoke(app, ["start", "--github", "not a login", "--output", "json"])
+    assert bad.exit_code == 1 and "Cannot save" not in bad.output
+
+
+def test_a_saved_profile_has_no_note_about_saving(catalog: respx.MockRouter) -> None:
+    result = runner.invoke(app, ["recommend", "--tech", "python", "--output", "json"])
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.stdout)["profile_not_saved"] is None

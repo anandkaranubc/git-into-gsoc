@@ -8,6 +8,7 @@ on:
       - "brand/**"
       - "scripts/build_site.py"
       - "scripts/build_docs.py"
+      - "scripts/build_videos.py"
       - "docs/**"
       - "scripts/start_page.py"
       # The start page ships the package to the browser: a ranker change must redeploy.
@@ -58,6 +59,10 @@ jobs:
         run: |
           python3 -m pip install --quiet "markdown-it-py==4.2.0"
           python3 scripts/build_docs.py
+
+      # One page per published video, from site/videos/videos.json; see scripts/build_videos.py.
+      - name: Build the video pages
+        run: python3 scripts/build_videos.py
 
       # Pages builds from this workflow, so Jekyll never runs and no .nojekyll
       # file is needed (the upload step would leave dotfiles out anyway).

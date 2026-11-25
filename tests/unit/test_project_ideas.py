@@ -1572,6 +1572,22 @@ def test_allowing_as_a_description_is_not_a_rule() -> None:
     )
     assert ai_policy_sentences(news) == []
     assert ai_policy_sentences("Using AI tools is allowed for research only.") != []
+    # Dropping bare "allowing" must not drop a negated rule along with it.
+    assert ai_policy_sentences("We are not allowing the use of AI tools this year.") != []
+    assert ai_policy_sentences("We won't be allowing AI tools in 2026.") != []
+    assert ai_policy_sentences("Maintainers disallow AI tools for code.") != []
+
+
+def test_another_owners_policy_on_a_shared_host_is_not_this_orgs() -> None:
+    from git_into_gsoc.gsoc.project_ideas import _same_site_links
+
+    page = "https://github.com/sympy/sympy/wiki/GSoC-Ideas"
+    ours = "https://github.com/sympy/sympy/blob/master/AI-policy.md"
+    theirs = "https://github.com/other/thing/blob/main/ai-policy.md"
+    assert _same_site_links([f"Ours: {ours}", f"Theirs: {theirs}"], page) == [ours]
+    # A wiki is read from raw.githubusercontent.com but links its policy on github.com.
+    raw = "https://raw.githubusercontent.com/wiki/sympy/sympy/GSoC-Ideas.md"
+    assert _same_site_links([ours, theirs, theirs.replace("//", "//www.")], raw) == [ours]
 
 
 @respx.mock
@@ -1612,3 +1628,100 @@ def test_ai_rules_on_a_linked_policy_page_are_quoted() -> None:
         "You may not copy-paste AI-generated code directly into a pull request."
     ]
     assert doc.ai_policy_url == policy
+
+
+class _OnePage:
+    """A client that answers every address with one page."""
+
+    def __init__(self, body: str) -> None:
+        self.body = body
+
+    def get_text(self, url: str, **_: object) -> str:
+        return self.body
+
+
+_WIKI_HEAD = '<html><head><meta name="generator" content="MediaWiki 1.43"></head><body>\n'
+# The seconds are what each page took before the reader was fixed (2026-11-25).
+_STALLING_PAGES = {
+    "20,000 bullets under Size (22 s)": "## A\nx\n## B\n**Size:**\n" + "- 1\n" * 20_000,
+    "20,000 bullets under Difficulty (13 s)": "## A\nx\n## B\n**Difficulty:**\n" + "- z\n" * 20_000,
+    "20,000 comments never closed (4 s)": "<!--" * 20_000,
+    "20,000 links never closed on one line (27 s)": "## A\nx\n## B\n"
+    + "[a](http://a.io/" * 20_000
+    + "\n",
+    "a wiki heading of 5,000 spaces (38 s)": _WIKI_HEAD + "==" + " " * 5_000 + "x\n",
+    "a wiki heading of 5,000 equals signs": _WIKI_HEAD + "=" * 5_000 + "x\n",
+    "four lines of 20,000 open brackets (9 s)": "## A\nx\n## B\n" + ("[" * 19_990 + "\n") * 4,
+    "four lines of 20,000 open tags": "## A\nx\n## B\n" + ("<" * 19_990 + "\n") * 4,
+}
+
+
+def test_pages_built_to_stall_the_reader_are_read_quickly() -> None:
+    import time
+
+    from git_into_gsoc.gsoc.project_ideas import fetch_ideas_document
+
+    for name, page in _STALLING_PAGES.items():
+        started = time.perf_counter()
+        fetch_ideas_document(_OnePage(page), "https://example.org/gsoc/ideas", 0)  # type: ignore[arg-type]
+        assert time.perf_counter() - started < 3, name
+
+
+def test_size_and_difficulty_keep_their_first_500_characters() -> None:
+    page = (
+        "## First project\n**Size:**\n- 350 hours\n"
+        + "- padding words\n" * 200
+        + "## Second project\n**Size:** 90 hours\n**Mentors:** Ada Lovelace\n"
+    )
+    first, second = extract_ideas(markdown_to_lines(page), source_url="https://x").ideas
+    assert first.hours == 350 and 400 < len(first.size_raw) <= 500
+    assert second.hours == 90
+
+
+def test_only_closed_comments_are_dropped() -> None:
+    lines = markdown_to_lines("# Ideas\n<!-- a\nnote -->\n## One idea\nLeft <!-- open\n")
+    assert lines == ["# Ideas", "## One idea", "Left <!-- open"]
+
+
+def test_markup_the_html_parser_refuses_keeps_the_lines_before_it() -> None:
+    # "<![foo bar]>" makes html.parser raise AssertionError: `ideas` ended in a traceback.
+    lines = html_to_lines(
+        "<html><body><h2>Ideas</h2><p>First idea <![foo bar]> more</p><h2>B</h2></body></html>"
+    )
+    assert lines[0] == "## Ideas" and lines[1].startswith("First idea")
+
+
+def test_comments_that_are_never_closed_are_cleaned_quickly() -> None:
+    # The pattern in clean_untrusted read to the end from every "<!--": 3 seconds.
+    import time
+
+    from git_into_gsoc.text import clean_untrusted, drop_html_comments
+
+    started = time.perf_counter()
+    assert clean_untrusted("<!--" * 16_384, limit=20) == "<!--<!--<!--<!--<!-…"
+    assert time.perf_counter() - started < 2
+    assert drop_html_comments("a<!-- x -->b<!-- y\n-->c<!-- open") == "a b c<!-- open"
+    assert drop_html_comments("a<!-- x -->b", "") == "ab"
+
+
+def test_wiki_headings_are_read_line_by_line() -> None:
+    from git_into_gsoc.gsoc.project_ideas import wiki_template_ideas
+
+    text = (
+        "== Maps ==\n{{GSoC idea|title=One}}\n"
+        " == not a heading ==\n=== A = B ===   \n{{GSoC idea|title=Two}}\n"
+        "==\n=====\n{{GSoC idea|title=Three}}\n"
+    )
+    ideas = wiki_template_ideas(text, source_url="https://w/x")
+    assert [(i.section, i.title) for i in ideas] == [
+        ("Maps", "One"),
+        ("A = B", "Two"),
+        ("A = B", "Three"),
+    ]
+
+
+def test_ai_rules_typed_with_a_curly_apostrophe_are_found() -> None:
+    # Google Docs and most site generators type U+2019, which the negations did not match.
+    curly = "We won\u2019t be allowing the use of LLMs for this program."
+    assert ai_policy_sentences(curly) == [curly]
+    assert ai_policy_sentences("Please don\u2019t use Copilot when writing code for us.")

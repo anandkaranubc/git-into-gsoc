@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Any
 
 from git_into_gsoc.dates import parse_iso
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title
 
 SOURCE_EXTENSIONS = (
     "py|pyx|pyi|js|jsx|ts|tsx|mjs|cjs|go|rs|c|cc|cpp|cxx|h|hpp|java|kt|rb|php|cs|swift|scala|"
@@ -409,7 +409,7 @@ def closing_pull_request(
                 {
                     "number": int(source["number"]),
                     "url": source.get("html_url"),
-                    "title": clean_untrusted(source.get("title"), limit=120),
+                    "title": clean_title(source.get("title"), limit=120),
                     "author": (source.get("user") or {}).get("login"),
                     "merged_at": merged_at.isoformat(),
                     "opened_at": (parse_iso(source.get("created_at")) or merged_at).isoformat(),

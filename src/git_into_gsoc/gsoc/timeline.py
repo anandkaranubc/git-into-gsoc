@@ -97,7 +97,10 @@ def load_history() -> dict[int, dict[str, Any]]:
 
 
 def _parse(value: str) -> datetime:
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(UTC)
+    at = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    # A stamp with no zone is UTC, like the rest; astimezone alone reads it in the
+    # machine's own zone, which moved 18:00 to 12:30 UTC on a laptop in India.
+    return at.replace(tzinfo=UTC) if at.tzinfo is None else at.astimezone(UTC)
 
 
 def _key(item: dict[str, Any]) -> tuple[str, str | None]:
@@ -218,9 +221,14 @@ def program_status(
         source_note = f"Embedded snapshot of official dates ({reason})."
     elif program is None:
         program = estimate_program(year, history)
+        # Offline we only know the site did not answer, not that Google has said nothing.
+        unknown = (
+            "The live site could not be read, so Google may have published dates since."
+            if offline
+            else "Google has not published this timeline yet."
+        )
         source_note = (
-            f"ESTIMATE projected from official {program['estimated_from']} dates. "
-            "Google has not published this timeline yet."
+            f"ESTIMATE projected from official {program['estimated_from']} dates. {unknown}"
             if program
             else "No official or estimated timeline available."
         )

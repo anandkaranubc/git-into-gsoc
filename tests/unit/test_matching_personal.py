@@ -371,6 +371,34 @@ def test_starter_issues_that_are_not_first_tasks_are_screened_out() -> None:
     assert starter_problem(fine, c_dev) is None
 
 
+def test_an_accepted_beginner_rfc_is_a_task_but_other_rfcs_are_not() -> None:
+    from conftest import load_fixture
+    from git_into_gsoc.github.client import _candidate_from_search
+    from git_into_gsoc.matching.issues import starter_problem
+
+    c_dev = build_profile(technologies=["c", "javascript"])
+    # stdlib files every planned change as "[RFC]: Add C implementation for ...".
+    found = _candidate_from_search(load_fixture("github_issue_stdlib_accepted_rfc.json"))
+    assert found is not None
+    issue = found.model_dump()
+    assert issue["title"].startswith("[RFC]: Add C implementation for `@stdlib/")
+    assert starter_problem(issue, c_dev) is None
+    not_a_task = "an announcement, roadmap, tracker, or call for testing rather than a task"
+    for labels in (
+        ["RFC", "Feature"],  # not accepted yet
+        ["RFC", "Accepted"],  # accepted, but no beginner label
+        ["RFC", "Accepted", "Good First Issue", "Tracking Issue"],
+    ):
+        assert starter_problem({**issue, "labels": labels}, c_dev) == not_a_task, labels
+    tracking = {**issue, "title": "[RFC]: Add C implementations (tracking issue)"}
+    assert starter_problem(tracking, c_dev) == not_a_task
+    discussion = {"title": "Request for comments: a new plugin API", "labels": ["good first issue"]}
+    assert starter_problem(discussion, c_dev) == not_a_task
+    for label in ("Needs Discussion", "status: Blocked"):
+        labels = [*issue["labels"], label]
+        assert starter_problem({**issue, "labels": labels}, c_dev) == f"labelled '{label.lower()}'"
+
+
 def test_more_page_furniture_and_repeats_are_not_ideas() -> None:
     from git_into_gsoc.matching.ideas import is_real_idea
 

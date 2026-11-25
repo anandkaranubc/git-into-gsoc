@@ -35,7 +35,8 @@ def _mock_repo(router: respx.MockRouter) -> None:
             json={
                 "full_name": "acme/lib",
                 "html_url": "https://github.com/acme/lib",
-                "description": "A library",
+                # Plain text on GitHub; as markdown it is a hidden link reference.
+                "description": "[Beta]: A library",
                 "default_branch": "main",
                 "stargazers_count": 300,
                 "license": {"spdx_id": "MIT"},
@@ -168,6 +169,7 @@ def test_orient_repo_builds_facts_and_paths() -> None:
     _mock_repo(respx)
     data = GSoCToolkit().orient_repo("https://github.com/acme/lib")
     assert data["as_of_commit"] == "abc123def456"
+    assert data["description"] == "[Beta]: A library"
     assert data["languages"][0] == {"name": "Python", "share": 90}
     assert {row["path"] for row in data["code_map"]} >= {"src", "tests", ".github"}
     assert data["test_commands"][0]["command"] == "pytest -q"

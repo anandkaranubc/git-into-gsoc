@@ -257,7 +257,9 @@ def failing_step(text: str, *, limit: int = 6) -> dict[str, Any] | None:
     errorish = [shown for shown in tail if _ERRORISH.search(shown)][-limit:]
     printed: list[str] = []
     for shown in red or errorish or tail[-limit:]:
-        quote = clean_untrusted(_EMAIL.sub("<email>", shown), limit=200)
+        # A log is plain text: read as markdown, "[ERROR]: Failed to compile" is a link
+        # reference definition, and the line that said what failed was dropped.
+        quote = clean_untrusted(_EMAIL.sub("<email>", shown), limit=200, markdown=False)
         if quote and quote not in printed:
             printed.append(quote)
         if len(printed) >= limit:
@@ -286,7 +288,8 @@ def diagnose_output(text: str, *, ci: dict[str, Any] | None = None) -> dict[str,
         cause: dict[str, Any] = {
             "id": pattern.id,
             "line": number,
-            "quote": clean_untrusted(line.strip(), limit=200),
+            # Plain text, as above: "[ERROR]: ModuleNotFoundError: ..." had an empty quote.
+            "quote": clean_untrusted(line.strip(), limit=200, markdown=False),
             "means": pattern.means,
             "try": list(pattern.try_),
         }

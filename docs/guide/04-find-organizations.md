@@ -52,7 +52,7 @@ For each interesting result:
 3. Find the community's preferred discussion channel and read recent conversations.
 4. Keep a brief note about why it fits you and what remains unclear.
 
-Start with two or three organizations. It is fine to keep only one if you already have a clear fit. Previous participation is useful context, not a guarantee that the organization will return.
+Start with two or three organizations. It is fine to keep only one if you already have a clear fit. Previous participation is useful context, not a guarantee that the organization will return. [Lesson 3 of From GSoC Rejection to Mentor](https://gitintogsoc.me/videos/gsoc-rejection-to-mentor/) (6:05) explains why testing a few organizations with a small pull request beats committing to one early.
 
 ```bash
 git-into-gsoc org "SymPy" --shortlist           # same details, and adds it to your shortlist

@@ -14,6 +14,7 @@ from __future__ import annotations
 import html
 import json
 import re
+from bisect import bisect_left
 from collections import Counter
 from html.parser import HTMLParser
 from itertools import takewhile
@@ -23,14 +24,16 @@ from urllib.parse import parse_qs, quote, unquote, urljoin, urlparse
 from git_into_gsoc.gsoc.ideas import confluence_api_url, get_page
 from git_into_gsoc.http_client import CachedHttpClient, HttpError, NotFoundError
 from git_into_gsoc.models import IdeasDocument, ProjectIdea
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_untrusted, drop_html_comments, straight_quotes
 
 MAX_CHARS = 600_000
 MIN_IDEAS_FOR_LAYOUT = 2
 
 _GDOC = re.compile(r"^/document/d/([A-Za-z0-9_-]+)")
 _URL_RE = re.compile(r"https?://[^\s<>()\"'\]]+")
-_MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]+)\)")
+# The address has a length limit because a link that is never closed makes the pattern
+# read to the end of the line from each one: a 320 KB line of them took a minute.
+_MD_LINK_RE = re.compile(r"\[([^\]\n]{1,80})\]\((https?://[^\s)]{1,1000})\)")
 # The unit, or nothing but GSoC numbers in the cell ("175", R's "175 or 350"): "1750
 # hours" read as 175 and "90%" as 90 (reviewer probe, 2026-11-01).
 # A GSoC hour count needs a unit, or a cell holding nothing but such counts ("175 or
@@ -218,7 +221,11 @@ _POLICY_RE = re.compile(
     # UC OSPO's NeuroHealth idea: "we propose NeuroHealth: AI-Powered Health Assistant".
     # Rocket.Chat 2026: "continued focus on ML/AI projects, ...; allowing participation
     # from those who can only devote part of their summer". "allowing" describes, not rules.
-    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow(?:ed|s)?\b|permit\w*|prohibit\w*|forbid\w*|"
+    # A negated "not allowing" or "won't be allowing" the use of AI still rules, as does
+    # "disallow".
+    r"\b((?<!we )propos\w*|submission\w*|polic\w*|allow(?:ed|s)?\b|disallow\w*|"
+    r"(?:not|\w+n't)(?: be)? allowing|"
+    r"permit\w*|prohibit\w*|forbid\w*|"
     r"ban(?:ned|s)?|reject\w*|disclos\w*|generated|written by|plagiar\w*|cheat\w*|"
     r"offload\w*|rely on|must not|should not|do not|don't|not accept\w*|"
     # UC OSPO's AIDRIN page: GIGO "is a widely accepted quote ... including AI".
@@ -450,8 +457,13 @@ def html_to_lines(raw: str, base_url: str | None = None) -> list[str]:
     one), bullets, bold labels, definition-list terms and values, and links, with
     scripts, menus, and footers left out."""
     parser = _LineParser(base_url)
-    parser.feed(raw[:MAX_CHARS])
-    parser.close()
+    try:
+        parser.feed(raw[:MAX_CHARS])
+        parser.close()
+    except (ValueError, AssertionError):
+        # What html.parser raises on a broken page: "<![foo bar]>" in a 61-byte page
+        # ended `ideas` with a traceback. What was read before it is still good.
+        parser._flush()
     return [html.unescape(line) for line in parser.lines]
 
 
@@ -478,7 +490,7 @@ def markdown_to_lines(raw: str) -> list[str]:
     front matter, comments, and rules are dropped."""
     lines: list[str] = []
     text = _FRONT_MATTER_RE.sub("", raw[:MAX_CHARS], count=1)
-    text = re.sub(r"<!--.*?-->", " ", text, flags=re.S)
+    text = drop_html_comments(text)
     prev_blank = True
     for line in text.splitlines():
         stripped = line.rstrip()
@@ -586,9 +598,14 @@ def _label(line: str) -> tuple[str, str, str] | None:
 
 
 def _clean(value: str) -> str:
-    value = _BULLET_RE.sub("", value)
-    value = re.sub(r"<[^>]+>", " ", value)
-    value = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", value)
+    # A line is cut at 20,000 characters and each tag or link has a length limit: left
+    # open, both patterns read on to the end of the line from every "<" or "[", and a
+    # 320 KB line of unclosed links took 6 seconds. The result keeps 600 characters, so
+    # only a tag or link longer than its limit, or one that crosses the cut, is left
+    # as typed.
+    value = _BULLET_RE.sub("", value[:20_000])
+    value = re.sub(r"<[^>]{1,2000}>", " ", value)
+    value = re.sub(r"\[([^\]]{1,300})\]\([^)]{1,2000}\)", r"\1", value)
     value = re.sub(r"\*\*|__|`", "", value)
     return clean_untrusted(re.sub(r"\s+", " ", value), limit=600)
 
@@ -740,7 +757,9 @@ def ai_policy_sentences(text: str, limit: int = 4) -> list[str]:
         flat = re.sub(r"\s+", " ", re.sub(r"[#*_`]+", "", paragraph))
         for sentence in re.split(r"(?<=[.!?])\s+", flat):
             sentence = sentence.strip()
-            prose = _URL_RE.sub(" ", sentence)
+            # Google Docs and most site generators type "won't" and "don't" with a curly
+            # apostrophe, which the negations in the rule pattern did not match.
+            prose = straight_quotes(_URL_RE.sub(" ", sentence))
             if not (_AI_RE.search(prose) and _POLICY_RE.search(prose)):
                 continue
             if not 20 <= len(sentence) <= 400:
@@ -1004,11 +1023,18 @@ def _assign(idea: ProjectIdea, field: str, value: str) -> None:
     if not value or value.startswith("#"):  # "#" starts an inline template instruction
         return
     idea.labelled_fields += 1
+    # Size and difficulty stop taking text at 500 characters, like the other fields.
+    # Both are read again in full on each new line, so 20,000 bullets under "Size:"
+    # took over a minute.
     if field == "difficulty":
-        idea.difficulty_raw = (idea.difficulty_raw + " " + _clean(value)).strip()
+        if len(idea.difficulty_raw) >= 500:
+            return
+        idea.difficulty_raw = (idea.difficulty_raw + " " + _clean(value)).strip()[:500]
         idea.difficulty = normalize_difficulty(idea.difficulty_raw) or idea.difficulty
     elif field == "size":
-        idea.size_raw = (idea.size_raw + " " + _clean(value)).strip()
+        if len(idea.size_raw) >= 500:
+            return
+        idea.size_raw = (idea.size_raw + " " + _clean(value)).strip()[:500]
         size, hours = normalize_size(idea.size_raw)
         idea.size, idea.hours = size or idea.size, hours or idea.hours
     elif field == "mentors":
@@ -1499,12 +1525,32 @@ _POLICY_PATH_RE = re.compile(r"(?:^|[/_-])(?:ai|llm|genai)(?:[_-][a-z]+){0,2}[_-
 _HUB_PATH_RE = re.compile(r"(?:gsoc|summer[-_]?of[-_]?code)/?$", re.I)
 
 
+_SHARED_HOSTS = frozenset({"github.com", "gitlab.com"})
+
+
+def _site(url: str) -> tuple[str, str]:
+    """Host, plus the owner on hosts every project shares: another owner's repository
+    on github.com is a different site, and its AI rules are not this org's."""
+    parts = urlparse(url)
+    host = parts.netloc.lower().removeprefix("www.")
+    # A wiki page is read from raw.githubusercontent.com, but links to its own policy
+    # on github.com: both are the same owner's GitHub.
+    if host == "raw.githubusercontent.com":
+        host = "github.com"
+    if host not in _SHARED_HOSTS:
+        return host, ""
+    segments = [s for s in parts.path.split("/") if s]
+    if segments[:1] == ["wiki"]:  # raw.githubusercontent.com/wiki/<owner>/<repo>/...
+        segments = segments[1:]
+    return host, (segments[0].lower() if segments else "")
+
+
 def _same_site_links(lines: list[str], page: str) -> list[str]:
-    home = urlparse(page).netloc
+    home = _site(page)
     links = (
         found.rstrip(".,;:)").split("#", 1)[0] for line in lines for found in _URL_RE.findall(line)
     )
-    return [link for link in dict.fromkeys(links) if link != page and urlparse(link).netloc == home]
+    return [link for link in dict.fromkeys(links) if link != page and _site(link) == home]
 
 
 def _policy_page(
@@ -1582,6 +1628,11 @@ def _has_github_readme(html: str) -> bool:
     return '<article class="markdown-body' in html
 
 
+def is_missing_wiki_page(html: str, url: str) -> bool:
+    """True when GitHub answered a wiki page's address with the wiki's Home instead."""
+    return _github_wiki_body(html, url) is None
+
+
 def _github_wiki_body(html: str, url: str) -> str | None:
     """The page's own text from a rendered GitHub wiki page, or None when it is gone.
 
@@ -1593,7 +1644,8 @@ def _github_wiki_body(html: str, url: str) -> str | None:
     if parsed.netloc.lower().removeprefix("www.") != "github.com" or "/wiki/" not in parsed.path:
         return html
     page = parsed.path.rstrip("/").rsplit("/", 1)[-1].lower()
-    if page != "home" and re.search(r"<title>\s*Home\s*·", html):
+    # ".../wiki/" names the wiki itself, whose page is Home.
+    if page not in ("home", "wiki") and re.search(r"<title>\s*Home\s*·", html):
         return None
     start = html.find('id="wiki-body"')
     if start == -1:
@@ -1849,17 +1901,25 @@ def _wiki_text(value: str) -> str:
 
 def wiki_template_ideas(wikitext: str, *, source_url: str) -> list[ProjectIdea]:
     """Ideas written as MediaWiki templates with a title parameter, one per template."""
-    headings = [
-        (m.start(), m.group(1).strip())
-        for m in re.finditer(r"^==+\s*(.+?)\s*==+\s*$", wikitext, re.M)
-    ]
+    # Read line by line: one pattern for "== Title ==" tried every split of a long run
+    # of spaces or "=" signs, so a 5 KB line of "==" and spaces took 38 seconds.
+    headings: list[tuple[int, str]] = []
+    position = 0
+    for line in wikitext[:MAX_CHARS].splitlines(keepends=True):
+        text = line.rstrip()
+        title = text.strip("=").strip()
+        if title and len(text) <= 300 and text.startswith("==") and text.endswith("=="):
+            headings.append((position, title))
+        position += len(line)
+    heading_starts = [start for start, _ in headings]
     ideas: list[ProjectIdea] = []
     for start, body in _wiki_blocks(wikitext[:MAX_CHARS]):
         params = _wiki_params(body)
         title = _wiki_text(params.get("title") or params.get("name") or params.get("project") or "")
         if not title:
             continue
-        heading = next((h for pos, h in reversed(headings) if pos < start), "")
+        above = bisect_left(heading_starts, start)
+        heading = headings[above - 1][1] if above else ""
         # Every value here is text strangers wrote: it goes through _clean, as the
         # parameters do in _assign.
         section = _clean(_wiki_text(heading))[:120] or None

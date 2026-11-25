@@ -18,8 +18,8 @@ from urllib.parse import quote, urlparse
 
 from git_into_gsoc.config import Settings, get_settings
 from git_into_gsoc.gsoc.names import GITHUB_RESERVED, normalize_name
-from git_into_gsoc.http_client import CachedHttpClient, HttpError
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.http_client import CachedHttpClient, NotFoundError
+from git_into_gsoc.text import clean_title, clean_untrusted
 
 PROJECTS_TTL_SECONDS = 86400
 # An archived year lists completed projects only, so it no longer changes; after a
@@ -75,7 +75,7 @@ def summarize_mentors(
                 continue
             total += 1
             years_seen.add(year)
-            title = clean_untrusted(project.get("title"), limit=120)
+            title = clean_title(project.get("title"), limit=120)
             repo = github_repo_of(project.get("project_code_url"))
             if repo:
                 repos[repo] += 1
@@ -190,10 +190,9 @@ class ArchiveClient:
         return f"{base}/archive/{path.lstrip('/')}"
 
     def programs(self) -> list[dict[str, Any]]:
-        try:
-            data = self.http.get_json(self._url("programs/"), ttl=PROJECTS_TTL_SECONDS)
-        except HttpError:
-            return []
+        """The archived programs. A failed read is raised: read as an empty list, it
+        made `mentors` print "0 completed projects" for every organization offline."""
+        data = self.http.get_json(self._url("programs/"), ttl=PROJECTS_TTL_SECONDS)
         return data if isinstance(data, list) else []
 
     def archived_years(self) -> list[int]:
@@ -206,12 +205,16 @@ class ArchiveClient:
         return sorted(set(years), reverse=True)
 
     def projects(self, year: int) -> list[dict[str, Any]]:
-        """Every completed project of one archived year (about 2 MB, cached for a day)."""
+        """Every completed project of one archived year (about 2 MB, cached for a day).
+
+        Empty for a year the archive has no projects page for; any other failed read
+        is raised, so a year that could not be read is never counted as no mentors.
+        """
         try:
             data = self.http.get_json(
                 self._url(f"programs/{int(year)}/projects/"), ttl=ARCHIVED_YEAR_TTL_SECONDS
             )
-        except HttpError:
+        except NotFoundError:
             return []
         return data if isinstance(data, list) else []
 

@@ -64,15 +64,28 @@ def _named_in(text: str) -> set[str]:
 _NOT_A_TASK_RE = re.compile(
     r"\b(?:gsoc|google summer of code|roadmap|tracker|tracking issue|epic|umbrella issue|"
     r"meta issue|what can i work on|announcement|no gsoc|working group|release [0-9.]+|"
-    r"publish .* to (?:maven|pypi|npm)|request for comments|rfc|"
+    r"publish .* to (?:maven|pypi|npm)|"
     # Calls for testing or feedback: open-ended, with nothing to finish.
     r"find bugs|call for (?:testing|testers|feedback)|help (?:us )?test|testers wanted|"
     r"feedback wanted|bug bash)\b",
     re.I,
 )
 _NOT_A_TASK_LABELS = frozenset(
-    {"epic", "tracking", "meta", "roadmap", "announcement", "discussion", "question", "rfc"}
+    {
+        "epic",
+        "tracking",
+        "tracking issue",
+        "meta",
+        "roadmap",
+        "announcement",
+        "discussion",
+        "question",
+    }
 )
+# An RFC is usually an open discussion, but stdlib files every planned change as
+# "[RFC]: Add C implementation for ..." and marks the settled ones `Accepted` with
+# `Good First Issue`; the plain rule hid all of them. Only that pair makes it a task.
+_RFC_RE = re.compile(r"\b(?:request for comments|rfc)\b", re.I)
 # Labels that say an issue is beyond a first task or not ready to be worked on.
 _NOT_READY_RE = re.compile(
     r"\b(?:intermediate|advanced|hard|difficult|expert|"
@@ -115,7 +128,13 @@ def starter_problem(issue: dict[str, Any], person: ContributorProfile) -> str | 
         re.I,
     ):
         return "reserved for someone or already being worked on"
-    if _NOT_A_TASK_RE.search(title) or labels & _NOT_A_TASK_LABELS:
+    rfc = bool(_RFC_RE.search(title)) or "rfc" in labels
+    accepted_starter = "accepted" in labels and any(is_beginner_label(lab) for lab in labels)
+    if (
+        _NOT_A_TASK_RE.search(title)
+        or labels & _NOT_A_TASK_LABELS
+        or (rfc and not accepted_starter)
+    ):
         return "an announcement, roadmap, tracker, or call for testing rather than a task"
     not_ready = next(
         (lab for lab in ordered if _NOT_READY_RE.search(lab) or _MEDIUM_RE.match(lab)), None

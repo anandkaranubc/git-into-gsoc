@@ -112,6 +112,7 @@ from git_into_gsoc.gsoc.project_ideas import (
     fetch_ideas_document,
     ideas_document_url,
     ideas_from_link_list,
+    is_missing_wiki_page,
     issues_page_target,
     rank_ideas,
 )
@@ -148,10 +149,10 @@ from git_into_gsoc.models import (
     ProjectIdea,
     RepoLead,
 )
-from git_into_gsoc.progress.store import ProgressStore, other_host_link
+from git_into_gsoc.progress.store import ProgressStore, not_saved_note, other_host_link
 from git_into_gsoc.scoring.health import DORMANT_DAYS
 from git_into_gsoc.scoring.org_match import canonical
-from git_into_gsoc.text import clean_untrusted
+from git_into_gsoc.text import clean_title, clean_untrusted
 from git_into_gsoc.validation import (
     parse_issue_ref,
     parse_repo,
@@ -218,7 +219,7 @@ def _retired_repo(raw: dict[str, Any]) -> str | None:
 
 def _unlinked_caveat(pull: dict[str, Any]) -> str:
     """What a look-alike pull request that does not link the issue means for a newcomer."""
-    title = clean_untrusted(pull.get("title"), limit=90)
+    title = clean_title(pull.get("title"), limit=90)
     ref = f'PR #{pull.get("number")} "{title}"'
     if (pull.get("pull_request") or {}).get("merged_at"):
         return (
@@ -1071,7 +1072,10 @@ class GSoCToolkit:
                     RepoLead(
                         full_name=full,
                         url=str(repo.get("html_url")),
-                        description=clean_untrusted(repo.get("description"), limit=300) or None,
+                        description=clean_untrusted(
+                            repo.get("description"), limit=300, markdown=False
+                        )
+                        or None,
                         language=repo.get("language"),
                         stars=int(repo.get("stargazers_count") or 0),
                         pushed_at=parse_iso(repo.get("pushed_at")),
@@ -1569,7 +1573,7 @@ class GSoCToolkit:
         return RepoLead(
             full_name=str(raw.get("full_name") or full),
             url=str(raw.get("html_url") or f"https://github.com/{full}"),
-            description=clean_untrusted(raw.get("description"), limit=300) or None,
+            description=clean_untrusted(raw.get("description"), limit=300, markdown=False) or None,
             language=raw.get("language"),
             stars=int(raw.get("stargazers_count") or 0),
             pushed_at=parse_iso(raw.get("pushed_at")),
@@ -1913,7 +1917,7 @@ class GSoCToolkit:
         return {
             "repo": f"{owner}/{repo}",
             "number": num,
-            "title": clean_untrusted(issue.get("title"), limit=256),
+            "title": clean_title(issue.get("title"), limit=256),
             "url": issue.get("html_url") or f"https://github.com/{owner}/{repo}/issues/{num}",
             "labels": labels,
             "comments": issue.get("comments"),
@@ -1962,13 +1966,19 @@ class GSoCToolkit:
         merged = self.github.merged_pull_requests_elsewhere(username)
         if merged is not None:
             profile["merged_prs_elsewhere"] = merged
-        self.progress.set_profile(
-            github=username,
-            **{
-                k: profile.get(k)
-                for k in ("top_language", "languages", "bio", "merged_prs_elsewhere")
-            },
-        )
+        try:
+            self.progress.set_profile(
+                github=username,
+                **{
+                    k: profile.get(k)
+                    for k in ("top_language", "languages", "bio", "merged_prs_elsewhere")
+                },
+            )
+        except InputError as exc:
+            # An assistant's sandbox may forbid writing the progress folder. What GitHub
+            # said still answers `recommend`, which shows this note; `profile` and
+            # `start` save their other answers next and stop there as before.
+            profile["not_saved"] = not_saved_note(exc)
         return profile
 
     def save_profile(
@@ -2072,8 +2082,14 @@ class GSoCToolkit:
         techs = list(technologies or [])
         wants = list(interests or [])
         source = "flags" if techs or wants or username else "saved profile"
+        not_saved: str | None = None
         if technologies or interests:
-            self.progress.set_profile(technologies=technologies, interests=interests)
+            try:
+                self.progress.set_profile(technologies=technologies, interests=interests)
+            except InputError as exc:
+                # As in `next`: in an assistant's sandbox, `recommend --tech go` stopped
+                # here with "Cannot save your progress" and recommended nothing.
+                not_saved = not_saved_note(exc)
         if not techs:
             techs = list(saved.get("technologies") or [])
         if not wants:
@@ -2082,6 +2098,7 @@ class GSoCToolkit:
         username = username or (saved.get("github") if not techs else None)
         if username:
             profile = self.profile_from_github(username)
+            not_saved = profile.pop("not_saved", not_saved)
             top = profile.get("top_language")
             if top and top.lower() not in {t.lower() for t in techs}:
                 techs.insert(0, top)
@@ -2225,6 +2242,7 @@ class GSoCToolkit:
         return {
             "profile": profile,
             "profile_source": source,
+            "profile_not_saved": not_saved,
             "technologies_used": techs,
             "interests_used": wants,
             "read_as": person.notes,
@@ -2361,7 +2379,10 @@ class GSoCToolkit:
 
         def lookup(repo: str, number: int) -> dict[str, Any] | None:
             owner, name = repo.split("/", 1)
-            return self.github.get_pull(owner, name, number)
+            try:
+                return self.github.get_pull(owner, name, number)
+            except HttpError:
+                return None  # the link is then reported as one that could not be fetched
 
         def mr_lookup(host: str, path: str, iid: int) -> dict[str, Any] | None:
             # Public GitLab instances answer this without a token. The HTTP client
@@ -2477,12 +2498,27 @@ class GSoCToolkit:
 
         found_issues = self._new_beginner_issues(state, now=now) if recheck else []
         new_issues = found_issues or []
-        org_posts = self._shortlist_posts(state, year) if recheck else []
+        found_posts = self._shortlist_posts(state, year) if recheck else []
+        org_posts = found_posts or []
         github_login = str((state.profile or {}).get("github") or "").strip()
-        open_prs = (
+        found_open = (
             self.open_pull_requests(github_login, now=now) if recheck and github_login else []
         )
-        merged = self.merged_pull_requests(github_login) if recheck and github_login else []
+        open_prs = found_open or []
+        found_merged = self.merged_pull_requests(github_login) if recheck and github_login else []
+        merged = found_merged or []
+        # Silence would read as "nothing new": at GitHub's request limit, someone with a
+        # pull request waiting on them got empty lists and exit code 0.
+        failed = [
+            what
+            for what, result in (
+                ("your open pull requests", found_open),
+                ("your merged pull requests", found_merged),
+                ("new beginner issues", found_issues),
+                ("posts from your shortlisted organizations", found_posts),
+            )
+            if result is None
+        ]
         recorded = {str(c.get("ref")) for c in state.contributions}
         newly_merged = [m for m in merged if m["ref"] not in recorded]
         # Only one merged pull request in someone else's project, ever, and it is new.
@@ -2550,7 +2586,7 @@ class GSoCToolkit:
             "hours_note": hours_note((state.profile or {}).get("hours_per_week")),
             "progress": self.progress.summary(),
             "tracked_issues": tracked,
-            "not_checked": _not_checked(state) if recheck else None,
+            "not_checked": _not_checked(state, failed) if recheck else None,
             "open_pull_requests": open_prs,
             "merged_pull_requests": merged_news,
             "first_merge": first_merge and bool(merged_news),
@@ -2660,7 +2696,7 @@ class GSoCToolkit:
         result = {
             "repo": f"{owner}/{repo}",
             "url": raw.get("html_url") or f"https://github.com/{owner}/{repo}",
-            "description": clean_untrusted(raw.get("description"), limit=300),
+            "description": clean_untrusted(raw.get("description"), limit=300, markdown=False),
             "default_branch": branch,
             "work_branch": work_branch(merged, default=branch),
             "as_of_commit": tree.get("sha"),
@@ -2723,7 +2759,7 @@ class GSoCToolkit:
                 return {
                     "number": int(pull["number"]),
                     "url": pull.get("html_url"),
-                    "title": clean_untrusted(pull.get("title"), limit=120),
+                    "title": clean_title(pull.get("title"), limit=120),
                     "author": (pull.get("user") or {}).get("login"),
                     "files": len(files),
                     "paths": [str(f.get("filename")) for f in files[:6]],
@@ -2852,7 +2888,7 @@ class GSoCToolkit:
             "issue": {
                 "repo": full,
                 "number": num,
-                "title": clean_untrusted(issue.get("title"), limit=200),
+                "title": clean_title(issue.get("title"), limit=200),
                 "url": issue.get("html_url") or f"https://github.com/{full}/issues/{num}",
                 "labels": [
                     lab.get("name") for lab in issue.get("labels") or [] if isinstance(lab, dict)
@@ -2938,7 +2974,7 @@ class GSoCToolkit:
                 {
                     "issue": {
                         "number": int(item["number"]),
-                        "title": clean_untrusted(item.get("title"), limit=120),
+                        "title": clean_title(item.get("title"), limit=120),
                         "url": item.get("html_url"),
                     },
                     "pull_request": closer,
@@ -2996,7 +3032,7 @@ class GSoCToolkit:
             context["issue"] = {"repo": f"{owner}/{name}", "number": num}
             try:
                 status = self.issue_status(issue)
-                context["issue"]["title"] = clean_untrusted(status.get("title"), limit=200)
+                context["issue"]["title"] = clean_title(status.get("title"), limit=200)
                 context["issue"]["availability"] = status.get("availability")
                 context["issue"]["reason"] = status.get("reason")
                 # Free by the rules, but someone asked over a month ago and opened nothing:
@@ -3375,6 +3411,8 @@ class GSoCToolkit:
                 # An index of its own project pages: links elsewhere on it (CERN, arXiv
                 # papers) describe the projects and hold no ideas.
                 pages = same_site
+            own_rules = bool(doc.ai_policy)
+            rule_pages: list[str] = []
             for page in pages[:MAX_FOLLOWED_PAGES]:
                 child = fetch_ideas_document(self.http, page["url"], ttl)
                 if child is None:
@@ -3399,8 +3437,15 @@ class GSoCToolkit:
                 for idea in child.ideas:
                     idea.section = page["title"]
                 doc.ideas.extend(child.ideas)
+                if child.ai_policy:
+                    rule_pages.append(child.ai_policy_url or page["url"])
                 doc.ai_policy = list(dict.fromkeys([*doc.ai_policy, *child.ai_policy]))
                 followed.append(page)
+            # Rules quoted from one sub-page are named by that page, or the site would
+            # say they were "quoted from" the umbrella's own page. Rules from several
+            # pages have no single source to name.
+            if not own_rules and len(set(rule_pages)) == 1:
+                doc.ai_policy_url = rule_pages[0]
         if doc.layout == "index" and not followed and doc.fallback_ideas:
             # The links led to no ideas, so the page's own prose blocks are the ideas.
             doc.ideas = list(doc.fallback_ideas)
@@ -3420,7 +3465,7 @@ class GSoCToolkit:
             body = str(item.get("body") or "")
             doc.ideas.append(
                 ProjectIdea(
-                    title=clean_untrusted(item.get("title") or f"#{item.get('number')}", limit=200),
+                    title=clean_title(item.get("title") or f"#{item.get('number')}", limit=200),
                     description=clean_untrusted(body, limit=500),
                     links=[str(item.get("html_url") or "")],
                     skills=[],
@@ -3431,16 +3476,20 @@ class GSoCToolkit:
         return doc
 
     def _page_gone(self, url: str) -> bool:
-        """True when the page's address answers "not found", not when it is blocked."""
-        try:
-            self.http.get_text(
-                ideas_document_url(url) or url, ttl=self.settings.archive_ttl_seconds
-            )
-        except NotFoundError:
-            return True
-        except HttpError:
-            return False
-        return False
+        """True when every address for the page answers "not found", not when one is blocked."""
+        # A wiki's raw .md can answer 404 while the wiki page itself answers 503, and that
+        # page is blocked, not gone: so the page's own address must answer 404 as well.
+        # GitHub answers a missing wiki page with the wiki's Home, not a 404 (Libreswan).
+        for address in dict.fromkeys((ideas_document_url(url) or url, url)):
+            try:
+                text = self.http.get_text(address, ttl=self.settings.archive_ttl_seconds)
+            except NotFoundError:
+                continue
+            except HttpError:
+                return False
+            if not is_missing_wiki_page(text, address):
+                return False
+        return True
 
     def _availability_of(self, full_name: str, number: int) -> tuple[str, str]:
         """(status, reason) for one tracked issue; never raises."""
@@ -3513,7 +3562,7 @@ class GSoCToolkit:
         return {
             "ref": f"{owner}/{repo}#{num}",
             "url": pull.get("html_url"),
-            "title": clean_untrusted(pull.get("title"), limit=160),
+            "title": clean_title(pull.get("title"), limit=160),
             "author": (pull.get("user") or {}).get("login"),
             **report,
             "note": (
@@ -3632,10 +3681,12 @@ class GSoCToolkit:
             )
         return check_message(kind, text)
 
-    def merged_pull_requests(self, username: str, *, limit: int = 10) -> list[dict[str, Any]]:
+    def merged_pull_requests(
+        self, username: str, *, limit: int = 10
+    ) -> list[dict[str, Any]] | None:
         """The contributor's latest merged pull requests in other people's repositories.
 
-        One search. Failures return nothing, so `next` never stops over it.
+        One search. None when it failed, so `next` never stops over it and can say so.
         """
         login = validate_login(username, kind="GitHub username")
         try:
@@ -3643,7 +3694,7 @@ class GSoCToolkit:
                 f"is:pr is:merged author:{login} -user:{login}", per_page=limit
             )
         except GigError:
-            return []
+            return None
         found: list[dict[str, Any]] = []
         for item in items:
             parts = str(item.get("repository_url") or "").rstrip("/").split("/")
@@ -3654,7 +3705,7 @@ class GSoCToolkit:
                 {
                     "ref": f"{parts[-2]}/{parts[-1]}#{item['number']}",
                     "url": str(item.get("html_url") or ""),
-                    "title": clean_untrusted(item.get("title"), limit=160),
+                    "title": clean_title(item.get("title"), limit=160),
                     "merged_at": str(merged_at),
                 }
             )
@@ -3662,13 +3713,14 @@ class GSoCToolkit:
 
     def open_pull_requests(
         self, username: str, *, now: datetime | None = None, limit: int = 5
-    ) -> list[dict[str, Any]]:
+    ) -> list[dict[str, Any]] | None:
         """The contributor's open pull requests, sorted into "needs you" and "waiting".
 
         One search plus three calls per pull request (details, timeline, checks),
         for the most recently updated few. Pull requests in the person's own
         repositories are left out: nobody else is there to review them.
-        Failures leave that pull request out.
+        A pull request that cannot be read is left out. None when the search failed,
+        or when GitHub would not show any of the pull requests it found.
         """
         login = validate_login(username, kind="GitHub username")
         try:
@@ -3676,25 +3728,32 @@ class GSoCToolkit:
                 f"is:pr is:open author:{login} -user:{login} archived:false", per_page=limit
             )
         except GigError:
-            return []
+            return None
 
-        def one(item: dict[str, Any]) -> dict[str, Any] | None:
+        def one(item: dict[str, Any]) -> dict[str, Any] | GigError | None:
             parts = str(item.get("repository_url") or "").rstrip("/").split("/")
             if len(parts) < 2 or not item.get("number"):
                 return None
             owner, repo, number = parts[-2], parts[-1], int(item["number"])
-            pull = self.github.get_pull(owner, repo, number)
+            try:
+                pull = self.github.get_pull(owner, repo, number)
+            except GigError as exc:
+                # The search has its own limit, so it can answer while this is refused.
+                return exc
             if not pull:
                 return None
             timeline = self.github.get_issue_timeline(owner, repo, number) or []
             sha = str((pull.get("head") or {}).get("sha") or "")
             checks = self.github.check_runs(owner, repo, sha) if sha else []
             status = pull_request_status(pull, timeline, checks, now=now)
-            status["title"] = clean_untrusted(status.get("title"), limit=160)
+            status["title"] = clean_title(status.get("title"), limit=160)
             return status
 
         with ThreadPoolExecutor(max_workers=self.settings.max_concurrency) as pool:
-            found = [r for r in pool.map(one, items[:limit]) if r]
+            results = list(pool.map(one, items[:limit]))
+        found = [r for r in results if isinstance(r, dict)]
+        if not found and any(isinstance(r, GigError) for r in results):
+            return None
         found.sort(key=lambda r: (r["status"] != "needs_you", -(r.get("quiet_days") or 0)))
         return found
 
@@ -3754,8 +3813,9 @@ class GSoCToolkit:
                 found[name] = org.source_code or org.url or "its own site"
         return found
 
-    def _shortlist_posts(self, state: ProgressState, year: int) -> list[dict[str, Any]]:
-        """Maintainer posts about `year` in the shortlisted orgs' repositories."""
+    def _shortlist_posts(self, state: ProgressState, year: int) -> list[dict[str, Any]] | None:
+        """Maintainer posts about `year` in the shortlisted orgs' repositories, or None
+        when the search failed and no wiki had a statement either."""
         owners: dict[str, str] = {}
         for name in state.shortlisted_orgs[:5]:
             try:
@@ -3767,13 +3827,13 @@ class GSoCToolkit:
                 owners.setdefault(owner.lower(), name)
         if not owners:
             return []
-        found = self.gsoc_posts_for(list(owners), year=year)["posts"]
+        result = self.gsoc_posts_for(list(owners), year=year)
         # A wiki statement has no author to check, but it only counts when it says
         # the org will not take part or has not decided.
-        posts = [p for p in found if p["by_maintainer"] or p.get("source") == "wiki"]
+        posts = [p for p in result["posts"] if p["by_maintainer"] or p.get("source") == "wiki"]
         for post in posts:
             post["org"] = owners.get(post["repo"].split("/")[0].lower(), post["repo"])
-        return posts[:5]
+        return posts[:5] or (None if "error" in result else [])
 
     def _new_beginner_issues(
         self, state: ProgressState, *, now: datetime
@@ -3835,7 +3895,7 @@ class GSoCToolkit:
                 {
                     "repo": repo,
                     "number": int(item["number"]),
-                    "title": clean_untrusted(item.get("title"), limit=160),
+                    "title": clean_title(item.get("title"), limit=160),
                     "url": str(item.get("html_url") or ""),
                     "created_at": item.get("created_at"),
                     "labels": [
@@ -3903,20 +3963,28 @@ class GSoCToolkit:
         return out
 
 
-def _not_checked(state: ProgressState) -> str | None:
-    """Which tracked items `next` left out, and where to see them, or None."""
+def _not_checked(state: ProgressState, failed: list[str]) -> str | None:
+    """Which live checks `next` could not run (`failed`) and which tracked items it left
+    out, with what to do about each, or None."""
+    notes = []
+    if failed:
+        notes.append(
+            f"Could not check {', '.join(failed)}: GitHub did not answer, or its request "
+            "limit is used up, so there may be news this run did not see. See why with "
+            "git-into-gsoc doctor, then run git-into-gsoc next again."
+        )
     left_out = [
         f"{len(items) - RECHECK_LIMIT} of your {len(items)} tracked {what}"
         for what, items in (("issues", state.tracked_issues), ("repositories", state.tracked_repos))
         if len(items) > RECHECK_LIMIT
     ]
-    if not left_out:
-        return None
-    return (
-        f"Only the newest {RECHECK_LIMIT} tracked issues and repositories are re-checked. "
-        f"Left out: {', '.join(left_out)}. See them all with git-into-gsoc progress, and "
-        "check one issue with git-into-gsoc issue OWNER/REPO#NUMBER."
-    )
+    if left_out:
+        notes.append(
+            f"Only the newest {RECHECK_LIMIT} tracked issues and repositories are re-checked. "
+            f"Left out: {', '.join(left_out)}. See them all with git-into-gsoc progress, and "
+            "check one issue with git-into-gsoc issue OWNER/REPO#NUMBER."
+        )
+    return " ".join(notes) or None
 
 
 # Sub-project pages an umbrella ideas page may lead to; ML4SCI has 18, UC OSPO 22.
