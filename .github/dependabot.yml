@@ -37,6 +37,13 @@ updates:
     commit-message:
       prefix: ci
       include: scope
+    groups:
+      # CodeQL refuses to run when its init and analyze steps are on different
+      # versions. Bumped one per pull request, both failed the required CodeQL
+      # check every week from 2026-11-16 and neither could merge.
+      codeql:
+        patterns:
+          - "github/codeql-action*"
 
   # The hooks in .pre-commit-config.yaml that come from other repositories.
   - package-ecosystem: pre-commit
