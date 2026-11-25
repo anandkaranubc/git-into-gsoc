@@ -453,6 +453,38 @@ def test_a_long_idle_open_pr_says_how_to_ask() -> None:
     assert not any("ask in the issue" in c for c in fresh.caveats)
 
 
+def test_a_busy_issue_names_its_most_recently_active_open_pr() -> None:
+    # Health audit (2026-11-25): an issue with 14 open pull requests, 12 of them active
+    # in the last two days, read "Open PR #12154 ... idle for 181 days", with the advice
+    # to ask whether its author was still working on it.
+    issue: dict[str, Any] = {"state": "open", "updated_at": NOW.isoformat()}
+
+    def linked(number: int, days_idle: int) -> dict[str, Any]:
+        found = _pr(number, "open", author="someone")
+        found["source"]["issue"]["updated_at"] = (NOW - timedelta(days=days_idle)).isoformat()
+        return found
+
+    busy = assess_issue(issue, [linked(12154, 181), linked(12301, 1), linked(12290, 2)], now=NOW)
+    assert busy.availability == Availability.LIKELY_TAKEN
+    assert busy.reason == (
+        "Open PR #12301 by @someone references it; 2 other open PRs also point to it"
+    )
+    assert not any("ask in the issue" in c for c in busy.caveats)
+    # Idle is said only when every open pull request is.
+    quiet = assess_issue(issue, [linked(30, 200), linked(31, 120)], now=NOW)
+    assert quiet.reason == (
+        "Open PR #31 by @someone references it; it has been idle for 120 days; "
+        "1 other open PR also points to it"
+    )
+    assert any("None of the 2 open PRs" in c and "ask in the issue" in c for c in quiet.caveats)
+    # One whose last activity is unknown is not called idle either.
+    unknown = assess_issue(issue, [linked(30, 200), _pr(31, "open")], now=NOW)
+    assert unknown.reason == (
+        "Open PR #30 by @someone references it; 1 other open PR also points to it"
+    )
+    assert not any("ask in the issue" in c for c in unknown.caveats)
+
+
 @respx.mock
 def test_one_big_org_cannot_fill_the_whole_list() -> None:
     def item(number: int, repo: str) -> dict[str, Any]:
