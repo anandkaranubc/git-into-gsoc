@@ -19,6 +19,9 @@ jobs:
     # This job runs unpinned dependencies and reads pages strangers write, so it holds
     # no write token. Code it installs could plant a git hook or a fake `git` on PATH,
     # which is why the push happens in a fresh job that installs nothing.
+    # A weekly run takes half a minute and the monthly one about 20 minutes. One page
+    # that answers a byte at a time could hold the job to GitHub's 6-hour limit.
+    timeout-minutes: 60
     outputs:
       changed: ${{ steps.diff.outputs.changed }}
     steps:
@@ -44,7 +47,9 @@ jobs:
       # pages are fetched without it. Failed pages keep last month's evidence.
       - name: Refresh ideas-page and repository evidence
         # A failure here keeps last month's evidence; the snapshot still goes out.
+        # So does a stall: the step stops at 45 minutes, inside the job's 60.
         continue-on-error: true
+        timeout-minutes: 45
         env:
           # The built-in token's searches with an OR group come back wrong, so the
           # canary keeps last month's beginner counts and statements. A read-only
