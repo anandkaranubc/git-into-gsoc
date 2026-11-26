@@ -9,6 +9,9 @@ repos:
       # clean checkout checked nothing; --enforce-all checks every tracked file.
       - id: check-added-large-files
         args: [--enforce-all]
+        # The homepage film is self-hosted on purpose (nothing loads from another site
+        # when it plays); it is the one file allowed past the 500 KB limit.
+        exclude: ^site/film/film-1080\.mp4$
       - id: check-merge-conflict
       - id: check-toml
       - id: check-yaml

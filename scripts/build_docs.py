@@ -132,8 +132,8 @@ def render(source: Path) -> str:
         + f'<div class="wrap doc-grid">\n{toc(sections)}<article class="doc">\n'
         + f'<nav class="crumbs" aria-label="Breadcrumb">{trail}</nav>\n'
         + body
-        + f'\n<p class="fine">Source: <a href="{REPO_URL}/blob/main/{source_rel}">{source_rel}</a>'
-        " on GitHub. Corrections are welcome.</p>\n</article>\n</div>\n" + FOOT
+        + f'\n<p class="fine"><a href="{REPO_URL}/edit/main/{source_rel}">Edit this page on GitHub</a></p>'
+        "\n</article>\n</div>\n" + FOOT
     )
 
 

@@ -13,8 +13,6 @@ This guide takes you from "what is GSoC?" to a reviewed pull request and a propo
 | [7. Prepare your proposal](guide/07-prepare-a-proposal.md) | A plan built on real work and feedback |
 | [8. Keep track of your progress](guide/08-track-progress.md) | A weekly note and a clear next step |
 
-The steps are a guide, not a checklist to pass. Loop back whenever you need to.
-
 ## Not sure what to do next?
 
 `git-into-gsoc` on its own shows your progress. `git-into-gsoc next` reads the program calendar, your profile, and the issues you track, and prints the next few actions with the exact commands. The [journey map](journey.md) shows every phase with its commands and guide page.
@@ -40,7 +38,7 @@ The steps are a guide, not a checklist to pass. Loop back whenever you need to.
 These pages are for people changing the tool, not using it.
 
 - [Contributing](../CONTRIBUTING.md): setup, your first change, and our standards.
-- [Watch someone try it](watch-someone-try-it.md): a 30-minute session with a newcomer. It needs no code, and it is the most useful test we have.
+- [Watch someone try it](watch-someone-try-it.md): a 30-minute session with a newcomer.
 - [Architecture](architecture.md): how the terminal tool, the assistant server, and the skill share one core, and how to add things.
 - [Releasing](releasing.md) and [distribution](distribution.md): how releases, plugins, and directory listings work.
 - [What we learned from other tools](research.md): ideas adopted and rejected, with sources.

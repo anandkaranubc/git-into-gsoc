@@ -54,9 +54,10 @@
     canvas.width = cols; canvas.height = rows;
     canvas.style.width = cols * cell + "px"; canvas.style.height = rows * cell + "px";
     ctx.imageSmoothingEnabled = false;
-    UNIT = band ? 3 : 4;
+    // below 1280 px wide the full-size door ran into the copy (1024 px tablets): a smaller door there
+    UNIT = band || W < 1280 ? 3 : 4;
     // room to the right of the door for the crowd: at least ten units of field
-    g.x = band ? Math.round(cols * 0.5 - 10 * UNIT) : Math.min(cols - 32 * UNIT, Math.round(cols * 0.54));
+    g.x = band ? Math.round(cols * 0.5 - 10 * UNIT) : Math.min(cols - 32 * UNIT, Math.round(cols * 0.6));
     g.y = Math.round((rows - 20 * UNIT) / 2);
     grid = new Uint8Array(cols * rows);
     next = new Uint8Array(cols * rows);

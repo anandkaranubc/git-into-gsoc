@@ -170,6 +170,7 @@ The site counts page views and a few named clicks with GoatCounter; [docs/privac
 | `out/<host>` | Where else do visitors leave to? |
 | `to-video/<page>` | Which kinds of page send visitors to a video page? |
 | `video/play`, `video/chapter`, `video/transcript` | Does anyone press play on a video page, and from the picture, a chapter time, or the transcript? |
+| `film/hero`, `film/play`, `film/half`, `film/end`, `film/transcript` | Does the home page film get played (from the hero link or the poster), and is it watched past the middle and to the end? Sent by `site/film.js`, once each per visit. |
 
 Add an event only with a question beside it, and never send anything a visitor typed. Local previews are not counted. To keep your own visits out, open https://gitintogsoc.me/#toggle-goatcounter once in each browser. The numbers live in the owner's GoatCounter account.
 
