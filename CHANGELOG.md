@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.28.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.27.0...v0.28.0) (2026-11-26)
+
+
+### Features
+
+* **site:** add the product film to the homepage, and trim every page to what earns its place ([#489](https://github.com/anandkaranubc/git-into-gsoc/issues/489)) ([7770efa](https://github.com/anandkaranubc/git-into-gsoc/commit/7770efae17613dcd85c8fe9ff2e355424718d346))
+
 ## [0.27.0](https://github.com/anandkaranubc/git-into-gsoc/compare/v0.26.3...v0.27.0) (2026-11-25)
 
 
