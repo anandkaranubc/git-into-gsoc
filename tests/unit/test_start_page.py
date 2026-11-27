@@ -20,7 +20,7 @@ sys.path.insert(0, str(ROOT))
 
 from scripts.build_site import start_data  # noqa: E402
 from scripts.eval_matching import catalog  # noqa: E402
-from scripts.start_page import answer, load_index  # noqa: E402
+from scripts.start_page import answer, load_index, shared_fit  # noqa: E402
 
 from git_into_gsoc.matching.profile import build_profile  # noqa: E402
 from git_into_gsoc.matching.rank import OrgIndex  # noqa: E402
@@ -94,6 +94,22 @@ def test_answer_is_shaped_like_what_start_prints(page_index: OrgIndex) -> None:
     assert first["caveats"] == match.caveats[:2]
     assert first["fit"] in {"strong", "good", "partial"}
     assert first["slug"]
+
+
+def test_a_fit_every_card_shares_is_said_once_with_what_sets_the_order(
+    page_index: OrgIndex,
+) -> None:
+    result = answer(page_index, technologies="python", interests="ai", hours=10, experience="new")
+    assert {org["fit"] for org in result["organizations"]} == {"good"}
+    assert result["shared_fit"].startswith("All three are a good fit for what you asked.")
+    assert "number of ideas on a page does not change the order" in result["shared_fit"]
+
+
+def test_no_shared_fit_line_when_the_cards_differ_or_stand_alone() -> None:
+    assert shared_fit([{"fit": "strong"}, {"fit": "good"}]) is None
+    assert shared_fit([{"fit": "good"}]) is None
+    assert shared_fit([{"fit": None}, {"fit": None}]) is None
+    assert shared_fit([{"fit": "partial"}, {"fit": "partial"}]).startswith("Both are a partial")
 
 
 def test_sitting_out_organizations_are_set_aside_as_start_does(page_index: OrgIndex) -> None:

@@ -770,6 +770,14 @@ START_SCRIPT = """<script>
         experience: level ? level.value : null
       };
     }
+    // A browser may break a line after any hyphen, and at phone width "--interests"
+    // split into "--" and "interests"; each option and its value stay whole instead.
+    function command_parts(code, command) {
+      command.split(/ (?=--)/).forEach(function (part, j) {
+        if (j) code.appendChild(document.createTextNode(" "));
+        code.appendChild(el("span", "nb", part));
+      });
+    }
     function lines(parent, items, cls, mark) {
       items.forEach(function (text) { parent.appendChild(el("p", cls, mark + text)); });
     }
@@ -782,6 +790,13 @@ START_SCRIPT = """<script>
       }
       out.appendChild(el("h2", "pixel", "organizations that fit you"));
       result.read_as.forEach(function (note) { out.appendChild(el("p", "fine", note)); });
+      if (result.shared_fit) {
+        var same = el("p", "", result.shared_fit + " ");
+        var how = el("a", "", "How the order is decided");
+        how.href = "../docs/recommendations/#how-fit-is-decided";
+        same.appendChild(how);
+        out.appendChild(same);
+      }
       var list = el("ol", "matches");
       result.organizations.forEach(function (org) {
         var item = el("li");
@@ -793,7 +808,7 @@ START_SCRIPT = """<script>
         } else {
           head.appendChild(document.createTextNode(org.name));
         }
-        if (org.fit) {
+        if (org.fit && !result.shared_fit) {
           head.appendChild(document.createTextNode(" "));
           head.appendChild(el("span", "fit fit-" + org.fit, org.fit + " fit"));
         }
@@ -821,7 +836,7 @@ START_SCRIPT = """<script>
       var steps = el("ol", "steps");
       result.next_steps.forEach(function (step) {
         var item = el("li", "", step.title + " ");
-        item.appendChild(el("code", "", step.command));
+        command_parts(item.appendChild(el("code")), step.command);
         steps.appendChild(item);
       });
       out.appendChild(steps);
@@ -831,14 +846,9 @@ START_SCRIPT = """<script>
       term.appendChild(bar);
       var pre = el("pre");
       var code = el("code");
-      // At phone width pre-wrap broke after the hyphen in "--interests", so the command
-      // looked broken; each option and its value stay on one line instead.
       result.commands.forEach(function (command, i) {
         if (i) code.appendChild(document.createTextNode("\\n"));
-        command.split(/ (?=--)/).forEach(function (part, j) {
-          if (j) code.appendChild(document.createTextNode(" "));
-          code.appendChild(el("span", "nb", part));
-        });
+        command_parts(code, command);
       });
       pre.appendChild(code);
       term.appendChild(pre);
