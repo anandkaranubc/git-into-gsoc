@@ -37,7 +37,7 @@ from git_into_gsoc.gsoc.names import (
     suggest_names,
 )
 from git_into_gsoc.gsoc.official import OfficialGSoCClient
-from git_into_gsoc.gsoc.snapshot import load_history, load_official
+from git_into_gsoc.gsoc.snapshot import clip_description, load_history, load_official
 from git_into_gsoc.http_client import CachedHttpClient, HttpError
 from git_into_gsoc.matching.profile import ContributorProfile, build_profile
 from git_into_gsoc.matching.rank import OrgIndex
@@ -319,7 +319,7 @@ class GSoCClient:
             official=True,
             **self._history_fields(hist, year),
         )
-        self._search_text[name] = _clean_text(raw.get("description"), 2000)
+        self._search_text[name] = _clean_text(clip_description(raw.get("description")), 2000)
         return summary
 
     def _from_archive(self, raw: dict[str, Any], year: int) -> OrgSummary:

@@ -830,7 +830,17 @@ START_SCRIPT = """<script>
       bar.appendChild(el("span", "", "the same answers, in your terminal"));
       term.appendChild(bar);
       var pre = el("pre");
-      pre.appendChild(el("code", "", result.commands.join("\\n")));
+      var code = el("code");
+      // At phone width pre-wrap broke after the hyphen in "--interests", so the command
+      // looked broken; each option and its value stay on one line instead.
+      result.commands.forEach(function (command, i) {
+        if (i) code.appendChild(document.createTextNode("\\n"));
+        command.split(/ (?=--)/).forEach(function (part, j) {
+          if (j) code.appendChild(document.createTextNode(" "));
+          code.appendChild(el("span", "nb", part));
+        });
+      });
+      pre.appendChild(code);
       term.appendChild(pre);
       var ask = el("pre");
       ask.setAttribute("aria-label", "Or ask your assistant");

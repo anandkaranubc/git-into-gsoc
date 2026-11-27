@@ -97,14 +97,26 @@ def build_history(archive: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
 DESCRIPTION_LIMIT = 1200
 
 
+def clip_description(value: str | None) -> str:
+    """An official description as the snapshot keeps it: one line, cut near 1200 characters.
+
+    The live list goes through this too before it is ranked. When only the snapshot was
+    cut, `start` online and the site's start page ranked the same answers differently
+    (JdeRobot second on the page, missing from the CLI's three). Cutting again changes
+    nothing, so a snapshot entry reads the same as the live one it came from.
+    """
+    text = " ".join(str(value or "").split())
+    if len(text) > DESCRIPTION_LIMIT:
+        text = text[:DESCRIPTION_LIMIT].rsplit(" ", 1)[0] + " …"
+    return text
+
+
 def build_official(raw_orgs: list[dict[str, Any]]) -> list[dict[str, Any]]:
     # The official API lists organizations in a different order on every call; sorting
     # keeps an unchanged list byte-identical.
     kept = [{k: org.get(k) for k in _OFFICIAL_FIELDS if org.get(k) is not None} for org in raw_orgs]
     for org in kept:
-        text = " ".join(str(org.get("description") or "").split())
-        if len(text) > DESCRIPTION_LIMIT:
-            text = text[:DESCRIPTION_LIMIT].rsplit(" ", 1)[0] + " …"
+        text = clip_description(org.get("description"))
         if text:
             org["description"] = text
     return sorted(kept, key=lambda org: (str(org.get("slug") or ""), str(org.get("name") or "")))
