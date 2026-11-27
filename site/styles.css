@@ -647,6 +647,9 @@ p code, li code { background: var(--bg-2); padding: 0.1em 0.35em; border-radius:
 
 /* the suggested assistant prompt on /start/ wraps instead of running off the page */
 .start .term pre { white-space: pre-wrap; }
+/* but a command, there and in the next steps, breaks only between options:
+   "--interests" split at its hyphen looked broken */
+.start .nb { white-space: nowrap; }
 
 /* brand page: a swatch's hex sits on the swatch, not on the code background; its hero mark is coloured like the home page's */
 .swatch code { background: none; color: inherit; }

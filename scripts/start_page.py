@@ -57,6 +57,27 @@ def _org(match: OrgMatch) -> dict[str, Any]:
     }
 
 
+def shared_fit(organizations: list[dict[str, Any]]) -> str | None:
+    """One line said above the cards when every card has the same fit, instead of a badge each.
+
+    The first recording of the page showed "good fit" on all three cards, and OpenVINO
+    Toolkit's "1 idea" above CERN-HSF's "39 ideas", with nothing to say why. The order
+    came from match strength and the tie-breakers, never from how many ideas a page lists.
+    """
+    fits = {org["fit"] for org in organizations}
+    if len(organizations) < 2 or len(fits) != 1 or None in fits:
+        return None
+    who = {2: "Both are", 3: "All three are"}.get(
+        len(organizations), f"All {len(organizations)} are"
+    )
+    return (
+        f"{who} a {fits.pop()} fit for what you asked. The order between them comes from "
+        "smaller differences: first how closely each one matches your answers, then its "
+        "years in GSoC, its projects last year, and how ready its ideas page is for "
+        "beginners. The number of ideas on a page does not change the order."
+    )
+
+
 def answer(
     index: OrgIndex,
     *,
@@ -104,6 +125,7 @@ def answer(
         "read_as": person.notes,
         "hours_note": hours_note(hours),
         "organizations": shown,
+        "shared_fit": shared_fit(shown),
         "set_aside": set_aside,
         "next_steps": next_steps_after_start(shown, []),
         "commands": commands,

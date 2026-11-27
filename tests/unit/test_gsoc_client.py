@@ -12,6 +12,7 @@ import respx
 from conftest import ARCHIVE, OFFICIAL, archive_year_json, load_fixture, mock_catalog
 from git_into_gsoc.gsoc.client import GSoCClient, github_refs
 from git_into_gsoc.gsoc.names import normalize_name
+from git_into_gsoc.gsoc.snapshot import build_official
 from git_into_gsoc.scoring.org_match import expand_terms
 
 
@@ -39,6 +40,18 @@ def test_official_orgs_carry_history_and_links(api: respx.MockRouter) -> None:
     assert radio.ideas_url
     assert radio.github_orgs
     assert {c.kind for c in radio.channels} & {"chat", "mailingList", "email"}
+
+
+def test_a_long_description_ranks_the_same_live_and_from_the_snapshot() -> None:
+    # The snapshot keeps about 1200 characters of each description, and the live list
+    # was read up to 2000, so `start` online and the site's start page disagreed.
+    words = " ".join(f"robotics<br>\n word{i}" for i in range(300))
+    raw = {"name": "Long Org", "slug": "long-org", "description": f"<p>{words}</p>"}
+    live, offline = GSoCClient(), GSoCClient()
+    live._from_official(raw, 2026)
+    offline._from_official(build_official([raw])[0], 2026)
+    assert live._search_text["Long Org"] == offline._search_text["Long Org"]
+    assert len(live._search_text["Long Org"]) < 1300
 
 
 def test_python_science_ranking(api: respx.MockRouter) -> None:
